@@ -1,4 +1,4 @@
-const C="copiloto18k-v1";
+const C="copiloto18k-v2";
 const F=["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png"];
 self.addEventListener("install",e=>{self.skipWaiting();
   e.waitUntil(caches.open(C).then(c=>c.addAll(F)).catch(()=>{}));});
