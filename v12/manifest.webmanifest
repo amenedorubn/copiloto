@@ -1,6 +1,6 @@
 {
- "name": "Copiloto · GPS y cinta",
- "short_name": "Copiloto",
+ "name": "Copiloto v12 · GPS y cinta",
+ "short_name": "Copiloto v12",
  "description": "Copiloto de carrera: modo GPS en la calle y modo cinta por tiempo",
  "start_url": "./",
  "scope": "./",
