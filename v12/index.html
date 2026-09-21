@@ -142,6 +142,19 @@
   #cVolver{min-height:56px !important;font-size:15px !important;background:transparent !important;
     border-color:rgba(255,255,255,.28) !important;color:rgba(255,255,255,.75) !important}
 
+  /* cuenta atras de arranque */
+  #cCta{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;text-align:center}
+  #cCtaL{font-size:clamp(14px,2.6vh,21px);font-weight:800;letter-spacing:.18em;
+    text-transform:uppercase;opacity:.8}
+  #cCtaN{font-size:clamp(110px,27vh,230px);font-weight:900;line-height:.88;letter-spacing:-.04em}
+  #cCtaP{font-size:clamp(19px,3.9vh,31px);font-weight:900;line-height:1.2;
+    background:rgba(0,0,0,.26);border-radius:15px;padding:13px 16px;margin-top:10px}
+  #cCtaS{font-size:clamp(13px,2.3vh,19px);font-weight:700;opacity:.85;margin-top:2px}
+  #cCtaX{margin-top:18px;min-height:56px !important;font-size:15px !important;
+    background:transparent !important;border-color:rgba(255,255,255,.28) !important;
+    color:rgba(255,255,255,.75) !important}
+
   /* pantalla de carrera */
   #cRun{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
   #cTipo{font-size:clamp(17px,3.2vh,26px);font-weight:900;letter-spacing:.1em;text-transform:uppercase;
@@ -208,6 +221,14 @@
     <div id="cPreMsg">–</div>
     <button id="cGo">Empezar</button>
     <button id="cVolver">Volver</button>
+  </div>
+
+  <div id="cCta" hidden>
+    <div id="cCtaL">Preparado</div>
+    <div id="cCtaN">10</div>
+    <div id="cCtaP">–</div>
+    <div id="cCtaS">–</div>
+    <button id="cCtaX">Cancelar</button>
   </div>
 
   <div id="cRun" hidden>
@@ -1033,12 +1054,13 @@ var SESIONES=[
 var COLT={serie:"#E24B4A",trote:"#639922",calentar:"#3B8BDD",enfriar:"#3B8BDD"};
 var LS="copiloto.cinta.v1";
 var MAXEDAD=6*3600*1000;          // un estado mas viejo que esto ya no se retoma
+var CUENTA=10;                    // segundos de cuenta atras antes de arrancar de verdad
 
 /* --------------------------- utilidades --------------------------- */
 function E(id){return document.getElementById(id);}
-function MS(s){s=Math.max(0,Math.round(s));
+function MS(s){s=Math.max(0,Math.floor(s));
   return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
-function HMS(s){s=Math.max(0,Math.round(s));var h=Math.floor(s/3600),m=Math.floor(s%3600/60);
+function HMS(s){s=Math.max(0,Math.floor(s));var h=Math.floor(s/3600),m=Math.floor(s%3600/60);
   return (h? h+":"+String(m).padStart(2,"0") : String(m))+":"+String(s%60).padStart(2,"0");}
 function coma(x,n){return x.toFixed(n).replace(".",",");}
 function velTxt(k){return coma(k,1);}
@@ -1123,7 +1145,7 @@ function elapsed(){
   if(!estado) return 0;
   var e = ahora() - estado.t0 - estado.pausaAcum;
   if(estado.pausaDesde) e -= (ahora() - estado.pausaDesde);
-  return e>0?e:0;
+  return e;                          // negativo mientras corre la cuenta atras
 }
 function pausada(){ return !!(estado && estado.pausaDesde); }
 
@@ -1155,13 +1177,17 @@ function etiqueta(i){
 /* ------------------------- arranque y control ------------------------ */
 function empieza(ses){
   prepara(ses);
-  estado={ sid:ses.id, t0:ahora(), pausaAcum:0, pausaDesde:0,
-           bi:0, bIni:0, bDesde:0, spent:{}, fin:false, tFin:0 };
-  ultE=0; ultBeep=0; armado=0;
+  // el reloj empieza CUENTA segundos en el futuro: da tiempo a arrancar la cinta
+  // y el reloj antes de que el primer bloque cuente de verdad
+  var pre=(typeof ses.cuenta==="number"?ses.cuenta:CUENTA)*1000;
+  estado={ sid:ses.id, t0:ahora()+pre, pausaAcum:0, pausaDesde:0,
+           bi:0, bIni:0, bDesde:0, spent:{}, ini0:false, fin:false, tFin:0 };
+  ultE=elapsed(); ultBeep=0; armado=0;
   guarda();
-  vistaRun();
+  vistaCuenta();
   pantalla(); audioOn();
-  anuncia(0);
+  // ademas de avisar, esta frase despierta la voz aprovechando que vienes de pulsar
+  voz("Prep\u00e1rate. Pon la cinta a "+kmhVoz(B[0].kmh)+".");
   arrancaTick();
   pinta();
 }
@@ -1267,12 +1293,13 @@ function retoma(){
   estado=st;
   if(!estado.spent) estado.spent={};
   if(typeof estado.bDesde!=="number") estado.bDesde=estado.bIni;
+  if(typeof estado.ini0!=="boolean") estado.ini0=true;
   if(estado.bi>=B.length && !estado.fin) estado.fin=true;
   E("selector").hidden=true;
   E("appCinta").hidden=false;
   if(estado.fin){ vistaFin(); return true; }
   ultE=elapsed(); ultBeep=0;
-  vistaRun();
+  if(elapsed()<0) vistaCuenta(); else vistaRun();
   if(!pausada()) pantalla();
   audioOn();
   arrancaTick();
@@ -1284,19 +1311,28 @@ function retoma(){
 function vistaPre(ses){
   E("selector").hidden=true;
   E("appCinta").hidden=false;
-  E("cPre").hidden=false; E("cRun").hidden=true; E("cFin").hidden=true;
+  E("cPre").hidden=false; E("cCta").hidden=true; E("cRun").hidden=true; E("cFin").hidden=true;
   fondo("calentar");
   E("cPreT").textContent=ses.nombre;
   E("cPreD").textContent=HMS(sumSeg(ses))+" · "+coma(sumKm(ses),3)+" km"+
     (ses.inclinacion? " · inclinación "+ses.inclinacion : "");
-  E("cPreMsg").textContent="Arranca la cinta y pulsa cuando marque "+velTxt(ses.bloques[0].kmh);
+  E("cPreMsg").textContent="Pulsa Empezar: tendr\u00e1s "+
+    ((typeof ses.cuenta==="number"?ses.cuenta:CUENTA))+" s para arrancar la cinta a "+
+    velTxt(ses.bloques[0].kmh)+" y poner el reloj";
   E("cGo").onclick=function(){ audioOn(); empieza(ses); };
 }
+function vistaCuenta(){
+  E("selector").hidden=true; E("appCinta").hidden=false;
+  E("cPre").hidden=true; E("cCta").hidden=false; E("cRun").hidden=true; E("cFin").hidden=true;
+  E("cCtaP").textContent="Pon la cinta a "+velTxt(B[0].kmh)+" km/h"+
+    (S&&S.inclinacion? " e inclinaci\u00f3n "+S.inclinacion : "");
+  E("cCtaS").textContent="Empieza: "+B[0].nombre+" \u00b7 "+MS(B[0].seg);
+}
 function vistaRun(){
-  E("cPre").hidden=true; E("cRun").hidden=false; E("cFin").hidden=true;
+  E("cPre").hidden=true; E("cCta").hidden=true; E("cRun").hidden=false; E("cFin").hidden=true;
 }
 function vistaFin(){
-  E("cPre").hidden=true; E("cRun").hidden=true; E("cFin").hidden=false;
+  E("cPre").hidden=true; E("cCta").hidden=true; E("cRun").hidden=true; E("cFin").hidden=false;
   E("appCinta").classList.remove("flash");
   fondo("calentar");
   E("cfT").textContent=HMS(estado.tFin/1000);
@@ -1316,11 +1352,25 @@ function fondo(tipo){
 }
 
 /* ------------------------------- pintar ------------------------------- */
+function pintaCuenta(e,silencio){
+  vistaCuenta();
+  fondo(B[0].tipo);
+  var rest=-e, sec=Math.ceil(rest/1000);
+  E("cCtaN").textContent=sec;
+  if(!silencio && sec>=1 && sec<=3 && sec!==ultBeep){ ultBeep=sec; pipCorto(); }
+}
 function pinta(){
   if(!estado || estado.fin) return;
   var e=elapsed(), b, i, gap=e-ultE;
   var silencio = gap>3000 || gap<0;     // recarga, movil dormido o cambio de app
   ultE=e;
+
+  if(e<0){ pintaCuenta(e,silencio); return; }
+  if(!estado.ini0){                      // se acaba la cuenta atras: ahora empieza de verdad
+    estado.ini0=true; ultBeep=0; vistaRun();
+    if(!silencio) anuncia(0);
+    guarda();
+  }
 
   // avance de bloque: puede cruzar varios de golpe tras una recarga
   var guard=0;
@@ -1360,10 +1410,10 @@ function pinta(){
   }
 
   E("cTipo").textContent=etiqueta(estado.bi);
-  E("cRest").textContent=MS(Math.max(0,rest)/1000);
+  E("cRest").textContent=MS(Math.ceil(Math.max(0,rest)/1000));
   E("cbEl").textContent=MS(bEl/1000);
   E("ctEl").textContent=HMS(e/1000);
-  E("ctRe").textContent=HMS(segQuedan(e));
+  E("ctRe").textContent=HMS(Math.ceil(segQuedan(e)));
   E("ckA").textContent=coma(kmHechos(e),2)+" km";
   E("ckR").textContent="quedan "+coma(kmQuedan(e),2)+" km";
   E("cSig").textContent = sig
@@ -1399,6 +1449,12 @@ E("cOtra").addEventListener("click",function(){
   var m=document.querySelector('meta[name="theme-color"]');
   if(m) m.setAttribute("content","#111418");
   fondoAct="";
+});
+E("cCtaX").addEventListener("click",function(){
+  var ses=S;
+  olvida(); clearInterval(tick); tick=null; sueltaPantalla();
+  try{ speechSynthesis.cancel(); }catch(e){}
+  if(ses) vistaPre(ses); else { E("appCinta").hidden=true; E("selector").hidden=false; fondoAct=""; }
 });
 E("cVolver").addEventListener("click",function(){
   E("appCinta").hidden=true; E("selector").hidden=false; fondoAct="";
