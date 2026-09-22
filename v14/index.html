@@ -605,11 +605,38 @@ function enSeg(px,py,i){
 }
 // engancha una posicion del GPS a la ruta del plan.
 // sRef = por donde ibamos (para no confundir tramos que se cruzan); null = buscar en toda la ruta.
+/* En una ruta que se retraza (la ida y la vuelta por la misma calle) un punto
+   cae igual de bien en dos sitios de la polilinea, a veces con 0 m de error en
+   los dos. Quedarse con el primero que aparezca es una moneda al aire: si sale
+   el de la vuelta, el kilometraje se va al garete y la distancia se queda
+   clavada. Entre dos candidatos practicamente igual de cerca se coge el que
+   esta mas cerca EN RUTA de donde estabas hace un segundo, que es el unico que
+   puede ser de verdad. */
+var TOL_IGUAL=25;      // m: por debajo de esto, dos proyecciones son un empate
+var ATRAS=40;          // m: lo que se admite retroceder en la ruta entre dos fixes
 function engancha(lat,lon,sRef,margen){
   var px=(lon-LON0)*MLON, py=(lat-LAT0)*MLAT, mejor=null;
+  var ref=(sRef===null||sRef===undefined)?null:sRef;
+  /* Desempate. Que este cerca del punto anterior no basta: en el punto de giro
+     de una ida y vuelta, el trozo de ida que ya has hecho te queda MAS cerca
+     que el de vuelta que empiezas, y el copiloto se pone a contar hacia atras.
+     Lo que de verdad no puede pasar es retroceder en la ruta, asi que un
+     candidato que va para atras se descarta y, entre los que van hacia
+     delante, gana el mas cercano. */
+  function coste(r){
+    if(ref===null) return 0;
+    var d=r.s-ref;
+    if(d < -ATRAS) return Infinity;
+    return Math.abs(d);
+  }
   function barre(i0,i1){
     if(i0<0)i0=0; if(i1>ROUTE.length-2)i1=ROUTE.length-2;
-    for(var i=i0;i<=i1;i++){ var r=enSeg(px,py,i); if(!mejor||r.d<mejor.d) mejor=r; }
+    for(var i=i0;i<=i1;i++){
+      var r=enSeg(px,py,i);
+      if(!mejor){ mejor=r; continue; }
+      if(r.d < mejor.d-TOL_IGUAL && coste(r)<Infinity){ mejor=r; continue; }
+      if(r.d <= mejor.d+TOL_IGUAL && coste(r) < coste(mejor)) mejor=r;
+    }
   }
   if(sRef!==null && sRef!==undefined && margen<TOTAL/2){
     var a=sRef-margen, b=sRef+margen;
@@ -621,6 +648,30 @@ function engancha(lat,lon,sRef,margen){
   }
   barre(0,ROUTE.length-2);
   return mejor;
+}
+
+/* El primer enganche es distinto a todos los demas: no hay un punto anterior
+   con el que comparar, asi que se busca en TODA la ruta. Y en una ruta de ida
+   y vuelta, el sitio donde estas parado aparece dos veces en la polilinea: en
+   la ida y en la vuelta. Si se elige el de la vuelta, el copiloto cree que ya
+   llevas casi toda la tirada hecha, y de ahi salen los "+6900 m por delante"
+   nada mas arrancar.
+
+   Entre candidatos que estan practicamente igual de cerca, se coge SIEMPRE el
+   de menos metros de ruta: al empezar se empieza. Despues ya no hace falta,
+   porque cada fix se busca en una ventana alrededor del anterior. */
+var TOL_IDA=30;        // m: por debajo de esto, dos puntos son "igual de buenos"
+function enganchaInicio(lat,lon){
+  var px=(lon-LON0)*MLON, py=(lat-LAT0)*MLAT;
+  var mejor=null, i, r;
+  for(i=0;i<=ROUTE.length-2;i++){ r=enSeg(px,py,i); if(!mejor||r.d<mejor.d) mejor=r; }
+  if(!mejor) return null;
+  var tope=mejor.d+TOL_IDA, elegido=mejor;
+  for(i=0;i<=ROUTE.length-2;i++){
+    r=enSeg(px,py,i);
+    if(r.d<=tope && r.s<elegido.s) elegido=r;
+  }
+  return elegido;
 }
 
 // ---------- mapa ----------
@@ -804,7 +855,8 @@ function onPos(pos){
   var ahora=Date.now();
   // ventana de busqueda: crece con el tiempo sin señal, por si el movil se ha dormido
   var margen = sAbs===null ? TOTAL : Math.min(TOTAL,300+(ahora-tPrev)/1000*8);
-  var r = acc<=150 ? engancha(p[0],p[1],sAct,margen) : null;
+  var r = acc>150 ? null
+        : (sAbs===null ? enganchaInicio(p[0],p[1]) : engancha(p[0],p[1],sAct,margen));
   // tu dices que como mucho vas a 5 m de la ruta: lo que pase de ahi es error del GPS
   var umbral=Math.min(120,Math.max(40,acc));
   enRuta = !!(r && r.d<=umbral);
