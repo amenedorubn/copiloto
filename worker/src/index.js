@@ -15,6 +15,7 @@
    =========================================================================== */
 
 import { rutas, ruta, conectar, vuelta } from "./strava.js";
+import { biblioteca } from "./biblioteca.js";
 
 const ORIGENES = [
   "https://amenedorubn.github.io"
@@ -57,6 +58,23 @@ export default {
       if (url.pathname === "/strava/conectar") return conectar(env, url, origen);
       if (url.pathname === "/strava/vuelta") return vuelta(env, url);
 
+      if (url.pathname.indexOf("/biblioteca") === 0) {
+        const fallo = revisaClave(req, env);
+        if (fallo) return json(fallo, fallo.codigo, origen);
+        const r = await biblioteca(env, url, req, {
+          // la biblioteca no sabe de Strava: se le pasan las dos cosas que
+          // necesita, y asi los dos modulos no se enredan
+          rutaStrava: async id =>
+            ruta(env, new URL("https://x/ruta?id=" + encodeURIComponent(id))),
+          gruposStrava: async () => {
+            const t = await rutas(env, new URL("https://x/rutas?todas=1"));
+            if (t.error) { const e = new Error(t.mensaje || t.error); e.codigo = t.codigo || 502; throw e; }
+            return t.grupos || [];
+          }
+        });
+        return json(r, r.codigo || (r.error ? 400 : 200), origen);
+      }
+
       if (url.pathname === "/rutas" || url.pathname === "/ruta") {
         const fallo = revisaClave(req, env);
         if (fallo) return json(fallo, fallo.codigo, origen);
@@ -84,7 +102,7 @@ async function conectado(env) {
 function cors(req) {
   const o = req.headers.get("Origin") || "";
   const h = {
-    "Access-Control-Allow-Methods": "GET,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "X-Copiloto-Key,Content-Type",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"

@@ -2184,7 +2184,9 @@ function estadoCopia(){
    del test del domingo, porque toca el motor GPS. */
 
 var evRuta = null, rutasDatos = null, rutaElegida = null, buscando = false;
-var miPos = null, todasDist = false, reintentoPos = false;
+var miPos = null, todasDist = false;
+var LSBIB = "copiloto.rutas.v1", MARGEN_RT = 400;   // m de margen con la distancia de hoy
+var biblio = [];
 
 function polilinea(str){                    // la codificada de Google -> puntos
   if(!str) return [];
@@ -2244,6 +2246,7 @@ function cuando(iso){
 
 function abreRutas(ev){
   evRuta=ev; rutasDatos=null; rutaElegida=null; todasDist=false;
+  biblio=leeBiblio();                 // la copia se pinta ya, antes de pedir nada
   E("appHoy").hidden=true; E("appConf").hidden=true;
   E("appRutas").hidden=false;
   E("rtFecha").textContent=(ev.plan.nombre||ev.titulo)+" · "+coma(ev.plan.distancia/1000,2)+" km";
@@ -2257,51 +2260,120 @@ function abreRutas(ev){
    lista sigue estando ahi. */
 function buscaRutas(){
   if(buscando) return;
-  buscando=true; reintentoPos=false;
-  estadoRt("mirando en Strava…");
+  buscando=true;
+  estadoRt(biblio.length? "actualizando…" : "cargando la biblioteca…");
   pintaRutas();
   pideRutas();
   pidePosicion();
 }
 
+/* El indice de la biblioteca trae la polilinea reducida de cada ruta, asi que
+   la distancia hasta cada salida se calcula AQUI en cuanto el movil sabe donde
+   esta. Ni hay que volver a preguntar al Worker ni la lista depende del GPS. */
 function pideRutas(){
   var base=conf.url.replace(/\/+$/,"");
-  var u=base+"/rutas?";
-  if(!todasDist) u+="dist="+Math.round(evRuta.plan.distancia)+"&";
-  else u+="todas=1&";
-  if(miPos) u+="lat="+miPos[0]+"&lon="+miPos[1];
-  fetch(u,{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
+  fetch(base+"/biblioteca",{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
    .then(function(r){ return r.json().then(function(j){ return {r:r,j:j}; }); })
    .then(function(x){
       if(x.r.status===401){ estadoRt("clave incorrecta",true); return; }
-      if(x.j && x.j.error){ estadoRt(x.j.mensaje||x.j.error,true); rutasDatos={grupos:[]}; return; }
-      rutasDatos=x.j;
-      estadoRt(plural(x.j.grupos.length,"ruta"));
+      if(x.j && x.j.error){ estadoRt(x.j.mensaje||x.j.error,true); return; }
+      biblio=x.j.rutas||[];
+      guardaBiblio();
    })
-   .catch(function(){ estadoRt("sin conexión con el Worker",true); })
-   .then(function(){
-      buscando=false;
-      // la ubicacion suele llegar antes que la respuesta: si es el caso, se
-      // vuelve a preguntar UNA vez para rellenar los "a cuánto estoy"
-      if(miPos && rutasDatos && !rutasDatos.conPosicion && !reintentoPos){
-        reintentoPos=true; buscando=true; pideRutas(); return;
-      }
-      pintaRutas();
-   });
+   .catch(function(){
+      // sin red vale la copia: para eso esta la biblioteca
+      if(biblio.length) estadoRt("copia guardada");
+      else estadoRt("sin conexión y sin copia",true);
+   })
+   .then(function(){ buscando=false; pintaRutas(); });
 }
 
 function pidePosicion(){
   if(!navigator.geolocation || miPos) return;
   navigator.geolocation.getCurrentPosition(function(pos){
     miPos=[pos.coords.latitude, pos.coords.longitude];
-    // si ya no hay nada en vuelo, se pregunta ahora; si lo hay, se encarga el then
-    if(!buscando && rutasDatos && !rutasDatos.conPosicion){
-      reintentoPos=true; buscando=true; pideRutas();
-    }else pintaRutas();
-  },function(){
-    // sin ubicacion la lista se queda igual; solo faltan los "a cuánto estoy"
     pintaRutas();
+  },function(){
+    pintaRutas();   // sin ubicacion la lista sigue entera, solo sin distancias
   },{ enableHighAccuracy:false, timeout:15000, maximumAge:300000 });
+}
+
+function leeBiblio(){
+  try{ var l=JSON.parse(localStorage.getItem(LSBIB)||"[]"); return Array.isArray(l)?l:[]; }
+  catch(e){ return []; }
+}
+function guardaBiblio(){ try{ localStorage.setItem(LSBIB,JSON.stringify(biblio)); }catch(e){} }
+
+function metrosEntre(a,b){
+  var la=(a[0]+b[0])/2*Math.PI/180;
+  var dx=(b[1]-a[1])*Math.PI/180*Math.cos(la)*6371000;
+  var dy=(b[0]-a[0])*Math.PI/180*6371000;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+/* De la biblioteca entera a lo que toca hoy: se filtra por distancia si no se
+   han pedido todas, se calcula a cuanto queda cada salida y se ordena como
+   antes (lo que puedo empezar andando primero, y de eso lo que mejor cuadra). */
+function rutasDelDia(){
+  var objetivo=evRuta ? evRuta.plan.distancia : 0;
+  var out=[];
+  for(var i=0;i<biblio.length;i++){
+    var r=biblio[i];
+    var dif = objetivo ? r.distancia-objetivo : null;
+    if(!todasDist && objetivo && Math.abs(dif)>MARGEN_RT) continue;
+    var salida=null;
+    if(miPos && r.linea){
+      var p=polilinea(r.linea);
+      if(p.length) salida=Math.round(metrosEntre(miPos,p[0]));
+    }
+    out.push({ id:r.id, nombre:r.nombre, origen:r.origen, distancia:r.distancia,
+               diferencia:todasDist?null:dif, desnivel:r.desnivel||0,
+               metrosPorKm: r.distancia ? Math.round((r.desnivel||0)/(r.distancia/1000)*10)/10 : 0,
+               veces:r.veces||0, ultima:r.ultima, salida:salida, linea:r.linea });
+  }
+  out.sort(function(a,b){
+    var ca=a.salida!==null&&a.salida<=1000, cb=b.salida!==null&&b.salida<=1000;
+    if(ca!==cb) return ca?-1:1;
+    if(a.diferencia===null||b.diferencia===null){
+      if(a.salida===null||b.salida===null) return b.distancia-a.distancia;
+      return a.salida-b.salida;
+    }
+    if(ca&&cb) return Math.abs(a.diferencia)-Math.abs(b.diferencia);
+    if(a.salida===null||b.salida===null) return Math.abs(a.diferencia)-Math.abs(b.diferencia);
+    return a.salida-b.salida;
+  });
+  return out;
+}
+
+function sincroniza(){
+  if(buscando) return;
+  buscando=true; estadoRt("trayendo todo de Strava…"); pintaRutas();
+  var base=conf.url.replace(/\/+$/,"");
+  fetch(base+"/biblioteca/sync",{ method:"POST",
+        headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
+   .then(function(r){ return r.json(); })
+   .then(function(j){
+      if(j && j.error){ estadoRt(j.mensaje||j.error,true); buscando=false; pintaRutas(); return; }
+      estadoRt(j.nuevas? plural(j.nuevas,"ruta")+" nueva"+(j.nuevas===1?"":"s") : "sin novedades");
+      pideRutas();
+   })
+   .catch(function(){ estadoRt("sin conexión con el Worker",true); buscando=false; pintaRutas(); });
+}
+
+function subeGpx(fichero){
+  if(!fichero) return;
+  buscando=true; estadoRt("subiendo "+fichero.name+"…"); pintaRutas();
+  fichero.text().then(function(txt){
+    var base=conf.url.replace(/\/+$/,"");
+    var nom=fichero.name.replace(/\.gpx$/i,"");
+    return fetch(base+"/biblioteca/gpx?nombre="+encodeURIComponent(nom),
+      { method:"POST", headers:{"X-Copiloto-Key":conf.key}, body:txt, cache:"no-store" })
+      .then(function(r){ return r.json(); });
+  }).then(function(j){
+    if(j && j.error){ estadoRt(j.mensaje||j.error,true); buscando=false; pintaRutas(); return; }
+    estadoRt("«"+j.ruta.nombre+"» añadida");
+    pideRutas();
+  }).catch(function(){ estadoRt("no se ha podido subir",true); buscando=false; pintaRutas(); });
 }
 
 /* El motor espera PLAN como una fila por kilometro:
@@ -2340,7 +2412,7 @@ function empiezaRuta(){
   E("rtGo").disabled=true;
   estadoRt("cargando la ruta entera…");
   var base=conf.url.replace(/\/+$/,"");
-  fetch(base+"/ruta?id="+encodeURIComponent(g.id),
+  fetch(base+"/biblioteca/ruta?id="+encodeURIComponent(g.id),
         { headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
    .then(function(r){ return r.json(); })
    .then(function(j){
@@ -2362,8 +2434,8 @@ function estadoRt(t,mal){ var e=E("rtEstado"); e.textContent=t; e.className=mal?
 function pintaRutas(){
   var cu=E("rtCuerpo"); cu.innerHTML="";
   pinRtGo();
-  if(buscando){ cu.appendChild(vacio("Buscando rutas…")); return; }
-  if(!rutasDatos){ cu.appendChild(vacio("Pulsa «Buscar otra vez» para mirar en Strava.")); return; }
+  if(buscando && !biblio.length){ cu.appendChild(vacio("Cargando la biblioteca…")); return; }
+  rutasDatos={ grupos:rutasDelDia(), miradas:biblio.length };
   // barra de arriba: filtro de distancia y aviso de si hay posicion
   var barra=document.createElement("div");
   barra.className="rtBarra";
@@ -2373,6 +2445,20 @@ function pintaRutas(){
                                : "Cerca de "+coma(evRuta.plan.distancia/1000,1)+" km";
   chip.addEventListener("click",function(){ todasDist=!todasDist; buscaRutas(); });
   barra.appendChild(chip);
+  var sy=document.createElement("button");
+  sy.className="rtChip"; sy.textContent="↻ Strava";
+  sy.addEventListener("click",sincroniza);
+  barra.appendChild(sy);
+
+  var lb=document.createElement("label");
+  lb.className="rtChip"; lb.textContent="+ GPX";
+  var inp=document.createElement("input");
+  inp.type="file"; inp.accept=".gpx,application/gpx+xml,text/xml";
+  inp.style.display="none";
+  inp.addEventListener("change",function(){ subeGpx(this.files&&this.files[0]); this.value=""; });
+  lb.appendChild(inp);
+  barra.appendChild(lb);
+
   if(!miPos){
     var av=document.createElement("span");
     av.className="rtAviso";
@@ -2382,11 +2468,14 @@ function pintaRutas(){
   cu.appendChild(barra);
 
   if(!rutasDatos.grupos || !rutasDatos.grupos.length){
-    cu.appendChild(vacio(todasDist
-      ? "No hay ninguna carrera con trazado en tu Strava.\n\nMiradas "+(rutasDatos.miradas||0)+" actividades."
-      : "Ninguna ruta tuya mide "+coma(evRuta.plan.distancia/1000,1)+" km.\n\n"+
-        "Miradas "+(rutasDatos.miradas||0)+" actividades.\n"+
-        "Toca «Todas las distancias» para verlas todas."));
+    cu.appendChild(vacio(!biblio.length
+      ? "La biblioteca está vacía.\n\nToca «↻ Strava» para traerte tus rutas, "+
+        "o «+ GPX» para subir una de plotaroute."
+      : (todasDist
+        ? "No hay ninguna ruta guardada."
+        : "Ninguna de tus "+plural(biblio.length,"ruta")+" mide "+
+          coma(evRuta.plan.distancia/1000,1)+" km (±"+MARGEN_RT+" m).\n\n"+
+          "Toca «Todas las distancias» para verlas todas.")));
     return;
   }
   rutasDatos.grupos.forEach(function(g){
@@ -2402,7 +2491,7 @@ function pintaRutas(){
         (lejos? '<div class="rtLejos'+(g.salida<50?" aqui":"")+'">'+esc(lejos)+'</div>' : '')+
         '<div class="rtSub">'+esc(plural(g.veces,"vez").replace("vezs","veces"))+
           ' · última '+esc(cuando(g.ultima))+' · '+esc(g.metrosPorKm)+' m/km</div>'+
-        '<div class="rtNom">'+esc(g.nombre)+'</div>'+
+        '<div class="rtNom">'+(g.origen==="gpx"?"\u2913 ":"")+esc(g.nombre)+'</div>'+
       '</div>';
     d.addEventListener("click",function(){
       rutaElegida = (rutaElegida===g.id? null : g.id);
