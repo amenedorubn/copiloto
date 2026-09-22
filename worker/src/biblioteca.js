@@ -110,6 +110,21 @@ export function leeGpx(texto) {
   return { pts, ele };
 }
 
+/* El nombre de la ruta es el <name> de dentro del <trk>, NO el primer <name>
+   del fichero: plotaroute mete antes un <wpt> por cada indicacion del camino
+   ("Gira a la izquierda...", "FINISH"), cada uno con su propio <name>. Cogiendo
+   el primero, cuatro rutas entraban llamandose "FINISH", "FINISH", "Gira a la"
+   y "Gira fuert". */
+function nombreDe(texto) {
+  const dentroDelTrk = texto.match(/<trk>[\s\S]*?<name>\s*([^<]{1,80})\s*<\/name>/);
+  if (dentroDelTrk) return dentroDelTrk[1].trim();
+  const enMetadata = texto.match(/<metadata>[\s\S]*?<name>\s*([^<]{1,80})\s*<\/name>/);
+  if (enMetadata) return enMetadata[1].trim();
+  const enRte = texto.match(/<rte>[\s\S]*?<name>\s*([^<]{1,80})\s*<\/name>/);
+  if (enRte) return enRte[1].trim();
+  return "";
+}
+
 async function subeGpx(env, url, req) {
   if (!req || req.method !== "POST")
     return { error: "metodo", codigo: 405, mensaje: "El GPX se sube con POST." };
@@ -122,14 +137,7 @@ async function subeGpx(env, url, req) {
     return { error: "sin_puntos", codigo: 422,
       mensaje: "No he encontrado puntos en ese GPX. ¿Seguro que es un GPX de ruta?" };
 
-  /* El nombre bueno es el que lleva dentro el GPX: es el que le pusiste a la
-     ruta en plotaroute. El del fichero suele ser una descarga cualquiera
-     ("ruta.gpx", "route(3).gpx"), asi que solo se usa si el otro no esta. */
-  let nombre = "";
-  const mn = texto.match(/<name>\s*([^<]{1,80})\s*<\/name>/);
-  if (mn) nombre = mn[1].trim();
-  if (!nombre) nombre = (url.searchParams.get("nombre") || "").trim();
-  if (!nombre) nombre = "Ruta importada";
+  const nombre = nombreDe(texto) || (url.searchParams.get("nombre") || "").trim() || "Ruta importada";
 
   const metros = largoDe(pts);
   const ficha = {
