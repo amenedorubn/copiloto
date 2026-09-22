@@ -4,7 +4,7 @@
    Secretos (panel de Cloudflare, nunca en el repo):
      STRAVA_CLIENT_ID
      STRAVA_CLIENT_SECRET
-     STRAVA_REFRESH_TOKEN
+   El refresh token NO se mete a mano: sale de /strava/conectar y se guarda en KV.
 
    GET /rutas?lat=&lon=&dist=&radio=&margen=
      lat,lon  donde estas ahora
@@ -24,6 +24,98 @@ const MUESTRAS = 80;          // puntos que se comparan al medir el parecido
 const PAGINAS = 4;            // paginas de 100 actividades que se miran
 const R_TIERRA = 6371000;
 
+/* ------------------------ conectar con Strava ------------------------
+   Sin terminal: el canje del codigo por el refresh token lo hace el Worker.
+   Lo unico que hay que meter a mano son CLIENT_ID y CLIENT_SECRET en el panel
+   de Cloudflare; el refresh token no lo llega a ver nadie.
+
+     GET /strava/conectar?k=APP_KEY   -> manda a Strava a pedir permiso
+     GET /strava/vuelta?code=...      -> Strava vuelve aqui; se canjea y se guarda
+
+   El "state" impide que la vuelta la dispare cualquiera: se genera al empezar,
+   se guarda en KV con caducidad y se comprueba al volver.
+   -------------------------------------------------------------------- */
+
+const SCOPE = "activity:read_all";     // con "read" a secas Strava no da las actividades
+
+export async function conectar(env, url, origen) {
+  if (!env.STRAVA_CLIENT_ID || !env.STRAVA_CLIENT_SECRET)
+    return pagina("Faltan STRAVA_CLIENT_ID y STRAVA_CLIENT_SECRET en el panel de Cloudflare.", 503);
+  if (!env.COPILOTO)
+    return pagina("Falta el almacen KV. En Cloudflare: Storage &amp; Databases \u2192 KV \u2192 crear " +
+                  "namespace, y en el Worker Settings \u2192 Bindings \u2192 KV namespace con nombre COPILOTO.", 503);
+  if (!env.APP_KEY || url.searchParams.get("k") !== env.APP_KEY)
+    return pagina("Clave incorrecta.", 401);
+
+  const state = crypto.randomUUID();
+  await env.COPILOTO.put("oauth_state_" + state, "1", { expirationTtl: 600 });
+
+  const vuelta = url.origin + "/strava/vuelta";
+  const ir = "https://www.strava.com/oauth/authorize" +
+    "?client_id=" + encodeURIComponent(env.STRAVA_CLIENT_ID) +
+    "&response_type=code" +
+    "&redirect_uri=" + encodeURIComponent(vuelta) +
+    "&approval_prompt=force" +
+    "&scope=" + encodeURIComponent(SCOPE) +
+    "&state=" + state;
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: ir,
+      // que la clave no viaje a Strava en la cabecera Referer
+      "Referrer-Policy": "no-referrer",
+      "Cache-Control": "no-store"
+    }
+  });
+}
+
+export async function vuelta(env, url) {
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const error = url.searchParams.get("error");
+  if (error) return pagina("Strava ha dicho que no: " + error, 400);
+  if (!code || !state) return pagina("Strava no ha devuelto el codigo.", 400);
+  if (!env.COPILOTO) return pagina("Falta el almacen KV.", 503);
+
+  const vale = await env.COPILOTO.get("oauth_state_" + state);
+  if (!vale) return pagina("Esta vuelta no es de una conexion que hayas empezado, o ha caducado. Vuelve a empezar.", 403);
+  await env.COPILOTO.delete("oauth_state_" + state);
+
+  const r = await fetch("https://www.strava.com/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: env.STRAVA_CLIENT_ID,
+      client_secret: env.STRAVA_CLIENT_SECRET,
+      code,
+      grant_type: "authorization_code"
+    })
+  });
+  if (!r.ok) return pagina("Strava no ha aceptado el codigo (" + r.status + "). Prueba otra vez.", 502);
+  const j = await r.json();
+  if (!j.refresh_token) return pagina("Strava no ha devuelto refresh token.", 502);
+
+  const dado = String(j.scope || "");
+  if (dado.indexOf("activity:read_all") < 0)
+    return pagina("Has dado permiso de " + (dado || "solo lectura basica") +
+      ", y hace falta activity:read_all. Vuelve a empezar y acepta la casilla de ver todas tus actividades.", 400);
+
+  await env.COPILOTO.put("strava_refresh", j.refresh_token);
+  cache = { token: j.access_token, caduca: (j.expires_at || 0) * 1000 };
+  return pagina("Strava conectado. Permisos: " + dado + ". Ya puedes cerrar esta pagina.", 200);
+}
+
+function pagina(texto, estado) {
+  return new Response(
+    '<!doctype html><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<body style="margin:0;background:#111418;color:#e8ecf1;font:600 18px/1.5 system-ui,sans-serif;' +
+    'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center">' +
+    '<div style="max-width:520px">' + (estado === 200 ? "\u2705 " : "\u26a0\ufe0f ") + texto + '</div></body>',
+    { status: estado, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
+}
+
 /* --------------------------- token de acceso --------------------------- */
 /* El token de Strava dura 6 h. Se guarda en el isolate para no pedir uno
    nuevo en cada peticion, y en KV si hay namespace, porque Strava puede
@@ -35,12 +127,15 @@ async function accessToken(env) {
   const ahora = Date.now();
   if (cache.token && cache.caduca > ahora + 60000) return cache.token;
 
-  let refresh = env.STRAVA_REFRESH_TOKEN;
+  // el token guardado al conectar manda; el secreto queda como respaldo
+  let refresh = null;
   if (env.COPILOTO) {
-    try {
-      const guardado = await env.COPILOTO.get("strava_refresh");
-      if (guardado) refresh = guardado;
-    } catch (e) { /* sin KV se sigue con el secreto */ }
+    try { refresh = await env.COPILOTO.get("strava_refresh"); } catch (e) {}
+  }
+  if (!refresh) refresh = env.STRAVA_REFRESH_TOKEN;
+  if (!refresh) {
+    const e = new Error("Strava no esta conectado todavia. Abre /strava/conectar?k=TU_CLAVE una vez.");
+    e.codigo = 503; throw e;
   }
 
   const r = await fetch("https://www.strava.com/oauth/token", {
@@ -63,7 +158,7 @@ async function accessToken(env) {
   const j = await r.json();
   cache = { token: j.access_token, caduca: (j.expires_at || 0) * 1000 };
   // Strava rota el refresh token: si cambia y hay KV, se guarda el nuevo
-  if (j.refresh_token && j.refresh_token !== refresh && env.COPILOTO) {
+  if (j.refresh_token && j.refresh_token !== refresh && env.COPILOTO) {   // Strava lo rota
     try { await env.COPILOTO.put("strava_refresh", j.refresh_token); } catch (e) {}
   }
   return cache.token;
@@ -200,9 +295,9 @@ export async function rutas(env, url) {
     return { error: "sin_posicion", mensaje: "Faltan lat y lon." };
   if (!isFinite(objetivo) || objetivo <= 0)
     return { error: "sin_distancia", mensaje: "Falta la distancia objetivo en metros." };
-  if (!env.STRAVA_CLIENT_ID || !env.STRAVA_CLIENT_SECRET || !env.STRAVA_REFRESH_TOKEN)
+  if (!env.STRAVA_CLIENT_ID || !env.STRAVA_CLIENT_SECRET)
     return { error: "sin_configurar", codigo: 503,
-      mensaje: "Faltan los secretos de Strava en el panel de Cloudflare." };
+      mensaje: "Faltan STRAVA_CLIENT_ID y STRAVA_CLIENT_SECRET en el panel de Cloudflare." };
 
   const brutas = await actividades(env);
 

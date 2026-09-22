@@ -124,79 +124,82 @@ El workflow avisa por sí solo: al terminar comprueba `/salud` y deja un
 
 # Fase 2 · Strava
 
-Tres secretos más, en el mismo sitio que los otros dos
-(**Cloudflare → Workers → `copiloto-api` → Settings → Variables and Secrets**,
-tipo **Secret**):
+Todo desde el navegador. **El refresh token no se toca a mano**: lo canjea y lo
+guarda el propio Worker.
 
-| Nombre exacto | Qué es |
-|---|---|
-| `STRAVA_CLIENT_ID` | Client ID de la app de Strava |
-| `STRAVA_CLIENT_SECRET` | Client Secret de la app de Strava |
-| `STRAVA_REFRESH_TOKEN` | Refresh token con permiso de lectura de actividades |
+Si ya tienes una app en Strava, **no la borres**: vale igual. Solo hay que
+cambiarle el dominio de retorno y volver a autorizarla con el permiso bueno.
 
-## 1. Crear la app en Strava
+## 1. Strava: el dominio de retorno
 
 ```
-strava.com/settings/api
+strava.com/settings/api  →  Editar
 ```
 
 | Campo | Qué poner |
 |---|---|
-| Application Name | Copiloto |
-| Category | Training |
-| Club | (vacío) |
-| Website | https://amenedorubn.github.io/copiloto/ |
-| Authorization Callback Domain | **localhost** |
+| Authorization Callback Domain | `copiloto-api.amenedorubn.workers.dev` |
 
-Al crear la app salen el **Client ID** y el **Client Secret**. El callback en
-`localhost` es a propósito: la autorización se hace una sola vez y nadie tiene
-que levantar un servidor.
+Apunta también el **ID de cliente** y dale a **Mostrar** en *Secreto de cliente*.
 
-## 2. Autorizar una vez y sacar el refresh token
+## 2. Cloudflare: el almacén KV
 
-Abre esta dirección en el navegador, con tu Client ID puesto:
+Hace falta para guardar el token. Todo con clics:
 
 ```
-https://www.strava.com/oauth/authorize?client_id=TU_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=activity:read_all
+dash.cloudflare.com → Storage & Databases → KV → Create namespace
+   nombre: copiloto
+
+Workers & Pages → copiloto-api → Settings → Bindings → Add → KV namespace
+   Variable name: COPILOTO
+   KV namespace:  copiloto
 ```
 
-Acepta. El navegador te manda a una página que no carga (normal, no hay nada en
-localhost), pero **en la barra de direcciones está el código**:
+⚠️ El *Variable name* tiene que ser **`COPILOTO`** en mayúsculas.
+
+## 3. Cloudflare: dos secretos
+
+**Settings → Variables and Secrets → + Add**, tipo **Secret**:
+
+| Nombre exacto | Valor |
+|---|---|
+| `STRAVA_CLIENT_ID` | el ID de cliente del paso 1 |
+| `STRAVA_CLIENT_SECRET` | el secreto de cliente del paso 1 |
+
+**No hay un tercer secreto.** El refresh token sale solo en el paso 4.
+
+## 4. Conectar, desde el móvil
+
+Abre esta dirección con tu `APP_KEY`:
 
 ```
-http://localhost/?state=&code=ESTO_DE_AQUI&scope=read,activity:read_all
+https://copiloto-api.amenedorubn.workers.dev/strava/conectar?k=TU_APP_KEY
 ```
 
-Cambia ese código por el refresh token:
+Te lleva a Strava. **Acepta dejando marcada la casilla de ver todas tus
+actividades** — si no, el Worker lo detecta y te dice que repitas. Al aceptar
+vuelves solo y verás *"Strava conectado"*.
 
-```bash
-curl -X POST https://www.strava.com/oauth/token \
-  -d client_id=TU_CLIENT_ID \
-  -d client_secret=TU_CLIENT_SECRET \
-  -d code=EL_CODIGO_DE_LA_BARRA \
-  -d grant_type=authorization_code
-```
-
-En la respuesta está `refresh_token`. Ese es el valor de `STRAVA_REFRESH_TOKEN`.
-
-⚠️ El código de la barra **caduca en unos minutos y solo sirve una vez**. Si
-falla, repite el paso de autorizar.
-
-⚠️ El scope tiene que ser `activity:read_all`. Con `read` a secas la API no
-devuelve las actividades.
-
-## 3. Comprobar
+## 5. Comprobar
 
 ```
 https://copiloto-api.amenedorubn.workers.dev/salud
 ```
 
-Debe poner `"STRAVA": true`.
+```json
+{"secretos":{"APP_KEY":true,"ICAL_URL":true,
+             "STRAVA_APP":true,"KV":true,"STRAVA_CONECTADO":true}}
+```
 
-## Nota sobre el refresh token
+## Si algo falla
 
-Strava puede rotarlo. El Worker lo guarda en KV si existe un namespace llamado
-`COPILOTO`; sin KV funciona igual, pero si algún día Strava lo rota habrá que
-repetir el paso 2. Para evitarlo, en Cloudflare: **Storage & Databases → KV →
-Create namespace `copiloto`**, y luego en el Worker **Settings → Bindings → Add
-→ KV namespace**, con nombre de variable `COPILOTO`.
+| Qué dice | Qué pasa |
+|---|---|
+| *Falta el almacén KV* | Paso 2 sin hacer, o el binding no se llama `COPILOTO` |
+| *Faltan STRAVA_CLIENT_ID y...* | Paso 3 sin hacer |
+| *Clave incorrecta* | La `k=` de la URL no es tu `APP_KEY` |
+| *Has dado permiso de read* | Repite el paso 4 marcando la casilla de todas las actividades |
+| Strava dice que el dominio no vale | Paso 1: el callback domain tiene que ser el del Worker, sin `https://` |
+
+El token se guarda en KV, así que Strava puede rotarlo y no hay que volver a
+hacer nada.

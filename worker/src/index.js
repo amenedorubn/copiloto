@@ -14,7 +14,7 @@
      GET /agenda?desde=&hasta=       con clave. Entrenos del rango.
    =========================================================================== */
 
-import { rutas } from "./strava.js";
+import { rutas, conectar, vuelta } from "./strava.js";
 
 const ORIGENES = [
   "https://amenedorubn.github.io"
@@ -39,7 +39,9 @@ export default {
           secretos: {
             APP_KEY: !!env.APP_KEY,
             ICAL_URL: !!env.ICAL_URL,
-            STRAVA: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET && env.STRAVA_REFRESH_TOKEN)
+            STRAVA_APP: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET),
+            KV: !!env.COPILOTO,
+            STRAVA_CONECTADO: await conectado(env)
           }
         }, 200, origen);
       }
@@ -49,6 +51,11 @@ export default {
         if (fallo) return json(fallo, fallo.codigo, origen);
         return json(await agenda(env, url), 200, origen);
       }
+
+      // estas dos las abre el navegador, no la app: no llevan cabecera.
+      // /strava/conectar comprueba la clave por query; /strava/vuelta, por el state.
+      if (url.pathname === "/strava/conectar") return conectar(env, url, origen);
+      if (url.pathname === "/strava/vuelta") return vuelta(env, url);
 
       if (url.pathname === "/rutas") {
         const fallo = revisaClave(req, env);
@@ -65,6 +72,12 @@ export default {
     }
   }
 };
+
+async function conectado(env) {
+  if (env.STRAVA_REFRESH_TOKEN) return true;
+  if (!env.COPILOTO) return false;
+  try { return !!(await env.COPILOTO.get("strava_refresh")); } catch (e) { return false; }
+}
 
 /* ------------------------------- plomeria ------------------------------- */
 
