@@ -136,6 +136,11 @@
     border-radius:15px;border:1px solid #fff;background:rgba(255,255,255,.95);color:#123}
   .tjGo:active{background:#fff}
   .tjNo{margin-top:11px;font-size:13px;font-weight:800;opacity:.8;letter-spacing:.04em;text-transform:uppercase}
+  .tjAuto{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;letter-spacing:.05em;
+    text-transform:uppercase;opacity:.75;background:rgba(0,0,0,.28);border-radius:20px;padding:3px 9px}
+  .flCh{font-size:22px;color:var(--dim);font-weight:700;padding:0 2px}
+  .tjVer{display:block;width:100%;margin-top:8px;min-height:48px;font-size:14px;font-weight:800;
+    border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.22);color:#fff}
   .vacio{text-align:center;color:var(--dim);font-size:16px;font-weight:700;padding:34px 10px;line-height:1.5}
 
   /* lista de dias */
@@ -144,7 +149,9 @@
     font-weight:800;margin:0 2px 6px}
   .dia.hoy .diaT{color:#fff}
   .fl{display:flex;align-items:center;gap:10px;background:#1b1f25;border:1px solid var(--line);
-    border-left-width:5px;border-radius:12px;padding:10px 12px;margin-bottom:6px}
+    border-left-width:5px;border-radius:12px;padding:10px 12px;margin-bottom:6px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .fl:active{background:#262c34}
   .fl.cinta{border-left-color:#E24B4A}
   .fl.fuera{border-left-color:#3B8BDD}
   .fl.gym{border-left-color:#7A4BD6}
@@ -1655,6 +1662,7 @@ var VISTAS  = ["hoy","semana","mes"];
 
 var conf = leeConf(), datos = leeCache(), vista = "hoy", bajando = false;
 var porQR = false;                     // la clave acaba de entrar por el fragmento
+var evSel = null, vistaAnt = "hoy";    // entreno abierto en la ficha de detalle
 
 /* --------------------------- la clave por QR --------------------------- */
 /* La clave y la direccion pueden entrar por el fragmento de la URL:
@@ -1720,6 +1728,8 @@ function fechaCorta(iso){
 /* ------------------------------ formatos ------------------------------ */
 function coma(x,n){ return x.toFixed(n).replace(".",","); }
 function plural(n,uno){ return n+" "+uno+(n===1?"":"s"); }
+function MS(s){ s=Math.max(0,Math.round(s));
+  return s<60 ? s+" s" : Math.floor(s/60)+":"+dos(s%60); }
 function HMS(s){ s=Math.max(0,Math.round(s));
   var h=Math.floor(s/3600), m=Math.floor(s%3600/60);
   return (h? h+":"+dos(m) : ""+m)+":"+dos(s%60); }
@@ -1750,8 +1760,8 @@ function detalle(plan){
   if(plan.tipo==="gym")
     return plan.ejercicios.map(function(e){
       return e.nombre+" · "+e.series+"×"+(e.reps==null?"?":e.reps)+
-        (e.peso==null? "" : " · "+coma(e.peso,1).replace(",0","")+" kg")+
-        " · descanso "+e.descanso+" s"+(e.nota? " · "+e.nota : "");
+        (e.peso==null? "" : " · "+coma(e.peso,1).replace(",0","")+" "+(e.unidad||"kg"))+
+        " · descanso "+MS(e.descanso)+(e.nota? " · "+e.nota : "");
     }).join("\n");
   return "";
 }
@@ -1767,7 +1777,7 @@ function sesionDe(ev){
 /* -------------------------------- pintar -------------------------------- */
 function clase(ev){ return ev.plan ? ev.plan.tipo : "libre"; }
 
-function tarjeta(ev){
+function tarjeta(ev,compacta){
   var d=document.createElement("div");
   d.className="tj "+clase(ev);
   var h="";
@@ -1776,25 +1786,45 @@ function tarjeta(ev){
      '<span class="tjHora">'+esc(ev.hora||"todo el día")+'</span></div>';
   h+='<div class="tjNom">'+esc(ev.plan? (ev.plan.nombre||ev.titulo) : ev.titulo)+'</div>';
   if(ev.plan) h+='<div class="tjDet">'+esc(resumen(ev.plan))+'</div>';
-  var det=detalle(ev.plan);
-  if(det) h+='<div class="tjTexto">'+esc(det)+'</div>';
-  if(ev.texto) h+='<div class="tjTexto">'+esc(ev.texto)+'</div>';
+  if(ev.plan && ev.plan.auto)
+    h+='<div class="tjAuto">leído del texto del evento</div>';
   if(ev.error) h+='<div class="tjErr">El bloque #copiloto de este evento no se puede leer.<br>'+
                   esc(ev.error)+'</div>';
   d.innerHTML=h;
 
+  // EL BOTON VA AQUI, antes del texto largo: en la tarjeta de HOY tiene que
+  // verse sin hacer scroll. El evento trae media pagina de notas y si el
+  // boton va al final, a las 7 de la mañana no lo encuentras.
   if(ev.plan && ev.plan.tipo==="cinta"){
     var b=document.createElement("button");
     b.className="tjGo"; b.textContent="EMPEZAR";
     b.addEventListener("click",function(){ window.abreCinta(sesionDe(ev)); });
     d.appendChild(b);
   }else if(ev.plan && ev.plan.tipo==="fuera"){
-    d.appendChild(nota("El copiloto de calle llega en la fase 2. De momento, el plan es para leerlo."));
+    d.appendChild(nota("El copiloto de calle llega en la fase 2."));
   }else if(ev.plan && ev.plan.tipo==="gym"){
-    d.appendChild(nota("El copiloto de gimnasio llega en la fase 3. De momento, el plan es para leerlo."));
+    d.appendChild(nota("El copiloto de gimnasio llega en la fase 3."));
+  }
+
+  // el plan ya ordenado
+  var det=detalle(ev.plan);
+  if(det) d.appendChild(trozo("tjTexto",det));
+
+  // y por ultimo el texto tal cual lo escribiste
+  if(ev.texto){
+    if(compacta && ev.texto.length>200){
+      d.appendChild(trozo("tjTexto",ev.texto.slice(0,200).replace(/\s+\S*$/,"")+"…"));
+      var v=document.createElement("button");
+      v.className="tjVer"; v.textContent="Ver el evento entero \u203A";
+      v.addEventListener("click",function(){ evSel=ev; vistaAnt=vista; vista="detalle"; pinta(); });
+      d.appendChild(v);
+    }else{
+      d.appendChild(trozo("tjTexto",ev.texto));
+    }
   }
   return d;
 }
+function trozo(cls,txt){ var e=document.createElement("div"); e.className=cls; e.textContent=txt; return e; }
 function nota(txt){ var n=document.createElement("div"); n.className="tjNo"; n.textContent=txt; return n; }
 
 function fila(ev){
@@ -1808,9 +1838,15 @@ function fila(ev){
     var b=document.createElement("button");
     b.className="hBtn"; b.style.minHeight="46px"; b.style.padding="0 14px"; b.style.fontSize="14px";
     b.textContent="Abrir";
-    b.addEventListener("click",function(){ window.abreCinta(sesionDe(ev)); });
+    b.addEventListener("click",function(e){ e.stopPropagation(); window.abreCinta(sesionDe(ev)); });
     f.appendChild(b);
+  }else{
+    var ch=document.createElement("span");
+    ch.className="flCh"; ch.textContent="\u203A";
+    f.appendChild(ch);
   }
+  // tocar la fila abre la ficha entera del entreno
+  f.addEventListener("click",function(){ evSel=ev; vistaAnt=vista; vista="detalle"; pinta(); });
   return f;
 }
 
@@ -1826,6 +1862,15 @@ function eventosDe(iso){
 
 function pinta(){
   var cu=E("hCuerpo"); cu.innerHTML="";
+
+  if(vista==="detalle" && evSel){
+    E("hTitulo").textContent="Entreno";
+    E("hVista").textContent="Volver";
+    E("hFecha").textContent=fechaCorta(evSel.fecha)+(evSel.hora? " · "+evSel.hora : "");
+    cu.appendChild(tarjeta(evSel));
+    return;
+  }
+
   E("hTitulo").textContent = vista==="hoy" ? "Hoy" : (vista==="semana" ? "Esta semana" : "Este mes");
   E("hVista").textContent  = vista==="hoy" ? "Semana" : (vista==="semana" ? "Mes" : "Hoy");
   E("hFecha").textContent  = fechaLarga(hoyISO());
@@ -1844,7 +1889,7 @@ function pinta(){
     if(!hoy.length){
       cu.appendChild(vacio("Hoy no toca nada en el calendario.\nPuedes abrir un modo suelto desde «Modos»."));
     }else{
-      cu.appendChild(tarjeta(hoy[0]));
+      cu.appendChild(tarjeta(hoy[0],true));
       for(var i=1;i<hoy.length;i++) cu.appendChild(fila(hoy[i]));
     }
     // lo siguiente que viene, para no tener que cambiar de vista
@@ -1935,6 +1980,7 @@ function abreConf(){
 }
 
 E("hVista").addEventListener("click",function(){
+  if(vista==="detalle"){ vista=vistaAnt; evSel=null; pinta(); return; }
   vista=VISTAS[(VISTAS.indexOf(vista)+1)%VISTAS.length]; pinta();
 });
 E("hModos").addEventListener("click",function(){ window.vuelveAlSelector(); });

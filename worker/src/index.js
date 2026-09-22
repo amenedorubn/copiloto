@@ -364,7 +364,8 @@ function montaEvento(ev, t, todoElDia, zona) {
   const pt = partes(t, zona);
   const titulo = p.SUMMARY ? desescapa(p.SUMMARY.val).trim() : "(sin titulo)";
   const desc = p.DESCRIPTION ? desescapa(p.DESCRIPTION.val) : "";
-  const { plan, error, texto } = extraePlan(desc);
+  const lugar = p.LOCATION ? desescapa(p.LOCATION.val).trim() : "";
+  const { plan, error, texto } = extraePlan(desc, titulo, lugar);
 
   const e = {
     uid: (p.UID ? p.UID.val : "") + "@" + t,
@@ -373,7 +374,7 @@ function montaEvento(ev, t, todoElDia, zona) {
     inicio: new Date(t).toISOString(),
     titulo,
     texto: texto.trim(),
-    lugar: p.LOCATION ? desescapa(p.LOCATION.val).trim() : "",
+    lugar: lugar,
     plan: plan || null
   };
   if (error) e.error = error;
@@ -387,7 +388,7 @@ function montaEvento(ev, t, todoElDia, zona) {
        #fin
    Todo lo que quede fuera del bloque se devuelve como texto suelto.          */
 
-function extraePlan(desc) {
+function extraePlan(desc, titulo, lugar) {
   // Google a veces mete la descripcion con etiquetas y entidades HTML
   const limpio = desc
     .replace(/<br\s*\/?>/gi, "\n")
@@ -401,7 +402,15 @@ function extraePlan(desc) {
     .replace(/&amp;/gi, "&");
 
   const m = limpio.match(/^[ \t]*#copiloto[ \t]*$([\s\S]*?)^[ \t]*#fin[ \t]*$/mi);
-  if (!m) return { plan: null, error: null, texto: limpio };
+  if (!m) {
+    // Sin bloque explicito: se lee el evento tal y como esta escrito. Las
+    // tablas de cinta, gimnasio y ritmos por km tienen formato fijo, asi que
+    // no hace falta duplicar el entreno en JSON para que el copiloto funcione.
+    let auto = null;
+    try { auto = autoPlan(limpio, titulo || "", lugar || ""); } catch (e) { auto = null; }
+    if (auto) auto.auto = true;
+    return { plan: auto, error: null, texto: limpio };
+  }
 
   const texto = (limpio.slice(0, m.index) + limpio.slice(m.index + m[0].length));
   let crudo;
@@ -465,8 +474,8 @@ function normFuera(p) {
 
   const km = (Array.isArray(p.km) ? p.km : []).map((k, i) => {
     const o = {
-      desde: Math.round(num(k.desde, "Tramo " + (i + 1) + ': falta "desde".')),
-      hasta: Math.round(num(k.hasta, "Tramo " + (i + 1) + ': falta "hasta".')),
+      desde: red1(num(k.desde, "Tramo " + (i + 1) + ': falta "desde".')),
+      hasta: red1(num(k.hasta, "Tramo " + (i + 1) + ': falta "hasta".')),
       ritmo: ritmoSeg(k.ritmo, "Tramo " + (i + 1))
     };
     if (o.hasta <= o.desde) fallo("Tramo " + (i + 1) + ': "hasta" tiene que ser mayor que "desde".');
@@ -507,10 +516,17 @@ function normGym(p) {
       series: Math.round(num(e.series, "Ejercicio " + (i + 1) + ': falta "series".')),
       reps: e.reps === undefined ? null : (typeof e.reps === "number" ? e.reps : String(e.reps)),
       peso: e.peso === undefined || e.peso === null ? null : num(e.peso, ""),
+      unidad: e.unidad === "lbs" ? "lbs" : "kg",
       descanso: Math.round(e.descanso === undefined ? 90 : num(e.descanso, ""))
     };
     if (o.series <= 0) fallo("Ejercicio " + (i + 1) + ': "series" tiene que ser mayor que 0.');
     if (e.nota) o.nota = String(e.nota);
+    // detalle serie a serie cuando el evento lo trae: la fase 3 lo necesitara
+    if (Array.isArray(e.detalle) && e.detalle.length)
+      o.detalle = e.detalle.map(d => ({
+        peso: d.peso == null ? null : num(d.peso, ""),
+        reps: d.reps == null ? null : (typeof d.reps === "number" ? d.reps : String(d.reps))
+      }));
     return o;
   });
 
@@ -550,3 +566,211 @@ function ritmoSeg(v, donde) {
 }
 
 function fallo(msg) { throw new Error(msg); }
+function red1(x) { return Math.round(x * 10) / 10; }
+
+
+/* ===========================================================================
+   LECTOR DE PROSA
+   ---------------------------------------------------------------------------
+   Los eventos del calendario estan escritos para leerlos, no en JSON. Pero las
+   tablas que llevan dentro tienen formato fijo, asi que se pueden leer tal
+   cual y montar el mismo plan que montaria un bloque #copiloto.
+
+   Se intenta en este orden, de mas concreto a menos: cinta, gimnasio, calle.
+   Si ninguno cuadra, el evento se queda como texto y no pasa nada: era un
+   viaje, un descanso o un recordatorio.
+
+   El bloque #copiloto, cuando existe, manda siempre sobre esto.
+   =========================================================================== */
+
+function autoPlan(txt, titulo, lugar) {
+  const ctx = (titulo || "") + " \n " + (lugar || "");
+  return leeCinta(txt, ctx, titulo) || leeGym(txt, ctx, titulo) || leeFuera(txt, ctx, titulo);
+}
+
+// quita los emojis y los adornos del principio de un titulo
+function limpiaTitulo(t) {
+  return String(t || "")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{20E3}\u{2B00}-\u{2BFF}]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function mmss(m, s) { return (+m) * 60 + (+s); }
+function dec(x) { return Number(String(x).replace(",", ".")); }
+
+/* ------------------------------- cinta ------------------------------- */
+/* Lineas del tipo:
+     Calentar · 9,0 km/h (6'40") · 10:00 · acum 10:00 / 1,5 km
+     Serie 2 · 12,4 km/h · 3:52 · acum 20:14 / 3,4 km
+   Nombre · velocidad km/h [(ritmo)] · duracion · lo que sea.            */
+
+const RE_CINTA = /^(.{1,40}?)\s*[·•]\s*([\d]+(?:[.,]\d+)?)\s*km\s*\/\s*h[^·•\n]*[·•]\s*(\d{1,3}):(\d{2})(?![\d:])/;
+
+function tipoDeBloque(nombre) {
+  const n = nombre.toLowerCase();
+  if (/^calent/.test(n)) return "calentar";
+  if (/^(enfriar|vuelta a la calma)/.test(n)) return "enfriar";
+  if (/^serie/.test(n)) return "serie";
+  if (/^(trote|recuperaci)/.test(n)) return "trote";
+  return null;
+}
+
+function leeCinta(txt, ctx, titulo) {
+  const bloques = [];
+  for (const linea of txt.split("\n")) {
+    const m = linea.trim().match(RE_CINTA);
+    if (!m) continue;
+    const nombre = m[1].trim();
+    const tipo = tipoDeBloque(nombre);
+    if (!tipo) continue;
+    const kmh = dec(m[2]), seg = mmss(m[3], m[4]);
+    if (!isFinite(kmh) || kmh <= 0 || kmh > 30 || seg <= 0) continue;
+    bloques.push({ tipo, nombre, kmh, seg });
+  }
+  // con un solo bloque no hay sesion que dirigir: seguramente es otra cosa
+  if (bloques.length < 3) return null;
+
+  // "CINTA 1%" en el texto, o "Cinta 1%" en el lugar del evento
+  let inc = 0;
+  const mi = (txt + " " + ctx).match(/cinta[^\n%]{0,20}?([\d]+(?:[.,]\d+)?)\s*%/i);
+  if (mi) inc = dec(mi[1]);
+
+  return normaliza({
+    tipo: "cinta",
+    nombre: limpiaTitulo(titulo) || "Sesion de cinta",
+    inclinacion: inc,
+    bloques
+  });
+}
+
+/* ------------------------------ gimnasio ------------------------------ */
+/* Cabecera de ejercicio:  1️⃣ JALON AL PECHO (MAQUINA) · descanso 2:00
+   Series:                 Serie 1 — 87,5 lbs × 10 reps                   */
+
+const RE_EJERCICIO = /^(?:[0-9]️?⃣|\d{1,2}[.)])\s*(.+)$/;
+const RE_SERIE = /^Serie\s+\d+\s*[—–\-:]\s*([\d]+(?:[.,]\d+)?)\s*(lbs|kg|kilos?)?\s*[×xX*]\s*(\d{1,3}(?:\s*[-–]\s*\d{1,3})?)\s*reps/i;
+
+function rutinaDe(ctx) {
+  const c = ctx.toLowerCase();
+  if (/pierna|leg/.test(c)) return "pierna";
+  if (/pull|espalda|b[ií]ceps/.test(c)) return "pull";
+  if (/push|pecho|hombro|tr[ií]ceps/.test(c)) return "push";
+  return null;
+}
+
+function leeGym(txt, ctx, titulo) {
+  const rutina = rutinaDe(ctx);
+  if (!rutina) return null;
+
+  const ejercicios = [];
+  let act = null;
+  for (const bruta of txt.split("\n")) {
+    const linea = bruta.trim();
+
+    const ms = linea.match(RE_SERIE);
+    if (ms && act) {
+      act.detalle.push({
+        peso: dec(ms[1]),
+        reps: ms[3].replace(/\s+/g, "")
+      });
+      if (ms[2] && /lb/i.test(ms[2])) act.unidad = "lbs";
+      continue;
+    }
+
+    const me = linea.match(RE_EJERCICIO);
+    if (me) {
+      const resto = me[1];
+      const nombre = resto.split(/\s*[·•]\s*/)[0].trim();
+      if (!nombre || nombre.length > 70) { act = null; continue; }
+      const md = resto.match(/descanso\s*(\d{1,2}):(\d{2})/i);
+      act = { nombre, descanso: md ? mmss(md[1], md[2]) : 90, unidad: "kg", detalle: [] };
+      ejercicios.push(act);
+    }
+  }
+
+  const conSeries = ejercicios.filter(e => e.detalle.length > 0);
+  if (!conSeries.length) return null;
+
+  return normaliza({
+    tipo: "gym",
+    rutina,
+    nombre: limpiaTitulo(titulo) || ("Rutina " + rutina),
+    ejercicios: conSeries.map(e => ({
+      nombre: e.nombre,
+      series: e.detalle.length,
+      reps: e.detalle[0].reps,
+      peso: e.detalle[0].peso,
+      unidad: e.unidad,
+      descanso: e.descanso,
+      detalle: e.detalle
+    }))
+  });
+}
+
+/* -------------------------------- calle -------------------------------- */
+/* Lineas del tipo:
+     km 0-6 ...... 6'30"-6'45"  Facil
+     km 13-18 .... media 5'12"  BLOQUE FINAL
+     km 4,5-6 calles estrechas ..... 6'40"
+   Los dos ritmos pueden venir en cualquier orden, asi que se ordenan.     */
+
+const RE_TRAMO = /^km\s+([\d]+(?:[.,]\d+)?)\s*[-–]\s*([\d]+(?:[.,]\d+)?)\s+(.*)$/i;
+const RE_RITMO = /(\d{1,2})\s*['’]\s*(\d{2})\s*["”]?/g;
+
+function subtipoDe(ctx, txt) {
+  const c = (ctx + " " + txt.slice(0, 400)).toLowerCase();
+  if (/tirada larga|rodaje largo|el test|ensayo general/.test(c)) return "largo";
+  if (/tempo|umbral|series/.test(c)) return "tempo";
+  return "facil";
+}
+
+function leeFuera(txt, ctx, titulo) {
+  const km = [];
+  for (const bruta of txt.split("\n")) {
+    const m = bruta.trim().match(RE_TRAMO);
+    if (!m) continue;
+    const desde = dec(m[1]), hasta = dec(m[2]), resto = m[3];
+    if (!isFinite(desde) || !isFinite(hasta) || hasta <= desde || hasta > 100) continue;
+
+    RE_RITMO.lastIndex = 0;
+    const ritmos = [];
+    let r;
+    while ((r = RE_RITMO.exec(resto)) !== null) {
+      const seg = mmss(r[1], r[2]);
+      if (seg >= 150 && seg <= 900) ritmos.push(seg);   // entre 2'30" y 15'00"
+    }
+    if (!ritmos.length) continue;
+
+    const tramo = { desde, hasta };
+    if (ritmos.length === 1) {
+      tramo.ritmo = ritmos[0];
+    } else {
+      const a = Math.min(ritmos[0], ritmos[1]), b = Math.max(ritmos[0], ritmos[1]);
+      tramo.banda = [a, b];
+      tramo.ritmo = Math.round((a + b) / 2);
+    }
+    const nota = resto
+      .replace(RE_RITMO, " ")
+      .replace(/[.·•]{2,}/g, " ")
+      .replace(/^[\s\-–]+|[\s\-–]+$/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    if (nota) tramo.nota = nota.slice(0, 80);
+    km.push(tramo);
+  }
+  if (!km.length) return null;
+
+  // la distancia objetivo: el final del ultimo tramo, o lo que diga el titulo
+  let distancia = Math.max(...km.map(k => k.hasta)) * 1000;
+  const mt = (titulo || "").match(/(\d{1,3})\s*km/i);
+  if (mt && +mt[1] * 1000 > distancia) distancia = +mt[1] * 1000;
+
+  return normaliza({
+    tipo: "fuera",
+    subtipo: subtipoDe(ctx, txt),
+    nombre: limpiaTitulo(titulo) || "Salida",
+    distancia,
+    km
+  });
+}
