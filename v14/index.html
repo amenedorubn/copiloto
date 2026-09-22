@@ -1060,6 +1060,8 @@ function pintar(){
       aviso("Trescientos metros para el bloque. Cinco kilómetros a ritmo de Roma.",true);
     }
   }
+  // cada pocos segundos, por si el movil decide matar la pestana
+  if(rutaCargada && Date.now()-ultGuardado>3000){ ultGuardado=Date.now(); guardaCalle(); }
 }
 
 // ---------- controles ----------
@@ -1197,6 +1199,7 @@ bPau.addEventListener("click",function(){
   candado();
 });
 bRes.addEventListener("click",function(){
+  try{ localStorage.removeItem("copiloto.calle.v1"); }catch(e){}
   clearInterval(tick); corriendo=false; pausado=false; bPau.textContent="Pausa";
   dist=0; buf=[]; kmHecho=0; tKm=0; dKm=0; avisoBloque=false; medHecho=0; tMed=0; ultPos=null; ajusteSeg=0;
   sIni=null; saltos=0; tPlanIni=0; romaDicho=false; dibujaMapa(0); escalar();
@@ -1273,12 +1276,83 @@ window.cargaRutaGPS = function(pts, plan, fc, ele, titulo){
   if(!cargaRuta(pts, plan, fc, ele)) return false;
   var h=document.querySelector("#appGPS h1");
   if(h && titulo) h.textContent=titulo;
+  rutaCargada=true; tituloCalle=titulo||""; ultGuardado=0; guardaCalle();
   E2("appHoy").hidden=true; E2("appRutas").hidden=true; E2("selector").hidden=true;
   E2("appGPS").hidden=false;
   try{ pintar(); escalar(); }catch(e){}
   return true;
 };
 function E2(id){ return document.getElementById(id); }
+
+
+/* ===================== la sesion de calle sobrevive =====================
+   El modo cinta ya se retomaba solo; este no, y era el unico agujero por el
+   que se podia perder un entreno entero: si Android mata la pestana en el
+   km 8, sin esto te quedas sin ruta, sin kilometros y sin reloj.
+
+   Se guarda la ruta cargada entera (polilinea, altimetria y plan) junto con
+   el estado de la carrera, cada pocos segundos y siempre al irse a segundo
+   plano. Solo aplica a las rutas que vienen del calendario: la tirada de
+   siempre no tiene nada que retomar porque no se carga, ya esta.
+   ====================================================================== */
+var LSCALLE="copiloto.calle.v1", MAXCALLE=8*3600*1000, ultGuardado=0;
+var rutaCargada=false, tituloCalle="";
+
+function guardaCalle(){
+  if(!rutaCargada) return;
+  try{
+    localStorage.setItem(LSCALLE, JSON.stringify({
+      guardado:Date.now(), titulo:tituloCalle,
+      ruta:ROUTE, ele:ELE, plan:PLAN, fc:FC,
+      corriendo:corriendo, pausado:pausado, t0:t0, pausaEn:pausaEn,
+      dist:dist, sAbs:sAbs, sIni:sIni, tPlanIni:tPlanIni,
+      kmHecho:kmHecho, tKm:tKm, dKm:dKm, medHecho:medHecho, tMed:tMed,
+      ajusteSeg:ajusteSeg, avisoBloque:avisoBloque, romaDicho:romaDicho
+    }));
+  }catch(e){}
+}
+function olvidaCalle(){ rutaCargada=false; try{ localStorage.removeItem(LSCALLE); }catch(e){} }
+window.olvidaCalle=olvidaCalle;
+
+window.retomaCalle=function(){
+  var raw,st;
+  try{ raw=localStorage.getItem(LSCALLE); }catch(e){ return false; }
+  if(!raw) return false;
+  try{ st=JSON.parse(raw); }catch(e){ olvidaCalle(); return false; }
+  if(!st || !st.ruta || st.ruta.length<2 || !st.plan || !st.plan.length){ olvidaCalle(); return false; }
+  if(Date.now()-(st.guardado||0) > MAXCALLE){ olvidaCalle(); return false; }
+  if(!cargaRuta(st.ruta, st.plan, st.fc||[], st.ele||[])) return false;
+
+  rutaCargada=true; tituloCalle=st.titulo||"";
+  var h=document.querySelector("#appGPS h1");
+  if(h && tituloCalle) h.textContent=tituloCalle;
+
+  // cargaRuta deja todo a cero: ahora se pone encima lo que se guardo
+  corriendo=!!st.corriendo; pausado=!!st.pausado;
+  t0=st.t0||Date.now(); pausaEn=st.pausaEn||0;
+  dist=st.dist||0; sAbs=(st.sAbs===undefined?null:st.sAbs); sIni=(st.sIni===undefined?null:st.sIni);
+  tPlanIni=st.tPlanIni||0; kmHecho=st.kmHecho||0; tKm=st.tKm||0; dKm=st.dKm||0;
+  medHecho=st.medHecho||0; tMed=st.tMed||0; ajusteSeg=st.ajusteSeg||0;
+  avisoBloque=!!st.avisoBloque; romaDicho=!!st.romaDicho;
+  // lo que no se guarda: el buffer de ritmo y la ultima posicion se rehacen
+  // solos con los primeros fixes, y arrastrarlos solo daria ritmos raros
+  buf=[]; ultPos=null; saltos=0; sAct=(sAbs===null?null:mod(sAbs));
+
+  E2("appHoy").hidden=true; E2("appRutas").hidden=true; E2("selector").hidden=true;
+  E2("appGPS").hidden=false;
+  $("probar").style.display="none";
+  bPau.textContent = pausado ? "Seguir" : "Pausa";
+  if(corriendo){ pideGPS(); if(!pausado) pantalla(); }
+  clearInterval(tick); tick=setInterval(pintar,250);
+  dibujaMapa(0); escalar(); pintar(); candado();
+  return true;
+};
+
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="hidden") guardaCalle();
+  else if(rutaCargada && corriendo && !pausado) pantalla();
+});
+window.addEventListener("pagehide",guardaCalle);
 
 pintar();
 </script>
@@ -2362,6 +2436,7 @@ E("rtGo").addEventListener("click",empiezaRuta);
   h.title="Volver a HOY";
   h.addEventListener("click",function(){
     if(window.corriendo) return;
+    if(window.olvidaCalle) window.olvidaCalle();
     E("appGPS").hidden=true; muestra();
   });
 })();
@@ -2472,7 +2547,9 @@ window.Agenda={ muestra:muestra, refresca:baja };
 porQR = tragaHash();
 
 // una sesion de cinta a medias manda sobre todo lo demas: se retoma y punto
-if(!window.retomaCinta()){
+// un entreno a medias manda sobre todo lo demas: primero la cinta, luego la
+// calle, y si no hay nada a medias, la pantalla de HOY
+if(!window.retomaCinta() && !(window.retomaCalle && window.retomaCalle())){
   muestra();
   if(!conf.key) abreConf();
   else baja();
