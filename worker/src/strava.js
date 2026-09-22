@@ -6,18 +6,20 @@
      STRAVA_CLIENT_SECRET
    El refresh token NO se mete a mano: sale de /strava/conectar y se guarda en KV.
 
-   GET /rutas?lat=&lon=&dist=&radio=&margen=
-     lat,lon  donde estas ahora
+   GET /rutas?dist=&lat=&lon=&radio=&margen=&todas=
      dist     distancia objetivo en metros
-     radio    cuanto puede alejarse la salida (por defecto 150 m)
+     lat,lon  donde estas ahora. NO filtra: solo sirve para decir a cuanto
+              queda la salida de cada ruta. Sin ellos, la lista sale igual.
+     radio    si se pasa, ademas filtra por cercania de la salida
      margen   cuanto puede desviarse la distancia (por defecto 200 m)
+     todas=1  se salta el filtro de distancia y devuelve todo lo que hay
 
    Devuelve GRUPOS: las veces que has corrido el mismo recorrido se juntan en
    uno solo, con cuantas veces lo has hecho y cuando fue la ultima.
    =========================================================================== */
 
-const RADIO_DEF = 150;        // m desde donde estas hasta la salida de la actividad
 const MARGEN_DEF = 200;       // m de diferencia admitida con la distancia objetivo
+const TOPE_SIN_FILTRO = 150;  // candidatas que se miran como mucho al pedir todas
 const MEDIA_MAX = 35;         // m de separacion media para considerarlas la misma ruta
 const PEOR_MAX = 150;         // m en el punto que mas se separa
 const MUESTRAS = 80;          // puntos que se comparan al medir el parecido
@@ -346,16 +348,27 @@ async function actividades(env) {
 
 /* ------------------------------- agrupar ------------------------------- */
 
-export async function rutas(env, url) {
-  const lat = Number(url.searchParams.get("lat"));
-  const lon = Number(url.searchParams.get("lon"));
-  const objetivo = Number(url.searchParams.get("dist"));
-  const radio = Number(url.searchParams.get("radio")) || RADIO_DEF;
-  const margen = Number(url.searchParams.get("margen")) || MARGEN_DEF;
+/* Number(null) es 0, no NaN, asi que un parametro que no viene se colaba como
+   cero: "sin radio" acababa siendo radio 0 y "sin posicion" el punto (0,0) en
+   el golfo de Guinea. Aqui lo que falta vale null y se nota. */
+function param(url, nombre) {
+  const v = url.searchParams.get(nombre);
+  if (v === null || v.trim() === "") return null;
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+}
 
-  if (!isFinite(lat) || !isFinite(lon))
-    return { error: "sin_posicion", mensaje: "Faltan lat y lon." };
-  if (!isFinite(objetivo) || objetivo <= 0)
+export async function rutas(env, url) {
+  const lat = param(url, "lat");
+  const lon = param(url, "lon");
+  const objetivo = param(url, "dist");
+  const radio = param(url, "radio");                   // null = no filtra por cercania
+  const margen = param(url, "margen") || MARGEN_DEF;
+  const todas = url.searchParams.get("todas") === "1";
+  // la posicion es opcional: solo sirve para decir a cuanto queda cada salida
+  const donde = (lat !== null && lon !== null) ? [lat, lon] : null;
+
+  if (!todas && (objetivo === null || objetivo <= 0))
     return { error: "sin_distancia", mensaje: "Falta la distancia objetivo en metros." };
   if (!env.STRAVA_CLIENT_ID || !env.STRAVA_CLIENT_SECRET)
     return { error: "sin_configurar", codigo: 503,
@@ -363,17 +376,17 @@ export async function rutas(env, url) {
 
   const brutas = await actividades(env);
 
-  // 1. lo que empieza donde estoy y mide lo que busco
+  // 1. carreras con trazado; la distancia filtra salvo que se pidan todas
   const cerca = [];
   for (const a of brutas) {
     if (a.type !== "Run" && a.sport_type !== "Run") continue;
-    const s = a.start_latlng;
-    if (!s || s.length !== 2) continue;
-    const desdeAqui = metros([lat, lon], s);
-    if (desdeAqui > radio) continue;
     const linea = (a.map && (a.map.summary_polyline || a.map.polyline)) || "";
     if (!linea) continue;
-    if (Math.abs(a.distance - objetivo) > margen) continue;
+    if (!todas && Math.abs(a.distance - objetivo) > margen) continue;
+    const ini = (a.start_latlng && a.start_latlng.length === 2) ? a.start_latlng : null;
+    const desdeAqui = (donde && ini) ? metros(donde, ini) : null;
+    // el radio solo filtra si se pide a proposito
+    if (radio !== null && desdeAqui !== null && desdeAqui > radio) continue;
     cerca.push({
       id: String(a.id),
       nombre: a.name,
@@ -384,6 +397,7 @@ export async function rutas(env, url) {
       linea,
       pts: decode(linea)
     });
+    if (todas && cerca.length >= TOPE_SIN_FILTRO) break;
   }
 
   // 2. las que son el mismo recorrido, a un solo grupo
@@ -402,27 +416,49 @@ export async function rutas(env, url) {
     g.veces.sort((x, y) => x.fecha < y.fecha ? 1 : -1);
     const jefe = g.veces[0];
     const media = Math.round(g.veces.reduce((s, v) => s + v.distancia, 0) / g.veces.length);
+    // de todas las veces, la salida mas cercana a donde estoy
+    const salidas = g.veces.map(v => v.salida).filter(v => v !== null);
+    const salida = salidas.length ? Math.round(Math.min.apply(null, salidas)) : null;
     return {
       id: jefe.id,
       nombre: jefe.nombre,
       distancia: media,
       exacta: Math.round(largo(jefe.pts)),
-      diferencia: media - objetivo,
+      diferencia: todas ? null : media - objetivo,
       desnivel: jefe.desnivel,
       metrosPorKm: media ? Math.round(jefe.desnivel / (media / 1000) * 10) / 10 : 0,
       veces: g.veces.length,
       ultima: jefe.fecha,
-      salida: Math.round(jefe.salida),
+      salida,
       linea: jefe.linea
     };
   });
 
-  // la que menos se separa del objetivo, primero
-  salida.sort((a, b) => Math.abs(a.diferencia) - Math.abs(b.diferencia));
+  /* Orden: primero lo que puedo empezar andando (menos de 1 km), y de eso lo
+     que mejor cuadra con la distancia de hoy. Despues el resto, de mas cerca a
+     mas lejos, porque ahi lo que decide es si merece la pena desplazarse. */
+  const CERCA = 1000;
+  salida.sort((a, b) => {
+    const ca = a.salida !== null && a.salida <= CERCA;
+    const cb = b.salida !== null && b.salida <= CERCA;
+    if (ca !== cb) return ca ? -1 : 1;
+    // sin objetivo no hay "lo que mejor cuadra": manda la cercania
+    if (a.diferencia === null || b.diferencia === null) {
+      if (a.salida === null || b.salida === null) return b.distancia - a.distancia;
+      return a.salida - b.salida;
+    }
+    if (ca && cb) return Math.abs(a.diferencia) - Math.abs(b.diferencia);
+    if (a.salida === null || b.salida === null)
+      return Math.abs(a.diferencia) - Math.abs(b.diferencia);
+    return a.salida - b.salida;
+  });
 
   return {
     generado: new Date().toISOString(),
-    objetivo, radio, margen,
+    objetivo: todas ? null : objetivo,
+    conPosicion: !!donde,
+    todas,
+    margen,
     miradas: brutas.length,
     candidatas: cerca.length,
     grupos: salida

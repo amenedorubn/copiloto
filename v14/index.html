@@ -179,6 +179,13 @@
   .rtSub{font-size:12px;color:var(--dim);font-weight:700;line-height:1.35}
   .rtNom{font-size:12px;color:var(--dim);font-weight:600;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
+  .rtLejos{font-size:14px;font-weight:800;color:#cfd6df}
+  .rtLejos.aqui{color:#9ede8a}
+  .rtBarra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+  .rtChip{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);
+    background:#1b1f25;color:var(--tx);font-size:13px;font-weight:800;font-family:inherit}
+  .rtChip.on{background:#1f2b38;border-color:#3B8BDD;color:#bcd9ff}
+  .rtAviso{font-size:11px;color:#ffb35c;font-weight:700;flex:1 1 140px;line-height:1.3}
 
   /* ajustes */
   #appConf label{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
@@ -1975,6 +1982,7 @@ function estadoCopia(){
    del test del domingo, porque toca el motor GPS. */
 
 var evRuta = null, rutasDatos = null, rutaElegida = null, buscando = false;
+var miPos = null, todasDist = false, reintentoPos = false;
 
 function polilinea(str){                    // la codificada de Google -> puntos
   if(!str) return [];
@@ -2012,9 +2020,16 @@ function minimapa(linea){
 }
 
 function difTxt(m){
+  if(m===null||m===undefined) return null;
   if(Math.abs(m)<10) return { t:"clavada", c:"clava" };
   var signo = m<0 ? "\u2212" : "+";
   return { t:signo+Math.abs(Math.round(m))+" m", c: m<0 ? "corta" : "larga" };
+}
+function aCuanto(m){
+  if(m===null||m===undefined) return null;
+  if(m<50)   return "sales de aquí mismo";
+  if(m<1000) return "a "+Math.round(m)+" m de aquí";
+  return "a "+coma(m/1000,1)+" km de aquí";
 }
 function cuando(iso){
   var d=new Date(iso), h=Math.round((Date.now()-d)/86400000);
@@ -2026,7 +2041,7 @@ function cuando(iso){
 }
 
 function abreRutas(ev){
-  evRuta=ev; rutasDatos=null; rutaElegida=null;
+  evRuta=ev; rutasDatos=null; rutaElegida=null; todasDist=false;
   E("appHoy").hidden=true; E("appConf").hidden=true;
   E("appRutas").hidden=false;
   E("rtFecha").textContent=(ev.plan.nombre||ev.titulo)+" · "+coma(ev.plan.distancia/1000,2)+" km";
@@ -2034,30 +2049,57 @@ function abreRutas(ev){
   buscaRutas();
 }
 
+/* La lista NO espera al GPS ni depende de el: la posicion solo sirve para
+   decir a cuanto queda cada salida. Se pide en paralelo y, cuando llega, se
+   vuelve a preguntar para rellenar las distancias. Si no llega nunca, la
+   lista sigue estando ahi. */
 function buscaRutas(){
   if(buscando) return;
-  if(!navigator.geolocation){ estadoRt("este móvil no da posición",true); return; }
-  buscando=true; estadoRt("buscando dónde estás…"); pintaRutas();
+  buscando=true; reintentoPos=false;
+  estadoRt("mirando en Strava…");
+  pintaRutas();
+  pideRutas();
+  pidePosicion();
+}
+
+function pideRutas(){
+  var base=conf.url.replace(/\/+$/,"");
+  var u=base+"/rutas?";
+  if(!todasDist) u+="dist="+Math.round(evRuta.plan.distancia)+"&";
+  else u+="todas=1&";
+  if(miPos) u+="lat="+miPos[0]+"&lon="+miPos[1];
+  fetch(u,{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
+   .then(function(r){ return r.json().then(function(j){ return {r:r,j:j}; }); })
+   .then(function(x){
+      if(x.r.status===401){ estadoRt("clave incorrecta",true); return; }
+      if(x.j && x.j.error){ estadoRt(x.j.mensaje||x.j.error,true); rutasDatos={grupos:[]}; return; }
+      rutasDatos=x.j;
+      estadoRt(plural(x.j.grupos.length,"ruta"));
+   })
+   .catch(function(){ estadoRt("sin conexión con el Worker",true); })
+   .then(function(){
+      buscando=false;
+      // la ubicacion suele llegar antes que la respuesta: si es el caso, se
+      // vuelve a preguntar UNA vez para rellenar los "a cuánto estoy"
+      if(miPos && rutasDatos && !rutasDatos.conPosicion && !reintentoPos){
+        reintentoPos=true; buscando=true; pideRutas(); return;
+      }
+      pintaRutas();
+   });
+}
+
+function pidePosicion(){
+  if(!navigator.geolocation || miPos) return;
   navigator.geolocation.getCurrentPosition(function(pos){
-    estadoRt("mirando en Strava…");
-    var base=conf.url.replace(/\/+$/,"");
-    var u=base+"/rutas?lat="+pos.coords.latitude+"&lon="+pos.coords.longitude+
-          "&dist="+Math.round(evRuta.plan.distancia);
-    fetch(u,{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
-     .then(function(r){ return r.json().then(function(j){ return {r:r,j:j}; }); })
-     .then(function(x){
-        if(x.r.status===401){ estadoRt("clave incorrecta",true); return; }
-        if(x.j && x.j.error){ estadoRt(x.j.mensaje||x.j.error,true); rutasDatos={grupos:[]}; return; }
-        rutasDatos=x.j;
-        estadoRt(plural(x.j.grupos.length,"ruta"));
-     })
-     .catch(function(){ estadoRt("sin conexión con el Worker",true); })
-     .then(function(){ buscando=false; pintaRutas(); });
-  },function(err){
-    buscando=false;
-    estadoRt(err.code===1 ? "hace falta permiso de ubicación" : "no se ha podido situar",true);
+    miPos=[pos.coords.latitude, pos.coords.longitude];
+    // si ya no hay nada en vuelo, se pregunta ahora; si lo hay, se encarga el then
+    if(!buscando && rutasDatos && !rutasDatos.conPosicion){
+      reintentoPos=true; buscando=true; pideRutas();
+    }else pintaRutas();
+  },function(){
+    // sin ubicacion la lista se queda igual; solo faltan los "a cuánto estoy"
     pintaRutas();
-  },{ enableHighAccuracy:true, timeout:20000, maximumAge:60000 });
+  },{ enableHighAccuracy:false, timeout:15000, maximumAge:300000 });
 }
 
 function estadoRt(t,mal){ var e=E("rtEstado"); e.textContent=t; e.className=mal?"mal":""; }
@@ -2066,24 +2108,45 @@ function pintaRutas(){
   var cu=E("rtCuerpo"); cu.innerHTML="";
   if(buscando){ cu.appendChild(vacio("Buscando rutas que empiecen donde estás…")); return; }
   if(!rutasDatos){ cu.appendChild(vacio("Pulsa «Buscar otra vez» para mirar en Strava.")); return; }
+  // barra de arriba: filtro de distancia y aviso de si hay posicion
+  var barra=document.createElement("div");
+  barra.className="rtBarra";
+  var chip=document.createElement("button");
+  chip.className="rtChip"+(todasDist?" on":"");
+  chip.textContent = todasDist ? "Todas las distancias"
+                               : "Cerca de "+coma(evRuta.plan.distancia/1000,1)+" km";
+  chip.addEventListener("click",function(){ todasDist=!todasDist; buscaRutas(); });
+  barra.appendChild(chip);
+  if(!miPos){
+    var av=document.createElement("span");
+    av.className="rtAviso";
+    av.textContent="sin ubicación: no puedo decirte a cuánto queda cada salida";
+    barra.appendChild(av);
+  }
+  cu.appendChild(barra);
+
   if(!rutasDatos.grupos || !rutasDatos.grupos.length){
-    cu.appendChild(vacio("Ninguna ruta tuya empieza aquí con esta distancia.\n\n"+
-      "Miradas "+(rutasDatos.miradas||0)+" actividades.\n"+
-      "Puedes correr por distancia libre con el GPS."));
+    cu.appendChild(vacio(todasDist
+      ? "No hay ninguna carrera con trazado en tu Strava.\n\nMiradas "+(rutasDatos.miradas||0)+" actividades."
+      : "Ninguna ruta tuya mide "+coma(evRuta.plan.distancia/1000,1)+" km.\n\n"+
+        "Miradas "+(rutasDatos.miradas||0)+" actividades.\n"+
+        "Toca «Todas las distancias» para verlas todas."));
     return;
   }
   rutasDatos.grupos.forEach(function(g){
     var d=document.createElement("div");
     d.className="rt"+(rutaElegida===g.id?" elegida":"");
     var dif=difTxt(g.diferencia);
+    var lejos=aCuanto(g.salida);
     d.innerHTML=
       '<div class="rtMapa">'+minimapa(g.linea)+'</div>'+
       '<div class="rtDat">'+
         '<div class="rtKm">'+esc(coma(g.distancia/1000,2))+' km '+
-          '<span class="rtDif '+dif.c+'">'+esc(dif.t)+'</span></div>'+
+          (dif? '<span class="rtDif '+dif.c+'">'+esc(dif.t)+'</span>' : '')+'</div>'+
+        (lejos? '<div class="rtLejos'+(g.salida<50?" aqui":"")+'">'+esc(lejos)+'</div>' : '')+
         '<div class="rtSub">'+esc(plural(g.veces,"vez").replace("vezs","veces"))+
           ' · última '+esc(cuando(g.ultima))+' · '+esc(g.metrosPorKm)+' m/km</div>'+
-        '<div class="rtNom">'+esc(g.nombre)+' · salida a '+esc(g.salida)+' m</div>'+
+        '<div class="rtNom">'+esc(g.nombre)+'</div>'+
       '</div>';
     d.addEventListener("click",function(){
       rutaElegida = (rutaElegida===g.id? null : g.id);
