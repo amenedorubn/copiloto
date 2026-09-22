@@ -23,6 +23,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # wrangler deploy REEMPLAZA los bindings del Worker por los de
+      # wrangler.toml, asi que un binding anadido a mano en el panel se pierde
+      # en el siguiente despliegue. Aqui se busca el namespace (o se crea) y se
+      # anade al wrangler.toml antes de desplegar, para que sobreviva siempre.
+      - name: Asegurar el almacen KV
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          cd worker
+          npx --yes wrangler@4 kv namespace list > lista.txt 2>&1 || true
+          id=$(node -e '
+            const fs=require("fs");
+            let t="";try{t=fs.readFileSync("lista.txt","utf8");}catch(e){}
+            const i=t.indexOf("[");
+            if(i<0){console.log("");process.exit(0);}
+            let n=[];try{n=JSON.parse(t.slice(i, t.lastIndexOf("]")+1));}catch(e){}
+            const m=n.find(x=>x && typeof x.title==="string" && x.title.toLowerCase().endsWith("copiloto"));
+            console.log(m&&m.id?m.id:"");
+          ' 2>/dev/null || true)
+          if [ -z "$id" ]; then
+            echo "No habia namespace: creando uno."
+            npx --yes wrangler@4 kv namespace create copiloto > creado.txt 2>&1 || true
+            cat creado.txt
+            id=$(grep -oE '[0-9a-f]{32}' creado.txt | head -1 || true)
+          fi
+          if [ -n "$id" ]; then
+            printf '\n[[kv_namespaces]]\nbinding = "COPILOTO"\nid = "%s"\n' "$id" >> wrangler.toml
+            echo "::notice::KV COPILOTO enganchado ($id)."
+          else
+            echo "::warning::No se ha podido preparar el KV. El Worker se desplegara sin el y Strava no podra conectarse."
+            cat lista.txt || true
+          fi
+          rm -f lista.txt creado.txt
+
       - name: Desplegar el Worker en Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
@@ -44,8 +79,11 @@ jobs:
             echo "$cuerpo"
             case "$cuerpo" in *'"ok":true'*)
               case "$cuerpo" in
+                *'"KV":false'*) echo "::warning::El Worker vive pero se ha quedado sin KV." ;;
+              esac
+              case "$cuerpo" in
                 *'"APP_KEY":true'*'"ICAL_URL":true'*)
-                  echo "::notice::Worker desplegado y con los dos secretos puestos." ; exit 0 ;;
+                  echo "::notice::Worker desplegado y con los secretos del calendario puestos." ; exit 0 ;;
                 *)
                   echo "::warning::Worker desplegado, pero faltan secretos. Metelos en el panel de Cloudflare (Settings -> Variables and Secrets)." ; exit 0 ;;
               esac ;;

@@ -142,20 +142,14 @@ strava.com/settings/api  →  Editar
 
 Apunta también el **ID de cliente** y dale a **Mostrar** en *Secreto de cliente*.
 
-## 2. Cloudflare: el almacén KV
+## 2. El almacén KV: no hay que hacer nada
 
-Hace falta para guardar el token. Todo con clics:
+Lo crea y lo engancha el propio workflow en cada despliegue.
 
-```
-dash.cloudflare.com → Storage & Databases → KV → Create namespace
-   nombre: copiloto
-
-Workers & Pages → copiloto-api → Settings → Bindings → Add → KV namespace
-   Variable name: COPILOTO
-   KV namespace:  copiloto
-```
-
-⚠️ El *Variable name* tiene que ser **`COPILOTO`** en mayúsculas.
+⚠️ **No lo añadas a mano en el panel.** `wrangler deploy` reemplaza los
+bindings del Worker por los que declara el repositorio, así que un binding
+puesto a mano desaparece en el siguiente despliegue. Por eso lo hace el
+workflow: así sobrevive siempre.
 
 ## 3. Cloudflare: dos secretos
 
@@ -200,7 +194,7 @@ https://copiloto-api.amenedorubn.workers.dev/salud
 
 | Qué dice | Qué pasa |
 |---|---|
-| *Falta el almacén KV* | Paso 2 sin hacer, o el binding no se llama `COPILOTO` |
+| *Falta el almacén KV* | El workflow no pudo prepararlo. Mira el aviso en la pestaña Actions |
 | *Faltan STRAVA_CLIENT_ID y...* | Paso 3 sin hacer |
 | *Esa clave no coincide* | No es la `APP_KEY` que pusiste en Cloudflare. Los espacios al pegar y los `+` de las claves en base64 ya se tienen en cuenta |
 | *Has dado permiso de read* | Repite el paso 4 marcando la casilla de todas las actividades |
