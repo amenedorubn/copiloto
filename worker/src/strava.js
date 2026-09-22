@@ -44,8 +44,11 @@ export async function conectar(env, url, origen) {
   if (!env.COPILOTO)
     return pagina("Falta el almacen KV. En Cloudflare: Storage &amp; Databases \u2192 KV \u2192 crear " +
                   "namespace, y en el Worker Settings \u2192 Bindings \u2192 KV namespace con nombre COPILOTO.", 503);
-  if (!env.APP_KEY || url.searchParams.get("k") !== env.APP_KEY)
-    return pagina("Clave incorrecta.", 401);
+  const dada = paramCrudo(url, "k");
+  if (dada === null) return formulario(url);          // sin clave: se pide en pantalla
+  if (!env.APP_KEY || !igual(dada, env.APP_KEY))
+    return formulario(url, "Esa clave no coincide con la de Cloudflare. " +
+      "Copiala entera, sin espacios delante ni detras.");
 
   const state = crypto.randomUUID();
   await env.COPILOTO.put("oauth_state_" + state, "1", { expirationTtl: 600 });
@@ -104,6 +107,65 @@ export async function vuelta(env, url) {
   await env.COPILOTO.put("strava_refresh", j.refresh_token);
   cache = { token: j.access_token, caduca: (j.expires_at || 0) * 1000 };
   return pagina("Strava conectado. Permisos: " + dado + ". Ya puedes cerrar esta pagina.", 200);
+}
+
+/* searchParams convierte el "+" en espacio, que es lo correcto para un
+   formulario pero no para una clave: las claves en base64 llevan "+" y asi
+   nunca coincidian. Se lee del query crudo con decodeURIComponent, que no
+   toca el "+", y vale tanto si viene literal como si viene como %2B. */
+function paramCrudo(url, nombre) {
+  const q = url.search.replace(/^\?/, "");
+  if (!q) return null;
+  for (const trozo of q.split("&")) {
+    const i = trozo.indexOf("=");
+    if (i < 0) continue;
+    let clave;
+    try { clave = decodeURIComponent(trozo.slice(0, i)); } catch (e) { clave = trozo.slice(0, i); }
+    if (clave !== nombre) continue;
+    try { return decodeURIComponent(trozo.slice(i + 1)); } catch (e) { return trozo.slice(i + 1); }
+  }
+  return null;
+}
+
+// al pegar en el movil se cuela un espacio o un salto de linea muy a menudo.
+// La comparacion va en tiempo constante, igual que la de la cabecera: no tiene
+// que filtrar cuantos caracteres se han acertado.
+function igual(a, b) {
+  const x = String(a).trim(), y = String(b).trim();
+  if (x.length !== y.length) return false;
+  let d = 0;
+  for (let i = 0; i < x.length; i++) d |= x.charCodeAt(i) ^ y.charCodeAt(i);
+  return d === 0;
+}
+
+// Pedir la clave aqui en vez de llevarla en la URL: no se queda en el
+// historial del movil ni en los registros de nadie.
+function formulario(url, aviso) {
+  return new Response(
+    '<!doctype html><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Conectar Strava</title>' +
+    '<body style="margin:0;background:#111418;color:#e8ecf1;font:600 17px/1.5 system-ui,sans-serif;' +
+    'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px">' +
+    '<form method="GET" action="' + url.pathname + '" style="width:100%;max-width:440px">' +
+    '<h1 style="font-size:22px;margin:0 0 6px">Conectar Strava</h1>' +
+    '<p style="color:#8b93a0;font-weight:500;margin:0 0 18px">Pega la clave de acceso del copiloto.</p>' +
+    (aviso ? '<p style="background:#7a3a2c;color:#ffd9cd;border-radius:12px;padding:12px 14px;margin:0 0 16px">' +
+             escapa(aviso) + '</p>' : '') +
+    '<input name="k" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
+    'placeholder="APP_KEY" style="width:100%;box-sizing:border-box;min-height:58px;border-radius:12px;' +
+    'border:1px solid #2a313a;background:#1b1f25;color:#e8ecf1;padding:10px 14px;font-size:16px;' +
+    'font-weight:700;font-family:inherit">' +
+    '<button style="width:100%;margin-top:12px;min-height:64px;border-radius:14px;border:0;' +
+    'background:#fc4c02;color:#fff;font-size:19px;font-weight:800;font-family:inherit">Continuar</button>' +
+    '</form></body>',
+    { status: aviso ? 401 : 200,
+      headers: { "Content-Type": "text/html; charset=utf-8",
+                 "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
+}
+
+function escapa(t) {
+  return String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
 function pagina(texto, estado) {

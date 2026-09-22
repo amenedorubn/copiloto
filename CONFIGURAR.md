@@ -170,11 +170,16 @@ Workers & Pages → copiloto-api → Settings → Bindings → Add → KV namesp
 
 ## 4. Conectar, desde el móvil
 
-Abre esta dirección con tu `APP_KEY`:
+Abre esta dirección, **sin nada más detrás**:
 
 ```
-https://copiloto-api.amenedorubn.workers.dev/strava/conectar?k=TU_APP_KEY
+https://copiloto-api.amenedorubn.workers.dev/strava/conectar
 ```
+
+Sale una pantalla que pide la `APP_KEY`. Pégala y dale a Continuar. Así la
+clave no se queda en el historial del móvil.
+
+(Con `?k=TU_APP_KEY` detrás también funciona, incluso si la clave lleva `+`.)
 
 Te lleva a Strava. **Acepta dejando marcada la casilla de ver todas tus
 actividades** — si no, el Worker lo detecta y te dice que repitas. Al aceptar
@@ -197,7 +202,7 @@ https://copiloto-api.amenedorubn.workers.dev/salud
 |---|---|
 | *Falta el almacén KV* | Paso 2 sin hacer, o el binding no se llama `COPILOTO` |
 | *Faltan STRAVA_CLIENT_ID y...* | Paso 3 sin hacer |
-| *Clave incorrecta* | La `k=` de la URL no es tu `APP_KEY` |
+| *Esa clave no coincide* | No es la `APP_KEY` que pusiste en Cloudflare. Los espacios al pegar y los `+` de las claves en base64 ya se tienen en cuenta |
 | *Has dado permiso de read* | Repite el paso 4 marcando la casilla de todas las actividades |
 | Strava dice que el dominio no vale | Paso 1: el callback domain tiene que ser el del Worker, sin `https://` |
 
