@@ -37,7 +37,7 @@ jobs:
       # viven solo en el panel de Cloudflare y sobreviven a cada despliegue.
       - name: Comprobar que el Worker responde
         run: |
-          url="https://copiloto-api.${{ secrets.CLOUDFLARE_SUBDOMINIO || 'amenedorubn' }}.workers.dev/salud"
+          url="https://copiloto-api.amenedorubn.workers.dev/salud"
           echo "Comprobando $url"
           for i in 1 2 3 4 5; do
             cuerpo=$(curl -s --max-time 10 "$url" || true)

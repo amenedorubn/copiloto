@@ -1654,6 +1654,37 @@ var MESES   = ["enero","febrero","marzo","abril","mayo","junio","julio",
 var VISTAS  = ["hoy","semana","mes"];
 
 var conf = leeConf(), datos = leeCache(), vista = "hoy", bajando = false;
+var porQR = false;                     // la clave acaba de entrar por el fragmento
+
+/* --------------------------- la clave por QR --------------------------- */
+/* La clave y la direccion pueden entrar por el fragmento de la URL:
+       .../v14/#key=XXXX
+       .../v14/#key=XXXX&url=https://copiloto-api.amenedorubn.workers.dev
+   Asi se mete de un escaneo, sin teclear 32 caracteres en el movil.
+   El fragmento NO viaja al servidor en ninguna peticion, ni al de GitHub
+   Pages ni al Worker: es cosa del navegador. En cuanto se guarda, se borra
+   de la barra de direcciones y del historial, para que no se quede a la
+   vista ni en una captura. */
+function tragaHash(){
+  var h = location.hash || "";
+  if(h.length < 2) return false;
+  var trozos = h.replace(/^#/,"").split("&"), p = {}, i, e;
+  for(i=0;i<trozos.length;i++){
+    e = trozos[i].indexOf("=");
+    if(e > 0){
+      try{ p[trozos[i].slice(0,e)] = decodeURIComponent(trozos[i].slice(e+1).replace(/\+/g," ")); }
+      catch(x){ /* fragmento mal escrito: se ignora ese trozo */ }
+    }
+  }
+  var cambio = false;
+  if(p.url && /^https?:\/\//i.test(p.url.trim())){ conf.url = p.url.trim().replace(/\/+$/,""); cambio = true; }
+  if(p.key && p.key.trim()){ conf.key = p.key.trim(); cambio = true; }
+  if(cambio) guardaConf();
+  // la barra queda limpia pase lo que pase, aunque el hash fuera otra cosa
+  try{ history.replaceState(null,"",location.pathname+location.search); }
+  catch(x){ location.hash = ""; }
+  return cambio;
+}
 
 /* ------------------------------ guardado ------------------------------ */
 function leeConf(){
@@ -1875,7 +1906,8 @@ function baja(){
       }
       x.j.bajado=new Date().toISOString();
       datos=x.j; guardaCache(datos);
-      estado("al día");
+      estado(porQR ? "clave del QR guardada" : "al día");
+      porQR=false;
       pinta();
    })
    .catch(function(){
@@ -1897,8 +1929,9 @@ function abreConf(){
   E("appConf").hidden=false;
   E("cfUrl").value=conf.url;
   E("cfKey").value=conf.key;
-  E("cfMsg").className=""; 
-  E("cfMsg").textContent = conf.key ? "Clave guardada en este móvil." : "Sin clave todavía.";
+  E("cfMsg").className = porQR ? "ok" : "";
+  E("cfMsg").textContent = porQR ? "Clave recibida del QR y guardada en este móvil."
+                         : (conf.key ? "Clave guardada en este móvil." : "Sin clave todavía.");
 }
 
 E("hVista").addEventListener("click",function(){
@@ -1936,6 +1969,17 @@ E("cfProbar").addEventListener("click",function(){
    });
 });
 
+// El QR se puede escanear con la app YA abierta en esa misma direccion. En ese
+// caso el navegador solo cambia el fragmento y no recarga nada, asi que el
+// arranque no se entera: hay que escuchar el cambio a mano.
+window.addEventListener("hashchange",function(){
+  if(!tragaHash()) return;
+  porQR=true;
+  if(!E("appConf").hidden){ abreConf(); return; }            // repinta campos y aviso
+  if(window.cintaEnCurso && window.cintaEnCurso()) return;    // a mitad de entreno no molesto
+  muestra(); baja();
+});
+
 // el movil vuelve del bolsillo: refresco por si el calendario ha cambiado
 document.addEventListener("visibilitychange",function(){
   if(document.visibilityState==="visible" && !E("appHoy").hidden) baja();
@@ -1944,10 +1988,15 @@ document.addEventListener("visibilitychange",function(){
 /* -------------------------------- arranque -------------------------------- */
 window.Agenda={ muestra:muestra, refresca:baja };
 
+// lo primero, antes de pintar nada: si la clave viene en la URL, se guarda y
+// se limpia la barra. Tambien cuando hay un entreno a medias, para no perderla.
+porQR = tragaHash();
+
 // una sesion de cinta a medias manda sobre todo lo demas: se retoma y punto
 if(!window.retomaCinta()){
-  if(!conf.key) { muestra(); abreConf(); }
-  else { muestra(); baja(); }
+  muestra();
+  if(!conf.key) abreConf();
+  else baja();
 }
 })();
 </script>
