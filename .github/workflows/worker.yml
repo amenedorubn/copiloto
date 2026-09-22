@@ -1,0 +1,52 @@
+name: Desplegar copiloto-api
+
+# Se dispara solo cuando cambia algo del Worker, y tambien a mano desde
+# la pestana Actions de GitHub (boton "Run workflow").
+on:
+  push:
+    branches: [main]
+    paths:
+      - "worker/**"
+      - ".github/workflows/worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desplegar-copiloto-api
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Desplegar el Worker en Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+
+      # Los secretos del Worker (APP_KEY, ICAL_URL) NO se tocan aqui a proposito:
+      # viven solo en el panel de Cloudflare y sobreviven a cada despliegue.
+      - name: Comprobar que el Worker responde
+        run: |
+          url="https://copiloto-api.${{ secrets.CLOUDFLARE_SUBDOMINIO || 'amenedorubn' }}.workers.dev/salud"
+          echo "Comprobando $url"
+          for i in 1 2 3 4 5; do
+            cuerpo=$(curl -s --max-time 10 "$url" || true)
+            echo "$cuerpo"
+            case "$cuerpo" in *'"ok":true'*)
+              case "$cuerpo" in
+                *'"APP_KEY":true'*'"ICAL_URL":true'*)
+                  echo "::notice::Worker desplegado y con los dos secretos puestos." ; exit 0 ;;
+                *)
+                  echo "::warning::Worker desplegado, pero faltan secretos. Metelos en el panel de Cloudflare (Settings -> Variables and Secrets)." ; exit 0 ;;
+              esac ;;
+            esac
+            sleep 5
+          done
+          echo "::warning::El Worker no ha contestado todavia. Mira la URL /salud en el navegador dentro de un minuto."

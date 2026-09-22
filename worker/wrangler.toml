@@ -1,0 +1,8 @@
+name = "copiloto-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+# Los secretos (APP_KEY, ICAL_URL) NO se declaran aqui: se meten a mano desde
+# el panel de Cloudflare (Settings -> Variables and Secrets, tipo "Secret").
+# Un despliegue no los borra: sobreviven a cada push.
