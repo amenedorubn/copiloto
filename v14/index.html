@@ -535,34 +535,41 @@ function mmss(s){s=Math.max(0,Math.round(s));var m=Math.floor(s/60);
 function hms(s){s=Math.max(0,Math.round(s));var h=Math.floor(s/3600),m=Math.floor(s%3600/60);
   return (h?h+":"+String(m).padStart(2,"0"):String(m))+":"+String(Math.round(s)%60).padStart(2,"0");}
 function pace(s){if(!isFinite(s)||s<=0||s>1500)return "--:--";
-  var m=Math.floor(s/60);return m+":"+String(Math.round(s%60)).padStart(2,"0");}
+  s=Math.round(s);var m=Math.floor(s/60);return m+":"+String(s%60).padStart(2,"0");}
 
 // ---------- plan <-> distancia ----------
-function tiempoPlan(d){ // segundos previstos al llegar a d metros
-  if(d<=0)return 0; if(d>=TOTAL)return PLANTOTAL;
-  var k=Math.min(PLAN.length-1,Math.floor(d/1000));
-  return PCUM[k]+(d-k*1000)/1000*PLAN[k][2];
+/* El plan ya no es un ritmo plano por km: se parte en tramos de 100 m y a cada
+   uno le toca mas o menos tiempo segun su cuesta (ver preparaTerreno). El km
+   entero sigue sumando exactamente lo que dice el plan; lo unico que cambia es
+   como se reparte dentro: la subida mas lenta, la bajada mas rapida.
+   Sin altimetria todos los tramos valen lo mismo y esto es el plan de siempre. */
+function cumEn(A,d,idx){               // segundos acumulados al llegar a d metros
+  if(!A.length) preparaTerreno();
+  if(d<=0) return 0;
+  var n=A.length-1, j=Math.floor(d/100);
+  if(j>=n) return A[n]+(d-n*100)/1000*PLAN[PLAN.length-1][idx];
+  return A[j]+(d-j*100)/100*(A[j+1]-A[j]);
 }
-function distPlan(t){ // metros que deberías llevar en el segundo t
-  if(t<=0)return 0; if(t>=PLANTOTAL)return TOTAL;
-  var k=0; while(k<PLAN.length-1 && PCUM[k+1]<=t) k++;
-  return k*1000+(t-PCUM[k])/PLAN[k][2]*1000;
+function invEn(A,t,idx){               // metros que tocan en el segundo t
+  if(!A.length) preparaTerreno();
+  if(t<=0) return 0;
+  var n=A.length-1;
+  if(t>=A[n]) return n*100+(t-A[n])/PLAN[PLAN.length-1][idx]*1000;
+  var lo=0,hi=n;
+  while(lo<hi-1){ var m=(lo+hi)>>1; if(A[m]<=t) lo=m; else hi=m; }
+  return lo*100+(t-A[lo])/Math.max(1e-6,A[lo+1]-A[lo])*100;
 }
+function tiempoPlan(d){ return cumEn(SMID,d,2); }  // segundos previstos al llegar a d metros
+function distPlan(t){ return invEn(SMID,t,2); }    // metros que deberías llevar en el segundo t
 // banda de tiempo valido al llegar a d metros: {lo:mas rapido permitido, hi:mas lento permitido}
-function tiempoPlanBanda(d){
-  if(d<=0)return {lo:0,hi:0};
-  if(d>=TOTAL)return {lo:PCUMLO[PLAN.length],hi:PCUMHI[PLAN.length]};
-  var k=Math.min(PLAN.length-1,Math.floor(d/1000)),f=(d-k*1000)/1000;
-  return {lo:PCUMLO[k]+f*PLAN[k][0], hi:PCUMHI[k]+f*PLAN[k][1]};
-}
+function tiempoPlanBanda(d){ return {lo:cumEn(SLO,d,0), hi:cumEn(SHI,d,1)}; }
 // banda de distancia valida en el segundo t: {lo:minima (yendo al lento), hi:maxima (yendo al rapido)}
-function distPlanBanda(t){
-  function inv(tt,CUMARR,idx){
-    if(tt<=0)return 0; if(tt>=CUMARR[PLAN.length])return TOTAL;
-    var k=0; while(k<PLAN.length-1 && CUMARR[k+1]<=tt) k++;
-    return k*1000+(tt-CUMARR[k])/PLAN[k][idx]*1000;
-  }
-  return { lo: inv(t,PCUMHI,1), hi: inv(t,PCUMLO,0) };
+function distPlanBanda(t){ return {lo:invEn(SHI,t,1), hi:invEn(SLO,t,0)}; }
+// ritmo (s/km) que toca entre a y b metros: {lo, mid, hi}
+function bandaTramo(a,b){
+  var L=Math.max(1,b-a)/1000;
+  return { lo:(cumEn(SLO,b,0)-cumEn(SLO,a,0))/L, mid:(cumEn(SMID,b,2)-cumEn(SMID,a,2))/L,
+           hi:(cumEn(SHI,b,1)-cumEn(SHI,a,1))/L };
 }
 
 // ---------- mapa ----------
@@ -612,43 +619,64 @@ function enSeg(px,py,i){
    clavada. Entre dos candidatos practicamente igual de cerca se coge el que
    esta mas cerca EN RUTA de donde estabas hace un segundo, que es el unico que
    puede ser de verdad. */
-var TOL_IGUAL=25;      // m: por debajo de esto, dos proyecciones son un empate
 var ATRAS=40;          // m: lo que se admite retroceder en la ruta entre dos fixes
 function engancha(lat,lon,sRef,margen){
-  var px=(lon-LON0)*MLON, py=(lat-LAT0)*MLAT, mejor=null;
+  var px=(lon-LON0)*MLON, py=(lat-LAT0)*MLAT;
   var ref=(sRef===null||sRef===undefined)?null:sRef;
   /* Desempate. Que este cerca del punto anterior no basta: en el punto de giro
      de una ida y vuelta, el trozo de ida que ya has hecho te queda MAS cerca
      que el de vuelta que empiezas, y el copiloto se pone a contar hacia atras.
      Lo que de verdad no puede pasar es retroceder en la ruta, asi que un
      candidato que va para atras se descarta y, entre los que van hacia
-     delante, gana el mas cercano. */
-  function coste(r){
-    if(ref===null) return 0;
-    var d=r.s-ref;
+     delante, gana el mas cercano.
+
+     Pero decidir a pelo "el mas cercano" o "el que va hacia delante" falla
+     en los dos sentidos (salia en el simulador): con lo primero la distancia
+     se quedaba 20 m por detras y avanzaba a saltos; con lo segundo, en una
+     horquilla de dos calles a 15 m, un fix con ruido saltaba a la vuelta.
+     Asi que cada candidato se puntua con las dos cosas a la vez:
+       - lo lejos que queda del GPS (error tipico ~10 m, cuenta al cuadrado)
+       - lo que se aparta de donde deberia estar ahora (donde
+         estaba + lo que da tiempo a correr desde el ultimo fix); ir hacia
+         atras cuesta el triple, y mas de ATRAS metros atras no vale.
+     Si dos tramos estan igual de cerca (la ida y la vuelta por la misma
+     calle), decide el avance; si uno esta claramente mas cerca, decide eso. */
+  var kP=Math.min(PLAN.length-1,Math.max(0,Math.floor(dist/1000)));
+  var esperado = tPrev ? Math.min(150,(Date.now()-tPrev)/1000*1000/PLAN[kP][2]) : 0;
+  var SIGMA=10, LAMBDA=20;
+  function puntos(r){
+    if(ref===null) return r.d;
+    var d=vuelta(r.s-ref);
     if(d < -ATRAS) return Infinity;
-    return Math.abs(d);
+    var desvio = d>=esperado ? d-esperado : (esperado-d)*(d<0?3:1);
+    return 0.5*(r.d/SIGMA)*(r.d/SIGMA) + desvio/LAMBDA;
   }
+  var cands=[];
   function barre(i0,i1){
     if(i0<0)i0=0; if(i1>ROUTE.length-2)i1=ROUTE.length-2;
-    for(var i=i0;i<=i1;i++){
-      var r=enSeg(px,py,i);
-      if(!mejor){ mejor=r; continue; }
-      if(r.d < mejor.d-TOL_IGUAL && coste(r)<Infinity){ mejor=r; continue; }
-      if(r.d <= mejor.d+TOL_IGUAL && coste(r) < coste(mejor)) mejor=r;
-    }
+    for(var i=i0;i<=i1;i++) cands.push(enSeg(px,py,i));
   }
-  if(sRef!==null && sRef!==undefined && margen<TOTAL/2){
-    var a=sRef-margen, b=sRef+margen;
+  function elige(){
+    var i, r, B=null, pB=Infinity, T=null;
+    for(i=0;i<cands.length;i++){ r=cands[i];
+      if(!T||r.d<T.d) T=r;
+      var p=puntos(r); if(p<pB){ pB=p; B=r; } }
+    return B || T;                                // todo va hacia atras: el mas cercano, sin mas
+  }
+  var mejor;
+  if(ref!==null && margen<TOTAL/2){
+    var a=ref-margen, b=ref+margen;
     if(a<0){ barre(idxDe(a+TOTAL),ROUTE.length-2); a=0; }
     if(b>TOTAL){ barre(0,idxDe(b-TOTAL)+1); b=TOTAL; }
     barre(idxDe(a),idxDe(b)+1);
+    mejor=elige();
     if(mejor && mejor.d<=45) return mejor;
-    mejor=null;                                   // el tramo cercano no cuadra: buscamos en toda la ruta
+    cands=[];                                     // el tramo cercano no cuadra: buscamos en toda la ruta
   }
   barre(0,ROUTE.length-2);
-  return mejor;
+  return elige();
 }
+function vuelta(d){ if(d<-TOTAL/2) return d+TOTAL; if(d>TOTAL/2) return d-TOTAL; return d; }
 
 /* El primer enganche es distinto a todos los demas: no hay un punto anterior
    con el que comparar, asi que se busca en TODA la ruta. Y en una ruta de ida
@@ -691,11 +719,23 @@ function dibujaMapa(off){
     if(a+largo<=TOTAL) return sub(a,a+largo);
     return sub(a,TOTAL)+" "+sub(0,a+largo-TOTAL);
   }
-  var s='<path d="'+tramo(off,13000)+'" id="p1" fill="none" stroke="#5c9c29" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
-  s+='<path d="'+tramo(off+13000,TOTAL-13000)+'" id="p2" fill="none" stroke="#e4463e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
+  function camino(d,col,id){
+    return '<path d="'+d+'"'+(id?' id="'+id+'"':'')+' class="rt" fill="none" stroke="'+col+
+           '" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  var s="";
+  if(!rutaCargada){                              // la tirada de siempre: verde y el bloque en rojo
+    s+=camino(tramo(off,13000),"#5c9c29","p1");
+    s+=camino(tramo(off+13000,TOTAL-13000),"#e4463e","p2");
+  }else{                                         // ruta del calendario: cada km del color de su plan
+    for(var km=0;km*1000<TOTAL;km++){
+      var pk=PLAN[Math.min(PLAN.length-1,km)];
+      s+=camino(tramo(off+km*1000,Math.min(1000,TOTAL-km*1000)),COL[pk[3]]||"#5c9c29");
+    }
+  }
   var ini=puntoEn(off), c=proj(ini[0],ini[1]);
   s+='<circle cx="'+c[0].toFixed(1)+'" cy="'+c[1].toFixed(1)+'" id="stDot" r="5" fill="#2d82dc"/>';
-  for(var k=1;k<=17;k++){ var p=puntoEn(mod(off+k*1000)),q=proj(p[0],p[1]);
+  for(var k=1;k*1000<TOTAL;k++){ var p=puntoEn(mod(off+k*1000)),q=proj(p[0],p[1]);
     s+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" class="kmp" r="2.6" fill="#7d858f"/>'; }
   s+='<line id="unir" stroke="#f0a500" stroke-width="1.6" stroke-dasharray="3 3" opacity="0"/>';
   s+='<circle id="planDot" r="6" fill="#f0a500" opacity="0"/>';
@@ -762,6 +802,7 @@ function habla(txt,fin){
 // vibramos al terminar para avisar de que toca darle a play sin mirar la pantalla.
 function aviso(txt,bien){
   var el=$(bien?"tonoOk":"tonoMal"), cortado=false;
+  hablaHasta=Date.now()+700+String(txt).length*75;   // ~13 letras por segundo
   function parar(){ if(cortado)return; cortado=true;
     try{ el.pause(); el.currentTime=0; }catch(e){}
     try{ if(navigator.vibrate) navigator.vibrate(180); }catch(e){} }
@@ -774,7 +815,7 @@ function aviso(txt,bien){
   }catch(e){ habla(txt,parar); }
 }
 function segTxt(s){ s=Math.round(s); return s===1?"1 segundo":s+" segundos"; }
-function dicePace(s){var m=Math.floor(s/60),g=Math.round(s%60);
+function dicePace(s){s=Math.round(s);var m=Math.floor(s/60),g=s%60;
   return m+" "+(g===0?"justos":(g<10?"cero "+g:g));}
 
 var ELE=[679.0, 679.4, 681.2, 683.6, 684.0, 686.5, 693.7, 696.4, 699.2, 704.1, 708.9, 713.0, 714.0, 715.0, 710.1, 703.0, 697.8, 694.9, 699.4, 700.2, 698.4, 700.6, 704.7, 703.0, 702.0, 702.0, 705.5, 706.0, 705.2, 706.0, 706.0, 707.0, 706.5, 705.8, 705.0, 703.0, 701.1, 698.3, 690.6, 682.4, 674.0, 666.9, 661.1, 657.9, 655.4, 653.7, 652.3, 652.0, 651.4, 654.1, 657.7, 660.5, 662.5, 662.8, 661.0, 658.5, 655.5, 653.0, 650.1, 646.5, 643.0, 640.5, 642.8, 648.5, 653.6, 652.4, 649.9, 645.1, 640.8, 637.5, 634.1, 630.8, 627.5, 625.2, 622.8, 620.5, 619.2, 619.2, 625.2, 626.0, 627.2, 628.6, 632.5, 637.0, 641.0, 643.3, 645.0, 645.3, 646.0, 647.0, 645.9, 644.7, 643.0, 642.8, 642.2, 642.8, 643.4, 643.6, 642.1, 641.0, 641.9, 643.0, 639.0, 640.7, 648.3, 658.0, 656.0, 653.5, 649.9, 645.0, 646.0, 646.0, 648.0, 651.0, 652.4, 653.6, 654.8, 655.8, 660.3, 664.0, 664.9, 664.0, 666.7, 668.5, 666.9, 666.3, 667.2, 668.1, 669.0, 669.9, 670.8, 670.0, 670.0, 669.3, 664.9, 663.0, 658.8, 656.2, 655.0, 654.8, 654.0, 656.0, 655.4, 656.0, 655.0, 656.3, 663.0, 662.0, 662.0, 664.0, 664.9, 666.0, 667.0, 669.7, 669.0, 669.2, 675.5, 676.0, 674.6, 667.8, 667.0, 667.1, 667.7, 668.4, 669.1, 668.9, 663.5, 660.0, 655.2, 660.0, 659.3, 661.2, 663.8, 666.3, 669.1, 671.0, 671.7, 673.0, 672.0, 672.0, 671.0];
@@ -798,6 +839,128 @@ function juicio(r,lo,hi){
   if(r<=hi+12) return "Un poco lento, aprieta.";
   return "Muy lento, aprieta.";
 }
+
+/* ======================= ritmos segun el terreno =======================
+   Cada 100 m de ruta tiene su pendiente (altimetria suavizada para que el
+   ruido del GPS no invente cuestas). La pendiente se convierte en un factor de
+   esfuerzo: subir un 5 % cuesta como ir un 16 % mas lento en llano, bajar un
+   5 % permite ir un 7 % mas rapido; bajando mucho ya no se gana (frenas para
+   no machacarte), y los extremos se recortan.
+
+   Luego, dentro de cada km del plan, esos factores se normalizan: el km dura
+   lo que dice el plan, pero los 350 m de subida se llevan mas tiempo y los
+   650 de bajada menos. Asi el objetivo del entreno no cambia y las ordenes
+   son las de cada tramo.
+
+   TRAMOS agrupa los trozos de 100 m seguidos del mismo tipo (subida, bajada,
+   llano), sin cruzar el cambio de km, y es lo que se canta.
+   ====================================================================== */
+var SMID=[],SLO=[],SHI=[];   // segundos acumulados al llegar a j*100 m
+var GRAD=[];                 // pendiente (%) de cada tramo de 100 m
+var TRAMOS=[];               // {ini,fin (en tramos de 100 m), tipo, mid, lo, hi, g}
+var TERRENO=false;           // hay altimetria usable
+var UMBRAL_CUESTA=2;         // % a partir del cual un tramo es subida o bajada
+
+function factorCuesta(g){
+  var f = g>=0 ? 1+0.030*g+0.0005*g*g : 1-0.018*(-g)+0.0009*g*g;
+  return Math.max(0.88, Math.min(1.6, f));
+}
+function preparaTerreno(){
+  var n=PLAN.length*10, j, k, E=ELE||[], L=E.length;
+  var usable = L>=3 && E.every(function(h){ return typeof h==="number" && isFinite(h); });
+  function el(i){ i=Math.max(0,Math.min(L-1,i)); return E[i]; }
+  function suave(i){ return (el(i-1)+2*el(i)+el(i+1))/4; }
+  var vueltaE = Math.max(1, Math.floor((TOTAL||L*100)/100));   // la ruta puede dar la vuelta
+  GRAD=[]; var F=[];
+  for(j=0;j<n;j++){
+    var g=0;
+    if(usable){ var i=j%vueltaE; if(i+1<L) g=suave(i+1)-suave(i); }  // m en 100 m = %
+    g=Math.max(-25,Math.min(25,g));
+    GRAD.push(g); F.push(factorCuesta(g));
+  }
+  TERRENO=usable;
+  SMID=[0]; SLO=[0]; SHI=[0];
+  for(k=0;k<PLAN.length;k++){
+    var med=0; for(j=k*10;j<k*10+10;j++) med+=F[j]; med/=10;
+    for(j=k*10;j<k*10+10;j++){
+      var r=F[j]/med/10;
+      SMID.push(SMID[j]+PLAN[k][2]*r); SLO.push(SLO[j]+PLAN[k][0]*r); SHI.push(SHI[j]+PLAN[k][1]*r);
+    }
+  }
+  // tramos: mismo tipo seguido, sin pasar de un km a otro
+  function tipo(g){ return g>=UMBRAL_CUESTA ? "sube" : (g<=-UMBRAL_CUESTA ? "baja" : "llano"); }
+  var T=[];
+  for(j=0;j<n;j++){
+    var tp=tipo(GRAD[j]), u=T[T.length-1];
+    if(u && u.tipo===tp && j%10!==0) u.fin=j+1; else T.push({ini:j,fin:j+1,tipo:tp});
+  }
+  // un repecho de 100 m suelto no merece una orden: se lo come el de al lado del mismo km
+  for(var pasada=0;pasada<2;pasada++){
+    for(j=0;j<T.length;j++){
+      var t=T[j]; if(t.fin-t.ini>1) continue;
+      var a=T[j-1], b=T[j+1];
+      var mismoKmA = a && Math.floor(a.ini/10)===Math.floor(t.ini/10);
+      var mismoKmB = b && Math.floor(b.ini/10)===Math.floor(t.ini/10);
+      if(mismoKmA){ a.fin=t.fin; T.splice(j,1); j--; }
+      else if(mismoKmB){ b.ini=t.ini; T.splice(j,1); j--; }
+    }
+    for(j=1;j<T.length;j++){          // y si al quitarlo quedan dos iguales juntos, uno solo
+      if(T[j].tipo===T[j-1].tipo && T[j].ini%10!==0){ T[j-1].fin=T[j].fin; T.splice(j,1); j--; }
+    }
+  }
+  for(j=0;j<T.length;j++){
+    var b2=bandaTramo(T[j].ini*100,T[j].fin*100);
+    T[j].mid=b2.mid; T[j].lo=b2.lo; T[j].hi=b2.hi;
+    var sg=0; for(k=T[j].ini;k<T[j].fin;k++) sg+=GRAD[k]; T[j].g=sg/(T[j].fin-T[j].ini);
+  }
+  TRAMOS=T;
+}
+function hayTerreno(){ return TERRENO && TRAMOS.length>0; }
+function tramoEn(d){                  // indice del tramo que contiene d metros (-1 = fuera del plan)
+  var j=Math.floor(Math.max(0,d)/100);
+  for(var i=0;i<TRAMOS.length;i++) if(j>=TRAMOS[i].ini && j<TRAMOS[i].fin) return i;
+  return -1;
+}
+function metrosTxt(m){ m=Math.max(100,Math.round(m/50)*50); return m+" metros"; }
+function queEs(t){ return t.tipo==="sube" ? "subida" : (t.tipo==="baja" ? "bajada" : "llano"); }
+// lo que toca desde d: el tramo en el que estoy y, si esta cerca, el siguiente
+function ordenDesde(d,conSiguiente){
+  var i=tramoEn(d); if(i<0) return "";
+  var t=TRAMOS[i], resto=t.fin*100-d, txt;
+  if(t.tipo==="llano") txt="Ahora "+dicePace(t.mid)+".";
+  else txt=(t.tipo==="sube"?"Subida":"Bajada")+" de "+metrosTxt(resto)+", ritmo "+dicePace(t.mid)+".";
+  var s2=TRAMOS[i+1];
+  if(conSiguiente!==false && s2 && resto<=400 && Math.floor(s2.ini/10)===Math.floor(t.ini/10))
+    txt+=" Luego "+queEs(s2)+(s2.tipo==="llano"?", ":" de "+metrosTxt((s2.fin-s2.ini)*100)+", ")+
+         dicePace(s2.mid)+".";
+  return txt;
+}
+// hay algo que contar del terreno cerca de d
+function proximoCambio(d,delante){
+  var i=tramoEn(d); if(i<0) return false;
+  var t=TRAMOS[i];
+  return t.tipo!=="llano" || t.fin*100-d<=delante || d-t.ini*100<=150;
+}
+// aviso de "viene subida": un poco antes de empezar, salvo que coincida con el
+// canto del km o del medio km, que ya lo incluyen
+var tramoDicho=-1, pendientes=0, hablaHasta=0;
+function diferido(fn,ms){ pendientes++; setTimeout(function(){ pendientes--; fn(); },ms); }
+function avisoTerreno(d){
+  if(!hayTerreno()) return;
+  var i=tramoEn(d+40);
+  if(i<=tramoDicho) return;
+  var t=TRAMOS[i], ini=t.ini*100;
+  if(ini%500===0 || d>ini+150){ tramoDicho=i; return; }   // lo canta el km / ya paso
+  var ant=TRAMOS[i-1];
+  if(t.tipo==="llano" && (!ant || ant.tipo==="llano")){ tramoDicho=i; return; }
+  if(pendientes>0 || Date.now()<hablaHasta) return;      // se espera a que acabe de hablar
+  tramoDicho=i;
+  var txt = t.tipo==="llano"
+    ? "Se acaba la "+queEs(ant)+". Ahora "+dicePace(t.mid)+"."
+    : "Viene "+queEs(t)+" de "+metrosTxt((t.fin-t.ini)*100)+". Ritmo "+dicePace(t.mid)+".";
+  aviso(txt,true);
+}
+preparaTerreno();
 // ---------- estado ----------
 var corriendo=false,pausado=false,t0=0,pausaEn=0,tick=null;
 var dist=0,ultPos=null,buf=[],kmHecho=0,tKm=0,dKm=0,avisoBloque=false,medHecho=0,tMed=0;
@@ -836,9 +999,12 @@ function arranca(s){
   avisoBloque = dist>12700;
   buf=[]; dKm=0;
   romaDicho=false;
+  tramoDicho=tramoEn(dist);
   if(PLAN[kk][3]!=="r")
-    habla("Kilómetro "+(k+1)+". Ritmo "+dicePace(PLAN[kk][0])+" a "+dicePace(PLAN[kk][1])+
-          (FC[kk][0]? ". Pulsaciones "+FC[kk][0]+" a "+FC[kk][1]+"." : ""));
+    habla("Kilómetro "+(k+1)+". "+
+          (hayTerreno() ? ordenDesde(dist,true)
+                        : "Ritmo "+dicePace(PLAN[kk][0])+" a "+dicePace(PLAN[kk][1])+".")+
+          (FC[kk][0]? " Pulsaciones "+FC[kk][0]+" a "+FC[kk][1]+"." : ""));
 }
 
 function distGPS(a,b){
@@ -965,6 +1131,14 @@ function pintar(){
   $("kmTipo").textContent=pl[4];
   $("kmCard").style.borderLeftColor=COL[pl[3]];
   $("kmObj").textContent=pace(pl[0])+"-"+pace(pl[1]);
+  var iTr=hayTerreno()?tramoEn(dm):-1;
+  if(iTr>=0){                                  // con cuestas manda el tramo, no el km entero
+    var tr0=TRAMOS[iTr];
+    $("kmObj").textContent=pace(tr0.lo)+"-"+pace(tr0.hi);
+    if(tr0.tipo!=="llano")
+      $("kmTipo").textContent=(tr0.tipo==="sube"?"▲ Subida":"▼ Bajada")+" · quedan "+
+        Math.max(0,Math.round((tr0.fin*100-dm)/10)*10)+" m";
+  }
   var fc=FC[k]; $("kmFc").textContent = fc[0] ? fc[0]+"-"+fc[1] : "–";
   var enKm=dm-k*1000;
   // "ritmo medio" = media del km actual, no de toda la carrera
@@ -1033,29 +1207,36 @@ function pintar(){
   // avisos
   if(corriendo&&!pausado){
     var kmAct=Math.floor(dist/1000);
-    if(kmAct>kmHecho&&kmAct<=18){
+    if(kmAct>kmHecho&&kmAct<=PLAN.length){
       var parcial=t-tKm; tKm=t; tMed=t; medHecho=kmAct*2; dKm=0;
-      var ant=PLAN[Math.min(17,kmAct-1)], sig=PLAN[Math.min(17,kmAct)];
+      var ult=PLAN.length-1;
+      var ant=PLAN[Math.min(ult,kmAct-1)], sig=kmAct<=ult ? PLAN[kmAct] : null;
       var dd=dl===null?0:dl, bien=Math.abs(dd)<=20 && parcial<=ant[1]+10;
       var ver = Math.abs(dd)<=12 ? "Justo en el plan."
               : (dd<0 ? segTxt(-dd)+" por delante." : segTxt(dd)+" por detrás.");
-      var romaPre = (ant[3]!=="r" && sig[3]==="r") ? "Empieza el ritmo de Roma. " : "";
+      var romaPre = (sig && ant[3]!=="r" && sig[3]==="r")
+                  ? (rutaCargada ? "Empieza el bloque. " : "Empieza el ritmo de Roma. ") : "";
+      var sigue = !sig ? " Plan completado. Buen trabajo."
+                : (hayTerreno() ? " "+ordenDesde(dist,true) : " Ahora "+dicePace(sig[2])+"."+terreno(dist));
       var frase=romaPre+"Kilómetro "+kmAct+", "+dicePace(parcial)+". "+ver+" "+
-                juicio(parcial,ant[0],ant[1])+" Ahora "+dicePace(sig[2])+"."+terreno(dist);
+                juicio(parcial,ant[0],ant[1])+sigue;
       kmHecho=kmAct;
-      setTimeout(function(){ aviso(frase,bien); },6000);  // deja hablar antes a Huawei Health
+      diferido(function(){ aviso(frase,bien); },6000);  // deja hablar antes a Huawei Health
     }
     // mitad de kilometro: chequeo corto
     var mitad=Math.floor(dist/500);
-    if(mitad>medHecho && mitad%2===1 && mitad<36){
+    if(mitad>medHecho && mitad%2===1 && mitad<PLAN.length*2){
       var p500=(t-tMed)*2; tMed=t; medHecho=mitad;
-      var pl2=PLAN[Math.min(17,Math.floor(dist/1000))];
-      var jz=juicio(p500,pl2[0],pl2[1]);
+      // se juzga contra lo que tocaba en ESOS 500 m (con sus cuestas), no contra el km entero
+      var b5=bandaTramo(mitad*500-500,mitad*500);
+      var jz=juicio(p500,b5.lo,b5.hi);
       var ok2=jz.indexOf("Perfecto")===0;
-      var f2="Medio kilómetro a "+dicePace(p500)+". "+jz+terreno(dist);
-      setTimeout(function(){ aviso(f2,ok2); },1500);
+      var f2="Medio kilómetro a "+dicePace(p500)+". "+jz+
+             (hayTerreno() ? (proximoCambio(dist,250) ? " "+ordenDesde(dist,false) : "") : terreno(dist));
+      diferido(function(){ aviso(f2,ok2); },1500);
     }
-    if(!avisoBloque&&dist>12700&&dist<13000){
+    avisoTerreno(dist);
+    if(!rutaCargada&&!avisoBloque&&dist>12700&&dist<13000){
       avisoBloque=true;
       aviso("Trescientos metros para el bloque. Cinco kilómetros a ritmo de Roma.",true);
     }
@@ -1092,14 +1273,15 @@ $("gpsbtn").addEventListener("click",function(){
 });
 
 // ---------- mapa: seguimiento ----------
-var MPU=(function(){           // metros por unidad de SVG
-  var m=0,u=0;
-  for(var i=1;i<ROUTE.length;i+=17){
+function calcMPU(){             // metros por unidad de SVG (cambia con cada ruta)
+  var m=0,u=0, paso=Math.max(1,Math.floor(ROUTE.length/40));
+  for(var i=1;i<ROUTE.length;i+=paso){
     var a=proj(ROUTE[i-1][0],ROUTE[i-1][1]),b=proj(ROUTE[i][0],ROUTE[i][1]);
     u+=Math.hypot(b[0]-a[0],b[1]-a[1]); m+=CUM[i]-CUM[i-1];
   }
   return u>0?m/u:1;
-})();
+}
+var MPU=calcMPU();
 var MODO="seguir", VENTANA=160;       // metros de ancho de la vista al seguir
 var VB={x:0,y:0,w:SZ,h:SZ};
 function aplicaVB(){ $("mapa").setAttribute("viewBox",
@@ -1108,8 +1290,8 @@ function escalar(){                 // todo a tamaño constante en pantalla
   var sv=$("mapa"), cw=sv.clientWidth||sv.getBoundingClientRect().width||360;
   var u=VB.w/cw;                    // unidades de svg por pixel
   var ancho=Math.max(9/MPU, 4*u);   // el camino mide 9 m de verdad, minimo 4 px
-  var p1=$("p1"),p2=$("p2");
-  if(p1){p1.setAttribute("stroke-width",ancho.toFixed(2));p2.setAttribute("stroke-width",ancho.toFixed(2));}
+  var rts=document.querySelectorAll("#mapa .rt");
+  for(var ir=0;ir<rts.length;ir++) rts[ir].setAttribute("stroke-width",ancho.toFixed(2));
   var yo=$("yoDot"),pd=$("planDot"),un=$("unir"),st=$("stDot");
   if(yo){yo.setAttribute("r",(9*u).toFixed(2));yo.setAttribute("stroke-width",(3*u).toFixed(2));}
   if(pd)pd.setAttribute("r",(8*u).toFixed(2));
@@ -1202,7 +1384,7 @@ bRes.addEventListener("click",function(){
   try{ localStorage.removeItem("copiloto.calle.v1"); }catch(e){}
   clearInterval(tick); corriendo=false; pausado=false; bPau.textContent="Pausa";
   dist=0; buf=[]; kmHecho=0; tKm=0; dKm=0; avisoBloque=false; medHecho=0; tMed=0; ultPos=null; ajusteSeg=0;
-  sIni=null; saltos=0; tPlanIni=0; romaDicho=false; dibujaMapa(0); escalar();
+  sIni=null; saltos=0; tPlanIni=0; romaDicho=false; tramoDicho=-1; dibujaMapa(0); escalar();
   if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}
   try{if(wakeLock)wakeLock.release();}catch(e){}
   $("gps").className=""; $("gps").textContent="GPS sin activar";
@@ -1268,7 +1450,10 @@ function cargaRuta(pts, plan, fc, ele){
   // como si acabase de abrirse: nada de arrastrar el estado de la ruta anterior
   corriendo=false; pausado=false; dist=0; buf=[]; kmHecho=0; tKm=0; dKm=0;
   avisoBloque=false; medHecho=0; tMed=0; ultPos=null; ajusteSeg=0;
-  sIni=null; sAbs=null; sAct=null; saltos=0; tPlanIni=0; romaDicho=false;
+  sIni=null; sAbs=null; sAct=null; saltos=0; tPlanIni=0; romaDicho=false; tramoDicho=-1;
+  rutaCargada=true;                   // antes de dibujar: el mapa se colorea por el plan nuevo
+  preparaTerreno();
+  MPU=calcMPU();
   dibujaMapa(0); escalar(); pintar();
   return true;
 }
@@ -1334,6 +1519,7 @@ window.retomaCalle=function(){
   tPlanIni=st.tPlanIni||0; kmHecho=st.kmHecho||0; tKm=st.tKm||0; dKm=st.dKm||0;
   medHecho=st.medHecho||0; tMed=st.tMed||0; ajusteSeg=st.ajusteSeg||0;
   avisoBloque=!!st.avisoBloque; romaDicho=!!st.romaDicho;
+  tramoDicho=(sIni===null?-1:tramoEn(dist));
   // lo que no se guarda: el buffer de ritmo y la ultima posicion se rehacen
   // solos con los primeros fixes, y arrastrarlos solo daria ritmos raros
   buf=[]; ultPos=null; saltos=0; sAct=(sAbs===null?null:mod(sAbs));
@@ -2403,7 +2589,7 @@ function planAMotor(plan){
   var ritmos=plan.km.map(function(t){ return t.ritmo; });
   var min=Math.min.apply(null,ritmos), max=Math.max.apply(null,ritmos);
   // hay "bloque" solo si de verdad se cambia de marcha: 20 s/km o mas
-  var hayBloque = plan.km.length>1 && (max-min)>=20;
+  var hayBloque = plan.km.length>1 && (max-min)>=20 && plan.subtipo!=="facil";
   var P=[], F=[], k, j, t;
   for(k=0;k<kms;k++){
     t=null;
