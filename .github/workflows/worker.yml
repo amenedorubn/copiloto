@@ -29,6 +29,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
+          # la version que trae la accion por defecto es la 3.x y ella misma
+          # avisa de que esta obsoleta; fijamos la linea 4, que es la soportada
+          wranglerVersion: "4"
 
       # Los secretos del Worker (APP_KEY, ICAL_URL) NO se tocan aqui a proposito:
       # viven solo en el panel de Cloudflare y sobreviven a cada despliegue.
