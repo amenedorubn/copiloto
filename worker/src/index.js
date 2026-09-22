@@ -720,9 +720,31 @@ const RE_RITMO = /(\d{1,2})\s*['’]\s*(\d{2})\s*["”]?/g;
 
 function subtipoDe(ctx, txt) {
   const c = (ctx + " " + txt.slice(0, 400)).toLowerCase();
-  if (/tirada larga|rodaje largo|el test|ensayo general/.test(c)) return "largo";
+  // primero lo que dice ser suave: un "rodaje suave (antes del test)" no es
+  // una tirada larga solo por nombrar el test
+  if (/rodaje (muy suave|suave|f[aá]cil|de recuperaci[oó]n)/.test(c)) return "facil";
+  if (/tirada larga|rodaje largo|ensayo general|el test/.test(c)) return "largo";
   if (/tempo|umbral|series/.test(c)) return "tempo";
   return "facil";
+}
+
+// Muchos rodajes no traen tabla por km: dicen un ritmo para toda la salida
+// ("Todo a 6'50\"-7'10\"/km") y la distancia va en el titulo. Eso tambien es
+// un plan perfectamente valido, de un solo tramo.
+const RE_TODO = /(\d{1,2})\s*['’]\s*(\d{2})\s*["”]\s*[-–]\s*(\d{1,2})\s*['’]\s*(\d{2})\s*["”]\s*\/\s*km/;
+
+function tramoUnico(txt, titulo) {
+  const mp = txt.match(RE_TODO);
+  if (!mp) return null;
+  const mt = (titulo || "").match(/(\d{1,3})\s*km/i);
+  if (!mt) return null;
+  const dist = +mt[1];
+  if (!dist || dist > 100) return null;
+  const a = Math.min(mmss(mp[1], mp[2]), mmss(mp[3], mp[4]));
+  const b = Math.max(mmss(mp[1], mp[2]), mmss(mp[3], mp[4]));
+  if (a < 150 || b > 900) return null;
+  return [{ desde: 0, hasta: dist, ritmo: Math.round((a + b) / 2), banda: [a, b],
+            nota: "toda la salida al mismo ritmo" }];
 }
 
 function leeFuera(txt, ctx, titulo) {
@@ -759,10 +781,12 @@ function leeFuera(txt, ctx, titulo) {
     if (nota) tramo.nota = nota.slice(0, 80);
     km.push(tramo);
   }
-  if (!km.length) return null;
+  // sin tabla por km, puede haber un ritmo unico para toda la salida
+  const tramos = km.length ? km : tramoUnico(txt, titulo);
+  if (!tramos || !tramos.length) return null;
 
   // la distancia objetivo: el final del ultimo tramo, o lo que diga el titulo
-  let distancia = Math.max(...km.map(k => k.hasta)) * 1000;
+  let distancia = Math.max(...tramos.map(k => k.hasta)) * 1000;
   const mt = (titulo || "").match(/(\d{1,3})\s*km/i);
   if (mt && +mt[1] * 1000 > distancia) distancia = +mt[1] * 1000;
 
@@ -771,6 +795,6 @@ function leeFuera(txt, ctx, titulo) {
     subtipo: subtipoDe(ctx, txt),
     nombre: limpiaTitulo(titulo) || "Salida",
     distancia,
-    km
+    km: tramos
   });
 }
