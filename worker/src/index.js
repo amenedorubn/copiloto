@@ -14,7 +14,7 @@
      GET /agenda?desde=&hasta=       con clave. Entrenos del rango.
    =========================================================================== */
 
-import { rutas, conectar, vuelta } from "./strava.js";
+import { rutas, ruta, conectar, vuelta } from "./strava.js";
 
 const ORIGENES = [
   "https://amenedorubn.github.io"
@@ -57,10 +57,10 @@ export default {
       if (url.pathname === "/strava/conectar") return conectar(env, url, origen);
       if (url.pathname === "/strava/vuelta") return vuelta(env, url);
 
-      if (url.pathname === "/rutas") {
+      if (url.pathname === "/rutas" || url.pathname === "/ruta") {
         const fallo = revisaClave(req, env);
         if (fallo) return json(fallo, fallo.codigo, origen);
-        const r = await rutas(env, url);
+        const r = url.pathname === "/rutas" ? await rutas(env, url) : await ruta(env, url);
         return json(r, r.codigo || (r.error ? 400 : 200), origen);
       }
 

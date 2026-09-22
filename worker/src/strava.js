@@ -464,3 +464,76 @@ export async function rutas(env, url) {
     grupos: salida
   };
 }
+
+/* ===========================================================================
+   Una ruta concreta, con todo el detalle
+   ---------------------------------------------------------------------------
+   GET /ruta?id=<id de actividad>
+
+   La polilinea que trae el listado esta diezmada (un punto cada 50-60 m), que
+   vale para un minimapa pero no para proyectar la posicion encima mientras
+   corres. Aqui se pide la actividad entera, que trae la polilinea completa, y
+   ademas la altimetria remuestreada cada 100 m, que es lo que espera el motor.
+   =========================================================================== */
+
+export async function ruta(env, url) {
+  const id = (url.searchParams.get("id") || "").trim();
+  if (!/^\d+$/.test(id)) return { error: "sin_id", mensaje: "Falta el id de la actividad." };
+  if (!env.STRAVA_CLIENT_ID || !env.STRAVA_CLIENT_SECRET)
+    return { error: "sin_configurar", codigo: 503,
+      mensaje: "Faltan STRAVA_CLIENT_ID y STRAVA_CLIENT_SECRET en el panel de Cloudflare." };
+
+  const token = await accessToken(env);
+  const cab = { Authorization: "Bearer " + token };
+
+  const rA = await fetch("https://www.strava.com/api/v3/activities/" + id + "?include_all_efforts=false",
+    { headers: cab });
+  if (rA.status === 404) return { error: "no_esta", codigo: 404, mensaje: "Esa actividad ya no está en Strava." };
+  if (!rA.ok) {
+    const e = new Error("Strava ha contestado " + rA.status + " al pedir la actividad.");
+    e.codigo = rA.status === 429 ? 429 : 502; throw e;
+  }
+  const a = await rA.json();
+  const linea = (a.map && (a.map.polyline || a.map.summary_polyline)) || "";
+  if (!linea) return { error: "sin_trazado", codigo: 422, mensaje: "Esa actividad no tiene trazado GPS." };
+
+  // altimetria: si falla, la ruta sigue valiendo, solo se queda sin cuestas
+  let ele = [];
+  try {
+    const rS = await fetch("https://www.strava.com/api/v3/activities/" + id +
+      "/streams?keys=distance,altitude&key_by_type=true", { headers: cab });
+    if (rS.ok) {
+      const s = await rS.json();
+      const dd = s.distance && s.distance.data, aa = s.altitude && s.altitude.data;
+      if (Array.isArray(dd) && Array.isArray(aa) && dd.length === aa.length && dd.length > 1)
+        ele = cada100(dd, aa);
+    }
+  } catch (e) { ele = []; }
+
+  const pts = decode(linea);
+  return {
+    id: String(a.id),
+    nombre: a.name,
+    fecha: a.start_date_local,
+    distancia: Math.round(a.distance),
+    exacta: Math.round(largo(pts)),
+    desnivel: Math.round(a.total_elevation_gain || 0),
+    puntos: pts.length,
+    linea,
+    ele
+  };
+}
+
+// altura cada 100 m exactos, que es como la lee el motor
+function cada100(dist, alt) {
+  const fin = dist[dist.length - 1];
+  const out = [];
+  let i = 0;
+  for (let d = 0; d <= fin; d += 100) {
+    while (i < dist.length - 2 && dist[i + 1] < d) i++;
+    const d0 = dist[i], d1 = dist[i + 1];
+    const t = d1 > d0 ? (d - d0) / (d1 - d0) : 0;
+    out.push(Math.round((alt[i] + (alt[i + 1] - alt[i]) * Math.max(0, Math.min(1, t))) * 10) / 10);
+  }
+  return out;
+}

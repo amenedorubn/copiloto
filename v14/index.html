@@ -186,6 +186,9 @@
     background:#1b1f25;color:var(--tx);font-size:13px;font-weight:800;font-family:inherit}
   .rtChip.on{background:#1f2b38;border-color:#3B8BDD;color:#bcd9ff}
   .rtAviso{font-size:11px;color:#ffb35c;font-weight:700;flex:1 1 140px;line-height:1.3}
+  #rtGo{flex:0 0 auto;width:100%;margin-top:10px;min-height:74px;font-size:22px;font-weight:900;
+    border-radius:15px;border:1px solid #fff;background:rgba(255,255,255,.95);color:#123}
+  #rtGo:active{background:#fff}
 
   /* ajustes */
   #appConf label{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
@@ -326,6 +329,7 @@
     <div id="rtEstado">–</div>
   </div>
   <div class="hCuerpo" id="rtCuerpo"></div>
+  <button id="rtGo" hidden>EMPEZAR ESTA RUTA</button>
   <div class="hPie" style="grid-template-columns:1fr 1fr">
     <button id="rtVolver">Volver</button>
     <button id="rtOtra">Buscar otra vez</button>
@@ -783,7 +787,7 @@ function arranca(s){
   romaDicho=false;
   if(PLAN[kk][3]!=="r")
     habla("Kilómetro "+(k+1)+". Ritmo "+dicePace(PLAN[kk][0])+" a "+dicePace(PLAN[kk][1])+
-          ". Pulsaciones "+FC[kk][0]+" a "+FC[kk][1]+".");
+          (FC[kk][0]? ". Pulsaciones "+FC[kk][0]+" a "+FC[kk][1]+"." : ""));
 }
 
 function distGPS(a,b){
@@ -909,7 +913,7 @@ function pintar(){
   $("kmTipo").textContent=pl[4];
   $("kmCard").style.borderLeftColor=COL[pl[3]];
   $("kmObj").textContent=pace(pl[0])+"-"+pace(pl[1]);
-  var fc=FC[k]; $("kmFc").textContent=fc[0]+"-"+fc[1];
+  var fc=FC[k]; $("kmFc").textContent = fc[0] ? fc[0]+"-"+fc[1] : "–";
   var enKm=dm-k*1000;
   // "ritmo medio" = media del km actual, no de toda la carrera
   $("medio").textContent = enKm>60 ? pace((t-tKm)/(enKm/1000)) : "--:--";
@@ -971,8 +975,8 @@ function pintar(){
   // bloque de Roma: lo canto aunque enganche ya metido en el
   if(corriendo&&!pausado&&!romaDicho&&PLAN[k][3]==="r"){
     romaDicho=true;
-    aviso("Bloque de ritmo de Roma. Kilómetro "+(k+1)+". Ritmo "+dicePace(pl[0])+" a "+
-          dicePace(pl[1])+". Pulsaciones "+fc[0]+" a "+fc[1]+".",true);
+        aviso(pl[4]+". Kilómetro "+(k+1)+". Ritmo "+dicePace(pl[0])+" a "+dicePace(pl[1])+
+          (fc[0]? ". Pulsaciones "+fc[0]+" a "+fc[1]+"." : "."),true);
   }
   // avisos
   if(corriendo&&!pausado){
@@ -1152,6 +1156,78 @@ bRes.addEventListener("click",function(){
   if(pd)pd.setAttribute("opacity","0"); if(yo)yo.setAttribute("opacity","0");
   pintar(); candado();
 });
+
+/* ======================= cargar otra ruta y otro plan =======================
+   El motor se escribio con la ruta y el plan de la tirada metidos dentro como
+   datos fijos. Aqui se cambian los dos sin tocar NADA de como calcula: misma
+   proyeccion sobre la polilinea, mismo enganche, mismo filtro de saltos,
+   mismos avisos. Lo unico que cambia son los numeros de partida.
+
+   ele puede venir vacia: entonces pendiente() devuelve 0 y el copiloto
+   simplemente no canta cuestas, que es lo correcto si no sabemos la altura.
+   ========================================================================== */
+function cargaRuta(pts, plan, fc, ele){
+  if(!pts || pts.length<2) return false;
+  var i;
+
+  ROUTE = pts;
+  CUM = [0];
+  for(i=1;i<ROUTE.length;i++){
+    var a=ROUTE[i-1], b=ROUTE[i];
+    var la=(a[0]+b[0])/2*Math.PI/180;
+    var dx=(b[1]-a[1])*Math.PI/180*Math.cos(la)*6371000;
+    var dy=(b[0]-a[0])*Math.PI/180*6371000;
+    CUM.push(CUM[i-1]+Math.sqrt(dx*dx+dy*dy));
+  }
+  for(i=0;i<CUM.length;i++) CUM[i]=Math.round(CUM[i]);
+  TOTAL = CUM[CUM.length-1];
+
+  // encuadre del mapa
+  lats = ROUTE.map(function(p){return p[0];});
+  lons = ROUTE.map(function(p){return p[1];});
+  la0  = Math.cos(lats.reduce(function(a,b){return a+b;},0)/lats.length*Math.PI/180);
+  xs   = lons.map(function(l){return l*la0;});
+  x0=Math.min.apply(null,xs); x1=Math.max.apply(null,xs);
+  y0=Math.min.apply(null,lats); y1=Math.max.apply(null,lats);
+  esc = Math.min((SZ-2*PAD)/Math.max(1e-9,x1-x0), (SZ-2*PAD)/Math.max(1e-9,y1-y0));
+
+  // geometria en metros, que es sobre la que se proyecta la posicion
+  LON0 = lons.reduce(function(a,b){return a+b;},0)/lons.length;
+  LAT0 = (y0+y1)/2;
+  MLON = 111320*Math.cos(LAT0*Math.PI/180);
+  RX=[]; RY=[];
+  for(i=0;i<ROUTE.length;i++){
+    RX.push((ROUTE[i][1]-LON0)*MLON);
+    RY.push((ROUTE[i][0]-LAT0)*MLAT);
+  }
+
+  PLAN = plan; FC = fc; ELE = ele || [];
+  PCUM=[0]; for(i=0;i<PLAN.length;i++) PCUM.push(PCUM[i]+PLAN[i][2]);
+  PLANTOTAL = PCUM[PLAN.length];
+  PCUMLO=[0]; PCUMHI=[0];
+  for(i=0;i<PLAN.length;i++){
+    PCUMLO.push(PCUMLO[i]+PLAN[i][0]);
+    PCUMHI.push(PCUMHI[i]+PLAN[i][1]);
+  }
+
+  // como si acabase de abrirse: nada de arrastrar el estado de la ruta anterior
+  corriendo=false; pausado=false; dist=0; buf=[]; kmHecho=0; tKm=0; dKm=0;
+  avisoBloque=false; medHecho=0; tMed=0; ultPos=null; ajusteSeg=0;
+  sIni=null; sAbs=null; sAct=null; saltos=0; tPlanIni=0; romaDicho=false;
+  dibujaMapa(0); escalar(); pintar();
+  return true;
+}
+window.cargaRutaGPS = function(pts, plan, fc, ele, titulo){
+  if(!cargaRuta(pts, plan, fc, ele)) return false;
+  var h=document.querySelector("#appGPS h1");
+  if(h && titulo) h.textContent=titulo;
+  E2("appHoy").hidden=true; E2("appRutas").hidden=true; E2("selector").hidden=true;
+  E2("appGPS").hidden=false;
+  try{ pintar(); escalar(); }catch(e){}
+  return true;
+};
+function E2(id){ return document.getElementById(id); }
+
 pintar();
 </script>
 <script>
@@ -2102,11 +2178,65 @@ function pidePosicion(){
   },{ enableHighAccuracy:false, timeout:15000, maximumAge:300000 });
 }
 
+/* El motor espera PLAN como una fila por kilometro:
+     [rapido, lento, objetivo, letra de color, nombre]
+   y FC como [min,max] por kilometro. El calendario da tramos "del km X al Y",
+   asi que aqui se reparten kilometro a kilometro. */
+function planAMotor(plan){
+  var kms=Math.max(1,Math.round(plan.distancia/1000));
+  var ritmos=plan.km.map(function(t){ return t.ritmo; });
+  var min=Math.min.apply(null,ritmos), max=Math.max.apply(null,ritmos);
+  // hay "bloque" solo si de verdad se cambia de marcha: 20 s/km o mas
+  var hayBloque = plan.km.length>1 && (max-min)>=20;
+  var P=[], F=[], k, j, t;
+  for(k=0;k<kms;k++){
+    t=null;
+    for(j=0;j<plan.km.length;j++)
+      if(k>=plan.km[j].desde && k<plan.km[j].hasta){ t=plan.km[j]; break; }
+    if(!t) t = plan.km.length ? plan.km[plan.km.length-1] : {ritmo:400};
+    var mid=t.ritmo;
+    var lo = t.banda ? t.banda[0] : Math.round(mid*0.98);
+    var hi = t.banda ? t.banda[1] : Math.round(mid*1.02);
+    var letra = (hayBloque && mid===min) ? "r" : ((k===0 && mid===max) ? "a" : "c");
+    P.push([lo, hi, mid, letra,
+            t.nota || (letra==="r" ? "Bloque a ritmo" : "Kilómetro "+(k+1))]);
+    F.push(t.fc || [0,0]);
+  }
+  return { P:P, F:F };
+}
+
+function empiezaRuta(){
+  if(!rutaElegida || !rutasDatos) return;
+  var g=null, i;
+  for(i=0;i<rutasDatos.grupos.length;i++)
+    if(rutasDatos.grupos[i].id===rutaElegida) g=rutasDatos.grupos[i];
+  if(!g) return;
+  E("rtGo").disabled=true;
+  estadoRt("cargando la ruta entera…");
+  var base=conf.url.replace(/\/+$/,"");
+  fetch(base+"/ruta?id="+encodeURIComponent(g.id),
+        { headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
+   .then(function(r){ return r.json(); })
+   .then(function(j){
+      if(j && j.error){ estadoRt(j.mensaje||j.error,true); return; }
+      var pts=polilinea(j.linea);
+      if(pts.length<2){ estadoRt("esa ruta no trae trazado",true); return; }
+      var m=planAMotor(evRuta.plan);
+      var tit=(evRuta.plan.nombre||evRuta.titulo)+" · "+coma(evRuta.plan.distancia/1000,2)+" km";
+      if(!window.cargaRutaGPS(pts, m.P, m.F, j.ele||[], tit)){
+        estadoRt("no se ha podido cargar la ruta",true); return;
+      }
+   })
+   .catch(function(){ estadoRt("sin conexión con el Worker",true); })
+   .then(function(){ E("rtGo").disabled=false; });
+}
+
 function estadoRt(t,mal){ var e=E("rtEstado"); e.textContent=t; e.className=mal?"mal":""; }
 
 function pintaRutas(){
   var cu=E("rtCuerpo"); cu.innerHTML="";
-  if(buscando){ cu.appendChild(vacio("Buscando rutas que empiecen donde estás…")); return; }
+  pinRtGo();
+  if(buscando){ cu.appendChild(vacio("Buscando rutas…")); return; }
   if(!rutasDatos){ cu.appendChild(vacio("Pulsa «Buscar otra vez» para mirar en Strava.")); return; }
   // barra de arriba: filtro de distancia y aviso de si hay posicion
   var barra=document.createElement("div");
@@ -2156,13 +2286,33 @@ function pintaRutas(){
   });
   var n=document.createElement("div");
   n.className="vacio"; n.style.fontSize="13px"; n.style.padding="18px 10px 6px";
-  n.textContent="El copiloto que monta el plan sobre la ruta llega en la fase 2b, "+
-                "después del test del domingo.";
+  n.textContent = rutaElegida
+    ? "El plan del día se monta sobre esta ruta. El km 0 es donde pulses Empezar."
+    : "Toca una ruta para elegirla.";
   cu.appendChild(n);
+}
+
+function pinRtGo(){
+  var b=E("rtGo");
+  b.hidden = !rutaElegida;
 }
 
 E("rtVolver").addEventListener("click",function(){ E("appRutas").hidden=true; muestra(); });
 E("rtOtra").addEventListener("click",buscaRutas);
+E("rtGo").addEventListener("click",empiezaRuta);
+
+// desde el mapa se vuelve a HOY tocando el titulo, pero solo si no voy
+// corriendo: a mitad de entreno no se sale por tocar sin querer
+(function(){
+  var h=document.querySelector("#appGPS h1");
+  if(!h) return;
+  h.style.cursor="pointer";
+  h.title="Volver a HOY";
+  h.addEventListener("click",function(){
+    if(window.corriendo) return;
+    E("appGPS").hidden=true; muestra();
+  });
+})();
 
 /* -------------------------------- bajar -------------------------------- */
 function baja(){
