@@ -66,10 +66,10 @@ export default {
           // necesita, y asi los dos modulos no se enredan
           rutaStrava: async id =>
             ruta(env, new URL("https://x/ruta?id=" + encodeURIComponent(id))),
-          gruposStrava: async () => {
-            const t = await rutas(env, new URL("https://x/rutas?todas=1"));
+          gruposStrava: async pagina => {
+            const t = await rutas(env, new URL("https://x/rutas?todas=1&pagina=" + (pagina || 1)));
             if (t.error) { const e = new Error(t.mensaje || t.error); e.codigo = t.codigo || 502; throw e; }
-            return t.grupos || [];
+            return t;
           }
         });
         return json(r, r.codigo || (r.error ? 400 : 200), origen);

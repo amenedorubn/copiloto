@@ -31,7 +31,7 @@ export async function biblioteca(env, url, req, ayudas) {
 
   if (q === "" || q === "indice") return { rutas: await leeIndice(env) };
   if (q === "ruta") return await unaRuta(env, url, ayudas);
-  if (q === "sync") return await sincroniza(env, ayudas);
+  if (q === "sync") return await sincroniza(env, url, ayudas);
   if (q === "gpx") return await subeGpx(env, url, req);
   if (q === "borrar") return await borra(env, url);
   return { error: "ruta_desconocida", codigo: 404, mensaje: "No existe /biblioteca/" + q };
@@ -165,10 +165,16 @@ async function subeGpx(env, url, req) {
 
 /* ------------------------------ sincronizar ------------------------------ */
 
-async function sincroniza(env, ayudas) {
+/* Se sincroniza pagina a pagina. Traerse y agrupar cientos de actividades en
+   una sola peticion se sale del presupuesto de CPU del Worker y la llamada
+   muere a medias sin decir por que. La app va pidiendo paginas hasta que esta
+   responde fin: true. */
+async function sincroniza(env, url, ayudas) {
   if (!ayudas || !ayudas.gruposStrava)
     return { error: "sin_strava", codigo: 503, mensaje: "Strava no está conectado." };
-  const grupos = await ayudas.gruposStrava();
+  const pagina = Math.max(1, parseInt(url.searchParams.get("pagina") || "1", 10) || 1);
+  const res = await ayudas.gruposStrava(pagina);
+  const grupos = res.grupos || [];
   const lista = await leeIndice(env);
   const porId = {};
   for (const r of lista) porId[r.id] = r;
@@ -187,7 +193,8 @@ async function sincroniza(env, ayudas) {
     // la polilinea entera se baja cuando se elige, no ahora: son 400 llamadas
   }
   await guardaIndice(env, lista);
-  return { ok: true, nuevas, actualizadas: tocadas, total: lista.length };
+  return { ok: true, pagina, fin: !!res.fin, miradas: res.miradas || 0,
+           nuevas, actualizadas: tocadas, total: lista.length };
 }
 
 /* ------------------------------ utilidades ------------------------------ */

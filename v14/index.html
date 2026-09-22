@@ -2345,19 +2345,37 @@ function rutasDelDia(){
   return out;
 }
 
+/* La sincronizacion va por paginas de 100 actividades. Pedirlo todo de una vez
+   se sale del presupuesto de CPU del Worker y la llamada se muere a medias sin
+   decir por que, que es lo que pasaba. Aqui se encadenan las paginas y se va
+   contando en pantalla. */
 function sincroniza(){
   if(buscando) return;
-  buscando=true; estadoRt("trayendo todo de Strava…"); pintaRutas();
+  buscando=true;
+  var nuevas=0;
   var base=conf.url.replace(/\/+$/,"");
-  fetch(base+"/biblioteca/sync",{ method:"POST",
-        headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
-   .then(function(r){ return r.json(); })
-   .then(function(j){
-      if(j && j.error){ estadoRt(j.mensaje||j.error,true); buscando=false; pintaRutas(); return; }
-      estadoRt(j.nuevas? plural(j.nuevas,"ruta")+" nueva"+(j.nuevas===1?"":"s") : "sin novedades");
-      pideRutas();
-   })
-   .catch(function(){ estadoRt("sin conexión con el Worker",true); buscando=false; pintaRutas(); });
+
+  function pagina(n){
+    estadoRt("Strava · página "+n+(nuevas? " · "+plural(nuevas,"ruta") : "…"));
+    pintaRutas();
+    fetch(base+"/biblioteca/sync?pagina="+n,{ method:"POST",
+          headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
+     .then(function(r){ return r.json().then(function(j){ return {r:r,j:j}; }); })
+     .then(function(x){
+        if(x.r.status===401){ estadoRt("clave incorrecta",true); buscando=false; pintaRutas(); return; }
+        if(x.j && x.j.error){ estadoRt(x.j.mensaje||x.j.error,true); buscando=false; pintaRutas(); return; }
+        nuevas+=x.j.nuevas||0;
+        if(!x.j.fin && n<12){ pagina(n+1); return; }     // quedan mas
+        estadoRt(nuevas? plural(nuevas,"ruta")+" nueva"+(nuevas===1?"":"s") : "sin novedades");
+        pideRutas();
+     })
+     .catch(function(){
+        // si una pagina falla, lo bajado hasta ahi ya esta guardado
+        estadoRt(nuevas? plural(nuevas,"ruta")+" antes de cortarse" : "sin conexión con el Worker", true);
+        buscando=false; pideRutas();
+     });
+  }
+  pagina(1);
 }
 
 function subeGpx(fichero){
