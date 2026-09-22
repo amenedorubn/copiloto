@@ -119,3 +119,84 @@ pulsar *Probar y guardar*.
 
 El workflow avisa por sí solo: al terminar comprueba `/salud` y deja un
 *warning* si el Worker está desplegado pero le faltan secretos.
+
+---
+
+# Fase 2 · Strava
+
+Tres secretos más, en el mismo sitio que los otros dos
+(**Cloudflare → Workers → `copiloto-api` → Settings → Variables and Secrets**,
+tipo **Secret**):
+
+| Nombre exacto | Qué es |
+|---|---|
+| `STRAVA_CLIENT_ID` | Client ID de la app de Strava |
+| `STRAVA_CLIENT_SECRET` | Client Secret de la app de Strava |
+| `STRAVA_REFRESH_TOKEN` | Refresh token con permiso de lectura de actividades |
+
+## 1. Crear la app en Strava
+
+```
+strava.com/settings/api
+```
+
+| Campo | Qué poner |
+|---|---|
+| Application Name | Copiloto |
+| Category | Training |
+| Club | (vacío) |
+| Website | https://amenedorubn.github.io/copiloto/ |
+| Authorization Callback Domain | **localhost** |
+
+Al crear la app salen el **Client ID** y el **Client Secret**. El callback en
+`localhost` es a propósito: la autorización se hace una sola vez y nadie tiene
+que levantar un servidor.
+
+## 2. Autorizar una vez y sacar el refresh token
+
+Abre esta dirección en el navegador, con tu Client ID puesto:
+
+```
+https://www.strava.com/oauth/authorize?client_id=TU_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=activity:read_all
+```
+
+Acepta. El navegador te manda a una página que no carga (normal, no hay nada en
+localhost), pero **en la barra de direcciones está el código**:
+
+```
+http://localhost/?state=&code=ESTO_DE_AQUI&scope=read,activity:read_all
+```
+
+Cambia ese código por el refresh token:
+
+```bash
+curl -X POST https://www.strava.com/oauth/token \
+  -d client_id=TU_CLIENT_ID \
+  -d client_secret=TU_CLIENT_SECRET \
+  -d code=EL_CODIGO_DE_LA_BARRA \
+  -d grant_type=authorization_code
+```
+
+En la respuesta está `refresh_token`. Ese es el valor de `STRAVA_REFRESH_TOKEN`.
+
+⚠️ El código de la barra **caduca en unos minutos y solo sirve una vez**. Si
+falla, repite el paso de autorizar.
+
+⚠️ El scope tiene que ser `activity:read_all`. Con `read` a secas la API no
+devuelve las actividades.
+
+## 3. Comprobar
+
+```
+https://copiloto-api.amenedorubn.workers.dev/salud
+```
+
+Debe poner `"STRAVA": true`.
+
+## Nota sobre el refresh token
+
+Strava puede rotarlo. El Worker lo guarda en KV si existe un namespace llamado
+`COPILOTO`; sin KV funciona igual, pero si algún día Strava lo rota habrá que
+repetir el paso 2. Para evitarlo, en Cloudflare: **Storage & Databases → KV →
+Create namespace `copiloto`**, y luego en el Worker **Settings → Bindings → Add
+→ KV namespace**, con nombre de variable `COPILOTO`.

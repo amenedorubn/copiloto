@@ -14,6 +14,8 @@
      GET /agenda?desde=&hasta=       con clave. Entrenos del rango.
    =========================================================================== */
 
+import { rutas } from "./strava.js";
+
 const ORIGENES = [
   "https://amenedorubn.github.io"
 ];
@@ -34,7 +36,11 @@ export default {
         return json({
           ok: true,
           worker: "copiloto-api",
-          secretos: { APP_KEY: !!env.APP_KEY, ICAL_URL: !!env.ICAL_URL }
+          secretos: {
+            APP_KEY: !!env.APP_KEY,
+            ICAL_URL: !!env.ICAL_URL,
+            STRAVA: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET && env.STRAVA_REFRESH_TOKEN)
+          }
         }, 200, origen);
       }
 
@@ -44,9 +50,18 @@ export default {
         return json(await agenda(env, url), 200, origen);
       }
 
+      if (url.pathname === "/rutas") {
+        const fallo = revisaClave(req, env);
+        if (fallo) return json(fallo, fallo.codigo, origen);
+        const r = await rutas(env, url);
+        return json(r, r.codigo || (r.error ? 400 : 200), origen);
+      }
+
       return json({ error: "ruta_desconocida", ruta: url.pathname }, 404, origen);
     } catch (e) {
-      return json({ error: "fallo_interno", detalle: String(e && e.message || e) }, 500, origen);
+      const codigo = (e && e.codigo) || 500;
+      return json({ error: codigo === 500 ? "fallo_interno" : "fallo_externo",
+                    mensaje: String(e && e.message || e) }, codigo, origen);
     }
   }
 };
