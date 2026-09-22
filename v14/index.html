@@ -160,6 +160,26 @@
   .flN{flex:1 1 auto;min-width:0;font-size:15px;font-weight:800;line-height:1.25}
   .flN small{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-top:2px}
 
+  /* elegir ruta */
+  #appRutas{position:fixed;inset:0;background:#111418;z-index:46;
+    display:flex;flex-direction:column;
+    padding:calc(12px + env(safe-area-inset-top,0px)) 14px calc(12px + env(safe-area-inset-bottom,0px))}
+  .rt{display:flex;gap:12px;align-items:stretch;background:#1b1f25;border:1px solid var(--line);
+    border-left:5px solid #3B8BDD;border-radius:14px;padding:11px 12px;margin-bottom:9px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .rt:active{background:#262c34}
+  .rt.elegida{border-color:#3B8BDD;background:#1f2b38;box-shadow:0 0 0 1px #3B8BDD inset}
+  .rtMapa{flex:0 0 84px;width:84px;background:#151920;border-radius:10px;overflow:hidden;
+    display:flex;align-items:center;justify-content:center}
+  .rtMapa svg{display:block;width:100%;height:100%}
+  .rtDat{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+  .rtKm{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+  .rtDif{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+  .rtDif.corta{color:#ffb35c} .rtDif.larga{color:#7fb2ff} .rtDif.clava{color:#9ede8a}
+  .rtSub{font-size:12px;color:var(--dim);font-weight:700;line-height:1.35}
+  .rtNom{font-size:12px;color:var(--dim);font-weight:600;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+
   /* ajustes */
   #appConf label{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--dim);font-weight:800;margin:14px 0 5px}
@@ -290,6 +310,18 @@
     <button id="hVista">Semana</button>
     <button id="hModos">Modos</button>
     <button id="hConf">Ajustes</button>
+  </div>
+</div>
+
+<div id="appRutas" hidden>
+  <div class="hCab">
+    <div><h2>Elegir ruta</h2><div id="rtFecha">–</div></div>
+    <div id="rtEstado">–</div>
+  </div>
+  <div class="hCuerpo" id="rtCuerpo"></div>
+  <div class="hPie" style="grid-template-columns:1fr 1fr">
+    <button id="rtVolver">Volver</button>
+    <button id="rtOtra">Buscar otra vez</button>
   </div>
 </div>
 
@@ -1801,7 +1833,10 @@ function tarjeta(ev,compacta){
     b.addEventListener("click",function(){ window.abreCinta(sesionDe(ev)); });
     d.appendChild(b);
   }else if(ev.plan && ev.plan.tipo==="fuera"){
-    d.appendChild(nota("El copiloto de calle llega en la fase 2."));
+    var br=document.createElement("button");
+    br.className="tjGo"; br.textContent="ELEGIR RUTA";
+    br.addEventListener("click",function(){ abreRutas(ev); });
+    d.appendChild(br);
   }else if(ev.plan && ev.plan.tipo==="gym"){
     d.appendChild(nota("El copiloto de gimnasio llega en la fase 3."));
   }
@@ -1932,6 +1967,139 @@ function estadoCopia(){
   var d=new Date(datos.bajado||datos.generado);
   estado("copia de "+dos(d.getHours())+":"+dos(d.getMinutes()), false);
 }
+
+/* ------------------------------ elegir ruta ------------------------------ */
+/* Las rutas las busca el Worker en Strava: las que empiezan donde estoy y
+   miden lo que toca hoy. Aqui solo se pintan y se elige una.
+   El plan todavia NO se monta sobre la ruta: eso es la fase 2b y va despues
+   del test del domingo, porque toca el motor GPS. */
+
+var evRuta = null, rutasDatos = null, rutaElegida = null, buscando = false;
+
+function polilinea(str){                    // la codificada de Google -> puntos
+  if(!str) return [];
+  var pts=[], i=0, lat=0, lon=0, b, sh, r;
+  while(i<str.length){
+    sh=0; r=0; do{ b=str.charCodeAt(i++)-63; r|=(b&31)<<sh; sh+=5; }while(b>=32);
+    lat += (r&1)? ~(r>>1) : (r>>1);
+    sh=0; r=0; do{ b=str.charCodeAt(i++)-63; r|=(b&31)<<sh; sh+=5; }while(b>=32);
+    lon += (r&1)? ~(r>>1) : (r>>1);
+    pts.push([lat/1e5, lon/1e5]);
+  }
+  return pts;
+}
+
+// minimapa: la ruta encajada en un cuadrado, con la salida marcada
+function minimapa(linea){
+  var p=polilinea(linea);
+  if(p.length<2) return "";
+  var la0=p[0][0], cos=Math.cos(la0*Math.PI/180);
+  var xs=[], ys=[], i;
+  for(i=0;i<p.length;i++){ xs.push(p[i][1]*cos); ys.push(-p[i][0]); }
+  var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
+  var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
+  var an=Math.max(1e-9,x1-x0), al=Math.max(1e-9,y1-y0), k=Math.max(an,al);
+  var mx=(k-an)/2, my=(k-al)/2, d="";
+  for(i=0;i<p.length;i++){
+    var X=((xs[i]-x0+mx)/k*92+4).toFixed(1), Y=((ys[i]-y0+my)/k*92+4).toFixed(1);
+    d += (i?"L":"M")+X+" "+Y;
+  }
+  var sx=((xs[0]-x0+mx)/k*92+4).toFixed(1), sy=((ys[0]-y0+my)/k*92+4).toFixed(1);
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">'+
+    '<path d="'+d+'" fill="none" stroke="#3B8BDD" stroke-width="3.2" '+
+    'stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<circle cx="'+sx+'" cy="'+sy+'" r="5" fill="#9ede8a"/></svg>';
+}
+
+function difTxt(m){
+  if(Math.abs(m)<10) return { t:"clavada", c:"clava" };
+  var signo = m<0 ? "\u2212" : "+";
+  return { t:signo+Math.abs(Math.round(m))+" m", c: m<0 ? "corta" : "larga" };
+}
+function cuando(iso){
+  var d=new Date(iso), h=Math.round((Date.now()-d)/86400000);
+  if(h<=0) return "hoy";
+  if(h===1) return "ayer";
+  if(h<30) return "hace "+h+" días";
+  if(h<365) return "hace "+Math.round(h/30)+" meses";
+  return "hace más de un año";
+}
+
+function abreRutas(ev){
+  evRuta=ev; rutasDatos=null; rutaElegida=null;
+  E("appHoy").hidden=true; E("appConf").hidden=true;
+  E("appRutas").hidden=false;
+  E("rtFecha").textContent=(ev.plan.nombre||ev.titulo)+" · "+coma(ev.plan.distancia/1000,2)+" km";
+  pintaRutas();
+  buscaRutas();
+}
+
+function buscaRutas(){
+  if(buscando) return;
+  if(!navigator.geolocation){ estadoRt("este móvil no da posición",true); return; }
+  buscando=true; estadoRt("buscando dónde estás…"); pintaRutas();
+  navigator.geolocation.getCurrentPosition(function(pos){
+    estadoRt("mirando en Strava…");
+    var base=conf.url.replace(/\/+$/,"");
+    var u=base+"/rutas?lat="+pos.coords.latitude+"&lon="+pos.coords.longitude+
+          "&dist="+Math.round(evRuta.plan.distancia);
+    fetch(u,{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
+     .then(function(r){ return r.json().then(function(j){ return {r:r,j:j}; }); })
+     .then(function(x){
+        if(x.r.status===401){ estadoRt("clave incorrecta",true); return; }
+        if(x.j && x.j.error){ estadoRt(x.j.mensaje||x.j.error,true); rutasDatos={grupos:[]}; return; }
+        rutasDatos=x.j;
+        estadoRt(plural(x.j.grupos.length,"ruta"));
+     })
+     .catch(function(){ estadoRt("sin conexión con el Worker",true); })
+     .then(function(){ buscando=false; pintaRutas(); });
+  },function(err){
+    buscando=false;
+    estadoRt(err.code===1 ? "hace falta permiso de ubicación" : "no se ha podido situar",true);
+    pintaRutas();
+  },{ enableHighAccuracy:true, timeout:20000, maximumAge:60000 });
+}
+
+function estadoRt(t,mal){ var e=E("rtEstado"); e.textContent=t; e.className=mal?"mal":""; }
+
+function pintaRutas(){
+  var cu=E("rtCuerpo"); cu.innerHTML="";
+  if(buscando){ cu.appendChild(vacio("Buscando rutas que empiecen donde estás…")); return; }
+  if(!rutasDatos){ cu.appendChild(vacio("Pulsa «Buscar otra vez» para mirar en Strava.")); return; }
+  if(!rutasDatos.grupos || !rutasDatos.grupos.length){
+    cu.appendChild(vacio("Ninguna ruta tuya empieza aquí con esta distancia.\n\n"+
+      "Miradas "+(rutasDatos.miradas||0)+" actividades.\n"+
+      "Puedes correr por distancia libre con el GPS."));
+    return;
+  }
+  rutasDatos.grupos.forEach(function(g){
+    var d=document.createElement("div");
+    d.className="rt"+(rutaElegida===g.id?" elegida":"");
+    var dif=difTxt(g.diferencia);
+    d.innerHTML=
+      '<div class="rtMapa">'+minimapa(g.linea)+'</div>'+
+      '<div class="rtDat">'+
+        '<div class="rtKm">'+esc(coma(g.distancia/1000,2))+' km '+
+          '<span class="rtDif '+dif.c+'">'+esc(dif.t)+'</span></div>'+
+        '<div class="rtSub">'+esc(plural(g.veces,"vez").replace("vezs","veces"))+
+          ' · última '+esc(cuando(g.ultima))+' · '+esc(g.metrosPorKm)+' m/km</div>'+
+        '<div class="rtNom">'+esc(g.nombre)+' · salida a '+esc(g.salida)+' m</div>'+
+      '</div>';
+    d.addEventListener("click",function(){
+      rutaElegida = (rutaElegida===g.id? null : g.id);
+      pintaRutas();
+    });
+    cu.appendChild(d);
+  });
+  var n=document.createElement("div");
+  n.className="vacio"; n.style.fontSize="13px"; n.style.padding="18px 10px 6px";
+  n.textContent="El copiloto que monta el plan sobre la ruta llega en la fase 2b, "+
+                "después del test del domingo.";
+  cu.appendChild(n);
+}
+
+E("rtVolver").addEventListener("click",function(){ E("appRutas").hidden=true; muestra(); });
+E("rtOtra").addEventListener("click",buscaRutas);
 
 /* -------------------------------- bajar -------------------------------- */
 function baja(){
