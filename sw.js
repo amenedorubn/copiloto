@@ -1,6 +1,9 @@
-const C="copiloto-2.0.3";
-const F=["./icon-192.png","./icon-512.png","./icon-maskable-192.png","./icon-maskable-512.png",
-         "./apple-touch-icon.png","./icon.svg","./manifest.webmanifest","./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2"];
+const C="copiloto-2.1.0";
+const F=["./manifest.webmanifest","./manifest-n1.webmanifest","./manifest-b1.webmanifest","./manifest-r1.webmanifest",
+         "./iconos/n1/icon.svg","./iconos/n1/icon-192.png","./iconos/n1/icon-512.png","./iconos/n1/icon-maskable-192.png","./iconos/n1/icon-maskable-512.png","./iconos/n1/apple-touch-icon.png",
+         "./iconos/b1/icon.svg","./iconos/b1/icon-192.png","./iconos/b1/icon-512.png","./iconos/b1/icon-maskable-192.png","./iconos/b1/icon-maskable-512.png","./iconos/b1/apple-touch-icon.png",
+         "./iconos/r1/icon.svg","./iconos/r1/icon-192.png","./iconos/r1/icon-512.png","./iconos/r1/icon-maskable-192.png","./iconos/r1/icon-maskable-512.png","./iconos/r1/apple-touch-icon.png",
+         "./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2"];
 // Las caches son de todo el dominio: v20/ tiene la suya ("copiloto-v20-…") y no
 // se toca. Aqui solo se borran las versiones viejas de la raiz: las X.Y.Z y la
 // "copiloto-v12" de antes del versionado.

@@ -15,9 +15,9 @@ gimnasio. Se sirve con GitHub Pages.
 |---|---|
 | `index.html` | La app entera (HTML, CSS y JS en un solo fichero). Lleva `APP_VERSION`. |
 | `sw.js` | Service worker. La caché se llama `copiloto-X.Y.Z`. |
-| `manifest.webmanifest` | Manifest de la PWA ("Copiloto", sin número). |
+| `manifest.webmanifest`, `manifest-n1/b1/r1.webmanifest` | Manifest de la PWA, uno por icono elegible. |
+| `iconos/n1/`, `iconos/b1/`, `iconos/r1/` | Los 3 iconos elegibles en Ajustes (Noche, Burdeos, Roma). Créditos en [CREDITOS.md](CREDITOS.md). |
 | `version.json` | Versión publicada: `{"version","fecha","notas"}`. La app lo consulta para saber si hay una nueva. |
-| `icon*.png`, `icon.svg`, `apple-touch-icon.png` | Iconos. |
 | `fonts/` | Tipografía Manrope. |
 | `rutas/` | GPX de las rutas que trae la app. |
 | `worker/` | Worker de Cloudflare `copiloto-api` (calendario, Strava, Hevy). Ver [CONFIGURAR.md](CONFIGURAR.md). |
