@@ -366,6 +366,7 @@
   .rtFila.elegida{border-color:var(--calle);background:#1b2636}
   .rtFila .tjMini{width:56px;height:56px;background:#111317;border-radius:12px;padding:5px}
   .rtFila span{flex:1 1 auto;min-width:0}
+  .rtFila span.tjMini{flex:0 0 56px}
   .rtFila b{display:block;font-size:17px;font-weight:800}
   .rtFila b em{font-style:normal;font-size:13px;margin-left:6px;font-weight:700}
   .rtFila b em.corta{color:#ffb35c} .rtFila b em.larga{color:#7fb2ff} .rtFila b em.clava{color:#9ede8a}
@@ -3022,7 +3023,7 @@ function resumen(plan){
            plural(plan.bloques.length,"bloque")+
            (plan.inclinacion? " · inclinación "+plan.inclinacion : "");
   if(plan.tipo==="fuera")
-    return coma(plan.distancia/1000,2)+" km · "+plan.subtipo+
+    return kmTxt(plan.distancia)+" · "+plan.subtipo+
            (plan.km.length? " · "+plural(plan.km.length,"tramo") : "");
   if(plan.tipo==="gym")
     return plan.rutina+" · "+plural(plan.ejercicios.length,"ejercicio")+
@@ -3133,7 +3134,8 @@ function enCuanto(ev){
 }
 function durTxt(s){ s=Math.round(s/60); return s<60 ? s+" min" : Math.floor(s/60)+" h "+dos(s%60); }
 function fcTxt(fc){ if(!fc||!fc[1]) return ""; return fc[0] ? fc[0]+"–"+fc[1] : "<"+fc[1]; }
-function kmTxt(m){ var k=m/1000; return (Math.abs(k-Math.round(k))<0.05 ? Math.round(k) : coma(k,1))+" km"; }
+// 11,99 / 7,04 / 20,01 km son 12, 7 y 20: el GPS no clava el metro y el decimal solo afea
+function kmTxt(m){ var k=m/1000; return (Math.abs(k-Math.round(k))<=0.1 ? Math.round(k) : coma(k,1))+" km"; }
 
 // tramos de calle seguidos al mismo ritmo, juntos (el bloque 7-15 + 15-17 es uno)
 function tramosDe(plan){
@@ -3237,7 +3239,7 @@ function rutaActual(){
 }
 function subRuta(g){
   var s=[]; var a=aCuanto(g.salida); if(a) s.push(a);
-  s.push(coma(g.distancia/1000,2)+" km"); if(g.desnivel) s.push("+"+g.desnivel+" m");
+  s.push(kmTxt(g.distancia)); if(g.desnivel) s.push("+"+g.desnivel+" m");
   return s.join(" · ");
 }
 function filaRuta(ev){
@@ -3934,11 +3936,11 @@ function pintaHojaRutas(){
   G.forEach(function(g){
     var dif=difTxt(g.diferencia), lejos=aCuanto(g.salida);
     var b=el("button","rtFila"+(rutaElegida===g.id?" elegida":""),
-      '<span class="tjMini">'+miniSvg(g.linea,"#6fb0ff",4)+'</span><span><b>'+esc(coma(g.distancia/1000,2))+' km'+
+      '<span class="tjMini">'+miniSvg(g.linea,"#6fb0ff",4)+'</span><span><b>'+esc(kmTxt(g.distancia))+
       (dif?'<em class="'+dif.c+'">'+esc(dif.t)+'</em>':'')+'</b>'+
       '<small>'+esc(g.nombre)+'</small>'+
       '<small>'+esc([lejos, g.origen==="app" ? "precargada en la app" : plural(g.veces,"vez").replace("vezs","veces"),
-                     g.metrosPorKm+" m/km"].filter(Boolean).join(" · "))+'</small>'+
+                     String(g.metrosPorKm).replace(".",",")+" m/km"].filter(Boolean).join(" · "))+'</small>'+
       (rutaElegida===g.id && porQue && !rutaManual ? '<small class="porque">★ '+esc(porQue)+'</small>' : '')+'</span>');
     b.addEventListener("click",function(){
       rutaElegida=g.id; rutaManual=true; rutaGuardada[evRuta.uid+evRuta.fecha]=g.id;
