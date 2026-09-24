@@ -42,19 +42,23 @@
   /* ---- v16: el bloque del km va ARRIBA y en grande: km, ritmo objetivo y
      FC objetivo. La FC es el rango del plan, no la real: esa se mira en el
      reloj y se compara con esta. Debajo, los ritmos que llevas. ---- */
-  #kmCard.big{padding:8px 12px 9px;border-left-width:8px}
-  #kmCard.big .kmtop{margin-bottom:5px;gap:8px}
-  #kmCard.big #kmNum{font-size:clamp(22px,3.6vh,30px);font-weight:900;white-space:nowrap}
-  #kmCard.big #kmTipo{font-size:12px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #kmCard.big .kmgrid{grid-template-columns:1fr;gap:5px;margin:0}
-  #kmCard.big .kmstat{flex-direction:row;align-items:center;justify-content:space-between;
-    gap:8px;padding:5px 12px}
-  #kmCard.big .kmstat i{font-size:11px;font-weight:800;line-height:1.25;white-space:normal}
-  #kmCard.big .kmstat b{font-size:clamp(36px,min(13vw,8.5vh),66px);font-weight:900;line-height:1.02;
-    letter-spacing:-.04em}
-  .grid.ritmos .cell{text-align:center;padding:6px 4px}
-  .grid.ritmos .cell b{white-space:nowrap}
-  .grid.ritmos .cell span{font-size:clamp(24px,min(8.5vw,5vh),38px)}
+  #appGPS{gap:9px}
+  #kmCard.big{padding:12px 14px 12px;border-left-width:7px}
+  #kmCard.big .kmtop{margin-bottom:9px;gap:10px}
+  #kmCard.big #kmNum{font-size:clamp(19px,3vh,24px);font-weight:900;white-space:nowrap}
+  #kmCard.big #kmTipo{font-size:11px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #kmCard.big .kmgrid{grid-template-columns:1fr 1fr;gap:10px;margin:0}
+  #kmCard.big .kmstat{padding:9px 10px 10px;gap:4px;align-items:center;text-align:center}
+  #kmCard.big .kmstat i{font-size:10px;font-weight:800;letter-spacing:.07em}
+  #kmCard.big .kmstat b{justify-content:center;font-size:clamp(22px,min(6.6vw,4.4vh),34px);
+    font-weight:900;line-height:1.1;letter-spacing:-.01em}
+  #kmCard.big #barra{margin-top:11px}
+  .grid.ritmos{gap:9px}
+  .grid.ritmos .cell{text-align:center;padding:8px 4px 9px}
+  .grid.ritmos .cell b{white-space:nowrap;margin-bottom:3px}
+  .grid.ritmos .cell span{font-size:clamp(18px,min(5.4vw,3.4vh),26px)}
+  .grid.g2{gap:9px}
+  .grid.g2 .cell span{font-size:clamp(18px,min(5.4vw,3.4vh),26px)}
   .grid.g3{grid-template-columns:1fr 1fr 1fr}
   .grid.g3 .cell span{font-size:clamp(15px,2.8vh,21px)}
   #verRes{display:none}
@@ -486,8 +490,8 @@
 <div class="card big" id="kmCard">
   <div class="kmtop"><div id="kmNum">Km 1</div><div id="kmTipo">Arranque</div></div>
   <div class="kmgrid">
-    <div class="kmstat"><i>Ritmo<br>objetivo</i><b id="kmObj">7:00-7:30</b></div>
-    <div class="kmstat" id="kmFcCell"><i>♥ FC<br>objetivo</i><b id="kmFc">–</b></div>
+    <div class="kmstat"><i>Ritmo objetivo</i><b id="kmObj">7:00-7:30</b></div>
+    <div class="kmstat" id="kmFcCell"><i>♥ FC objetivo</i><b id="kmFc">–</b></div>
   </div>
   <div id="barra"><div id="barraIn"></div></div>
 </div>
@@ -499,15 +503,9 @@
   <div class="cell"><b>Ritmo tramo</b><span id="rTramo">--:--</span></div>
 </div>
 
-<div class="grid">
+<div class="grid g2">
   <div class="cell"><b>Reloj</b><span id="reloj">0:00</span></div>
   <div class="cell"><b>Distancia</b><span id="dist">0,00</span><small> km</small></div>
-</div>
-
-<div class="card" id="deltaCard">
-  <div id="deltaLbl">respecto al plan</div>
-  <div id="veredicto">Sin empezar</div>
-  <button id="ajustar">Ajustar al ritmo actual</button>
 </div>
 
 <div class="card" id="mapCard">
@@ -524,6 +522,12 @@
     <span class="dot" style="background:#fff"></span>tú
     <span class="dot" style="background:#f0a500"></span>plan
   </div>
+</div>
+
+<div class="card" id="deltaCard">
+  <div id="deltaLbl">respecto al plan</div>
+  <div id="veredicto">Sin empezar</div>
+  <button id="ajustar">Ajustar al ritmo actual</button>
 </div>
 
 <div class="btns">
