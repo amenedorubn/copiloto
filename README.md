@@ -25,8 +25,7 @@ gimnasio. Se sirve con GitHub Pages.
 | `CHANGELOG.md` | Qué cambia en cada versión. |
 | `scripts/bump.mjs` | Sube la versión en todos los sitios a la vez. |
 | `scripts/check-version.mjs` | Comprueba que las tres versiones coinciden (lo usa el Action). |
-| `scripts/tags.sh` | Crea y sube los tags v0.4.0 … v2.0.0 (una sola vez). |
-| `scripts/releases.sh` | Crea las GitHub Releases a partir de los tags y el CHANGELOG. |
+| `scripts/releases.sh` | Crea una GitHub Release desde el CHANGELOG (lo usa el Action; a mano solo si hiciera falta). |
 | `v20/` | Copia congelada de la 2.0.0 (ver aviso de arriba). |
 
 Las versiones antiguas ya no están en carpetas: están en los tags de git.
@@ -60,19 +59,17 @@ nueva. El Action **Versión coherente** falla si las tres no coinciden.
 # 1. subir la versión (patch, minor o major) con una nota corta
 node scripts/bump.mjs patch "Arreglo del aviso de la recta"
 
-# 2. commit
+# 2. commit y push a main
 git add -A
-git commit -m "v2.0.1: Arreglo del aviso de la recta"
-
-# 3. tag anotado
-git tag -a v2.0.1 -m "v2.0.1"
-
-# 4. push (con el tag)
-git push origin main --follow-tags
-
-# 5. (opcional) la GitHub Release con su entrada del CHANGELOG
-bash scripts/releases.sh v2.0.1
+git commit -m "v2.0.2: Arreglo del aviso de la recta"
+git push origin main
 ```
+
+Ya está. **El tag y la GitHub Release los crea solo** el Action *Publicar
+versión* en cuanto llega a `main` un cambio de `version.json`: pone el tag
+`vX.Y.Z` en ese commit y copia la entrada del CHANGELOG en la release. Si
+alguna versión se quedó sin tag o sin release, también la crea. No hace falta
+subir tags a mano.
 
 `bump.mjs` no necesita dependencias: cambia `APP_VERSION` y `APP_FECHA` en
 `index.html`, reescribe `version.json`, renombra la caché de `sw.js` y añade la

@@ -1,0 +1,63 @@
+name: Publicar versión
+
+# Cada vez que llega a main un cambio de version.json, crea el tag vX.Y.Z en el
+# commit que puso esa versión y su GitHub Release con la entrada del
+# CHANGELOG. No hace falta subir tags a mano. Si alguna versión se quedó sin
+# tag (o sin release), también la crea. Nunca mueve un tag que ya existe.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "version.json"
+      - "CHANGELOG.md"
+      - ".github/workflows/publicar.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar-version
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comprobar que las versiones coinciden
+        run: node scripts/check-version.mjs
+
+      - name: Crear tags y releases que falten
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force
+
+          # commits que tocaron version.json, del mas viejo al mas nuevo
+          declare -A visto
+          for c in $(git log --reverse --format=%H -- version.json); do
+            v=$(git show "$c:version.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).version||"")}catch(e){console.log("")}})')
+            [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+            [ -n "${visto[$v]:-}" ] && continue          # el primer commit con esa version manda
+            visto[$v]=1
+            t="v$v"
+            if git rev-parse -q --verify "refs/tags/$t" >/dev/null; then
+              echo "= $t ya existe"
+            else
+              git tag -a "$t" "$c" -m "$t"
+              git push origin "refs/tags/$t"
+              echo "+ tag $t en ${c:0:7}"
+            fi
+            if gh release view "$t" >/dev/null 2>&1; then
+              echo "= release $t ya existe"
+            else
+              bash scripts/releases.sh "$t"
+            fi
+          done

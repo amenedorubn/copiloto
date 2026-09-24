@@ -64,5 +64,5 @@ escribe("CHANGELOG.md", log);
 console.log(`${actual} -> ${nueva}  (${fecha})
 Ahora:
   git add -A && git commit -m "v${nueva}: ${nota.replace(/"/g, "'")}"
-  git tag -a v${nueva} -m "v${nueva}"
-  git push origin main --follow-tags`);
+  git push origin main
+(el tag v${nueva} y la release los crea el Action "Publicar versión")`);
