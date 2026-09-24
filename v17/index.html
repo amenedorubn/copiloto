@@ -55,21 +55,21 @@
   #kmCard.big #barra{margin-top:11px}
   /* ---- v17: terreno. Cada subida o bajada lleva su ritmo para que el km
      salga a su media: se ve el km troceado y el trozo en el que vas ---- */
-  #perfil{position:relative;display:flex;gap:2px;height:22px;margin-top:11px}
-  #perfil .pf{min-width:3px;border-radius:5px;display:flex;align-items:center;justify-content:center;
-    font-size:11px;font-weight:800;color:rgba(255,255,255,.92);overflow:hidden;white-space:nowrap;
+  #perfil{position:relative;display:flex;gap:3px;height:27px;margin-top:12px}
+  #perfil .pf{min-width:3px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;color:rgba(255,255,255,.92);overflow:hidden;white-space:nowrap;
     font-variant-numeric:tabular-nums;opacity:.55}
   #perfil .pf.sube{background:#c8642e} #perfil .pf.baja{background:#2f78c4} #perfil .pf.llano{background:#3a4350}
   #perfil .pf.act{opacity:1;box-shadow:0 0 0 2px #fff inset}
   #perfilYo{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;border-radius:2px;
     background:#fff;box-shadow:0 0 0 1px #111418;pointer-events:none}
-  #terCard{padding:7px 14px}
+  #terCard{padding:9px 14px}
   .terFila{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .terQue{min-width:0}
-  #terTipo{font-size:clamp(16px,2.4vh,19px);font-weight:900;white-space:nowrap}
+  #terTipo{font-size:clamp(19px,2.9vh,23px);font-weight:900;white-space:nowrap}
   #terTipo.sube{color:#ff9a5c} #terTipo.baja{color:#6fb0ff}
   .terQue{display:flex;align-items:baseline;gap:10px;overflow:hidden}
-  #terDet{font-size:13px;font-weight:700;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #terDet{font-size:15px;font-weight:700;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .terRit{text-align:right;flex:0 0 auto}
   .terRit i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.07em;
     text-transform:uppercase;color:var(--dim)}
@@ -537,7 +537,6 @@
 <div class="card" id="terCard" hidden>
   <div class="terFila">
     <div class="terQue"><b id="terTipo">–</b><small id="terDet">–</small></div>
-    <div class="terRit"><b id="terRitmo">–</b></div>
   </div>
 </div>
 
@@ -1088,7 +1087,6 @@ function pintaTerreno(d,k){
   var t=TRAMOS[i], R=racha(i), resto=Math.max(0,R.fin*100-d);
   var tt=$("terTipo"); tt.textContent=queTramo(R); tt.className=R.tipo;
   $("terDet").textContent="quedan "+Math.round(resto/10)*10+" m · "+signoM(R.des);
-  $("terRitmo").textContent=pace(t.mid);            // el ritmo de ESTE trozo del km
   // el km troceado: se rehace solo al cambiar de km o de plan
   var clave=k+"|"+TRAMOS.length+"|"+(TRAMOS[0]?TRAMOS[0].mid:0)+"|"+MODO_TERRENO+"|"+PLAN[Math.min(k,PLAN.length-1)][2];
   if(clave!==perfilClave){
