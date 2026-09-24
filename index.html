@@ -172,13 +172,10 @@
   #marco{display:none;background:#3a2a10;border:1px solid #8a6a20;color:#ffd98a;
          border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.4;flex:0 0 auto}
   #marco a{color:#ffd98a;font-weight:800}
-  #gpsbtn{width:100%;padding:10px;font-size:14px;font-weight:800;border-radius:12px;
+  #gpsbtn{display:none;width:100%;padding:10px;font-size:14px;font-weight:800;border-radius:12px;
           border:1px solid var(--line);background:#232932;color:var(--tx);
           cursor:pointer;-webkit-tap-highlight-color:transparent;flex:0 0 auto}
   #gpsbtn.ok{background:#16351b;border-color:#2f6b38;color:#a7e2b0}
-  #instalar{display:none;width:100%;padding:10px;font-size:14px;font-weight:800;
-            border-radius:12px;border:1px solid #2d82dc;background:#16304d;color:#bcd9f7;
-            cursor:pointer;flex:0 0 auto}
   #probar{width:100%;padding:10px;font-size:13px;font-weight:800;border-radius:12px;
           border:1px solid var(--line);background:#232932;color:var(--tx);flex:0 0 auto}
 
@@ -452,7 +449,7 @@
   #appGPS #probar,#appGPS .gPausa button{height:46px;font-size:14px;background:#1c1f24;border:1px solid rgba(255,255,255,.08);color:#f4f5f7}
   #appGPS #verRes{display:none}
   #appGPS #gps{margin-top:8px;font-size:11px}
-  #appGPS #gpsbtn,#appGPS #instalar{margin-top:8px}
+  #appGPS #gpsbtn{margin-top:8px}
   /* estados: sin empezar / corriendo / en pausa */
   #appGPS:not(.corre) .gPre{display:flex}
   #appGPS:not(.corre) .gFila,#appGPS:not(.corre) #pausa{display:none}
@@ -806,7 +803,6 @@
   </div>
   <div id="gps">GPS sin activar</div>
   <button id="gpsbtn">Activar GPS y dar permiso</button>
-  <button id="instalar">Instalar como app</button>
 </section>
 <audio id="tonoOk" preload="auto"></audio>
 <audio id="tonoMal" preload="auto"></audio>
@@ -1162,14 +1158,24 @@ var Actualiza=(function(){
   }
   return { comprueba:comprueba, actualiza:actualiza, enCurso:enCurso, compara:compara };
 })();
+// instalar como app: el boton vive en Ajustes, nunca en el entreno
 var prompDif=null;
-window.addEventListener("beforeinstallprompt",function(e){
-  e.preventDefault(); prompDif=e; $("instalar").style.display="block";
-});
-$("instalar").addEventListener("click",function(){
-  if(!prompDif)return; prompDif.prompt(); prompDif=null; $("instalar").style.display="none";
-});
-window.addEventListener("appinstalled",function(){ $("instalar").style.display="none"; });
+function repintaInstalar(){ if(typeof window.pintaInstalar==="function") window.pintaInstalar(); }
+window.addEventListener("beforeinstallprompt",function(e){ e.preventDefault(); prompDif=e; repintaInstalar(); });
+window.addEventListener("appinstalled",function(){ prompDif=null; repintaInstalar(); });
+function esApp(){
+  try{ return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone===true; }
+  catch(e){ return false; }
+}
+// el boton de GPS del entreno solo sale si el GPS no tiene permiso o falla;
+// activarlo de antemano se hace en Ajustes
+function permisoGPS(fn){
+  try{
+    navigator.permissions.query({name:"geolocation"}).then(function(st){
+      fn(st.state); st.onchange=function(){ fn(st.state); };
+    }).catch(function(){ fn("desconocido"); });
+  }catch(e){ fn("desconocido"); }
+}
 
 // ---------- voz ----------
 function wavURL(subiendo){
@@ -2038,6 +2044,7 @@ function pintar(){
 }
 
 // ---------- controles ----------
+permisoGPS(function(st){ if(!gpsOK) $("gpsbtn").style.display = st==="granted" ? "none" : "block"; });
 $("gpsbtn").addEventListener("click",function(){
   var b=$("gpsbtn");
   if(!navigator.geolocation){ marco("Este navegador no expone el GPS."); return; }
@@ -4752,6 +4759,12 @@ function abreConf(){
     '<button class="bPri" id="cfProbar">Probar y guardar</button>'+
     '<div class="hFila2"><button class="bSec" id="cfVer">Ver la clave</button><button class="bSec" id="cfBaja">Actualizar calendario</button></div>'+
     '<div id="cfMsg"></div>'+
+    '<label>GPS</label>'+
+    '<div class="ayuda" id="cfGpsTxt"></div>'+
+    '<div class="hFila2"><button class="bSec" id="cfGps">Activar GPS y dar permiso</button></div>'+
+    '<label>App</label>'+
+    '<div class="ayuda" id="cfAppTxt"></div>'+
+    '<div class="hFila2"><button class="bSec" id="cfInstalar" hidden>Instalar como app</button></div>'+
     '<label>Versión</label>'+
     '<div class="ayuda" id="cfVersion"></div>'+
     '<div class="hFila2"><button class="bSec" id="cfComprueba">Comprobar actualización</button></div>'+
@@ -4767,8 +4780,42 @@ function abreConf(){
   });
   E("cfBaja").addEventListener("click",function(){ E("cfMsg").className=""; E("cfMsg").textContent="Actualizando…"; baja(); });
   E("cfProbar").addEventListener("click",probarConf);
+  pintaGPSConf();
+  pintaInstalar();
   pintaVersion();
 }
+function pintaGPSConf(){
+  var t=E("cfGpsTxt"), b=E("cfGps");
+  if(!navigator.geolocation){ t.textContent="Este navegador no tiene GPS."; b.hidden=true; return; }
+  permisoGPS(function(st){
+    if(!E("cfGpsTxt") || b.dataset.probado) return;
+    t.textContent = st==="granted" ? "Permiso de ubicación concedido."
+                  : st==="denied"  ? "Ubicación denegada. Dale permiso en los ajustes del navegador (candado de la barra) y vuelve aquí."
+                  : "Sin permiso todavía. Actívalo antes de salir a correr.";
+    b.textContent = st==="granted" ? "Probar GPS" : "Activar GPS y dar permiso";
+  });
+  b.addEventListener("click",function(){
+    b.disabled=true; b.textContent="Pidiendo ubicación…";
+    navigator.geolocation.getCurrentPosition(function(p){
+      b.disabled=false; b.dataset.probado="1"; b.textContent="Probar GPS";
+      t.textContent="GPS listo · precisión "+Math.round(p.coords.accuracy)+" m.";
+    },function(e){
+      b.disabled=false; b.textContent="Activar GPS y dar permiso";
+      t.textContent = e.code===1 ? "Has denegado el permiso. Toca el candado de la barra, Permisos, Ubicación, Permitir."
+                                 : "Sin señal todavía. Sal a un sitio abierto y vuelve a probar.";
+    },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  });
+}
+window.pintaInstalar=function(){
+  var t=E("cfAppTxt"), b=E("cfInstalar");
+  if(!t || hojaTipo!=="conf") return;
+  if(esApp()){ t.textContent="Ya la estás usando como app."; b.hidden=true; return; }
+  if(prompDif){ t.textContent="Instálala para abrirla desde la pantalla de inicio, a pantalla completa."; b.hidden=false; }
+  else { t.textContent="Para instalarla: menú del navegador → «Añadir a pantalla de inicio» (en iPhone: Compartir → Añadir a pantalla de inicio)."; b.hidden=true; }
+  if(!b.dataset.listo){ b.dataset.listo="1"; b.addEventListener("click",function(){
+    if(!prompDif) return; var pd=prompDif; prompDif=null; pd.prompt(); window.pintaInstalar(); }); }
+};
+var pintaInstalar=window.pintaInstalar;
 function fechaCorta(iso){ var p=String(iso||"").split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : ""; }
 function pintaVersion(){
   var b=E("cfComprueba"), a=E("cfActualiza"), m=E("cfVerMsg");
@@ -4828,6 +4875,7 @@ function abreLibre(){
   var ops=[
     { c:COLT2.fuera, t:"GPS · tirada de siempre", s:"La ruta y el plan de 18 km que trae la app", f:function(){
         cierraHoja(); E("appHoy").hidden=true; E("appGPS").hidden=false; marca("gps");
+        try{ if(watchId===null && navigator.geolocation) pideGPS(); }catch(e){}   // el GPS se enciende solo
         try{ if(typeof pintar==="function") pintar(); if(typeof escalar==="function") escalar(); }catch(e){} } },
     S[0] && { c:COLT2.cinta, t:"Cinta · "+S[0].nombre, s:"Series por tiempo, sin GPS", f:function(){ cierraHoja(); window.abreCinta(S[0]); } },
     S[1] && { c:COLT2.libre, t:"Prueba de voz", s:"Bloques de 10 s para comprobar pitidos y voz", f:function(){ cierraHoja(); window.abreCinta(S[1]); } }
