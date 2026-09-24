@@ -3069,7 +3069,10 @@ var ICO = {
   pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10.5a6 6 0 0 1 12 0C18 15.7 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg>'
 };
 
-function clase(ev){ return ev.plan ? ev.plan.tipo : "libre"; }
+// un evento sin bloque #copiloto pero con titulo de gimnasio ("Gym A", "Pierna"...) cuenta como gym:
+// asi se empareja con la sesion de Hevy y se marca hecho
+var RE_GYM=/\b(gym|gimnasio|gimnas|pesas|fuerza|push|pull|pierna|piernas|legs|torso|hevy)\b/i;
+function clase(ev){ return ev.plan ? ev.plan.tipo : (RE_GYM.test(ev.titulo||"") ? "gym" : "libre"); }
 function esc(t){
   return String(t==null?"":t).replace(/[&<>"]/g,function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; });
@@ -3238,7 +3241,7 @@ function tarjeta(ev){
   if(p && p.tipo==="fuera") h+=barraFuera(p);
   if(p && p.tipo==="cinta") h+=barraCinta(p);
   if(p && p.tipo==="gym") h+=listaGym(p);
-  if(!p && !ev.error) h+='<div class="tjTxt">Sin plan que seguir: es un recordatorio del calendario.</div>';
+  if(!p && !ev.error && tipo!=="gym") h+='<div class="tjTxt">Sin plan que seguir: es un recordatorio del calendario.</div>';
   if(ev.error) h+='<div class="tjErr">El bloque #copiloto de este evento no se puede leer. '+esc(ev.error)+'</div>';
   d.innerHTML=h;
   if(hc){                                  // ya esta hecho: se ve lo que hiciste
@@ -3256,7 +3259,7 @@ function tarjeta(ev){
   }else if(tipo==="cinta"){
     d.appendChild(botonGo("Empezar",function(){ window.abreCinta(sesionDe(ev)); }));
   }else if(tipo==="gym"){
-    d.appendChild(el("div","tjNota","El copiloto de gimnasio llega en la fase 3."));
+    d.appendChild(el("div","tjNota",p ? "El copiloto de gimnasio llega en la fase 3." : "Se marca hecho solo al guardar el entreno en Hevy."));
   }
   return d;
 }
@@ -4037,7 +4040,7 @@ function resumenAct(a){
 }
 function filaAct(a){
   var b=el("button","evFila",'<i style="background:#fc5200"></i><span><b>'+esc(a.nombre||"Actividad")+'</b><small>'+
-    esc("Strava · "+resumenAct(a))+'</small></span>'+ICO.chev);
+    esc((a.fuente==="hevy"?"Hevy":"Strava")+" · "+resumenAct(a))+'</small></span>'+ICO.chev);
   b.addEventListener("click",function(){ abreHecho(a,null); });
   return b;
 }
