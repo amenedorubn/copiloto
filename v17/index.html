@@ -542,10 +542,9 @@
 </div>
 
 <!-- debajo, lo que llevas: ritmo actual (suavizado ~30 s), del km y del tramo -->
-<div class="grid g3 ritmos">
+<div class="grid ritmos">
   <div class="cell"><b>Ritmo actual</b><span id="rAct">--:--</span></div>
   <div class="cell"><b>Ritmo del km</b><span id="medio">--:--</span></div>
-  <div class="cell"><b>Ritmo tramo</b><span id="rTramo">--:--</span></div>
 </div>
 
 
@@ -1507,8 +1506,6 @@ function pintar(){
   // ritmo medio del tramo del plan en el que vas (el bloque, el suave...)
   var clave = EXTRA ? String((segEn(dm)||{}).desde) : pl[4]+pl[3];
   if(corriendo && sIni!==null && clave!==tramoClave){ tramoClave=clave; tramoIni={d:dist,t:t}; }
-  $("rTramo").textContent = (corriendo && tramoIni && dist-tramoIni.d>60)
-    ? pace((t-tramoIni.t)/((dist-tramoIni.d)/1000)) : "--:--";
   $("rAct").style.color = !isFinite(rAct) ? "var(--dim)"
     : (rAct<oLo-3 || rAct>oHi+3 ? (rAct<oLo-12 || rAct>oHi+12 ? "var(--bad)" : "var(--warn)") : "var(--ok)");
   var enKm=dm-k*1000;
