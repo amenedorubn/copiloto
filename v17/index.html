@@ -63,12 +63,13 @@
   #perfil .pf.act{opacity:1;box-shadow:0 0 0 2px #fff inset}
   #perfilYo{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;border-radius:2px;
     background:#fff;box-shadow:0 0 0 1px #111418;pointer-events:none}
-  #terCard{padding:10px 14px}
+  #terCard{padding:7px 14px}
   .terFila{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .terQue{min-width:0}
-  #terTipo{display:block;font-size:clamp(17px,2.6vh,21px);font-weight:900;white-space:nowrap}
+  #terTipo{font-size:clamp(16px,2.4vh,19px);font-weight:900;white-space:nowrap}
   #terTipo.sube{color:#ff9a5c} #terTipo.baja{color:#6fb0ff}
-  #terDet{display:block;font-size:13px;font-weight:700;color:var(--dim);margin-top:3px;white-space:nowrap}
+  .terQue{display:flex;align-items:baseline;gap:10px;overflow:hidden}
+  #terDet{font-size:13px;font-weight:700;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .terRit{text-align:right;flex:0 0 auto}
   .terRit i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.07em;
     text-transform:uppercase;color:var(--dim)}
@@ -145,6 +146,14 @@
   .maphint{font-size:11px;color:var(--dim);display:flex;align-items:center;justify-content:center;
            flex-wrap:wrap;gap:2px;margin-top:4px;flex:0 0 auto}
   .dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin:0 4px 0 10px}
+  .mapDato{position:absolute;bottom:14px;z-index:2;pointer-events:none;
+    background:rgba(17,20,24,.82);border:1px solid var(--line);border-radius:12px;padding:5px 11px 6px}
+  .mapDato.izq{left:14px} .mapDato.der{right:14px;text-align:right}
+  .mapDato i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--dim)}
+  .mapDato b{display:block;font-size:clamp(18px,min(5.4vw,3.4vh),26px);font-weight:900;
+    font-variant-numeric:tabular-nums;line-height:1.1}
+  .mapDato small{font-size:12px;color:var(--dim);font-weight:700}
   #brujula{position:absolute;left:14px;top:12px;z-index:2;width:30px;height:30px;border-radius:50%;
     background:rgba(28,33,40,.92);border:1px solid var(--line);color:#e4463e;font-size:10px;
     font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -528,9 +537,8 @@
 <div class="card" id="terCard" hidden>
   <div class="terFila">
     <div class="terQue"><b id="terTipo">–</b><small id="terDet">–</small></div>
-    <div class="terRit"><i>Ritmo aquí</i><b id="terRitmo">–</b><small id="terMedia">–</small></div>
+    <div class="terRit"><b id="terRitmo">–</b></div>
   </div>
-  <div class="terPie"><span id="terLuego">–</span></div>
 </div>
 
 <!-- debajo, lo que llevas: ritmo actual (suavizado ~30 s), del km y del tramo -->
@@ -540,10 +548,6 @@
   <div class="cell"><b>Ritmo tramo</b><span id="rTramo">--:--</span></div>
 </div>
 
-<div class="grid g2">
-  <div class="cell"><b>Reloj</b><span id="reloj">0:00</span></div>
-  <div class="cell"><b>Distancia</b><span id="dist">0,00</span><small> km</small></div>
-</div>
 
 <div class="card" id="mapCard">
   <div id="zoomBtns">
@@ -555,10 +559,10 @@
   </div>
   <svg id="mapa" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
   <div id="brujula" title="Norte"><i>▲</i>N</div>
-  <div class="maphint">
-    <span class="dot" style="background:#fff"></span>tú
-    <span class="dot" style="background:#f0a500"></span>plan
-  </div>
+  <!-- v17: el mapa te sigue y apunta hacia donde vas: la ruta sube por el
+       centro y a los lados sobra sitio. Ahi van el reloj y la distancia -->
+  <div class="mapDato izq"><i>Reloj</i><b id="reloj">0:00</b></div>
+  <div class="mapDato der"><i>Distancia</i><b><span id="dist">0,00</span><small> km</small></b></div>
 </div>
 
 <div class="card" id="deltaCard">
@@ -1084,14 +1088,8 @@ function pintaTerreno(d,k){
   tc.hidden=false; pf.hidden=false; br.hidden=true;
   var t=TRAMOS[i], R=racha(i), resto=Math.max(0,R.fin*100-d);
   var tt=$("terTipo"); tt.textContent=queTramo(R); tt.className=R.tipo;
-  $("terDet").textContent=R.L+" m · quedan "+Math.round(resto/10)*10+" m · "+signoM(R.des);
+  $("terDet").textContent="quedan "+Math.round(resto/10)*10+" m · "+signoM(R.des);
   $("terRitmo").textContent=pace(t.mid);            // el ritmo de ESTE trozo del km
-  var s2 = R.b+1<TRAMOS.length ? racha(R.b+1) : null;
-  $("terLuego").textContent = s2
-    ? "Luego "+queTramo(s2).toLowerCase()+" · "+s2.L+" m · "+pace(TRAMOS[R.b+1].mid)
-    : "Luego: fin del plan";
-  var a=Math.min(SMID.length-1,k*10), b=Math.min(SMID.length-1,k*10+10);
-  $("terMedia").textContent = b>a ? "media km "+pace((SMID[b]-SMID[a])*10/(b-a)) : "";
   // el km troceado: se rehace solo al cambiar de km o de plan
   var clave=k+"|"+TRAMOS.length+"|"+(TRAMOS[0]?TRAMOS[0].mid:0)+"|"+MODO_TERRENO+"|"+PLAN[Math.min(k,PLAN.length-1)][2];
   if(clave!==perfilClave){
