@@ -1,4 +1,4 @@
-const C="copiloto-2.0.2";
+const C="copiloto-2.0.3";
 const F=["./icon-192.png","./icon-512.png","./icon-maskable-192.png","./icon-maskable-512.png",
          "./apple-touch-icon.png","./icon.svg","./manifest.webmanifest","./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2"];
 // Las caches son de todo el dominio: v20/ tiene la suya ("copiloto-v20-…") y no

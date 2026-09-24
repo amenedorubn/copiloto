@@ -13,6 +13,17 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.0.3] - 2026-09-24
+
+### Seguridad
+
+- Ajustes ya no muestra la dirección del Worker ni la clave. Con la conexión
+  guardada solo dice "Conectado", con los botones "Actualizar calendario" y
+  "Cambiar conexión".
+- Los campos salen vacíos solo si falta la clave o al pulsar "Cambiar
+  conexión", junto a un recordatorio de dónde sacar la clave (QR o una nueva
+  en Cloudflare). La dirección es opcional: vacía usa la de siempre.
+
 ## [2.0.2] - 2026-09-24
 
 ### Seguridad
@@ -208,6 +219,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.0.3]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.3
 [2.0.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.2
 [2.0.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.1
 [2.0.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.0
