@@ -153,7 +153,9 @@ export async function hechos(env, url) {
   const min = h => { const p = h.split(":"); return (+p[0]) * 60 + (+p[1]); };
   const actividades = lista.map(base)
     .filter(a => a.fecha >= desde && a.fecha <= hasta)
-    .map(a => { a.linea = ""; return a; })            // el trazado va en el detalle
+    // el trazado entero va en el detalle; aqui solo el resumido de lo corrido en la
+    // calle (unos cientos de caracteres), para dibujar la ruta real en la tarjeta
+    .map(a => { if (!/Run/.test(a.deporte) || a.cinta || /Virtual/.test(a.deporte)) a.linea = ""; return a; })
     // si una sesion de Hevy llega tambien a Strava, se queda la de Hevy (tiene las series)
     .filter(a => !(/Weight|Workout/i.test(a.deporte) &&
                    gym.some(g => g.fecha === a.fecha && Math.abs(min(g.hora) - min(a.hora)) <= 90)))
