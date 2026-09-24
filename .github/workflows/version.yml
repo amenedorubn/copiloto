@@ -1,0 +1,27 @@
+name: Versión coherente
+
+# Falla si index.html (APP_VERSION), version.json y la cache de sw.js no dicen
+# la misma version. Se arregla con: node scripts/bump.mjs patch "nota"
+on:
+  push:
+    paths:
+      - "index.html"
+      - "version.json"
+      - "sw.js"
+      - "scripts/**"
+      - ".github/workflows/version.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/check-version.mjs
