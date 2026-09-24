@@ -86,13 +86,13 @@ Vuelve a mirar `/salud`: los dos deben poner `true`.
 La app la lee del fragmento de la URL, así que basta con generar un QR de:
 
 ```
-https://amenedorubn.github.io/copiloto/v14/#key=LA_APP_KEY
+https://amenedorubn.github.io/copiloto/#key=LA_APP_KEY
 ```
 
 o, para dejar también la dirección del Worker fijada:
 
 ```
-https://amenedorubn.github.io/copiloto/v14/#key=LA_APP_KEY&url=https%3A%2F%2Fcopiloto-api.amenedorubn.workers.dev
+https://amenedorubn.github.io/copiloto/#key=LA_APP_KEY&url=https%3A%2F%2Fcopiloto-api.amenedorubn.workers.dev
 ```
 
 Al abrirlo, la app guarda la clave en `localStorage` y **borra el fragmento de
