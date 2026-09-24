@@ -358,7 +358,7 @@
   #hConf.nueva::after{content:"";position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;
     background:var(--cinta);box-shadow:0 0 0 2px var(--bg)}
   #cfVerMsg{margin-top:8px;font-size:14px;font-weight:600;line-height:1.45;padding:11px 14px;border-radius:14px;
-    background:var(--sf2);color:var(--mu)}
+    background:var(--sf2);color:var(--mu);white-space:pre-line}
   #cfVerMsg.ok{color:#9ede8a} #cfVerMsg.mal{color:#ffb4a0}
   #hoja button:disabled{opacity:.45}
   /* elegir ruta */
@@ -4776,7 +4776,7 @@ function pintaVersion(){
   function msg(cl,t){ m.hidden=false; m.className=cl; m.textContent=t; }
   function bloquea(){                     // en mitad de un entreno no se actualiza nunca
     var ec=Actualiza.enCurso(); a.disabled=ec;
-    if(ec) msg("mal",m.textContent+" Hay un entreno en marcha: actualiza cuando termines.");
+    if(ec) msg("mal",m.textContent+"\nHay un entreno en marcha: actualiza cuando termines.");
   }
   b.addEventListener("click",function(){
     a.hidden=true; b.disabled=true; msg("","Comprobando…");
