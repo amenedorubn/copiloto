@@ -13,6 +13,19 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.0.1] - 2026-09-24
+
+### Cambiado
+
+- "Instalar como app" sale de la pantalla del entreno y pasa a Ajustes. Si el
+  navegador no ofrece instalarla, Ajustes explica cómo añadirla a la pantalla
+  de inicio; si ya es la app instalada, lo dice.
+- "Activar GPS y dar permiso" también está en Ajustes, con el estado del
+  permiso y un botón para probar el GPS.
+- En el entreno, el botón de GPS solo aparece si el GPS no tiene permiso o
+  falla.
+- El GPS del entreno libre se enciende solo al abrirlo.
+
 ## [2.0.0] - 2026-09-24
 
 Corresponde a la carpeta `v20/`.
@@ -182,6 +195,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.0.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.1
 [2.0.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.0
 [1.9.0]: https://github.com/amenedorubn/copiloto/releases/tag/v1.9.0
 [1.8.0]: https://github.com/amenedorubn/copiloto/releases/tag/v1.8.0

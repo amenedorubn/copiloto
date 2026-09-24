@@ -1,1 +1,1 @@
-{"version":"2.0.0","fecha":"2026-09-24","notas":"La raíz pasa a ser la app, con versión en Ajustes y botón de comprobar actualización."}
+{"version":"2.0.1","fecha":"2026-09-24","notas":"Instalar como app y activar GPS pasan a Ajustes; en el entreno el botón de GPS solo sale si el GPS no tiene permiso o falla."}
