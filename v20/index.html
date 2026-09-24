@@ -498,6 +498,11 @@
   .tjMeta.plan{font-size:13px;opacity:.75}
   #hSemana .dia em.ok{height:14px;margin-top:-4px}
   #hSemana .dia em.ok svg{width:14px;height:14px}
+  #hSemana .dia em.no{height:14px;margin-top:-4px;color:#e0605a}
+  #hSemana .dia em.no svg{width:13px;height:13px}
+  #hSemana .dia em.ok i{width:5px;height:5px;border-radius:50%;background:#e0605a;align-self:center}
+  .tjEye .noPill{display:inline-flex;align-items:center;font-style:normal;background:rgba(0,0,0,.28);color:#fff;
+    border-radius:10px;padding:3px 9px;letter-spacing:.06em;font-weight:800}
   #hSemana .dia.pas em.ok svg{opacity:1}
 
   /* ================= selector y modo cinta (v12) ================= */
@@ -2979,6 +2984,9 @@ function guardaCache(d){ try{ localStorage.setItem(LSCACHE,JSON.stringify(d)); }
 /* ------------------------------- fechas ------------------------------- */
 // el dia de hoy segun el reloj del movil, en el mismo formato que manda el Worker
 function hoyISO(){ return desplaza(0); }
+// el plan de Roma empezo el lunes 31/08: desde ahi se baja el calendario y lo hecho
+var INICIO_PLAN="2026-08-31";
+function desdePlan(max){ var d=desplaza(-max); return INICIO_PLAN>d ? INICIO_PLAN : d; }
 function desplaza(n){
   var d=new Date(); d.setDate(d.getDate()+n);
   return d.getFullYear()+"-"+dos(d.getMonth()+1)+"-"+dos(d.getDate());
@@ -3233,7 +3241,8 @@ function tarjeta(ev){
   if(tipo==="fuera" && !hc){ preparaRuta(ev); var g=rutaActual(); if(g && g.linea) h+='<div class="tjFondo">'+miniSvg(g.linea,"#fff",2.2)+'</div>'; }
   var eye=[ETQ[tipo]]; if(ev.hora) eye.push(ev.hora); var ec=hc ? "" : enCuanto(ev);
   h+='<div class="tjEye"><span>'+esc(eye.join(" · "))+'</span>'+(ec?'<em>'+esc(ec)+'</em>':'')+
-     (hc?'<em class="hechoPill">'+TICK+'Hecho</em>':'')+'</div>';
+     (hc?'<em class="hechoPill">'+TICK+'Hecho</em>':'')+
+     (!hc && tipo!=="libre" && ev.fecha<hoyISO()?'<em class="noPill">No hecho</em>':'')+'</div>';
   h+='<h1 class="tjTit'+(T.t.length>30?' muyLargo':(T.t.length>16?' largo':''))+'">'+esc(T.t)+'</h1>';
   if(T.s && tipo!=="fuera") h+='<div class="tjSub">'+esc(frase(T.s))+'</div>';
   if(hc) h+='<div class="tjReal">'+realDe(hc).map(function(r){ return '<div><i>'+esc(r[0])+'</i><b>'+esc(r[1])+'</b></div>'; }).join("")+'</div>';
@@ -3330,11 +3339,6 @@ function eventosDe(iso){
   if(!datos || !datos.eventos) return [];
   return datos.eventos.filter(function(e){ return e.fecha===iso; });
 }
-function siguienteDe(iso){
-  if(!datos || !datos.eventos) return null;
-  for(var j=0;j<datos.eventos.length;j++) if(datos.eventos[j].fecha>iso) return datos.eventos[j];
-  return null;
-}
 function vaA(fecha,i){
   // mirar otro dia deja una marca en el historial: atras vuelve a hoy
   var enDia = history.state && history.state.pant==="dia";
@@ -3346,13 +3350,15 @@ function pintaSemana(){
   var lun=isoMas(sel.fecha,-diaSem(sel.fecha)), hoy=hoyISO(), h="";
   for(var k=0;k<7;k++){
     var iso=isoMas(lun,k), evs=eventosDe(iso), p=iso.split("-");
-    var hechoAlgo=null; evs.forEach(function(e){ if(!hechoAlgo && hechoDe(e)) hechoAlgo=e; });
+    var hechoAlgo=null, falta=0; evs.forEach(function(e){ if(hechoDe(e)){ if(!hechoAlgo) hechoAlgo=e; } else if(clase(e)!=="libre") falta++; });
+    var fallado = iso<hoy && falta>0;
     var puntos = hechoAlgo ? "" : evs.slice(0,2).map(function(e){ return '<i style="background:'+COLT2[clase(e)]+'"></i>'; }).join("");
     if(!hechoAlgo && !evs.length && extrasDe(iso).length) puntos='<i style="background:#6b7079"></i>';
     h+='<button class="dia'+(iso===sel.fecha?' sel':'')+(iso===hoy?' hoy':'')+(iso<hoy?' pas':'')+'" data-f="'+iso+
        '" aria-label="'+esc(fechaLarga(iso))+(evs.length?", "+evs.length+" entreno"+(evs.length>1?"s":""):"")+'"'+
        (iso===sel.fecha?' aria-current="date"':'')+'><span>'+SEMLET[k]+'</span><b>'+(+p[2])+'</b>'+
-       (hechoAlgo ? '<em class="ok" style="color:'+COLT2[clase(hechoAlgo)]+'" aria-label="hecho">'+TICK+'</em>' : '<em>'+puntos+'</em>')+'</button>';
+       (hechoAlgo ? '<em class="ok" style="color:'+COLT2[clase(hechoAlgo)]+'" aria-label="'+(fallado?'hecho a medias':'hecho')+'">'+TICK+(fallado?'<i></i>':'')+'</em>'
+        : fallado ? '<em class="no" aria-label="no hecho">'+CRUZ+'</em>' : '<em>'+puntos+'</em>')+'</button>';
   }
   var s=E("hSemana"); s.innerHTML=h;
   Array.prototype.forEach.call(s.querySelectorAll(".dia"),function(b){
@@ -3398,11 +3404,7 @@ function pinta(){
     cu.appendChild(el("div","etq",evs.length?"También hiciste":"Lo que hiciste"));
     ex.forEach(function(a){ cu.appendChild(filaAct(a)); });
   }
-  var sg=siguienteDe(sel.fecha);
-  if(sg){
-    cu.appendChild(el("div","etq","Después"));
-    cu.appendChild(filaEv(sg,function(){ vaA(sg.fecha,0); }));
-  }
+  // cada dia con lo suyo: el "Despues" de otro dia no se ensena aqui
 }
 function estado(txt,mal){ estadoTxt=txt; estadoMal=!!mal; var e=E("hEstado"); if(e){ e.textContent=txt; e.className=mal?"mal":""; } }
 function estadoCopia(){
@@ -3935,7 +3937,7 @@ function baja(){
   if(!conf.key || !conf.url){ pinta(); return; }
   bajando=true; estado("actualizando…");
   var base=conf.url.replace(/\/+$/,"");
-  var u=base+"/agenda?desde="+desplaza(-7)+"&hasta="+desplaza(45);
+  var u=base+"/agenda?desde="+desdePlan(365)+"&hasta="+desplaza(45);
   fetch(u,{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
    .then(function(r){ return r.json().then(function(j){ return {r:r,j:j}; }); })
    .then(function(x){
@@ -3974,13 +3976,14 @@ try{ hechosD=JSON.parse(localStorage.getItem(LSHECHO)||"null"); }catch(e){ hecho
 // zonas de FC por reserva cardiaca (Karvonen, FCrep 52, FCmax 189)
 var ZONAS=[ {z:"Z1",hasta:134}, {z:"Z2",hasta:148}, {z:"Z3",hasta:162}, {z:"Z4",hasta:175}, {z:"Z5",hasta:999} ];
 var COLRIT="#3987e5", COLFC="#d55181";
+var CRUZ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>';
 var TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>';
 
 function pideHechos(){
   if(pidiendoHechos || !conf.key || !conf.url) return;
   pidiendoHechos=true;
   var base=conf.url.replace(/\/+$/,"");
-  fetch(base+"/hecho?desde="+desplaza(-42)+"&hasta="+desplaza(0),{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
+  fetch(base+"/hecho?desde="+desdePlan(119)+"&hasta="+desplaza(0),{ headers:{"X-Copiloto-Key":conf.key}, cache:"no-store" })
    .then(function(r){ return r.json(); })
    .then(function(j){
       if(!j || j.error || !j.actividades) return;
