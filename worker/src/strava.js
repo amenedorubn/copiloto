@@ -189,7 +189,7 @@ function pagina(texto, estado) {
 
 let cache = { token: null, caduca: 0 };
 
-async function accessToken(env) {
+export async function accessToken(env) {
   const ahora = Date.now();
   if (cache.token && cache.caduca > ahora + 60000) return cache.token;
 

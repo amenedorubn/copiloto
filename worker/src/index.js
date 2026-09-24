@@ -12,10 +12,13 @@
      GET /salud                      sin clave. Dice si el Worker vive y si
                                      los dos secretos estan puestos.
      GET /agenda?desde=&hasta=       con clave. Entrenos del rango.
+     GET /hecho?desde=&hasta=        con clave. Actividades de Strava del rango.
+     GET /hecho/detalle?id=          con clave. Una actividad con sus series.
    =========================================================================== */
 
 import { rutas, ruta, conectar, vuelta } from "./strava.js";
 import { biblioteca } from "./biblioteca.js";
+import { hechos, detalle } from "./hecho.js";
 
 const ORIGENES = [
   "https://amenedorubn.github.io"
@@ -72,6 +75,14 @@ export default {
             return t;
           }
         });
+        return json(r, r.codigo || (r.error ? 400 : 200), origen);
+      }
+
+      // lo hecho de verdad, desde Strava (v19 de la app)
+      if (url.pathname === "/hecho" || url.pathname === "/hecho/detalle") {
+        const fallo = revisaClave(req, env);
+        if (fallo) return json(fallo, fallo.codigo, origen);
+        const r = url.pathname === "/hecho" ? await hechos(env, url) : await detalle(env, url);
         return json(r, r.codigo || (r.error ? 400 : 200), origen);
       }
 
