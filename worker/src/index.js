@@ -2,11 +2,14 @@
    copiloto-api · Worker de Cloudflare
    ---------------------------------------------------------------------------
    Lee la direccion iCal secreta del calendario "Entreno" de Google, la parsea
-   y devuelve JSON con los entrenos del rango pedido.
+   y devuelve JSON con los entrenos del rango pedido. Si estan puestos, lee
+   tambien los calendarios "Comidas" y "Claude" (rutinas) para la agenda del dia.
 
    Secretos (se meten desde el panel de Cloudflare, nunca en el repo):
-     APP_KEY   clave que la app manda en la cabecera X-Copiloto-Key
-     ICAL_URL  direccion iCal secreta del calendario
+     APP_KEY       clave que la app manda en la cabecera X-Copiloto-Key
+     ICAL_URL      direccion iCal secreta del calendario "Entreno"
+     ICAL_COMIDAS  (opcional) direccion iCal secreta del calendario "Comidas"
+     ICAL_RUTINA   (opcional) direccion iCal secreta del calendario "Claude"
 
    Rutas:
      GET /salud                      sin clave. Dice si el Worker vive y si
@@ -43,6 +46,8 @@ export default {
           secretos: {
             APP_KEY: !!env.APP_KEY,
             ICAL_URL: !!env.ICAL_URL,
+            ICAL_COMIDAS: !!env.ICAL_COMIDAS,
+            ICAL_RUTINA: !!env.ICAL_RUTINA,
             STRAVA_APP: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET),
             KV: !!env.COPILOTO,
             STRAVA_CONECTADO: await conectado(env),
@@ -174,10 +179,34 @@ async function agenda(env, url) {
   const zona = cal.zona || ZONA_POR_DEFECTO;
 
   const eventos = expande(cal.eventos, desde, hasta, zona);
-  eventos.sort((a, b) => a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0);
+  eventos.sort(porInicio);
 
-  return { generado: new Date().toISOString(), zona, desde, hasta, eventos };
+  // agenda del dia: comidas y rutinas. Van aparte de los entrenos y sin plan;
+  // si uno falla, los entrenos salen igual y la app avisa de lo que falta
+  const dia = [], diaFallos = [];
+  await Promise.all([["comida", env.ICAL_COMIDAS], ["rutina", env.ICAL_RUTINA]].map(async ([fuente, u]) => {
+    if (!u) return;
+    try {
+      const r = await fetch(u, {
+        cf: { cacheTtl: CACHE_ICAL, cacheEverything: true },
+        headers: { "User-Agent": "copiloto-api" }
+      });
+      if (!r.ok) { diaFallos.push(fuente); return; }
+      const c = parseICS(await r.text());
+      for (const e of expande(c.eventos, desde, hasta, zona, true)) {
+        dia.push({ fuente, uid: e.uid, fecha: e.fecha, hora: e.hora, fin: e.fin, inicio: e.inicio,
+          titulo: e.titulo, texto: e.texto });
+      }
+    } catch (e) { diaFallos.push(fuente); }
+  }));
+  dia.sort(porInicio);
+
+  const out = { generado: new Date().toISOString(), zona, desde, hasta, eventos, dia };
+  if (diaFallos.length) out.diaFallos = diaFallos;
+  return out;
 }
+
+function porInicio(a, b) { return a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0; }
 
 /* ------------------------------ parser iCal ------------------------------ */
 /* Desplegamos las lineas (RFC 5545: una linea que empieza por espacio o tab es
@@ -370,7 +399,8 @@ function masDias(y, m, d, n) {
 
 /* ------------------------------ expandir ------------------------------ */
 
-function expande(brutos, desde, hasta, zona) {
+// sinPlan: comidas y rutinas, donde no se busca ningun entreno en el texto
+function expande(brutos, desde, hasta, zona, sinPlan) {
   const desdeT = aUTC(...desde.split("-").map(Number), 0, 0, 0, zona);
   const hastaT = aUTC(...hasta.split("-").map(Number), 23, 59, 59, zona);
   const out = [];
@@ -412,24 +442,28 @@ function expande(brutos, desde, hasta, zona) {
       if (fuera[t]) continue;
       // si esa fecha concreta tiene su propio evento retocado, la serie no la pinta
       if (!esRetoque && p.RRULE && retoques[uid + "@" + t]) continue;
-      out.push(montaEvento(ev, t, ini.todoElDia, zona));
+      out.push(montaEvento(ev, t, ini, zona, sinPlan));
     }
   }
   return out;
 }
 
-function montaEvento(ev, t, todoElDia, zona) {
+function montaEvento(ev, t, ini, zona, sinPlan) {
   const p = ev.props;
+  const todoElDia = ini.todoElDia;
   const pt = partes(t, zona);
   const titulo = p.SUMMARY ? desescapa(p.SUMMARY.val).trim() : "(sin titulo)";
   const desc = p.DESCRIPTION ? desescapa(p.DESCRIPTION.val) : "";
   const lugar = p.LOCATION ? desescapa(p.LOCATION.val).trim() : "";
-  const { plan, error, texto } = extraePlan(desc, titulo, lugar);
+  const { plan, error, texto } = sinPlan ? { plan: null, error: null, texto: desc } : extraePlan(desc, titulo, lugar);
+  // hora de fin: la duracion del evento original, aplicada a esta repeticion
+  const fin = !todoElDia && p.DTEND ? fechaICal(p.DTEND.val, p.DTEND.params, zona) : null;
 
   const e = {
     uid: (p.UID ? p.UID.val : "") + "@" + t,
     fecha: pt.fecha,
     hora: todoElDia ? null : pt.hora,
+    fin: fin && fin.t > ini.t ? partes(t + (fin.t - ini.t), zona).hora : null,
     inicio: new Date(t).toISOString(),
     titulo,
     texto: texto.trim(),

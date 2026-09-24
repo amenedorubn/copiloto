@@ -81,6 +81,26 @@ Vuelve a mirar `/salud`: los dos deben poner `true`.
 > La iCal está en calendar.google.com → ⚙ junto al calendario "Entreno" →
 > Configuración → abajo del todo → **Dirección secreta en formato iCal**.
 
+### Opcional · comidas y rutinas en la línea del día (v2.2)
+
+Debajo del entreno, la app enseña las comidas y la rutina del día con sus
+horas. Salen de otros dos calendarios, cada uno con su secreto:
+
+| Secreto | Calendario de Google |
+|---|---|
+| `ICAL_COMIDAS` | "Comidas" |
+| `ICAL_RUTINA` | "Claude" (rutina de noche y demás) |
+
+```bash
+npx wrangler secret put ICAL_COMIDAS --name copiloto-api
+npx wrangler secret put ICAL_RUTINA  --name copiloto-api
+```
+
+La dirección se saca igual que la de "Entreno": ⚙ junto a cada calendario →
+Configuración → **Dirección secreta en formato iCal**. Sin estos secretos la
+app funciona igual, solo que sin comidas ni rutinas. En `/salud` salen como
+`ICAL_COMIDAS` e `ICAL_RUTINA`.
+
 ## 4. Pasar la `APP_KEY` al móvil
 
 La app la lee del fragmento de la URL, así que basta con generar un QR de:
