@@ -39,21 +39,22 @@
              font-variant-numeric:tabular-nums}
   #deltaCard{padding:5px 12px}
   #deltaLbl{font-size:9px}
-  /* ---- arriba y en grande (v16): ritmo actual + FC objetivo del tramo ---- */
-  #topCard{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:0 0 auto}
-  .topHalf{background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:6px 6px 7px;text-align:center;min-width:0;display:flex;flex-direction:column;
-    justify-content:center}
-  .topHalf i{font-style:normal;font-size:11px;font-weight:800;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--dim);white-space:nowrap}
-  .topHalf b{display:block;font-weight:900;line-height:1;letter-spacing:-.03em;
-    font-variant-numeric:tabular-nums;white-space:nowrap;margin:3px 0 2px}
-  #rAct{font-size:clamp(40px,min(13.5vw,11vh),88px)}
-  #fcObj{font-size:clamp(28px,min(9.6vw,8vh),60px);color:var(--hr);padding-top:.12em;letter-spacing:-.045em}
-  .topHalf{overflow:hidden}
-  #topFc i{color:var(--hr)}
-  .topHalf small{font-size:12px;font-weight:700;color:var(--dim);white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
+  /* ---- v16: el bloque del km va ARRIBA y en grande: km, ritmo objetivo y
+     FC objetivo. La FC es el rango del plan, no la real: esa se mira en el
+     reloj y se compara con esta. Debajo, los ritmos que llevas. ---- */
+  #kmCard.big{padding:8px 12px 9px;border-left-width:8px}
+  #kmCard.big .kmtop{margin-bottom:5px;gap:8px}
+  #kmCard.big #kmNum{font-size:clamp(22px,3.6vh,30px);font-weight:900;white-space:nowrap}
+  #kmCard.big #kmTipo{font-size:12px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #kmCard.big .kmgrid{grid-template-columns:1fr;gap:5px;margin:0}
+  #kmCard.big .kmstat{flex-direction:row;align-items:center;justify-content:space-between;
+    gap:8px;padding:5px 12px}
+  #kmCard.big .kmstat i{font-size:11px;font-weight:800;line-height:1.25;white-space:normal}
+  #kmCard.big .kmstat b{font-size:clamp(36px,min(13vw,8.5vh),66px);font-weight:900;line-height:1.02;
+    letter-spacing:-.04em}
+  .grid.ritmos .cell{text-align:center;padding:6px 4px}
+  .grid.ritmos .cell b{white-space:nowrap}
+  .grid.ritmos .cell span{font-size:clamp(24px,min(8.5vw,5vh),38px)}
   .grid.g3{grid-template-columns:1fr 1fr 1fr}
   .grid.g3 .cell span{font-size:clamp(15px,2.8vh,21px)}
   #verRes{display:none}
@@ -480,33 +481,33 @@
 <button id="gpsbtn">Activar GPS y dar permiso</button>
 <button id="instalar">Instalar como app</button>
 
-<!-- v16: lo que se mira corriendo, arriba y en grande. La FC es el RANGO
-     OBJETIVO del tramo (lo que dice el plan), no la del pulso: esa se mira en
-     el reloj y se compara con esta. Sin pulsometro ni Bluetooth. -->
-<div id="topCard">
-  <div class="topHalf" id="topRitmo"><i>Ritmo actual</i><b id="rAct">--:--</b><small id="rObj">objetivo –</small></div>
-  <div class="topHalf" id="topFc"><i>♥ FC objetivo</i><b id="fcObj">–</b><small id="tramoNom">–</small></div>
+<!-- v16: arriba y en grande, el bloque del km: km, ritmo objetivo y FC
+     objetivo (la del plan, no la real: sin pulsometro ni Bluetooth) -->
+<div class="card big" id="kmCard">
+  <div class="kmtop"><div id="kmNum">Km 1</div><div id="kmTipo">Arranque</div></div>
+  <div class="kmgrid">
+    <div class="kmstat"><i>Ritmo<br>objetivo</i><b id="kmObj">7:00-7:30</b></div>
+    <div class="kmstat" id="kmFcCell"><i>♥ FC<br>objetivo</i><b id="kmFc">–</b></div>
+  </div>
+  <div id="barra"><div id="barraIn"></div></div>
+</div>
+
+<!-- debajo, lo que llevas: ritmo actual (suavizado ~30 s), del km y del tramo -->
+<div class="grid g3 ritmos">
+  <div class="cell"><b>Ritmo actual</b><span id="rAct">--:--</span></div>
+  <div class="cell"><b>Ritmo del km</b><span id="medio">--:--</span></div>
+  <div class="cell"><b>Ritmo tramo</b><span id="rTramo">--:--</span></div>
+</div>
+
+<div class="grid">
+  <div class="cell"><b>Reloj</b><span id="reloj">0:00</span></div>
+  <div class="cell"><b>Distancia</b><span id="dist">0,00</span><small> km</small></div>
 </div>
 
 <div class="card" id="deltaCard">
   <div id="deltaLbl">respecto al plan</div>
   <div id="veredicto">Sin empezar</div>
   <button id="ajustar">Ajustar al ritmo actual</button>
-</div>
-
-<div class="grid g3">
-  <div class="cell"><b>Reloj</b><span id="reloj">0:00</span></div>
-  <div class="cell"><b>Distancia</b><span id="dist">0,00</span><small> km</small></div>
-  <div class="cell"><b>Ritmo del km</b><span id="medio">--:--</span></div>
-</div>
-
-<div class="card" id="kmCard">
-  <div class="kmtop"><div id="kmNum">Km 1</div><div id="kmTipo">Arranque</div></div>
-  <div class="kmgrid">
-    <div class="kmstat"><i>Ritmo</i><b id="kmObj">7'00-7'30</b></div>
-    <div class="kmstat" id="kmFcCell"><i>♥ FC ppm</i><b id="kmFc">-- - --</b></div>
-  </div>
-  <div id="barra"><div id="barraIn"></div></div>
 </div>
 
 <div class="card" id="mapCard">
@@ -1097,6 +1098,7 @@ var marcas={};         // metro -> segundos de reloj al pasar por el
 var HIST=[];           // [ms, metros] una vez por segundo: de aqui sale el ritmo actual
 var lentoDesde=null;   // metro desde el que el ritmo suavizado va mas lento que el umbral
 var resumenVisto=false, tAntes=null;
+var tramoClave=null, tramoIni=null;   // donde empezo el tramo en curso, para su ritmo medio
 function copia(x){ return JSON.parse(JSON.stringify(x)); }
 function segEn(d){
   if(!EXTRA) return null;
@@ -1109,7 +1111,7 @@ function reiniciaExtra(){
     PLAN=copia(EXTRA.P0); FC=copia(EXTRA.F0); preparaTerreno();
   }
   hechos={}; opcion=null; opcionEn=null; marcas={}; HIST=[]; lentoDesde=null;
-  resumenVisto=false; tAntes=null;
+  resumenVisto=false; tAntes=null; tramoClave=null; tramoIni=null;
 }
 // ritmo actual SUAVIZADO: media de los ultimos ~30 s (no el instantaneo del GPS).
 // Parado cuenta como lentisimo (Infinity) en vez de quedarse con el ultimo valor.
@@ -1409,9 +1411,11 @@ function pintar(){
   // arriba: FC OBJETIVO del tramo (la del plan) y contra que se mide el ritmo
   var oLo=pl[0], oHi=pl[1];
   if(iTr>=0){ oLo=TRAMOS[iTr].lo; oHi=TRAMOS[iTr].hi; }
-  $("fcObj").textContent=fcTxt(fc);
-  $("tramoNom").textContent=pl[4]+" · km "+(k+1);
-  $("rObj").textContent="objetivo "+pace(oLo)+"–"+pace(oHi);
+  // ritmo medio del tramo del plan en el que vas (el bloque, el suave...)
+  var clave = EXTRA ? String((segEn(dm)||{}).desde) : pl[4]+pl[3];
+  if(corriendo && sIni!==null && clave!==tramoClave){ tramoClave=clave; tramoIni={d:dist,t:t}; }
+  $("rTramo").textContent = (corriendo && tramoIni && dist-tramoIni.d>60)
+    ? pace((t-tramoIni.t)/((dist-tramoIni.d)/1000)) : "--:--";
   $("rAct").style.color = !isFinite(rAct) ? "var(--dim)"
     : (rAct<oLo-3 || rAct>oHi+3 ? (rAct<oLo-12 || rAct>oHi+12 ? "var(--bad)" : "var(--warn)") : "var(--ok)");
   var enKm=dm-k*1000;
@@ -1949,7 +1953,7 @@ function guardaCalle(){
       ajusteSeg:ajusteSeg, avisoBloque:avisoBloque, romaDicho:romaDicho,
       modo:MODO_TERRENO, rutaId:rutaId,
       extra:EXTRA, hechos:hechos, opcion:opcion, opcionEn:opcionEn, marcas:marcas,
-      resumenVisto:resumenVisto
+      resumenVisto:resumenVisto, tramoClave:tramoClave, tramoIni:tramoIni
     }));
   }catch(e){}
 }
@@ -1968,6 +1972,7 @@ window.retomaCalle=function(){
   EXTRA = st.extra || null;           // el plan por tramos y lo que ya se habia cantado
   hechos = st.hechos || {}; opcion = st.opcion || null; opcionEn = st.opcionEn || null;
   marcas = st.marcas || {}; resumenVisto = !!st.resumenVisto;
+  tramoClave = st.tramoClave || null; tramoIni = st.tramoIni || null;
   HIST=[]; lentoDesde=null; tAntes=null;
   if(!cargaRuta(st.ruta, st.plan, st.fc||[], st.ele||[])) return false;
   try{                                  // las candidatas, para seguir cambiando de ruta sola
