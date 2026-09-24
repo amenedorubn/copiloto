@@ -18,7 +18,7 @@
 
 import { rutas, ruta, conectar, vuelta } from "./strava.js";
 import { biblioteca } from "./biblioteca.js";
-import { hechos, detalle } from "./hecho.js";
+import { hechos, detalle, pruebaHevy } from "./hecho.js";
 
 const ORIGENES = [
   "https://amenedorubn.github.io"
@@ -46,7 +46,8 @@ export default {
             STRAVA_APP: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET),
             KV: !!env.COPILOTO,
             STRAVA_CONECTADO: await conectado(env),
-            HEVY: !!env.HEVY_API_KEY
+            HEVY: !!env.HEVY_API_KEY,
+            HEVY_PRUEBA: await pruebaHevy(env)
           }
         }, 200, origen);
       }

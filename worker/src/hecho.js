@@ -87,13 +87,29 @@ function sesionHevy(w) {
     series, reps, volumenKg: Math.round(vol), descripcion: w.description || "", ejercicios
   };
 }
+// la clave pegada en el panel a veces lleva espacios o un salto de linea
+const claveHevy = env => String(env.HEVY_API_KEY || "").trim();
+
+// para /salud: solo dice si Hevy acepta la clave (codigo HTTP), nada de datos
+export async function pruebaHevy(env) {
+  if (!claveHevy(env)) return "sin clave";
+  try {
+    const r = await fetch(HEVY + "/workouts?page=1&pageSize=1",
+      { headers: { "api-key": claveHevy(env), Accept: "application/json" } });
+    return r.ok ? "ok" : "Hevy responde " + r.status;
+  } catch (e) { return "Hevy no contesta"; }
+}
+
 async function hevyEntre(env, desde, hasta) {
-  if (!env.HEVY_API_KEY) return [];
+  if (!claveHevy(env)) return [];
   const out = [];
   for (let p = 1; p <= 8; p++) {             // van de la mas nueva a la mas vieja
     const r = await fetch(HEVY + "/workouts?page=" + p + "&pageSize=10",
-      { headers: { "api-key": env.HEVY_API_KEY, Accept: "application/json" } });
-    if (!r.ok) break;                        // Hevy caido o clave mala: el resto sigue valiendo
+      { headers: { "api-key": claveHevy(env), Accept: "application/json" } });
+    if (!r.ok) {                             // Hevy caido o clave mala: el resto sigue valiendo
+      if (p === 1) throw new Error("Hevy responde " + r.status);
+      break;
+    }
     const j = await r.json(), lote = j.workouts || [];
     let viejo = false;
     for (const w of lote) {
@@ -132,8 +148,8 @@ export async function hechos(env, url) {
     lista.push(...lote);
     if (lote.length < 100) break;
   }
-  let gym = [];
-  try { gym = await hevyEntre(env, desde, hasta); } catch (e) { gym = []; }
+  let gym = [], hevyFallo = null;
+  try { gym = await hevyEntre(env, desde, hasta); } catch (e) { gym = []; hevyFallo = String(e.message || e); }
   const min = h => { const p = h.split(":"); return (+p[0]) * 60 + (+p[1]); };
   const actividades = lista.map(base)
     .filter(a => a.fecha >= desde && a.fecha <= hasta)
@@ -143,8 +159,9 @@ export async function hechos(env, url) {
                    gym.some(g => g.fecha === a.fecha && Math.abs(min(g.hora) - min(a.hora)) <= 90)))
     .concat(gym)
     .sort((x, y) => (x.fecha + x.hora < y.fecha + y.hora ? -1 : 1));
-  const out = { desde, hasta, generado: new Date().toISOString(), hevy: !!env.HEVY_API_KEY, actividades };
-  await kvGuarda(env, k, out, 300);
+  const out = { desde, hasta, generado: new Date().toISOString(), hevy: !!claveHevy(env), hevyFallo, actividades };
+  // con Hevy fallando no se guarda: el siguiente intento vuelve a preguntar
+  if (!hevyFallo) await kvGuarda(env, k, out, 300);
   return out;
 }
 
