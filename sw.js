@@ -1,5 +1,6 @@
-const C="copiloto-v12";
-const F=["./icon-192.png","./icon-512.png","./manifest.webmanifest"];
+const C="copiloto-v20-10";
+const F=["./icon-192.png","./icon-512.png","./icon-maskable-192.png","./icon-maskable-512.png",
+         "./apple-touch-icon.png","./icon.svg","./manifest.webmanifest","./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2"];
 self.addEventListener("install",e=>{self.skipWaiting();
   e.waitUntil(caches.open(C).then(c=>c.addAll(F)).catch(()=>{}));});
 self.addEventListener("activate",e=>{e.waitUntil(
@@ -12,6 +13,6 @@ self.addEventListener("fetch",e=>{
     e.respondWith(fetch(r,{cache:"no-store"}).then(res=>{
       const cp=res.clone(); caches.open(C).then(c=>c.put("./index.html",cp)); return res;
     }).catch(()=>caches.match("./index.html")));
-  }else{                            // iconos y manifest: cache primero
+  }else{                            // iconos, manifest y rutas de la app: cache primero
     e.respondWith(caches.match(r).then(x=>x||fetch(r)));
   }});

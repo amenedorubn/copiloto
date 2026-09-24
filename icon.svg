@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Copiloto v16: corredor en primer plano y el Coliseo de Roma detras -->
+  <rect width="512" height="512" rx="104" fill="#14181f"/>
+  <!-- cielo calido detras del Coliseo -->
+  <circle cx="256" cy="262" r="196" fill="#1d232c"/>
+  <!-- Coliseo: el lado izquierdo entero (4 pisos) y el derecho en ruina, mas bajo -->
+  <g id="coliseo">
+    <path fill="#c9733a" d="
+      M 58 402
+      L 58 150 Q 150 128 262 128
+      L 262 150 L 300 150 L 300 176 L 338 176 L 338 206 L 380 206 L 380 236
+      L 454 236 L 454 402 Z"/>
+    <!-- cornisas entre pisos -->
+    <g fill="#e39a5c">
+      <rect x="58" y="192" width="204" height="9"/>
+      <rect x="262" y="192" width="38" height="9"/>
+      <rect x="58" y="268" width="396" height="9"/>
+      <rect x="58" y="336" width="396" height="9"/>
+    </g>
+    <!-- arcos: dos filas grandes y la fila de ventanas del atico -->
+    <g fill="#5a2c14">
+      <rect x="78"  y="152" width="22" height="26" rx="4"/>
+      <rect x="130" y="148" width="22" height="26" rx="4"/>
+      <rect x="182" y="146" width="22" height="26" rx="4"/>
+      <rect x="232" y="146" width="22" height="26" rx="4"/>
+
+      <path d="M76 262 v-34 a14 14 0 0 1 28 0 v34 z"/>
+      <path d="M126 262 v-34 a14 14 0 0 1 28 0 v34 z"/>
+      <path d="M176 262 v-34 a14 14 0 0 1 28 0 v34 z"/>
+      <path d="M226 262 v-34 a14 14 0 0 1 28 0 v34 z"/>
+      <path d="M276 262 v-34 a14 14 0 0 1 28 0 v34 z"/>
+      <path d="M340 262 v-16 a14 14 0 0 1 28 0 v16 z"/>
+      <path d="M396 262 v-10 a14 14 0 0 1 28 0 v10 z"/>
+
+      <path d="M76 330 v-28 a14 14 0 0 1 28 0 v28 z"/>
+      <path d="M126 330 v-28 a14 14 0 0 1 28 0 v28 z"/>
+      <path d="M176 330 v-28 a14 14 0 0 1 28 0 v28 z"/>
+      <path d="M226 330 v-28 a14 14 0 0 1 28 0 v28 z"/>
+      <path d="M276 330 v-28 a14 14 0 0 1 28 0 v28 z"/>
+      <path d="M326 330 v-28 a14 14 0 0 1 28 0 v28 z"/>
+      <path d="M376 330 v-28 a14 14 0 0 1 28 0 v28 z"/>
+      <path d="M422 330 v-28 a12 12 0 0 1 24 0 v28 z"/>
+
+      <path d="M76 402 v-36 a14 14 0 0 1 28 0 v36 z"/>
+      <path d="M126 402 v-36 a14 14 0 0 1 28 0 v36 z"/>
+      <path d="M176 402 v-36 a14 14 0 0 1 28 0 v36 z"/>
+      <path d="M226 402 v-36 a14 14 0 0 1 28 0 v36 z"/>
+      <path d="M276 402 v-36 a14 14 0 0 1 28 0 v36 z"/>
+      <path d="M326 402 v-36 a14 14 0 0 1 28 0 v36 z"/>
+      <path d="M376 402 v-36 a14 14 0 0 1 28 0 v36 z"/>
+      <path d="M422 402 v-36 a12 12 0 0 1 24 0 v36 z"/>
+    </g>
+  </g>
+  <!-- suelo -->
+  <rect x="40" y="400" width="432" height="14" rx="7" fill="#3a4350"/>
+  <!-- corredor: primero un contorno oscuro para despegarlo del Coliseo, luego el cuerpo claro -->
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <g stroke="#14181f">
+      <polyline points="246,272 196,330 118,352" stroke-width="66"/>
+      <polyline points="282,168 226,204 190,258" stroke-width="58"/>
+      <polyline points="246,272 318,318 296,404 334,410" stroke-width="66"/>
+      <line x1="284" y1="164" x2="246" y2="272" stroke-width="80"/>
+      <polyline points="282,168 332,214 376,186" stroke-width="58"/>
+    </g>
+    <circle cx="306" cy="108" r="52" fill="#14181f"/>
+    <g stroke="#f4efe6">
+      <polyline points="246,272 196,330 118,352" stroke-width="38"/>
+      <polyline points="282,168 226,204 190,258" stroke-width="30"/>
+      <polyline points="246,272 318,318 296,404 334,410" stroke-width="38"/>
+      <line x1="284" y1="164" x2="246" y2="272" stroke-width="52"/>
+      <polyline points="282,168 332,214 376,186" stroke-width="30"/>
+    </g>
+    <circle cx="306" cy="108" r="34" fill="#f4efe6"/>
+  </g>
+</svg>
