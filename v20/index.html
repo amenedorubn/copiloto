@@ -3080,7 +3080,23 @@ var ICO = {
 // un evento sin bloque #copiloto pero con titulo de gimnasio ("Gym A", "Pierna"...) cuenta como gym:
 // asi se empareja con la sesion de Hevy y se marca hecho
 var RE_GYM=/\b(gym|gimnasio|gimnas|pesas|fuerza|push|pull|pierna|piernas|legs|torso|hevy)\b/i;
-function clase(ev){ return ev.plan ? ev.plan.tipo : (RE_GYM.test(ev.titulo||"") ? "gym" : "libre"); }
+// lo mismo con carrera: "Series 4x800 (cinta)", "TIRADA LARGA 13 km", "Rodaje"... sin plan tambien se emparejan
+var RE_CINTA=/\bcinta\b|treadmill/i;
+var RE_CORRER=/\b(tirada|rodaje|series|carrera|fartlek|tempo|test|correr|trote|cuestas|progresivo|umbral|km)\b|\d\s*km\b/i;
+function clase(ev){
+  if(ev.plan) return ev.plan.tipo;
+  var t=ev.titulo||"";
+  if(RE_GYM.test(t)) return "gym";
+  if(RE_CINTA.test(t)) return "cinta";
+  if(RE_CORRER.test(t)) return "fuera";
+  return "libre";
+}
+// para lo hecho sin evento: que tipo de tarjeta le toca
+function claseAct(a){
+  if(a.fuente==="hevy" || /Weight|Workout|Crossfit|Training/i.test(a.deporte)) return "gym";
+  if(/Run/.test(a.deporte)) return (a.cinta || /Virtual/.test(a.deporte)) ? "cinta" : "fuera";
+  return "libre";
+}
 function esc(t){
   return String(t==null?"":t).replace(/[&<>"]/g,function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; });
@@ -3238,7 +3254,7 @@ function botonGo(txt,fn){ var b=el("button","tjGo",ICO.play+'<span>'+esc(txt)+'<
 
 function tarjeta(ev){
   var tipo=clase(ev), T=titulos(ev), p=ev.plan, d=el("section","tj "+tipo), h="", hc=hechoDe(ev);
-  if(tipo==="fuera" && !hc){ preparaRuta(ev); var g=rutaActual(); if(g && g.linea) h+='<div class="tjFondo">'+miniSvg(g.linea,"#fff",2.2)+'</div>'; }
+  if(tipo==="fuera" && p && !hc){ preparaRuta(ev); var g=rutaActual(); if(g && g.linea) h+='<div class="tjFondo">'+miniSvg(g.linea,"#fff",2.2)+'</div>'; }
   var eye=[ETQ[tipo]]; if(ev.hora) eye.push(ev.hora); var ec=hc ? "" : enCuanto(ev);
   h+='<div class="tjEye"><span>'+esc(eye.join(" · "))+'</span>'+(ec?'<em>'+esc(ec)+'</em>':'')+
      (hc?'<em class="hechoPill">'+TICK+'Hecho</em>':'')+
@@ -3250,14 +3266,16 @@ function tarjeta(ev){
   if(p && p.tipo==="fuera") h+=barraFuera(p);
   if(p && p.tipo==="cinta") h+=barraCinta(p);
   if(p && p.tipo==="gym") h+=listaGym(p);
-  if(!p && !ev.error && tipo!=="gym") h+='<div class="tjTxt">Sin plan que seguir: es un recordatorio del calendario.</div>';
+  if(!p && !ev.error && tipo==="libre") h+='<div class="tjTxt">Sin plan que seguir: es un recordatorio del calendario.</div>';
   if(ev.error) h+='<div class="tjErr">El bloque #copiloto de este evento no se puede leer. '+esc(ev.error)+'</div>';
   d.innerHTML=h;
   if(hc){                                  // ya esta hecho: se ve lo que hiciste
     d.appendChild(botonGo("Ver lo que hice",function(){ abreHecho(hc,ev); }));
     return d;
   }
-  if(tipo==="fuera"){
+  if(!p && tipo!=="libre"){
+    d.appendChild(el("div","tjNota", tipo==="gym" ? "Se marca hecho solo al guardar el entreno en Hevy." : "Se marca hecho solo al subir la carrera a Strava."));
+  }else if(tipo==="fuera"){
     d.appendChild(filaRuta(ev));
     var go=botonGo(rutaElegida ? "Empezar" : "Elegir ruta", function(){ if(rutaElegida) empiezaRuta(); else abreHojaRutas(); });
     go.classList.add("goRuta"); d.appendChild(go);
@@ -3268,8 +3286,21 @@ function tarjeta(ev){
   }else if(tipo==="cinta"){
     d.appendChild(botonGo("Empezar",function(){ window.abreCinta(sesionDe(ev)); }));
   }else if(tipo==="gym"){
-    d.appendChild(el("div","tjNota",p ? "El copiloto de gimnasio llega en la fase 3." : "Se marca hecho solo al guardar el entreno en Hevy."));
+    d.appendChild(el("div","tjNota","El copiloto de gimnasio llega en la fase 3."));
   }
+  return d;
+}
+// dia sin nada en el calendario pero con algo hecho: eso va arriba, en grande
+function tarjetaAct(a){
+  var tipo=claseAct(a), d=el("section","tj "+tipo), t=limpia(a.nombre||"Actividad"), h="";
+  h+='<div class="tjEye"><span>'+esc((a.fuente==="hevy"?"Hevy":"Strava")+" · "+a.hora)+'</span><em class="hechoPill">'+TICK+'Hecho</em></div>';
+  var sub="", pz=t.split(/\s+[-–·]\s+/);        // "Gym C - Piernas" -> "Gym C" y debajo "Piernas"
+  if(pz.length>1 && pz[0].length<=16){ t=pz[0]; sub=pz.slice(1).join(" · "); }
+  h+='<h1 class="tjTit'+(t.length>30?' muyLargo':(t.length>16?' largo':''))+'">'+esc(t)+'</h1>';
+  if(sub) h+='<div class="tjSub">'+esc(sub)+'</div>';
+  h+='<div class="tjReal">'+realDe(a).map(function(r){ return '<div><i>'+esc(r[0])+'</i><b>'+esc(r[1])+'</b></div>'; }).join("")+'</div>';
+  d.innerHTML=h;
+  d.appendChild(botonGo("Ver lo que hice",function(){ abreHecho(a,null); }));
   return d;
 }
 function tarjetaVacia(tit,txt,btn,fn){
@@ -3353,7 +3384,8 @@ function pintaSemana(){
     var hechoAlgo=null, falta=0; evs.forEach(function(e){ if(hechoDe(e)){ if(!hechoAlgo) hechoAlgo=e; } else if(clase(e)!=="libre") falta++; });
     var fallado = iso<hoy && falta>0;
     var puntos = hechoAlgo ? "" : evs.slice(0,2).map(function(e){ return '<i style="background:'+COLT2[clase(e)]+'"></i>'; }).join("");
-    if(!hechoAlgo && !evs.length && extrasDe(iso).length) puntos='<i style="background:#6b7079"></i>';
+    var exd=!evs.length && extrasDe(iso);
+    if(exd && exd.length) hechoAlgo={ plan:{ tipo:claseAct(exd[0]) } };
     h+='<button class="dia'+(iso===sel.fecha?' sel':'')+(iso===hoy?' hoy':'')+(iso<hoy?' pas':'')+'" data-f="'+iso+
        '" aria-label="'+esc(fechaLarga(iso))+(evs.length?", "+evs.length+" entreno"+(evs.length>1?"s":""):"")+'"'+
        (iso===sel.fecha?' aria-current="date"':'')+'><span>'+SEMLET[k]+'</span><b>'+(+p[2])+'</b>'+
@@ -3385,8 +3417,10 @@ function pinta(){
       (estadoTxt?estadoTxt+". ":"")+"No hay copia guardada en este móvil.","Reintentar",baja));
     return;
   }
-  var evs=eventosDe(sel.fecha);
-  if(!evs.length){
+  var evs=eventosDe(sel.fecha), ex=extrasDe(sel.fecha);
+  if(!evs.length && ex.length){
+    cu.appendChild(tarjetaAct(ex[0])); ex=ex.slice(1);
+  }else if(!evs.length){
     cu.appendChild(sel.fecha<hoy
       ? tarjetaVacia("Nada apuntado","Ese día no había nada en el calendario.",null)
       : tarjetaVacia("Día libre","No hay nada en el calendario. Si te apetece, sal por tu cuenta.","Entreno libre",abreLibre));
@@ -3399,9 +3433,8 @@ function pinta(){
     }
     var n=notas(ev); if(n) cu.appendChild(n);
   }
-  var ex=extrasDe(sel.fecha);
   if(ex.length){
-    cu.appendChild(el("div","etq",evs.length?"También hiciste":"Lo que hiciste"));
+    cu.appendChild(el("div","etq","También hiciste"));
     ex.forEach(function(a){ cu.appendChild(filaAct(a)); });
   }
   // cada dia con lo suyo: el "Despues" de otro dia no se ensena aqui
@@ -3996,6 +4029,7 @@ function pideHechos(){
 function minutos(h){ if(!h) return null; var p=h.split(":"); return (+p[0])*60+(+p[1]); }
 function compatible(ev,a){
   var t=clase(ev), run=/Run/.test(a.deporte);
+  if(!ev.plan && (t==="fuera" || t==="cinta")) return run;
   if(t==="fuera") return run && !a.cinta;
   if(t==="cinta") return run && (a.cinta || /Virtual/.test(a.deporte));
   if(t==="gym") return /Weight|Workout|Crossfit|Training/i.test(a.deporte);

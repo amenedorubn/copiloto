@@ -1,4 +1,4 @@
-const C="copiloto-v20-3";
+const C="copiloto-v20-4";
 const F=["./icon-192.png","./icon-512.png","./icon-maskable-192.png","./icon-maskable-512.png",
          "./apple-touch-icon.png","./icon.svg","./manifest.webmanifest","./rutas/20K_ZAPATOCA.gpx","./fonts/Manrope.woff2"];
 self.addEventListener("install",e=>{self.skipWaiting();
