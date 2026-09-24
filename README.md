@@ -25,6 +25,7 @@ gimnasio. Se sirve con GitHub Pages.
 | `CHANGELOG.md` | Qué cambia en cada versión. |
 | `scripts/bump.mjs` | Sube la versión en todos los sitios a la vez. |
 | `scripts/check-version.mjs` | Comprueba que las tres versiones coinciden (lo usa el Action). |
+| `scripts/tags.sh` | Crea y sube los tags v0.4.0 … v2.0.0 (una sola vez). |
 | `scripts/releases.sh` | Crea las GitHub Releases a partir de los tags y el CHANGELOG. |
 | `v20/` | Copia congelada de la 2.0.0 (ver aviso de arriba). |
 
