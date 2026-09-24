@@ -4757,7 +4757,7 @@ function abreConf(){
     '<input id="cfKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="la clave que pusiste en Cloudflare">'+
     '<div class="ayuda">Se guarda solo en este móvil. No viaja al repositorio ni se comparte.</div>'+
     '<button class="bPri" id="cfProbar">Probar y guardar</button>'+
-    '<div class="hFila2"><button class="bSec" id="cfVer">Ver la clave</button><button class="bSec" id="cfBaja">Actualizar calendario</button></div>'+
+    '<div class="hFila2"><button class="bSec" id="cfBaja">Actualizar calendario</button></div>'+
     '<div id="cfMsg"></div>'+
     '<label>GPS</label>'+
     '<div class="ayuda" id="cfGpsTxt"></div>'+
@@ -4770,14 +4770,13 @@ function abreConf(){
     '<div class="hFila2"><button class="bSec" id="cfComprueba">Comprobar actualización</button></div>'+
     '<div id="cfVerMsg" hidden></div>'+
     '<div class="hFila2"><button class="bSec" id="cfActualiza" hidden>Actualizar ahora</button></div>';
-  E("cfUrl").value=conf.url; E("cfKey").value=conf.key;
+  E("cfUrl").value=conf.url;
+  // la clave guardada no se ensena nunca: el campo queda vacio y, si se deja
+  // asi, se sigue usando la que hay
+  if(conf.key) E("cfKey").placeholder="guardada · escribe otra solo para cambiarla";
   E("cfMsg").className = porQR ? "ok" : "";
   E("cfMsg").textContent = porQR ? "Clave recibida del QR y guardada en este móvil."
                          : (conf.key ? "Clave guardada en este móvil." : "Sin clave todavía.");
-  E("cfVer").addEventListener("click",function(){
-    var i=E("cfKey"); i.type = i.type==="password" ? "text" : "password";
-    E("cfVer").textContent = i.type==="password" ? "Ver la clave" : "Ocultar la clave";
-  });
   E("cfBaja").addEventListener("click",function(){ E("cfMsg").className=""; E("cfMsg").textContent="Actualizando…"; baja(); });
   E("cfProbar").addEventListener("click",probarConf);
   pintaGPSConf();
@@ -4844,7 +4843,7 @@ function pintaVersion(){
   });
 }
 function probarConf(){
-  var url=E("cfUrl").value.trim().replace(/\/+$/,""), key=E("cfKey").value.trim();
+  var url=E("cfUrl").value.trim().replace(/\/+$/,""), key=E("cfKey").value.trim() || conf.key;
   var m=E("cfMsg");
   if(!url || !key){ m.className="mal"; m.textContent="Rellena la dirección y la clave."; return; }
   m.className=""; m.textContent="Probando…";
@@ -4858,6 +4857,7 @@ function probarConf(){
       if(!x.r.ok || (x.j&&x.j.error)){ m.className="mal";
         m.textContent="El Worker ha contestado con un error ("+x.r.status+")."; return; }
       conf.url=url; conf.key=key; guardaConf();
+      E("cfKey").value=""; E("cfKey").placeholder="guardada · escribe otra solo para cambiarla";
       m.className="ok";
       m.textContent="Conectado. "+plural(x.j.eventos? x.j.eventos.length : 0,"entreno")+
                     " entre hoy y mañana. Ya puedes cerrar.";
