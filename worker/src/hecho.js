@@ -12,6 +12,8 @@
 import { accessToken } from "./strava.js";
 
 const API = "https://www.strava.com/api/v3";
+const HEVY = "https://api.hevyapp.com/v1";
+const ZONA = "Europe/Madrid";
 const PUNTOS = 600;                    // muestras por serie: de sobra para una grafica
 
 function fecha(v) { return /^\d{4}-\d{2}-\d{2}$/.test(v || "") ? v : null; }
@@ -54,6 +56,56 @@ function base(a) {
   };
 }
 
+/* ------------------------------- Hevy -------------------------------
+   El gimnasio no llega a Strava: se lee de Hevy (hace falta el secreto
+   HEVY_API_KEY en Cloudflare). Cada sesion trae TODAS sus series. */
+function local(iso) {                    // "2026-09-21T05:05:00Z" -> fecha y hora de Madrid
+  const d = new Date(iso);
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(d);
+  const g = t => (p.find(x => x.type === t) || {}).value;
+  return { fecha: g("year") + "-" + g("month") + "-" + g("day"), hora: g("hour") + ":" + g("minute") };
+}
+function sesionHevy(w) {
+  const ini = Date.parse(w.start_time), fin = Date.parse(w.end_time);
+  const l = local(w.start_time);
+  let vol = 0, series = 0, reps = 0;
+  const ejercicios = (w.exercises || []).map(e => ({
+    titulo: e.title || "",
+    notas: e.notes || "",
+    sets: (e.sets || []).map(x => {
+      if (x.type !== "warmup") { series++; reps += x.reps || 0; vol += (x.weight_kg || 0) * (x.reps || 0); }
+      return { tipo: x.type || "normal", kg: x.weight_kg, reps: x.reps, rpe: x.rpe || null,
+               seg: x.duration_seconds || null, m: x.distance_meters || null };
+    })
+  }));
+  return {
+    id: "hevy-" + w.id, fuente: "hevy", nombre: w.title || "Gimnasio", deporte: "WeightTraining", cinta: false,
+    fecha: l.fecha, hora: l.hora, distancia: 0, mov: isFinite(fin - ini) ? Math.round((fin - ini) / 1000) : 0,
+    total: isFinite(fin - ini) ? Math.round((fin - ini) / 1000) : 0, desnivel: 0,
+    fcMedia: null, fcMax: null, cad: null, esfuerzo: null, linea: "",
+    series, reps, volumenKg: Math.round(vol), descripcion: w.description || "", ejercicios
+  };
+}
+async function hevyEntre(env, desde, hasta) {
+  if (!env.HEVY_API_KEY) return [];
+  const out = [];
+  for (let p = 1; p <= 8; p++) {             // van de la mas nueva a la mas vieja
+    const r = await fetch(HEVY + "/workouts?page=" + p + "&pageSize=10",
+      { headers: { "api-key": env.HEVY_API_KEY, Accept: "application/json" } });
+    if (!r.ok) break;                        // Hevy caido o clave mala: el resto sigue valiendo
+    const j = await r.json(), lote = j.workouts || [];
+    let viejo = false;
+    for (const w of lote) {
+      const s = sesionHevy(w);
+      if (s.fecha < desde) { viejo = true; continue; }
+      if (s.fecha <= hasta) out.push(s);
+    }
+    if (viejo || !lote.length || (j.page_count && p >= j.page_count)) break;
+  }
+  return out;
+}
+
 export async function hechos(env, url) {
   const desde = fecha(url.searchParams.get("desde")), hasta = fecha(url.searchParams.get("hasta"));
   if (!desde || !hasta || hasta < desde)
@@ -80,11 +132,18 @@ export async function hechos(env, url) {
     lista.push(...lote);
     if (lote.length < 100) break;
   }
+  let gym = [];
+  try { gym = await hevyEntre(env, desde, hasta); } catch (e) { gym = []; }
+  const min = h => { const p = h.split(":"); return (+p[0]) * 60 + (+p[1]); };
   const actividades = lista.map(base)
     .filter(a => a.fecha >= desde && a.fecha <= hasta)
     .map(a => { a.linea = ""; return a; })            // el trazado va en el detalle
+    // si una sesion de Hevy llega tambien a Strava, se queda la de Hevy (tiene las series)
+    .filter(a => !(/Weight|Workout/i.test(a.deporte) &&
+                   gym.some(g => g.fecha === a.fecha && Math.abs(min(g.hora) - min(a.hora)) <= 90)))
+    .concat(gym)
     .sort((x, y) => (x.fecha + x.hora < y.fecha + y.hora ? -1 : 1));
-  const out = { desde, hasta, generado: new Date().toISOString(), actividades };
+  const out = { desde, hasta, generado: new Date().toISOString(), hevy: !!env.HEVY_API_KEY, actividades };
   await kvGuarda(env, k, out, 300);
   return out;
 }

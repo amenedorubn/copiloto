@@ -45,7 +45,8 @@ export default {
             ICAL_URL: !!env.ICAL_URL,
             STRAVA_APP: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET),
             KV: !!env.COPILOTO,
-            STRAVA_CONECTADO: await conectado(env)
+            STRAVA_CONECTADO: await conectado(env),
+            HEVY: !!env.HEVY_API_KEY
           }
         }, 200, origen);
       }
