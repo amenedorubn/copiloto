@@ -1,6 +1,6 @@
-const C="copiloto-v20-6";
+const C="copiloto-v20-8";
 const F=["./icon-192.png","./icon-512.png","./icon-maskable-192.png","./icon-maskable-512.png",
-         "./apple-touch-icon.png","./icon.svg","./manifest.webmanifest","./rutas/20K_ZAPATOCA.gpx","./fonts/Manrope.woff2"];
+         "./apple-touch-icon.png","./icon.svg","./manifest.webmanifest","./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./fonts/Manrope.woff2"];
 self.addEventListener("install",e=>{self.skipWaiting();
   e.waitUntil(caches.open(C).then(c=>c.addAll(F)).catch(()=>{}));});
 self.addEventListener("activate",e=>{e.waitUntil(
