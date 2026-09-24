@@ -1399,8 +1399,7 @@ var resumenVisto=false, tAntes=null;
    Todo por voz: no hay que tocar el movil.                                   */
 var RECT=null, ULTLL=null;
 function introRectas(){
-  var R=RECT, f = R.fin ? "Ahora "+R.n+" rectas de "+R.m+" metros desde aquí hacia la salida"+(R.baja?", cuesta abajo":"")+
-                          ". De suave a rápido, sin esprintar, y vuelves "+(R.baja?"subiendo despacio":"despacio")+"."
+  var R=RECT, f = R.m && R.baja ? "Ahora "+R.n+" rectas de "+R.m+" metros cuesta abajo. De suave a rápido, sin esprintar, y subes despacio."
                 : R.m ? "Ahora "+R.n+" rectas de "+R.m+" metros, de suave a rápido, sin esprintar, y vuelves andando."
                       : "Ahora "+R.n+" progresivos de "+R.seg+" segundos, sin esprintar, con un minuto de trote entre ellos.";
   if(R.s!==null && sAct!==null && R.s-sAct>40 && R.s-sAct<TOTAL/2) f+=" Trota suave "+metrosTxt(R.s-sAct)+" hasta la recta. Allí te aviso.";
@@ -1410,11 +1409,8 @@ function introRectas(){
 function miraRectas(t){
   var R=RECT; if(!R || R.fase==="fin") return;
   if(R.fase==="espera"){
-    // rutas que acaban en la salida: al llegar al final de la ruta ya esta el rodaje, aunque falten unos metros del plan
-    var alFinal = R.fin && sAct!==null && sAct>=TOTAL-25 && dist>=PLAN.length*1000-250;
-    if(kmHecho<PLAN.length && !alFinal) return;
+    if(kmHecho<PLAN.length) return;
     R.fase="ir"; R.dIr=dist; R.tIr=t;
-    if(alFinal && kmHecho<PLAN.length){ kmHecho=PLAN.length; aviso("Rodaje hecho. "+introRectas(),true); }
   }
   if(R.fase==="ir"){
     R.falta = (R.s===null || sAct===null) ? 0 : R.s-sAct;
@@ -1422,7 +1418,7 @@ function miraRectas(t){
     // deja 10 s para que se oiga el aviso del ultimo km
     if(t-R.tIr>=10 && (R.falta<=15 || dist-R.dIr>2000)){
       R.fase="cuenta"; R.tC=t;
-      aviso("Recta 1 de "+R.n+" en cinco segundos"+(R.fin?", hacia la salida":"")+". De suave a rápido, sin esprintar.",true);
+      aviso("Recta 1 de "+R.n+" en cinco segundos"+(R.baja?", cuesta abajo":"")+". De suave a rápido, sin esprintar.",true);
     }
     return;
   }
@@ -3372,11 +3368,16 @@ function buscaRecta(pts,ele,desde,hasta){
   if(flojo!==null) return { s:flojo, largo:L, llano:false, casa:Math.max(0,R-flojo-L) };
   return null;
 }
-// rutas que acaban cerca de la salida: las rectas, del final hacia la salida
-function rectaFin(pts,ele,m){
-  var a=pts[pts.length-1], b=pts[0], d=mts(a,b), baja=null;
-  if(ele && ele.length>1) baja = ele[ele.length-1]-ele[0];
-  return { s:null, fin:true, largo:m||100, llano:null, baja:baja, hasta:d, casa:Math.max(0,d-(m||100)) };
+// rutas hechas para las rectas: sus ultimos "m" metros son la recta (se baja rapido y se sube despacio)
+function rectaUltimos(pts,ele,m){
+  m=m||100;
+  var L=0,i; for(i=1;i<pts.length;i++) L+=mts(pts[i-1],pts[i]);
+  var baja=null;
+  if(ele && ele.length>1){
+    var alt=function(d){ var x=d/100, k=Math.max(0,Math.min(ele.length-2,Math.floor(x))); return ele[k]+(x-k)*(ele[k+1]-ele[k]); };
+    baja = alt(L-m)-alt(L);
+  }
+  return { s:Math.max(0,L-m), ultimos:true, largo:m, llano:null, baja:baja, casa:mts(pts[pts.length-1],pts[0]) };
 }
 // donde tocan las rectas en una ruta concreta (despues de los km del rodaje)
 function rectaEnRuta(ev,g){
@@ -3386,14 +3387,14 @@ function rectaEnRuta(ev,g){
   if(full && full.linea){ pts=polilinea(full.linea); ele=full.ele||null; } else pts=polilinea(g.linea);
   if(pts.length<2) return null;
   var P=ev.plan.distancia, L=g.distancia||0;
-  if(g.rectas==="fin") return rectaFin(pts,ele,R.m);
+  if(g.rectas==="ultimos") return rectaUltimos(pts,ele,R.m);
   var sp = L>=P+100 ? (buscaRecta(pts,ele,P,P+1500) || buscaRecta(pts,ele,P,L))
                     : buscaRecta(pts,ele,Math.max(0,L-1500),L);
   return sp;
 }
 function rectaTxt(sp){
-  if(sp && sp.fin) return "Rectas al acabar, desde el final hacia la salida: "+sp.largo+" m "+
-    (sp.baja>1 ? "cuesta abajo rápido y subes despacio" : "rápido y vuelves despacio")+" · luego "+Math.round(sp.casa/10)*10+" m a casa";
+  if(sp && sp.ultimos) return "Rectas en los últimos "+sp.largo+" m de la ruta"+(sp.baja>1?", cuesta abajo hacia casa":"")+
+    ": "+(sp.baja>1 ? "bajas rápido y subes despacio" : "ida rápida y vuelta despacio")+" · luego "+Math.round(sp.casa/10)*10+" m a casa";
   if(!sp) return "Sin recta clara: hazlas en el primer tramo recto y llano al acabar";
   var casa = sp.casa<1000 ? Math.round(sp.casa/50)*50+" m" : coma(sp.casa/1000,1)+" km";
   return "Rectas en el km "+coma(sp.s/1000,1)+" · "+sp.largo+" m "+(sp.llano===false?"rectos (con algo de cuesta)":(sp.llano?"rectos y llanos":"rectos"))+
@@ -3432,7 +3433,7 @@ function tarjeta(ev){
   if(Rc && !hc){
     var gR=rutaActual(), spR=gR ? rectaEnRuta(ev,gR) : null;
     h+='<div class="tjRectas"><b>Al acabar los '+esc(kmTxt(p.distancia))+': '+esc(rectasTxt(Rc))+'</b>'+
-       (Rc.m ? 'Cada una de suave a rápido, <u>sin esprintar</u> (~20 s). '+(spR&&spR.fin&&spR.baja>1 ? 'Bajas rápido, subes despacio y sale la siguiente.' : 'Vuelves andando al inicio y sale la siguiente.')
+       (Rc.m ? 'Cada una de suave a rápido, <u>sin esprintar</u> (~20 s). '+(spR&&spR.baja>1 ? 'Bajas rápido, subes despacio y sale la siguiente.' : 'Vuelves andando al inicio y sale la siguiente.')
              : 'Acelera poco a poco, <u>sin esprintar</u>. Un minuto de trote suave entre uno y otro.')+
        '<br><i>No son series: sin ritmo objetivo, solo soltar las piernas. Te aviso por voz de cada una.</i>'+
        (gR ? '<br><i>'+esc(rectaTxt(spR))+'.</i>' : '')+'</div>';
@@ -3635,9 +3636,10 @@ var biblio = [];
    subirlas con «+ GPX»: se leen del GPX aqui mismo (el service worker las
    guarda, asi que tambien sin red) y salen en la biblioteca como las demas.
    Si en el Worker hay otra con el mismo nombre, manda la de la app.      */
-// rectas:"fin" -> las rectas se hacen desde el final de la ruta hacia la salida (que queda cerca)
+// rectas:"ultimos" -> la ruta trae las rectas dentro: son sus ultimos 100 m (ida rapida, vuelta despacio)
 var RUTAS_APP = [{ id:"app-20k-zapatoca", nombre:"20K ZAPATOCA", fichero:"rutas/20K_ZAPATOCA.gpx" },
-                 { id:"app-6k-zapatoca", nombre:"6K ZAPATOCA", fichero:"rutas/6K_ZAPATOCA.gpx", rectas:"fin" }];
+                 { id:"app-6k-zapatoca", nombre:"6K ZAPATOCA", fichero:"rutas/6K_ZAPATOCA.gpx" },
+                 { id:"app-6k1-zapatoca-rectas", nombre:"6.1K ZAPATOCA (RECTAS)", fichero:"rutas/6K1_ZAPATOCA_RECTAS.gpx", rectas:"ultimos" }];
 var LSAPP = "copiloto.rutasapp.v1", RTMEM = {}, cargandoApp = null;
 var fijas = (function(){ try{ var l=JSON.parse(localStorage.getItem(LSAPP)||"[]"); return Array.isArray(l)?l:[]; }
                          catch(e){ return []; } })();
@@ -3992,10 +3994,10 @@ function empiezaRuta(){
       var Rx=rectasDe(evRuta);
       if(Rx){
         var P0=evRuta.plan.distancia, L0=g.distancia||0;
-        var sp0 = g.rectas==="fin" ? rectaFin(pts,j.ele,Rx.m)
+        var sp0 = g.rectas==="ultimos" ? rectaUltimos(pts,j.ele,Rx.m)
                 : L0>=P0+100 ? (buscaRecta(pts,j.ele,P0,P0+1500) || buscaRecta(pts,j.ele,P0,L0)) : buscaRecta(pts,j.ele,Math.max(0,L0-1500),L0);
         window.RECTAS_SIG={ n:Rx.n, m:Rx.m||null, seg:Rx.seg||null, s:sp0?sp0.s:null, largo:sp0?sp0.largo:null,
-                            fin:!!(sp0&&sp0.fin), baja:!!(sp0&&sp0.baja>1) };
+                            baja:!!(sp0&&sp0.baja>1) };
       }else window.RECTAS_SIG=null;
       if(!window.cargaRutaGPS(pts, m.P, m.F, j.ele||[], tit,
                               (!pf && esRecuperacion(evRuta))?"esfuerzo":"reparte", g.id, extra)){
@@ -4068,6 +4070,11 @@ function eligeSola(grupos){
     if(n.length>=4 && txt.indexOf(" "+n+" ")>=0 && (!mejor || n.length>sinAcentos(mejor.nombre).length)) mejor=g;
   }
   if(mejor){ rutaElegida=mejor.id; porQue="la del calendario"; return; }
+  var conRectas=!!rectasDe(evRuta);
+  if(conRectas){
+    var rr=grupos.filter(function(x){ return x.rectas==="ultimos"; });
+    if(rr.length){ rutaElegida=rr[0].id; porQue="la de las rectas"; return; }
+  }else grupos=grupos.filter(function(x){ return x.rectas!=="ultimos"; });
   var cerca=grupos.filter(function(x){ return x.salida!==null && x.salida<=400 && x.diferencia!==null; });
   var pool=cerca.length ? cerca : (miPos ? [] : grupos.filter(function(x){ return x.diferencia!==null; }));
   pool.sort(function(a,b){ return Math.abs(a.diferencia)-Math.abs(b.diferencia); });
