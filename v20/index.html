@@ -410,6 +410,17 @@
   #appGPS #terTipo{font-size:15px}
   #appGPS #terDet{font-size:13px}
   #gBot{bottom:calc(env(safe-area-inset-bottom,0px) + 10px);border-radius:28px;padding:12px 16px 12px 18px}
+  #rBar{margin:8px 0 6px}
+  #rBar .rbT{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:800;margin-bottom:6px}
+  #rBar .rbT b{color:#ffd166;letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+  #rBar .rbT span{color:var(--dim)}
+  #rBar .rbSeg{display:flex;gap:6px}
+  #rBar .rbSeg i{flex:1;height:12px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
+  #rBar .rbSeg i.act{outline:2px solid #ffd166;outline-offset:1px}
+  #rBar .rbSeg u{display:block;height:100%;width:0;background:#ffd166}
+  #rBar .rbZ{display:flex;gap:6px;margin-top:6px;font-size:11px;font-weight:700;color:var(--dim)}
+  #rBar .rbZ span{flex:1;text-align:center;padding:3px 0;border-radius:6px;background:rgba(255,255,255,.06)}
+  #rBar .rbZ span.on{background:#ffd166;color:#241a00}
   .gEst{display:flex;gap:8px;align-items:baseline;font-size:11px;font-weight:800;letter-spacing:.1em;
     text-transform:uppercase;color:#8e939b;white-space:nowrap;overflow:hidden}
   #appGPS #deltaLbl{font-size:11px;letter-spacing:.1em;color:#8e939b}
@@ -765,6 +776,11 @@
 
 <section class="gPanel" id="gBot">
   <div class="gEst"><span id="deltaLbl">Ritmo actual</span><span id="veredicto">Sin empezar</span></div>
+  <div id="rBar" hidden>
+    <div class="rbT"><b id="rbTit">Rectas</b><span id="rbSig"></span></div>
+    <div class="rbSeg" id="rbSeg"></div>
+    <div class="rbZ" id="rbZ"></div>
+  </div>
   <div class="gFila">
     <b id="rAct">--:--</b>
     <div class="gKm"><i>Ritmo del km</i><b id="medio">--:--</b></div>
@@ -1046,6 +1062,9 @@ function dibujaMapa(off){
       var pk=PLAN[Math.min(PLAN.length-1,km)];
       s+=camino(tramo(off+km*1000,Math.min(1000,TOTAL-km*1000)),COL[pk[3]]||"#5c9c29");
     }
+  }
+  if(rutaCargada && RECT && RECT.s!=null){       // donde van las rectas, en amarillo
+    s+=camino(tramo(RECT.s, RECT.largo||100),"#ffd166","rectaSeg");
   }
   var ini=puntoEn(off), c=proj(ini[0],ini[1]);
   s+='<circle cx="'+c[0].toFixed(1)+'" cy="'+c[1].toFixed(1)+'" id="stDot" r="5" fill="#2d82dc"/>';
@@ -1397,20 +1416,58 @@ var resumenVisto=false, tAntes=null;
 /* RECTAS al terminar el rodaje: {n, m|seg, s (punto de la ruta), largo, fase, i...}
    fases: espera -> ir (trote hasta la recta) -> cuenta -> recta -> vuelta -> ... -> fin
    Todo por voz: no hay que tocar el movil.                                   */
-var RECT=null, ULTLL=null;
+var RECT=null, ULTLL=null, RBUF=[];
+/* Ritmos dentro de cada recta (progresivas: de suave a rapido, sin esprintar).
+   Tres trozos por recta; en progresivos por tiempo, lo mismo en segundos.   */
+var ZR=[ { hasta:0.3, nom:"suave",   voz:"",                         ritmo:330 },   // 5'30"
+         { hasta:0.7, nom:"acelera", voz:"Acelera.",                 ritmo:290 },   // 4'50"
+         { hasta:1.0, nom:"rápido",  voz:"Rápido, sin esprintar.",   ritmo:260 } ]; // 4'20"
+function zonaRecta(f){ for(var i=0;i<ZR.length;i++) if(f<ZR[i].hasta) return i; return ZR.length-1; }
 function introRectas(){
   var R=RECT, f = R.m && R.baja ? "Ahora "+R.n+" rectas de "+R.m+" metros cuesta abajo. De suave a rápido, sin esprintar, y subes despacio."
                 : R.m ? "Ahora "+R.n+" rectas de "+R.m+" metros, de suave a rápido, sin esprintar, y vuelves andando."
                       : "Ahora "+R.n+" progresivos de "+R.seg+" segundos, sin esprintar, con un minuto de trote entre ellos.";
-  if(R.s!==null && sAct!==null && R.s-sAct>40 && R.s-sAct<TOTAL/2) f+=" Trota suave "+metrosTxt(R.s-sAct)+" hasta la recta. Allí te aviso.";
+  if(R.s!==null && sAct!==null && R.s-sAct>40 && R.s-sAct<TOTAL/2) f+=" Trota suave "+metrosTxt(R.s-sAct)+" hasta la recta. Te aviso 25 metros antes.";
   else f+=" Te aviso de cada una.";
   return f;
+}
+function empiezaRecta(t){
+  var R=RECT; R.fase="recta"; R.dIni=dist; R.tIni=t; R.pIni=ULTLL; R.z=0; RBUF=[];
+  aviso("Ya. Suave.",true);
+}
+function recorridoRecta(){
+  var R=RECT; if(!R) return 0;
+  if(R.pIni && ULTLL) return distGPS(ULTLL,R.pIni);
+  return Math.abs(dist-R.dIni);
+}
+function fraccionRecta(t){ var R=RECT; return R.m ? Math.min(1,recorridoRecta()/R.m) : Math.min(1,(t-R.tIni)/R.seg); }
+// ritmo de los ultimos ~4 s: el medio de 30 s no sirve en 20 s de recta
+function ritmoRecta(){
+  if(RBUF.length<2) return NaN;
+  var u=RBUF[RBUF.length-1], a=null;
+  for(var i=RBUF.length-2;i>=0;i--){ a=RBUF[i]; if(u[0]-a[0]>=4000) break; }
+  var d=distGPS(a[1],u[1]), dt=(u[0]-a[0])/1000;
+  return d>3 && dt>0 ? dt/(d/1000) : NaN;
 }
 function miraRectas(t){
   var R=RECT; if(!R || R.fase==="fin") return;
   if(R.fase==="espera"){
+    var falta = (R.s===null || sAct===null) ? null : R.s-sAct;
+    if(falta!==null && falta>TOTAL/2) falta-=TOTAL;
+    // con sitio fijado: aviso 25 m antes y "Ya" justo al llegar (sustituye al aviso del ultimo km)
+    if(falta!==null && falta<=25 && falta>-60 && dist>=PLAN.length*1000-400){
+      R.fase="llega"; R.dL=dist; kmHecho=Math.max(kmHecho,PLAN.length);
+      aviso("En 25 metros, las rectas. "+R.n+" de "+R.m+" metros"+(R.baja?" cuesta abajo":"")+
+            ": empiezas suave, aceleras y acabas rápido, sin esprintar.",true);
+      return;
+    }
     if(kmHecho<PLAN.length) return;
     R.fase="ir"; R.dIr=dist; R.tIr=t;
+  }
+  if(R.fase==="llega"){
+    var f2 = (R.s===null || sAct===null) ? 0 : R.s-sAct;
+    if(f2<=2 || dist-R.dL>=28) empiezaRecta(t);
+    return;
   }
   if(R.fase==="ir"){
     R.falta = (R.s===null || sAct===null) ? 0 : R.s-sAct;
@@ -1422,16 +1479,15 @@ function miraRectas(t){
     }
     return;
   }
-  if(R.fase==="cuenta"){
-    if(t-R.tC>=7){ R.fase="recta"; R.dIni=dist; R.tIni=t; R.pIni=ULTLL; aviso("Ya.",true); }
-    return;
-  }
+  if(R.fase==="cuenta"){ if(t-R.tC>=7) empiezaRecta(t); return; }
   if(R.fase==="recta"){
+    var fr=fraccionRecta(t), z=zonaRecta(fr);
+    if(z>R.z){ R.z=z; if(ZR[z].voz) aviso(ZR[z].voz,true); }
     // la recta se mide en linea recta desde donde empezo (puede ir contra el sentido de la ruta)
     var fin = R.m ? (recorridoRecta()>=R.m || t-R.tIni>=45) : t-R.tIni>=R.seg;
     if(!fin) return;
     R.i++;
-    if(R.i>=R.n){ R.fase="fin"; aviso("Rectas hechas. Trote muy suave a casa. Buen trabajo.",true); }
+    if(R.i>=R.n){ R.fase="fin"; aviso("Para. Rectas hechas. Trote muy suave a casa. Buen trabajo.",true); }
     else{ R.fase="vuelta"; R.tV=t;
       aviso(!R.m ? "Suelta. Un minuto de trote suave." : (R.baja ? "Para. Sube despacio hasta donde empezaste." : "Para. Vuelve andando al inicio de la recta."),true); }
     return;
@@ -1442,32 +1498,53 @@ function miraRectas(t){
     if(listo){ R.fase="cuenta"; R.tC=t; aviso("Recta "+(R.i+1)+" de "+R.n+" en cinco segundos.",true); }
   }
 }
-function recorridoRecta(){
-  var R=RECT; if(!R) return 0;
-  if(R.pIni && ULTLL) return distGPS(ULTLL,R.pIni);
-  return Math.abs(dist-R.dIni);
-}
 function pintaRectas(t){
-  var R=RECT; if(!R || R.fase==="espera") return;
-  // arriba lo que toca, en grande lo que queda; la instruccion en pequeno
-  var nm, tp, big, lab, pr=0;
-  if(R.fase==="ir"){ nm="Rectas · "+R.n+(R.m?" × "+R.m+" m":" × "+R.seg+" s");
+  var R=RECT, rb=$("rBar");
+  if(!R || R.fase==="espera"){ if(rb) rb.hidden=true; return; }
+  // arriba lo que toca, en grande lo que queda o el ritmo; la instruccion en pequeno
+  var nm, tp, big, lab, pr=0, z=-1, rr=NaN;
+  if(R.fase==="llega"){ nm="Rectas · "+R.n+" × "+R.m+" m"; lab="Empiezan en";
+    big=Math.max(0,Math.round(((R.s!==null&&sAct!==null)?R.s-sAct:25-(dist-R.dL))/5)*5)+" m"; tp="sigue a tu ritmo"; }
+  else if(R.fase==="ir"){ nm="Rectas · "+R.n+(R.m?" × "+R.m+" m":" × "+R.seg+" s");
     lab="Hasta la recta"; big = R.falta>15 ? Math.round(R.falta/10)*10+" m" : "Ya"; tp="trote suave"; }
-  else if(R.fase==="cuenta"){ nm="Recta "+(R.i+1)+" de "+R.n; lab="Prepárate"; big="…"; tp="suave → rápido · sin esprintar"; }
-  else if(R.fase==="recta"){ nm="Recta "+(R.i+1)+" de "+R.n; lab="Quedan"; tp="suave → rápido · sin esprintar";
-    if(R.m){ var av=Math.max(0,Math.min(R.m,recorridoRecta())); big=Math.round((R.m-av)/5)*5+" m"; pr=av/R.m; }
-    else { var el=t-R.tIni; big=Math.max(0,Math.ceil(R.seg-el))+" s"; pr=Math.min(1,el/R.seg); } }
-  else if(R.fase==="vuelta"){ nm="Recta "+R.i+" de "+R.n+" hecha"; lab="Ahora"; big=R.m?(R.baja?"Sube":"Andando"):"Trote"; tp=R.m?(R.baja?"despacio, hasta donde empezaste":"vuelve al inicio de la recta"):"un minuto suave"; }
+  else if(R.fase==="cuenta"){ nm="Recta "+(R.i+1)+" de "+R.n; lab="Prepárate"; big="…"; tp="empieza suave, "+pace(ZR[0].ritmo); }
+  else if(R.fase==="recta"){
+    var fr=fraccionRecta(t); z=zonaRecta(fr); pr=fr; rr=ritmoRecta();
+    nm="Recta "+(R.i+1)+" de "+R.n; lab=ZR[z].nom.charAt(0).toUpperCase()+ZR[z].nom.slice(1)+" a"; big=pace(ZR[z].ritmo);
+    tp = R.m ? "quedan "+Math.max(0,Math.round(R.m*(1-fr)/5)*5)+" m" : "quedan "+Math.max(0,Math.ceil(R.seg-(t-R.tIni)))+" s"; }
+  else if(R.fase==="vuelta"){ nm="Recta "+R.i+" de "+R.n+" hecha"; lab="Ahora"; big=R.m?(R.baja?"Sube":"Andando"):"Trote";
+    tp=R.m?(R.baja?"despacio, andando o trote muy suave":"vuelve al inicio de la recta"):"un minuto suave"; }
   else { nm="Rectas hechas"; lab="Ahora"; big="A casa"; tp="trote muy suave"; pr=1; }
   $("kmNum").textContent=nm; $("kmTipo").textContent=tp;
   $("kmObj").previousElementSibling.textContent=lab; $("kmObj").textContent=big;
   $("kmFcCell").style.visibility="hidden";
   $("terCard").hidden=true; $("perfil").hidden=true; $("barra").hidden=false; perfilClave="";
-  $("rAct").style.color="var(--dim)"; $("medio").textContent="--:--";
   $("kmCard").style.borderLeftColor="#ffd166";
   $("barraIn").style.width=(pr*100).toFixed(1)+"%"; $("barraIn").style.background="#ffd166";
+  // abajo: el ritmo de ahora mismo (ultimos segundos) contra el del trozo
+  if(R.fase==="recta"){
+    $("rAct").textContent=pace(rr);
+    $("rAct").style.color = !isFinite(rr) ? "var(--dim)" : (Math.abs(rr-ZR[z].ritmo)<=15 ? "var(--ok)" : "var(--warn)");
+  }else $("rAct").style.color="var(--dim)";
+  $("medio").textContent="--:--";
   $("veredicto").textContent = R.fase==="fin" ? "Rodaje y rectas hechos" : "Rectas: "+Math.min(R.i,R.n)+" de "+R.n+" hechas";
   $("veredicto").style.color="var(--ok)";
+  // barra de progreso de las rectas, como la de las series
+  if(rb){
+    rb.hidden=false;
+    var h=""; for(var i=0;i<R.n;i++){
+      var w = i<R.i ? 100 : (i===R.i && R.fase==="recta" ? pr*100 : 0);
+      h+='<i class="'+(i===R.i && R.fase!=="fin"?'act':'')+'"><u style="width:'+w.toFixed(0)+'%"></u></i>'; }
+    $("rbSeg").innerHTML=h;
+    $("rbTit").textContent = R.fase==="fin" ? "Rectas hechas" : "Recta "+Math.min(R.i+1,R.n)+" de "+R.n;
+    $("rbSig").textContent = R.fase==="recta" ? (R.i+1<R.n ? "luego: "+(R.m?(R.baja?"subir despacio":"volver andando"):"1' de trote") : "luego: a casa")
+                           : R.fase==="vuelta" ? "luego: recta "+(R.i+1)
+                           : R.fase==="fin" ? "trote suave a casa" : "empiezan ya";
+    var u=R.m ? R.m : R.seg, suf=R.m?" m":" s", zz="", a0=0;
+    for(var k=0;k<ZR.length;k++){ var b0=Math.round(ZR[k].hasta*u);
+      zz+='<span class="'+(k===z?'on':'')+'">'+a0+'–'+b0+suf+' · '+pace(ZR[k].ritmo)+'</span>'; a0=b0; }
+    $("rbZ").innerHTML=zz;
+  }
 }
 var tramoClave=null, tramoIni=null;   // donde empezo el tramo en curso, para su ritmo medio
 function copia(x){ return JSON.parse(JSON.stringify(x)); }
@@ -1650,7 +1727,7 @@ function onPos(pos){
   var acc=pos.coords.accuracy;
   var p=[pos.coords.latitude,pos.coords.longitude];
   var ahora=Date.now();
-  if(acc<=40) ULTLL=p;
+  if(acc<=40){ ULTLL=p; if(RECT && RECT.fase==="recta"){ RBUF.push([Date.now(),p]); if(RBUF.length>30) RBUF.shift(); } }
   distInicio=distGPS(p,ROUTE[0]);
   // rumbo por GPS (para girar el mapa cuando no voy por la ruta): cada 12 m
   if(acc<=40){
@@ -2172,6 +2249,7 @@ window.cargaRutaGPS = function(pts, plan, fc, ele, titulo, modo, id, extra){
   if(!cargaRuta(pts, plan, fc, ele)) return false;
   RECT = window.RECTAS_SIG ? copia(window.RECTAS_SIG) : null; window.RECTAS_SIG=null;
   if(RECT){ RECT.fase="espera"; RECT.i=0; }
+  dibujaMapa(0);
   var h=document.querySelector("#appGPS h1");
   if(h && titulo) h.textContent=titulo;
   rutaCargada=true; tituloCalle=titulo||""; ultGuardado=0; guardaCalle();
@@ -3435,7 +3513,9 @@ function tarjeta(ev){
     h+='<div class="tjRectas"><b>Al acabar los '+esc(kmTxt(p.distancia))+': '+esc(rectasTxt(Rc))+'</b>'+
        (Rc.m ? 'Cada una de suave a rápido, <u>sin esprintar</u> (~20 s). '+(spR&&spR.baja>1 ? 'Bajas rápido, subes despacio y sale la siguiente.' : 'Vuelves andando al inicio y sale la siguiente.')
              : 'Acelera poco a poco, <u>sin esprintar</u>. Un minuto de trote suave entre uno y otro.')+
-       '<br><i>No son series: sin ritmo objetivo, solo soltar las piernas. Te aviso por voz de cada una.</i>'+
+       (Rc.m && window.ZR ? '<br>Ritmos de cada recta: '+window.ZR.map(function(z,k){ var a0=k?Math.round(window.ZR[k-1].hasta*Rc.m):0;
+           return a0+'–'+Math.round(z.hasta*Rc.m)+' m '+z.nom+' '+ritmo(z.ritmo); }).join(' → ')+'.' : '')+
+       '<br><i>No son series: solo soltar las piernas. Te aviso por voz de cada una y 25 m antes de empezar.</i>'+
        (gR ? '<br><i>'+esc(rectaTxt(spR))+'.</i>' : '')+'</div>';
   }
   if(p && p.tipo==="cinta") h+=barraCinta(p);
