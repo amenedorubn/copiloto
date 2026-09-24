@@ -13,6 +13,19 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.0.2] - 2026-09-24
+
+### Seguridad
+
+- La clave (APP_KEY) ya no se puede ver en Ajustes: fuera el botón "Ver la
+  clave" y el campo sale vacío. Si se deja vacío se sigue usando la guardada;
+  escribir otra la sustituye.
+
+### Añadido
+
+- El tag y la GitHub Release de cada versión los crea solo un Action al
+  llegar a `main`; ya no hay que subir tags a mano.
+
 ## [2.0.1] - 2026-09-24
 
 ### Cambiado
@@ -195,6 +208,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.0.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.2
 [2.0.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.1
 [2.0.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.0.0
 [1.9.0]: https://github.com/amenedorubn/copiloto/releases/tag/v1.9.0
