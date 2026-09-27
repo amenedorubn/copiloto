@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.3.4] - 2026-09-27
+
+### Corregido
+
+- Voz del GPS: si se queda muda reintenta y sale un botón para reactivarla; al reabrir a mitad de carrera, un toque y dice dónde vas y cuánto llevas
+
 ## [2.3.3] - 2026-09-26
 
 ### Corregido
@@ -261,6 +267,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.3.4]: https://github.com/amenedorubn/copiloto/releases/tag/v2.3.4
 [2.3.3]: https://github.com/amenedorubn/copiloto/releases/tag/v2.3.3
 [2.3.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.3.2
 [2.3.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.3.1
