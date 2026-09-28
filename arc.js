@@ -460,7 +460,7 @@ var CSS=
   ".arcCaja{background:var(--sf);border-radius:20px;padding:12px 16px}"+
   ".arcCaja+.arcCaja{margin-top:12px}"+
   ".arcCont{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}"+
-  ".arcFila{display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--ln)}"+
+  ".arcFila{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 0;border-top:1px solid var(--ln)}"+
   ".arcFila:first-child{border-top:0}"+
   ".arcFila>span{flex:1 1 auto;min-width:0}"+
   ".arcFila>svg{width:20px;height:20px;flex:0 0 auto;color:var(--mu)}"+
@@ -775,8 +775,8 @@ function pinta(c){
   c.innerHTML=""; var w=el("div","arcV"); w.id="arcP"; w.setAttribute("data-d",d); c.appendChild(w);
   function repinta(){ pinta(c); }
   var est=el("div"); avisosEstado(est); if(est.childNodes.length){ var se=el("section"); se.appendChild(est); w.appendChild(se); }
-  pintaObjetivo(w,h,repinta);
-  if(h<INICIO) pintaPrologoIntro(w,h);
+  verObjetivo(w);
+  if(h<INICIO){ pintaPrologoIntro(w,h); verReglas(w,h); }
   else if(!D.reglas.length){
     var sv=seccion(w,"Temporada"); sv.appendChild(el("div","arcCaja arcVacio",'<p class="arcT">Sin reglas</p><p class="arcS">La temporada empezó sin reglas, así que no hay nada que contar. Las reglas se bloquearon el 1 de octubre.</p>'));
   }else{
@@ -791,9 +791,7 @@ function pinta(c){
     if(d!=="D"){ var sr=seccion(w,"Por regla"); sr.appendChild(barras(R.porRegla)); }
     pintaRevision(w,h,k);
   }
-  pintaReglas(w,h,repinta);
   pintaPrologo(w,h);
-  pintaDiseno(w,repinta);
   c.scrollTop=sc;
   if(irRev){ irRev=false; var r=document.getElementById("arcRev"); if(r) r.scrollIntoView(); }
 }
@@ -806,13 +804,10 @@ function heroA(s,e,h,repinta){
 }
 function heroB(s,e,h,repinta){
   var cj=el("div","arcCaja"); cj.style.marginTop="12px";
-  cj.appendChild(el("p","arcS","Cada regla sale en la línea del día a su hora. La hora solo la coloca: no cambia lo que cuenta."));
+  cj.appendChild(el("p","arcL","Hoy, por horas"));
   e.reglas.forEach(function(x){
     var f=el("div","arcFila");
-    var inp=el("input","arcHora"); inp.type="time"; inp.value=x.regla.ancla||""; inp.setAttribute("aria-label","Hora de "+x.regla.nombre);
-    if(S.soloLectura) inp.disabled=true;
-    inp.addEventListener("change",function(){ if(!ponAncla(S.D,x.regla.id,inp.value).error) guarda(); });
-    f.appendChild(inp);
+    f.appendChild(el("span","arcT",esc(x.regla.ancla||""))).style.cssText="flex:0 0 52px";
     if(fase(h)==="temporada") f.appendChild(check(x,h,h,repinta));
     f.appendChild(el("span","",'<span class="arcT">'+esc(x.regla.nombre)+'</span><span class="arcS">'+esc(fase(h)==="temporada" ? estadoTxt(x,h,h) : subRegla(x.regla))+'</span>'));
     cj.appendChild(f);
@@ -873,13 +868,59 @@ function heroD(w,s,h,repinta){
   }
   var sr=seccion(w,"Por regla"); sr.appendChild(barras(resumen(S.D,h,k).porRegla));
 }
+function abreAjustes(){ if(P.ajustes) P.ajustes(); }
+function verObjetivo(w){
+  var s=seccion(w,"Objetivo"), o=String(S.D.objetivo||"").trim();
+  if(o){ s.appendChild(el("p","arcT",esc(o))); return; }
+  s.appendChild(el("p","arcS","Todavía no has escrito el objetivo del Arc."));
+  if(P.ajustes && !S.soloLectura){ var b=el("button","arcBot2","Escribir el objetivo"); b.addEventListener("click",abreAjustes); s.appendChild(b); }
+}
+function verReglas(w,h){
+  var D=S.D, s=seccion(w,"Reglas · "+D.reglas.length+" de "+MAX_REGLAS), cj=el("div","arcCaja");
+  if(!D.reglas.length) cj.appendChild(el("div","arcVacio",'<p class="arcT">Sin reglas</p><p class="arcS">Hacen falta de '+MIN_REGLAS+' a '+MAX_REGLAS+' antes del 1 de octubre.</p>'));
+  D.reglas.forEach(function(r){
+    cj.appendChild(el("div","arcFila",ico(icoRegla(r))+'<span><span class="arcT">'+esc(r.nombre)+'</span><span class="arcS">'+esc(subRegla(r))+'</span></span>'));
+  });
+  s.appendChild(cj);
+  if(P.ajustes && editable(h) && !S.soloLectura){ var b=el("button","arcBot2","Cambiar reglas"); b.addEventListener("click",abreAjustes); s.appendChild(b); }
+}
+/* ------------------------- ajustes del Arc -------------------------
+   Diseño primero (es lo que más se cambia), luego objetivo, reglas y
+   las horas de la línea del día.                                     */
+function pintaAjustes(c){
+  if(!P || !S){ c.innerHTML='<p class="arcS">Arc no ha arrancado. Cierra la app y vuelve a abrirla.</p>'; return; }
+  var sc=c.scrollTop, h=hoy();
+  c.innerHTML=""; var w=el("div","arcV"); w.id="arcP"; c.appendChild(w);
+  function repinta(){ pintaAjustes(c); }
+  var err=textoError(); if(err){ var se=el("section"); se.appendChild(el("p","arcAviso arcMal",ico("warning-circle")+'<span>'+esc(err)+'</span>')); w.appendChild(se); }
+  pintaDiseno(w,repinta);
+  pintaObjetivo(w,h,repinta);
+  pintaReglas(w,h,repinta);
+  pintaHoras(w);
+  c.scrollTop=sc;
+}
+function pintaHoras(w){
+  if(!S.D.reglas.length) return;
+  var s=seccion(w,"Horas en la línea del día");
+  s.appendChild(el("p","arcS","Solo en el diseño B: a qué hora sale cada regla. No cambia lo que cuenta."));
+  var cj=el("div","arcCaja"); cj.style.marginTop="12px";
+  S.D.reglas.forEach(function(r){
+    var f=el("div","arcFila");
+    var inp=el("input","arcHora"); inp.type="time"; inp.value=r.ancla||""; inp.setAttribute("aria-label","Hora de "+r.nombre);
+    if(S.soloLectura) inp.disabled=true;
+    inp.addEventListener("change",function(){ if(!ponAncla(S.D,r.id,inp.value).error) guarda(); });
+    f.appendChild(el("span","",'<span class="arcT">'+esc(r.nombre)+'</span>')); f.appendChild(inp);
+    cj.appendChild(f);
+  });
+  s.appendChild(cj);
+}
 function pintaPrologoIntro(w,h){
-  var s=seccion(w,"Prólogo"), falta=entre(h,INICIO);
-  s.appendChild(el("p","arcT","La temporada empieza el jueves 1 de octubre"+(falta>0 ? ", en "+plural(falta,"día") : "")+"."));
-  s.appendChild(el("p","arcS","Hasta el 30 de septiembre puedes cambiar el objetivo y las reglas. Desde el día 1, las reglas quedan fijas y los días cumplidos solo suman."));
+  var s=seccion(w,"Empieza el jueves 1 de octubre"), falta=entre(h,INICIO);
+  s.appendChild(el("div","arcCont",'<span class="arcN">'+falta+'</span><span class="arcT">'+(falta===1?"día para empezar":"días para empezar")+'</span>'));
+  s.appendChild(el("p","arcS","92 días en 13 semanas. Desde el día 1 las reglas quedan fijas y los días cumplidos solo suman."));
 }
 function pintaObjetivo(w,h,repinta){
-  var s=seccion(w,"Objetivo del Arc"), D=S.D, ed=objetivoEditable(D,h) && !S.soloLectura;
+  var s=seccion(w,"Objetivo"), D=S.D, ed=objetivoEditable(D,h) && !S.soloLectura;
   if(!ed){ s.appendChild(el("p","arcT",esc(D.objetivo))); return; }
   var t=el("textarea"); t.id="arcObj"; t.value=D.objetivo; t.maxLength=MAX_OBJETIVO; t.rows=2;
   t.setAttribute("aria-label","Objetivo del Arc");
@@ -1030,6 +1071,6 @@ return {
   anadeRegla:anadeRegla, editaRegla:editaRegla, borraRegla:borraRegla, marcaCheck:marcaCheck, ponNota:ponNota,
   ponAncla:ponAncla, ponObjetivo:ponObjetivo, objetivoEditable:objetivoEditable,
   // lo que usa la agenda
-  conecta:conecta, registra:registra, vista:vista, pinta:pinta, subtitulo:subtitulo, diseno:diseno
+  conecta:conecta, registra:registra, vista:vista, pinta:pinta, pintaAjustes:pintaAjustes, subtitulo:subtitulo, diseno:diseno
 };
 });

@@ -22,7 +22,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -38,7 +39,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
    40,
    40,
    40
@@ -67,7 +67,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -83,7 +84,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
    40,
    40,
    40
@@ -112,7 +112,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -128,7 +129,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
    40,
    40,
    40
@@ -157,7 +157,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -173,7 +174,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
    40,
    40,
    40
@@ -202,7 +202,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -218,7 +219,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
    40,
    40,
    40
@@ -247,7 +247,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -263,7 +264,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
    40,
    40,
    40
@@ -292,7 +292,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -310,6 +311,29 @@
   "seccion": [
    40,
    40,
+   40
+  ]
+ },
+ "D-prologo-oscuro-ajustes": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "800",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
    40,
    40
   ]
@@ -337,7 +361,8 @@
   "acento": [],
   "tamanos": [
    "12px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -355,6 +380,29 @@
   "seccion": [
    40,
    40,
+   40
+  ]
+ },
+ "D-prologo-claro-ajustes": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "800",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
    40,
    40
   ]
@@ -384,8 +432,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -401,8 +449,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -434,8 +480,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -451,8 +497,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -487,8 +531,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -504,8 +548,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -540,8 +582,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -557,8 +599,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -595,8 +635,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -612,8 +652,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -650,8 +688,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -667,8 +705,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -704,8 +740,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -724,6 +760,29 @@
    40,
    40,
    40,
+   40
+  ]
+ },
+ "D-dia12-oscuro-ajustes": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "800",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
    40,
    40,
    40
@@ -758,8 +817,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "700",
@@ -778,6 +837,29 @@
    40,
    40,
    40,
+   40
+  ]
+ },
+ "D-dia12-claro-ajustes": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "800",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
    40,
    40,
    40
@@ -808,8 +890,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -825,8 +907,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -859,8 +939,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -876,8 +956,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -913,8 +991,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -930,8 +1008,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -967,8 +1043,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -984,8 +1060,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -1023,8 +1097,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -1040,8 +1114,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -1079,8 +1151,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -1096,8 +1168,6 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
-   40,
-   40,
    40,
    40,
    40,
@@ -1134,8 +1204,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -1155,6 +1225,29 @@
    40,
    40,
    40,
+   40
+  ]
+ },
+ "D-error-oscuro-ajustes": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "800",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
    40,
    40,
    40
@@ -1189,8 +1282,8 @@
   ],
   "tamanos": [
    "12px",
-   "28px",
-   "15px"
+   "15px",
+   "28px"
   ],
   "pesos": [
    "600",
@@ -1210,6 +1303,29 @@
    40,
    40,
    40,
+   40
+  ]
+ },
+ "D-error-claro-ajustes": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "800",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
    40,
    40,
    40

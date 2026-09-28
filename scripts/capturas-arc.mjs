@@ -93,11 +93,19 @@ for (const est of Object.keys(ESTADOS)) for (const dis of ["A", "B", "C", "D"]) 
   await p.screenshot({ path: `${OUT}${nombre}-hoy.png`, fullPage: true });
   await plegar.evaluate((n) => n.remove());
   REV[nombre + "-hoy"] = await p.evaluate(() => window.__audita("hoy"));
-  await p.click("#hConf"); await p.waitForTimeout(500);
-  await p.click("#cfArc"); await p.waitForTimeout(700);
+  // la pantalla Winter Arc se abre desde HOY; sus ajustes, con el engranaje (se capturan en D, el diseno por defecto)
+  await p.click(".arcV .arcAbre"); await p.waitForTimeout(700);
   REV[nombre + "-arc"] = await p.evaluate(() => window.__audita("arc"));
-  await p.addStyleTag({ content: DESPLIEGA + "#appHoy{display:none!important}#appPant{position:static!important;min-height:844px}#ptCuerpo{overflow:visible!important}" });
+  const pant = DESPLIEGA + "#appHoy{display:none!important}#appPant{position:static!important;min-height:844px}#ptCuerpo{overflow:visible!important}";
+  const d1 = await p.addStyleTag({ content: pant });
   await p.screenshot({ path: `${OUT}${nombre}-arc.png`, fullPage: true });
+  await d1.evaluate((n) => n.remove());
+  if (dis === "D") {
+    await p.click("#ptAccion"); await p.waitForTimeout(600);
+    REV[nombre + "-ajustes"] = await p.evaluate(() => window.__audita("arc"));
+    await p.addStyleTag({ content: pant });
+    await p.screenshot({ path: `${OUT}ajustes-${est}-${tema}.png`, fullPage: true });
+  }
   await p.close();
   process.stdout.write(nombre + " ");
 }

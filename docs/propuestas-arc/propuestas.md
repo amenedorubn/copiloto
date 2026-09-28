@@ -1,8 +1,15 @@
 # Arc · cuatro propuestas
 
-Se cambian en el móvil en **Ajustes › Arc › Diseño** (A, B, C o D). Las cuatro
-usan los mismos datos y la misma lógica (`arc.js`); solo cambia la vista. La
-elección se guarda en `copiloto.arc.diseno`.
+Se cambian en el móvil en **Ajustes del Arc › Diseño** (A, B, C o D). Esa
+pantalla se abre con el engranaje de la pantalla Winter Arc o desde
+Ajustes › Winter Arc. Las cuatro propuestas usan los mismos datos y la misma
+lógica (`arc.js`); solo cambia la vista. La elección se guarda en
+`copiloto.arc.diseno`.
+
+Desde la 2.6.1, la pantalla **Winter Arc** es solo la temporada (objetivo,
+días cumplidos, cuadrícula, revisión). Todo lo que se configura (diseño,
+objetivo, reglas y horas) está en **Ajustes del Arc**, con el diseño lo
+primero. Capturas: `ajustes-ESTADO-TEMA.png`.
 
 - **A · Anillos:** optimiza marcar sin salir de la tarjeta viva del entreno (3 anillos, un toque). Sacrifica: alarga la tarjeta, pone checks junto a *Empezar* y no enseña la semana.
 - **B · Línea del día:** optimiza el contexto (cada regla a su hora, entre comidas y rutinas, con su check). Sacrifica: queda por debajo del pliegue, del Arc solo se ve «Día 12/92» y hay que ajustar las horas.
