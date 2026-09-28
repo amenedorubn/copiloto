@@ -14,7 +14,9 @@ gimnasio. Se sirve con GitHub Pages.
 | Ruta | Qué es |
 |---|---|
 | `index.html` | La app entera (HTML, CSS y JS en un solo fichero). Lleva `APP_VERSION`. |
-| `arc.js` | Winter Arc: reglas, días, semanas y su pantalla. Va aparte del `index.html` y se carga `async`: si falla, la app arranca igual. Datos en `copiloto.arc.*`. |
+| `arc.js` | Winter Arc: objetivo, reglas, días, semanas y sus cuatro diseños (A anillos, B línea del día, C temporada, D cuadrícula). Va aparte del `index.html` y se carga `async`: si falla, la app arranca igual. Datos en `copiloto.arc.*`. |
+| `docs/DISENO-ARC.md` | Reglas de diseño del Arc y cómo se comprueban. |
+| `docs/propuestas-arc/` | Capturas de los cuatro diseños (claro y oscuro, 3 estados), su índice y la revisión. Se rehacen con `scripts/capturas-arc.mjs`. |
 | `tests/` | Tests de Arc (`node --test tests/*.test.mjs`, sin dependencias). Los pasa el Action *Versión coherente*. |
 | `sw.js` | Service worker. La caché se llama `copiloto-X.Y.Z`. `index.html` y `arc.js` van siempre red primero. |
 | `manifest.webmanifest`, `manifest-n1/b1/r1.webmanifest` | Manifest de la PWA, uno por icono elegible. |
@@ -26,6 +28,7 @@ gimnasio. Se sirve con GitHub Pages.
 | `ESQUEMA.md` | Cómo se escribe un entreno en el calendario. |
 | `CHANGELOG.md` | Qué cambia en cada versión. |
 | `scripts/bump.mjs` | Sube la versión en todos los sitios a la vez. |
+| `scripts/capturas-arc.mjs`, `scripts/audita-arc.js` | Capturas y revisión de diseño del Arc en Chrome (necesita `npm i --no-save playwright-core`; no forma parte de la app). |
 | `scripts/check-version.mjs` | Comprueba que las tres versiones coinciden (lo usa el Action). |
 | `scripts/releases.sh` | Crea una GitHub Release desde el CHANGELOG (lo usa el Action; a mano solo si hiciera falta). |
 | `v20/` | Copia congelada de la 2.0.0 (ver aviso de arriba). |

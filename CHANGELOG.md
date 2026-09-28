@@ -13,6 +13,18 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.6.0] - 2026-09-28
+
+### Añadido
+
+- Arc rediseñado: cuatro diseños para elegir (A anillos, B línea del día, C temporada, D cuadrícula), reglas precargadas y tema claro
+- Arc: se elige en Ajustes › Arc › Diseño; por defecto D (fila compacta en HOY y cuadrícula de 13 semanas × 7 días). Los cuatro comparten datos y lógica
+- Arc: reglas precargadas: «Cumplir el plan de Entreno» (automática: sesión del calendario hecha en Strava/Hevy; sin sesión o con descanso, cuenta sola), «Dormir 7 h o más» y «20 min de estudio o lectura»
+- Arc: un objetivo de texto (vacío hasta que lo escribas), días cumplidos que solo suman, aviso con 2 fallos seguidos y revisión el domingo; en caso de error, botón Reintentar
+- Arc: acento ámbar (el turquesa era una huella típica de diseño hecho por IA); reglas de diseño y cómo se comprueban en docs/DISENO-ARC.md
+- Ajustes › Tema: oscuro (por defecto), claro o como el móvil, solo para HOY, hojas, Arc y Simulación
+- Capturas de las cuatro propuestas en docs/propuestas-arc/ y revisión automática (scripts/capturas-arc.mjs)
+
 ## [2.5.0] - 2026-09-28
 
 ### Añadido
@@ -320,6 +332,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.6.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.6.0
 [2.5.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.5.0
 [2.4.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.4.2
 [2.4.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.4.1

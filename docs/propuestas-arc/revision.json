@@ -1,0 +1,1218 @@
+{
+ "A-prologo-oscuro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "A-prologo-oscuro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "A-prologo-claro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.32,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "A-prologo-claro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "B-prologo-oscuro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "B-prologo-oscuro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "B-prologo-claro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.32,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "B-prologo-claro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "C-prologo-oscuro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "C-prologo-oscuro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "C-prologo-claro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.32,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "C-prologo-claro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "D-prologo-oscuro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "D-prologo-oscuro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "D-prologo-claro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.32,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "D-prologo-claro-arc": {
+  "acento": [],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "A-dia12-oscuro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.61,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "A-dia12-oscuro-arc": {
+  "acento": [
+   "ring"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "A-dia12-claro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.61,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "A-dia12-claro-arc": {
+  "acento": [
+   "ring"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "B-dia12-oscuro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.37,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "B-dia12-oscuro-arc": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "B-dia12-claro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.84,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "B-dia12-claro-arc": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "C-dia12-oscuro-hoy": {
+  "acento": [
+   "dot",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "C-dia12-oscuro-arc": {
+  "acento": [
+   "arcChip",
+   "dot"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "C-dia12-claro-hoy": {
+  "acento": [
+   "dot",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.32,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "C-dia12-claro-arc": {
+  "acento": [
+   "arcChip",
+   "dot"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "D-dia12-oscuro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "D-dia12-oscuro-arc": {
+  "acento": [
+   "arcGrid",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "D-dia12-claro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.84,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "D-dia12-claro-arc": {
+  "acento": [
+   "arcGrid",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "A-error-oscuro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.61,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "A-error-oscuro-arc": {
+  "acento": [
+   "ring"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "A-error-claro-hoy": {
+  "acento": [],
+  "tamanos": [
+   "12px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.61,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "A-error-claro-arc": {
+  "acento": [
+   "ring"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "B-error-oscuro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.37,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "B-error-oscuro-arc": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "B-error-claro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.84,
+  "tactil": [],
+  "cajas": 0,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "B-error-claro-arc": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "C-error-oscuro-hoy": {
+  "acento": [
+   "dot",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "C-error-oscuro-arc": {
+  "acento": [
+   "arcChip",
+   "dot"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "C-error-claro-hoy": {
+  "acento": [
+   "dot",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 6.32,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "C-error-claro-arc": {
+  "acento": [
+   "arcChip",
+   "dot"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "D-error-oscuro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.81,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "D-error-oscuro-arc": {
+  "acento": [
+   "arcGrid",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.35,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ },
+ "D-error-claro-hoy": {
+  "acento": [
+   "arcCk"
+  ],
+  "tamanos": [
+   "12px",
+   "15px"
+  ],
+  "pesos": [
+   "700",
+   "600"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.84,
+  "tactil": [],
+  "cajas": 1,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": []
+ },
+ "D-error-claro-arc": {
+  "acento": [
+   "arcGrid",
+   "arcChip"
+  ],
+  "tamanos": [
+   "12px",
+   "28px",
+   "15px"
+  ],
+  "pesos": [
+   "600",
+   "700",
+   "800"
+  ],
+  "mayus": [],
+  "contraste": [],
+  "minContraste": 5.29,
+  "tactil": [],
+  "cajas": 2,
+  "gradientes": 0,
+  "emojis": [],
+  "iconos": [],
+  "seccion": [
+   40,
+   40,
+   40,
+   40,
+   40,
+   40,
+   40
+  ]
+ }
+}
