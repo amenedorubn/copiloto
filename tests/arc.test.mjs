@@ -352,3 +352,37 @@ test("totales: km, horas y kg solo de lo que traen Strava y Hevy", () => {
   Arc.registraAuto(D, { acts, eventos: null }, "2026-10-01");
   assert.equal(D.base.km, 5);
 });
+
+/* ------------------------------ v2.8: etapas ------------------------------ */
+test("etapas de partida: Roma, Roma-Mexico, noviembre, diciembre; sin huecos del 1/9 al 31/12", () => {
+  const D = Arc.vacio();
+  assert.deepEqual(D.etapas.map((e) => e.nombre), ["Hacia Roma", "De Roma a México", "México y noviembre de viajes", "Diciembre"]);
+  assert.equal(D.etapas[0].desde, "2026-09-01");
+  assert.equal(D.etapas[3].hasta, "2026-12-31");
+  for (let i = 1; i < D.etapas.length; i++) assert.equal(D.etapas[i].desde, Arc.mas(D.etapas[i - 1].hasta, 1));
+  assert.equal(Arc.etapaDe(D, "2026-10-18").etapa.nombre, "Hacia Roma");      // el dia de Roma, aun etapa 1
+  assert.equal(Arc.etapaDe(D, "2026-10-19").n, 2);
+  assert.equal(Arc.etapaDe(D, "2026-11-17").n, 3);
+  assert.equal(Arc.etapaDe(D, "2027-01-01"), null);
+});
+test("etapas: se cambian y se validan; los datos de la 2.7 las reciben", () => {
+  const D = Arc.vacio();
+  assert.ok(Arc.ponEtapa(D, "e3", { nombre: "México", desde: "2026-11-03", hasta: "2026-11-18" }).ok);
+  assert.ok(Arc.ponEtapa(D, "e3", { nombre: "México", desde: "2026-11-20", hasta: "2026-11-18" }).error);
+  assert.ok(Arc.ponEtapa(D, "e3", { nombre: "", desde: "2026-11-03", hasta: "2026-11-18" }).error);
+  assert.ok(Arc.anadeEtapa(D, { nombre: "Noviembre", desde: "2026-11-19", hasta: "2026-11-30" }).ok);
+  assert.deepEqual(D.etapas.map((e) => e.desde), ["2026-09-01", "2026-10-19", "2026-11-03", "2026-11-19", "2026-12-01"]);
+  const v27 = Arc.migra({ v: 2, reglas: Arc.preset(), checks: {}, auto: {}, plan: {}, notas: {} }, "2026-09-28");
+  assert.equal(v27.D.etapas.length, 4);
+});
+test("etapas: numeros de la etapa en curso", () => {
+  const D = Arc.vacio(), c = { acts: [{ fecha: "2026-09-10", fuente: "strava", deporte: "Run", distancia: 8000, mov: 2400 }], eventos: () => [] };
+  const F = Arc.fuerzas(D, "2026-09-28", c);
+  const st = Arc.statsEtapa(D, D.etapas[0], "2026-09-28", c, F);
+  assert.equal(st.estado, "actual");
+  assert.equal(st.dias, 48);
+  assert.equal(st.llevas, 28);
+  assert.equal(st.faltan, 20);
+  assert.equal(st.hecho.km, 8);
+  assert.equal(Arc.statsEtapa(D, D.etapas[2], "2026-09-28", c, F).estado, "futura");
+});

@@ -88,7 +88,7 @@ function semanaArc(iso){ var s=semanaDe(iso); return s ? s.n : null; }
 function editable(hoy){ return hoy<=EDITA_HASTA; }
 
 /* ------------------------------- datos -------------------------------- */
-function vacio(){ return { v:VERSION_DATOS, objetivo:"", reglas:preset(), checks:{}, auto:{}, plan:{}, notas:{} }; }
+function vacio(){ return { v:VERSION_DATOS, objetivo:"", reglas:preset(), etapas:presetEtapas(), checks:{}, auto:{}, plan:{}, notas:{} }; }
 function esObj(x){ return !!x && typeof x==="object" && !Array.isArray(x); }
 function esHora(h){ return typeof h==="string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(h); }
 function reglaValida(r){
@@ -106,6 +106,8 @@ function normaliza(x){
   var D=vacio();
   D.reglas = Array.isArray(x.reglas) ? x.reglas.filter(reglaValida).slice(0,MAX_REGLAS).map(limpiaGuardada) : [];
   D.objetivo = typeof x.objetivo==="string" ? x.objetivo.slice(0,MAX_OBJETIVO) : "";
+  var et = Array.isArray(x.etapas) ? x.etapas.filter(etapaValida).slice(0,MAX_ETAPAS) : [];
+  D.etapas = et.length ? ordenEtapas(et.map(function(e){ return { id:e.id, nombre:e.nombre.trim().slice(0,MAX_NOMBRE), desde:e.desde, hasta:e.hasta }; })) : presetEtapas();
   ["checks","auto","plan","notas"].forEach(function(k){ if(esObj(x[k])) D[k]=x[k]; });
   if(esObj(x.base)) D.base=x.base;
   if(Array.isArray(x.reglasPrevias)) D.reglasPrevias=x.reglasPrevias.filter(reglaValida).map(limpiaGuardada);
@@ -341,6 +343,76 @@ function baseSept(D,acts){
 // por semana: la temporada hasta hoy frente a septiembre
 function porSemana(t,dias){ var f=7/dias; return { km:t.km*f, horas:t.horas*f, kg:t.kg*f, sesiones:t.sesiones*f }; }
 
+/* ----------------------------- las etapas -----------------------------
+   El Arc como historia en capitulos. Las cuatro de partida salen de los
+   planes reales (28/09): el cambio empezo el 1/9, luego Roma (maraton el
+   18/10), Mexico el 3/11 y noviembre de viajes, y diciembre. Nombre y
+   fechas se cambian cuando se quiera: solo ordenan, no cambian lo que
+   cuenta.                                                               */
+var MAX_ETAPAS=6;
+function presetEtapas(){
+  return [
+    { id:"e1", nombre:"Hacia Roma", desde:"2026-09-01", hasta:"2026-10-18" },
+    { id:"e2", nombre:"De Roma a México", desde:"2026-10-19", hasta:"2026-11-02" },
+    { id:"e3", nombre:"México y noviembre de viajes", desde:"2026-11-03", hasta:"2026-11-30" },
+    { id:"e4", nombre:"Diciembre", desde:"2026-12-01", hasta:"2026-12-31" }
+  ];
+}
+function esFecha(x){ return typeof x==="string" && /^\d{4}-\d\d-\d\d$/.test(x) && deNum(aNum(x))===x; }
+function etapaValida(e){
+  return esObj(e) && typeof e.id==="string" && typeof e.nombre==="string" && e.nombre.trim() &&
+    esFecha(e.desde) && esFecha(e.hasta) && e.desde<=e.hasta && e.desde>=PROLOGO && e.hasta<=FIN;
+}
+function ordenEtapas(L){ return L.slice().sort(function(a,b){ return a.desde<b.desde ? -1 : a.desde>b.desde ? 1 : 0; }); }
+function etapaDe(D,iso){
+  var L=ordenEtapas(D.etapas||[]);
+  for(var i=0;i<L.length;i++) if(iso>=L[i].desde && iso<=L[i].hasta) return { etapa:L[i], n:i+1, total:L.length };
+  return null;
+}
+function limpiaEtapa(x){
+  var nombre=String(x && x.nombre || "").replace(/\s+/g," ").trim();
+  if(!nombre) return { error:"Ponle un nombre a la etapa." };
+  if(nombre.length>MAX_NOMBRE) return { error:"Máximo "+MAX_NOMBRE+" letras." };
+  if(!esFecha(x.desde) || !esFecha(x.hasta)) return { error:"Pon las dos fechas." };
+  if(x.desde>x.hasta) return { error:"La etapa acaba antes de empezar." };
+  if(x.desde<PROLOGO || x.hasta>FIN) return { error:"Tiene que estar entre el 1 de septiembre y el 31 de diciembre." };
+  return { etapa:{ nombre:nombre, desde:x.desde, hasta:x.hasta } };
+}
+function ponEtapa(D,id,x){
+  var L=D.etapas||[], i; for(i=0;i<L.length;i++) if(L[i].id===id) break;
+  if(i>=L.length) return { error:"Esa etapa ya no está." };
+  var l=limpiaEtapa(x); if(l.error) return l;
+  l.etapa.id=id; L[i]=l.etapa; D.etapas=ordenEtapas(L);
+  return { ok:true };
+}
+function anadeEtapa(D,x){
+  var L=D.etapas||(D.etapas=[]);
+  if(L.length>=MAX_ETAPAS) return { error:"Máximo "+MAX_ETAPAS+" etapas." };
+  var l=limpiaEtapa(x); if(l.error) return l;
+  var n=1; while(L.some(function(e){ return e.id==="e"+n; })) n++;
+  l.etapa.id="e"+n; L.push(l.etapa); D.etapas=ordenEtapas(L);
+  return { ok:true, etapa:l.etapa };
+}
+function borraEtapa(D,id){
+  var L=D.etapas||[];
+  if(L.length<=1) return { error:"Hace falta al menos una etapa." };
+  D.etapas=L.filter(function(e){ return e.id!==id; });
+  return { ok:true };
+}
+// lo de una etapa: dias, dias cumplidos (en la temporada), fuerza al
+// empezar y ahora (o al acabar), y lo hecho en Strava/Hevy
+function statsEtapa(D,e,hoy,c,F){
+  c=ctxDe(c);
+  var dias=entre(e.desde,e.hasta)+1, estado = hoy<e.desde ? "futura" : hoy>e.hasta ? "pasada" : "actual";
+  var ult = e.hasta<hoy ? e.hasta : hoy, llevas = estado==="futura" ? 0 : entre(e.desde,ult)+1;
+  var dT = e.desde<INICIO ? INICIO : e.desde, k = (estado!=="futura" && ult>=dT) ? cuenta(D,dT,e.hasta,hoy,c) : { dias:0, cumplidos:0 };
+  function fz(d){ var s=(F && F.serie || []).filter(function(x){ return x.d===d; })[0]; return s ? s.v : 0; }
+  return { estado:estado, dias:dias, llevas:llevas, faltan: estado==="pasada" ? 0 : entre(estado==="futura" ? e.desde : ult, e.hasta)+(estado==="futura"?1:0),
+           cumplidos:k.cumplidos, contados:k.dias,
+           fuerzaIni: e.desde>PROLOGO ? fz(mas(e.desde,-1)) : 0, fuerzaAhora: estado==="futura" ? null : fz(ult),
+           hecho: estado==="futura" ? null : totales(c.acts,e.desde,ult) };
+}
+
 /* ----------------------------- cambios ----------------------------- */
 var BLOQUEADAS="Las reglas están bloqueadas desde el 1 de octubre.";
 function nuevoId(D){ var i=1; while(D.reglas.some(function(r){ return r.id==="r"+i; })) i++; return "r"+i; }
@@ -540,6 +612,15 @@ var CSS=
   ".arcIcoBtn svg{width:20px;height:20px}"+
   ".arcHora{width:92px;min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);font:600 15px Manrope,sans-serif;padding:0 8px}"+
   ".arcCurvaW{margin-top:12px}"+
+  ".arcEtNom{margin:4px 0 8px;line-height:1.15}"+
+  ".arcEtBar{display:flex;gap:4px;height:8px;margin-top:12px}"+
+  ".arcEtBar div{border-radius:4px;background:var(--sf2);overflow:hidden;min-width:8px}"+
+  ".arcEtBar i{display:block;height:100%;background:var(--fg)}"+
+  ".arcEtBar .pas i{background:var(--mu)}"+
+  ".arcEtEd{padding:12px 0;border-top:1px solid var(--ln)} .arcEtEd:first-child{border-top:0;padding-top:0}"+
+  ".arcEtTop{display:flex;gap:8px;align-items:center}"+
+  ".arcEtFechas{display:flex;gap:8px;align-items:center;margin-top:8px}"+
+  ".arcFecha{flex:1 1 0;min-width:0;min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);font:600 15px Manrope,sans-serif;padding:0 8px}"+
   ".arcCurva{display:block;width:100%;height:64px}"+
   ".arcCurva line{stroke:var(--ln);stroke-width:1}"+
   ".arcCurva polyline{fill:none;stroke:var(--fg);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}"+
@@ -757,7 +838,7 @@ function vista(iso){
           : D.reglas.length<MIN_REGLAS ? "Faltan "+plural(MIN_REGLAS-D.reglas.length,"regla")+". Se bloquean el 1 de octubre."
           : falta>0 ? "Empieza en "+plural(falta,"día")+(D.objetivo ? " · "+D.objetivo : "") : "Empieza hoy";
     }else txt="Sin reglas: la temporada no tiene nada que contar.";
-    var ab=el("button","arcAbre",'<span><span class="arcL">'+(f==="prologo"?"Arc · Prólogo":"Arc · "+cabDia(estadoDia(D,iso,h,ctx())))+'</span>'+
+    var ab=el("button","arcAbre",'<span><span class="arcL">'+(f==="prologo"?"Arc · "+esc((etapaDe(D,iso)||{etapa:{nombre:"Prólogo"}}).etapa.nombre):"Arc · "+cabDia(estadoDia(D,iso,h,ctx())))+'</span>'+
       '<span class="arcT" style="display:block;margin-top:4px">'+esc(txt)+'</span></span>'+ico("caret-right"));
     ab.style.minHeight="64px"; ab.addEventListener("click",abre()); b.appendChild(ab);
     var ea=el("div"); avisosEstado(ea); if(ea.childNodes.length) b.appendChild(ea);
@@ -765,7 +846,7 @@ function vista(iso){
   }
   var e=estadoDia(D,iso,h,ctx()), o={};
   if(d==="A"){
-    var a=el("div","arcV arcA"), cab=el("button","arcAbre",'<span class="arcL">Arc · Día '+e.dia+'/'+TOTAL+' · Fuerza '+fuerzas(D,h,ctx()).arc+' %</span>'+ico("caret-right"));
+    var a=el("div","arcV arcA"), cab=el("button","arcAbre",'<span class="arcL">Arc · '+esc((etapaDe(D,iso)||{etapa:{nombre:"Día "+e.dia+"/"+TOTAL}}).etapa.nombre)+' · Fuerza '+fuerzas(D,h,ctx()).arc+' %</span>'+ico("caret-right"));
     cab.addEventListener("click",abre()); a.appendChild(cab);
     a.appendChild(anillos(e,iso,h,rep,false));
     var fa=avisoFallos(iso,h); if(fa) a.appendChild(fa);
@@ -939,20 +1020,110 @@ function pinta(c){
   function repinta(){ pinta(c); }
   var est=el("div"); avisosEstado(est); if(est.childNodes.length){ var se=el("section"); se.appendChild(est); w.appendChild(se); }
   verObjetivo(w);
+  var F = D.reglas.length ? fuerzas(D,h,k) : null;
+  pintaEtapaActual(w,h,F);
   if(!D.reglas.length){
     if(h<INICIO){ pintaPrologoIntro(w,h); verReglas(w,h); }
     else{ var sv=seccion(w,"Temporada"); sv.appendChild(el("div","arcCaja arcVacio",'<p class="arcT">Sin reglas</p><p class="arcS">La temporada empezó sin reglas, así que no hay nada que contar. Las reglas se bloquearon el 1 de octubre.</p>')); }
   }else{
     if(h<INICIO) pintaPrologoIntro(w,h);
-    pintaFuerza(w,fuerzas(D,h,k),h);
+    pintaFuerza(w,F,h);
     if(f==="temporada") pintaHoy(w,h,repinta);
     if(h<INICIO) verReglas(w,h);
     pintaLlevas(w,h,k);
-    if(h>=INICIO){ pintaTemporada(w,h,repinta); pintaRevision(w,h,k); }
+    if(h>=INICIO){ pintaTemporada(w,h,repinta); pintaEtapas(w,h,F); pintaRevision(w,h,k); }
+    else pintaEtapas(w,h,F);
   }
   pintaPrologo(w,h);
   c.scrollTop=sc;
   if(irRev){ irRev=false; var r=document.getElementById("arcRev"); if(r) r.scrollIntoView(); }
+}
+// la barra de todas las etapas: cada una a su tamano, la actual rellena hasta hoy
+function barraEtapas(h){
+  var L=ordenEtapas(S.D.etapas||[]), w=el("div","arcEtBar");
+  w.setAttribute("role","img");
+  w.setAttribute("aria-label",L.map(function(e){ return e.nombre+(h>e.hasta?" hecha":h>=e.desde?" en curso":""); }).join(", "));
+  L.forEach(function(e){
+    var d=entre(e.desde,e.hasta)+1, pct = h>e.hasta ? 100 : h<e.desde ? 0 : (entre(e.desde,h)+1)/d*100;
+    var seg=el("div", h>e.hasta ? "pas" : h<e.desde ? "fut" : "act", '<i style="width:'+pct.toFixed(1)+'%"></i>');
+    seg.style.flex=d+" 1 0"; w.appendChild(seg);
+  });
+  return w;
+}
+function pintaEtapaActual(w,h,F){
+  var x=etapaDe(S.D,h); if(!x) return;
+  var st=statsEtapa(S.D,x.etapa,h,ctx(),F), s=seccion(w,"Etapa "+x.n+" de "+x.total);
+  s.appendChild(el("p","arcN arcEtNom",esc(x.etapa.nombre)));
+  s.appendChild(el("p","arcS","Día "+st.llevas+" de "+st.dias+" · "+(st.faltan ? "quedan "+plural(st.faltan,"día") : "último día")+" · hasta el "+larga(x.etapa.hasta)));
+  s.appendChild(barraEtapas(h));
+}
+function pintaEtapas(w,h,F){
+  var L=ordenEtapas(S.D.etapas||[]); if(!L.length) return;
+  var s=seccion(w,"Las etapas"), k=ctx();
+  L.forEach(function(e,i){
+    var st=statsEtapa(S.D,e,h,k,F), cj=el("div","arcCaja"); if(i) cj.style.marginTop="12px";
+    cj.appendChild(el("p","arcT",(i+1)+". "+esc(e.nombre)));
+    cj.appendChild(el("p","arcS",corta(e.desde)+" – "+corta(e.hasta)+" · "+plural(st.dias,"día")+
+      (st.estado==="futura" ? " · empieza en "+plural(entre(h,e.desde),"día") : st.estado==="actual" ? " · en curso" : "")));
+    if(st.estado!=="futura"){
+      var L2=[];
+      L2.push("Fuerza "+st.fuerzaIni+" % → "+st.fuerzaAhora+" %");
+      if(st.contados) L2.push(plural(st.cumplidos,"día cumplido","días cumplidos"));
+      if(st.hecho && st.hecho.km) L2.push(num(st.hecho.km,1)+" km");
+      if(st.hecho && st.hecho.horas) L2.push(num(st.hecho.horas,1)+" h de entreno");
+      cj.appendChild(el("p","arcS",esc(L2.join(" · "))));
+    }
+    s.appendChild(cj);
+  });
+}
+// en Ajustes del Arc: nombre y fechas de cada etapa; se guarda al cambiar
+var borradorEt=null, msgEt={};
+function pintaEtapasAjustes(w,repinta){
+  var s=seccion(w,"Etapas · "+(S.D.etapas||[]).length+" de "+MAX_ETAPAS);
+  s.appendChild(el("p","arcS","Ordenan el Arc en capítulos. Puedes cambiarlas cuando quieras: no cambian lo que cuenta."));
+  var cj=el("div","arcCaja"); cj.style.marginTop="12px";
+  ordenEtapas(S.D.etapas||[]).forEach(function(e){
+    var f=el("div","arcEtEd");
+    var n=el("input"); n.type="text"; n.value=e.nombre; n.maxLength=MAX_NOMBRE; n.setAttribute("aria-label","Nombre de la etapa");
+    var d1=el("input","arcFecha"); d1.type="date"; d1.value=e.desde; d1.min=PROLOGO; d1.max=FIN; d1.setAttribute("aria-label","Empieza");
+    var d2=el("input","arcFecha"); d2.type="date"; d2.value=e.hasta; d2.min=PROLOGO; d2.max=FIN; d2.setAttribute("aria-label","Acaba");
+    function cambia(){
+      var x=ponEtapa(S.D,e.id,{ nombre:n.value, desde:d1.value, hasta:d2.value });
+      if(x.error){ msgEt[e.id]=x.error; repinta(); return; }
+      delete msgEt[e.id]; guarda(); repinta();
+    }
+    [n,d1,d2].forEach(function(i){ if(S.soloLectura) i.disabled=true; i.addEventListener("change",cambia); });
+    var fe=el("div","arcEtFechas"); fe.appendChild(d1); fe.appendChild(el("span","arcS","a")); fe.appendChild(d2);
+    var bb=el("button","arcIcoBtn",ico("trash")); bb.setAttribute("aria-label","Quitar "+e.nombre);
+    bb.addEventListener("click",function(){ if(!borraEtapa(S.D,e.id).error){ guarda(); repinta(); } });
+    if(S.soloLectura || (S.D.etapas||[]).length<=1) bb.disabled=true;
+    var top=el("div","arcEtTop"); top.appendChild(n); top.appendChild(bb);
+    f.appendChild(top); f.appendChild(fe);
+    if(msgEt[e.id]){ var m=el("p","arcAviso arcMal",ico("warning-circle")+'<span>'+esc(msgEt[e.id])+'</span>'); m.setAttribute("role","alert"); f.appendChild(m); }
+    cj.appendChild(f);
+  });
+  if(!S.soloLectura && (S.D.etapas||[]).length<MAX_ETAPAS){
+    var b=borradorEt || (borradorEt={ nombre:"", desde:"", hasta:"" });
+    var f2=el("div","arcEtEd");
+    var lb=el("label","arcL","Etapa nueva"); lb.setAttribute("for","arcEtNom"); f2.appendChild(lb);
+    var n2=el("input"); n2.type="text"; n2.id="arcEtNom"; n2.maxLength=MAX_NOMBRE; n2.value=b.nombre;
+    n2.addEventListener("input",function(){ b.nombre=n2.value; });
+    var a1=el("input","arcFecha"); a1.type="date"; a1.value=b.desde; a1.min=PROLOGO; a1.max=FIN; a1.setAttribute("aria-label","Empieza");
+    var a2=el("input","arcFecha"); a2.type="date"; a2.value=b.hasta; a2.min=PROLOGO; a2.max=FIN; a2.setAttribute("aria-label","Acaba");
+    a1.addEventListener("change",function(){ b.desde=a1.value; }); a2.addEventListener("change",function(){ b.hasta=a2.value; });
+    var fe2=el("div","arcEtFechas"); fe2.appendChild(a1); fe2.appendChild(el("span","arcS","a")); fe2.appendChild(a2);
+    f2.appendChild(n2); f2.appendChild(fe2);
+    if(msgEt.nueva){ var m2=el("p","arcAviso arcMal",ico("warning-circle")+'<span>'+esc(msgEt.nueva)+'</span>'); m2.setAttribute("role","alert"); f2.appendChild(m2); }
+    var ok=el("button","arcBot","Añadir etapa");
+    ok.addEventListener("click",function(){
+      var x=anadeEtapa(S.D,b);
+      if(x.error){ msgEt.nueva=x.error; repinta(); return; }
+      delete msgEt.nueva; borradorEt=null; guarda(); repinta();
+    });
+    f2.appendChild(ok);
+    cj.appendChild(f2);
+  }
+  s.appendChild(cj);
 }
 function abreAjustes(){ if(P.ajustes) P.ajustes(); }
 function verObjetivo(w){
@@ -982,6 +1153,7 @@ function pintaAjustes(c){
   pintaDiseno(w,repinta);
   pintaObjetivo(w,h,repinta);
   pintaReglas(w,h,repinta);
+  pintaEtapasAjustes(w,repinta);
   pintaHoras(w);
   c.scrollTop=sc;
 }
@@ -1154,7 +1326,7 @@ return {
   TOTAL:TOTAL, SEMANAS:SEMANAS, MIN_REGLAS:MIN_REGLAS, MAX_REGLAS:MAX_REGLAS, DISENOS:DISENOS, DISENO_DEF:DISENO_DEF,
   fase:fase, diaArc:diaArc, semanaArc:semanaArc, editable:editable, mas:mas, preset:preset,
   vacio:vacio, migra:migra, carga:carga, guardaEn:guardaEn, leeDiseno:leeDiseno, guardaDiseno:guardaDiseno,
-  planDelDia:planDelDia, fuerzas:fuerzas, totales:totales, planTotal:planTotal, baseSept:baseSept, registraAuto:registraAuto, estadoDia:estadoDia, fallosSeguidos:fallosSeguidos,
+  planDelDia:planDelDia, presetEtapas:presetEtapas, etapaDe:etapaDe, ponEtapa:ponEtapa, anadeEtapa:anadeEtapa, borraEtapa:borraEtapa, statsEtapa:statsEtapa, fuerzas:fuerzas, totales:totales, planTotal:planTotal, baseSept:baseSept, registraAuto:registraAuto, estadoDia:estadoDia, fallosSeguidos:fallosSeguidos,
   resumen:resumen, resumenPrologo:resumenPrologo, revision:revision,
   anadeRegla:anadeRegla, editaRegla:editaRegla, borraRegla:borraRegla, marcaCheck:marcaCheck, ponNota:ponNota,
   ponAncla:ponAncla, ponObjetivo:ponObjetivo, objetivoEditable:objetivoEditable,
