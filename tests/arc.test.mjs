@@ -304,3 +304,51 @@ test("diseno: A/B/C/D guardado en copiloto.arc.diseno; si no, el de por defecto"
   assert.equal(Arc.guardaDiseno(st, "Z"), false);
   assert.equal(Arc.leeDiseno(almacen({ "copiloto.arc.diseno": "Z" })), Arc.DISENO_DEF);
 });
+
+/* ------------------- v2.7: la fuerza (como Loop Habit Tracker) ------------------- */
+function conTodo(hasta, falla = []) {
+  const D = Arc.vacio();
+  for (let d = "2026-10-01"; d <= hasta; d = Arc.mas(d, 1)) if (!falla.includes(d))
+    for (const id of ["dormir", "estudio"]) Arc.marcaCheck(D, d, id, true, hasta);
+  return D;
+}
+const sinPlan = { acts: [], eventos: () => [] };          // sin sesiones: el plan se cumple solo
+test("fuerza: 12 dias perfectos ~47 %, 92 dias ~99 %", () => {
+  const D = conTodo("2026-10-12");
+  const f = Arc.fuerzas(D, "2026-10-12", sinPlan);
+  assert.equal(f.porRegla[1].v, 47);                        // dormir: 1 - 0,5^(12/13)
+  assert.equal(Arc.fuerzas(conTodo("2026-12-31"), "2026-12-31", sinPlan).porRegla[1].v, 99);
+});
+test("fuerza: un fallo la baja un poco, nunca a cero, y se recupera", () => {
+  const sin = Arc.fuerzas(conTodo("2026-10-20"), "2026-10-20", sinPlan).porRegla[1].v;
+  const con = Arc.fuerzas(conTodo("2026-10-20", ["2026-10-15"]), "2026-10-20", sinPlan).porRegla[1].v;
+  assert.ok(con < sin && con > sin - 10, `${con} frente a ${sin}`);
+  assert.ok(con > 0);
+});
+test("fuerza: hoy abierto no resta; sin datos del calendario tampoco", () => {
+  const D = conTodo("2026-10-11");
+  const ayer = Arc.fuerzas(D, "2026-10-11", sinPlan).porRegla[1].v;
+  assert.equal(Arc.fuerzas(D, "2026-10-12", sinPlan).porRegla[1].v, ayer);   // el 12 aun sin marcar
+  const nada = Arc.fuerzas(Arc.vacio(), "2026-10-12", { acts: [], eventos: () => null });
+  assert.equal(nada.porRegla[0].v, 0);
+});
+test("fuerza: en el prologo solo cuentan las automaticas", () => {
+  const c = { acts: [], eventos: () => [] };                 // septiembre sin sesiones: plan cumplido
+  const f = Arc.fuerzas(Arc.vacio(), "2026-09-28", c);
+  assert.ok(f.porRegla[0].v > 70);
+  assert.equal(f.porRegla[1].v, 0);
+  assert.equal(f.arc, f.porRegla[0].v);                      // la media del prologo es solo la del plan
+});
+test("totales: km, horas y kg solo de lo que traen Strava y Hevy", () => {
+  const acts = [
+    { fecha: "2026-10-02", fuente: "strava", deporte: "Run", distancia: 10000, mov: 3000 },
+    { fecha: "2026-10-03", fuente: "hevy", deporte: "WeightTraining", mov: 3600, volumenKg: 4200 },
+    { fecha: "2026-09-30", fuente: "strava", deporte: "Run", distancia: 5000, mov: 1500 },
+  ];
+  const t = Arc.totales(acts, "2026-10-01", "2026-10-12");
+  assert.equal(t.km, 10); assert.equal(t.kg, 4200); assert.equal(t.sesiones, 2);
+  assert.ok(Math.abs(t.horas - 6600 / 3600) < 1e-9);
+  const D = Arc.vacio();                                     // el 1/10 se fija septiembre como "antes"
+  Arc.registraAuto(D, { acts, eventos: null }, "2026-10-01");
+  assert.equal(D.base.km, 5);
+});

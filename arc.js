@@ -36,8 +36,8 @@ var PROLOGO="2026-09-01", INICIO="2026-10-01", FIN="2026-12-31";
 var EDITA_HASTA="2026-09-30";
 var MIN_REGLAS=3, MAX_REGLAS=5, MAX_NOMBRE=40, MAX_OBJETIVO=140;
 var FUENTES={ plan:"Plan de Entreno", correr:"Correr (Strava)", gym:"Gimnasio (Hevy)", entreno:"Cualquier entreno" };
-// D por defecto: hasta Roma (18/10) HOY deja la tarjeta y "Empezar" arriba (docs/propuestas-arc)
-var DISENOS={ A:"Anillos", B:"Línea del día", C:"Temporada", D:"Cuadrícula" }, DISENO_DEF="D";
+// A por defecto: los anillos en la tarjeta del dia (elegido el 28/09)
+var DISENOS={ A:"Anillos", B:"Línea del día", C:"Temporada", D:"Cuadrícula" }, DISENO_DEF="A";
 var MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 var MESES_L=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 var DIAS_L=["lunes","martes","miércoles","jueves","viernes","sábado","domingo"];
@@ -107,6 +107,7 @@ function normaliza(x){
   D.reglas = Array.isArray(x.reglas) ? x.reglas.filter(reglaValida).slice(0,MAX_REGLAS).map(limpiaGuardada) : [];
   D.objetivo = typeof x.objetivo==="string" ? x.objetivo.slice(0,MAX_OBJETIVO) : "";
   ["checks","auto","plan","notas"].forEach(function(k){ if(esObj(x[k])) D[k]=x[k]; });
+  if(esObj(x.base)) D.base=x.base;
   if(Array.isArray(x.reglasPrevias)) D.reglasPrevias=x.reglasPrevias.filter(reglaValida).map(limpiaGuardada);
   return D;
 }
@@ -190,6 +191,8 @@ function registraAuto(D,c,hoy){
     var t=tipoAct(a), o=D.auto[a.fecha]||(D.auto[a.fecha]={});
     if(!o[t]){ o[t]=1; cambia=true; }
   });
+  // el "antes": septiembre, fijado el 1/10
+  if(hoy>=INICIO && !D.base){ var b=totales(c.acts,PROLOGO,mas(INICIO,-1)); if(b.sesiones){ D.base=b; cambia=true; } }
   if(c.eventos){
     var ult = hoy<FIN ? hoy : FIN;
     for(var d=PROLOGO; d<=ult; d=mas(d,1)){
@@ -270,6 +273,73 @@ function revision(D,hoy,c){
              contados:k.dias, cumplidos:k.cumplidos, porRegla:k.porRegla, nota:D.notas[s.n]||"" };
   });
 }
+
+/* ----------------------------- la fuerza -----------------------------
+   Como Loop Habit Tracker (github.com/iSoron/uhabits, Score.compute): cada
+   regla tiene una fuerza de 0 a 100 %. Cada dia cumplido la acerca a 100 y
+   cada fallo la baja un poco, con vida media de 13 dias. Un fallo nunca la
+   tira a cero: es la version numerica de "un fallo no reinicia nada".
+     fuerza = anterior * M + (hecho ? 1 : 0) * (1 - M),   M = 0,5^(1/13)
+   12 dias seguidos -> 47 %; los 92 -> 99 %. Hoy solo entra si ya esta hecho
+   (un dia abierto no resta). Las automaticas cuentan desde el 1/9 (lo que
+   dice el prologo); las manuales, desde el 1/10.                        */
+var M=Math.pow(0.5,1/13);
+function fuerzas(D,hoy,c){
+  c=ctxDe(c);
+  var ult = hoy<FIN ? hoy : FIN;
+  var R=D.reglas.map(function(r){ return { regla:r, v:0, serie:{} }; }), serie=[];
+  function media(d){
+    var L=R.filter(function(r){ return d>=INICIO || r.regla.tipo==="auto"; });
+    return L.length ? L.reduce(function(s,r){ return s+(r.serie[d]||0); },0)/L.length : 0;
+  }
+  for(var d=PROLOGO; d<=ult; d=mas(d,1)){
+    var e=estadoDia(D,d,hoy,c);
+    for(var i=0;i<R.length;i++){
+      var x=e.reglas[i], r=R[i];
+      // sin saber (manual en el prologo, dia sin datos del calendario, hoy aun abierto): no cambia
+      if(x.ok!==null && !x.sinDatos && !(d===hoy && !x.ok)) r.v = r.v*M + (x.ok?1:0)*(1-M);
+      r.serie[d]=r.v;
+    }
+    serie.push({ d:d, v:Math.round(100*media(d)) });
+  }
+  var hace=mas(ult,-7), pct=function(v){ return Math.round(100*(v||0)); };
+  return {
+    arc: serie.length ? serie[serie.length-1].v : 0,
+    hace7: hace>=PROLOGO && serie.length ? (serie.filter(function(s){ return s.d===hace; })[0]||{v:0}).v : 0,
+    inicio: ult>=mas(INICIO,-1) ? (serie.filter(function(s){ return s.d===mas(INICIO,-1); })[0]||{v:0}).v : null,
+    serie: serie,
+    porRegla: R.map(function(r){ return { regla:r.regla, v:pct(r.v), hace7: hace>=PROLOGO ? pct(r.serie[hace]) : 0 }; })
+  };
+}
+/* ------------------------ lo hecho, en numeros ------------------------
+   Solo lo que traen Strava y Hevy: km corridos, horas de entreno y kilos
+   movidos (volumen de Hevy). Nada estimado.                             */
+function totales(acts,desde,hasta){
+  var t={ km:0, horas:0, kg:0, carreras:0, gym:0, sesiones:0 };
+  (acts||[]).forEach(function(a){
+    if(!a || !a.fecha || a.fecha<desde || a.fecha>hasta) return;
+    var ti=tipoAct(a); t.sesiones++; t.horas+=(a.mov||0)/3600;
+    if(ti==="correr"){ t.km+=(a.distancia||0)/1000; t.carreras++; }
+    if(ti==="gym"){ t.kg+=a.volumenKg||0; t.gym++; }
+  });
+  return t;
+}
+// sesiones del calendario Entreno hechas / previstas entre dos fechas (hasta hoy)
+function planTotal(D,desde,hasta,hoy,c){
+  c=ctxDe(c);
+  var ult = hasta<hoy ? hasta : hoy, t={ s:0, h:0 };
+  for(var d=desde; d<=ult; d=mas(d,1)){ var p=planDe(D,d,c); if(p){ t.s+=p.s; t.h+=p.h; } }
+  return t;
+}
+// septiembre: el "antes". Se guarda el 1/10 para que no se pierda cuando
+// Strava deje de traer actividades tan viejas
+function baseSept(D,acts){
+  if(D.base) return D.base;
+  var t=totales(acts,PROLOGO,mas(INICIO,-1));
+  return t.sesiones ? t : null;
+}
+// por semana: la temporada hasta hoy frente a septiembre
+function porSemana(t,dias){ var f=7/dias; return { km:t.km*f, horas:t.horas*f, kg:t.kg*f, sesiones:t.sesiones*f }; }
 
 /* ----------------------------- cambios ----------------------------- */
 var BLOQUEADAS="Las reglas están bloqueadas desde el 1 de octubre.";
@@ -469,6 +539,13 @@ var CSS=
   ".arcIcoBtn{width:44px;height:44px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;border:0;background:none;color:var(--mu);border-radius:12px;padding:0}"+
   ".arcIcoBtn svg{width:20px;height:20px}"+
   ".arcHora{width:92px;min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);font:600 15px Manrope,sans-serif;padding:0 8px}"+
+  ".arcCurvaW{margin-top:12px}"+
+  ".arcCurva{display:block;width:100%;height:64px}"+
+  ".arcCurva line{stroke:var(--ln);stroke-width:1}"+
+  ".arcCurva polyline{fill:none;stroke:var(--fg);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}"+
+  ".arcTiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}"+
+  ".arcTiles div{display:flex;flex-direction:column;gap:4px}"+
+  ".arcFila>b{flex:0 0 auto}"+
   ".arcBar{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:8px 0}"+
   ".arcBar span{font-size:15px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}"+
   ".arcBar em{font-style:normal;font-size:12px;font-weight:700;color:var(--mu)}"+
@@ -688,7 +765,7 @@ function vista(iso){
   }
   var e=estadoDia(D,iso,h,ctx()), o={};
   if(d==="A"){
-    var a=el("div","arcV arcA"), cab=el("button","arcAbre",'<span class="arcL">Arc · '+esc(cabDia(e))+'</span>'+ico("caret-right"));
+    var a=el("div","arcV arcA"), cab=el("button","arcAbre",'<span class="arcL">Arc · Día '+e.dia+'/'+TOTAL+' · Fuerza '+fuerzas(D,h,ctx()).arc+' %</span>'+ico("caret-right"));
     cab.addEventListener("click",abre()); a.appendChild(cab);
     a.appendChild(anillos(e,iso,h,rep,false));
     var fa=avisoFallos(iso,h); if(fa) a.appendChild(fa);
@@ -756,11 +833,6 @@ function semana(iso,h){
 
 /* ----------------------------- la pantalla ----------------------------- */
 function seccion(w,tit,id){ var s=el("section"); if(id) s.id=id; s.appendChild(el("h3","arcL",esc(tit))); w.appendChild(s); return s; }
-function contador(s,R){
-  s.appendChild(el("div","arcCont",'<span class="arcN">'+R.cumplidos+'</span><span class="arcT">'+(R.cumplidos===1?"día cumplido":"días cumplidos")+'</span>'));
-  s.appendChild(el("p","arcS",R.dias ? "Solo suman: un fallo no resta ninguno. Van "+plural(R.dias,"día contado","días contados")+" (hoy entra al cerrarlo)."
-                                     : "Solo suman: un fallo no resta ninguno."));
-}
 function barras(por){
   var w=el("div");
   por.forEach(function(p){
@@ -769,79 +841,74 @@ function barras(por){
   });
   return w;
 }
-function pinta(c){
-  if(!P || !S){ c.innerHTML='<p class="arcS">Arc no ha arrancado. Cierra la app y vuelve a abrirla.</p>'; return; }
-  var sc=c.scrollTop, h=hoy(), D=S.D, f=fase(h), d=diseno(), k=ctx();
-  c.innerHTML=""; var w=el("div","arcV"); w.id="arcP"; w.setAttribute("data-d",d); c.appendChild(w);
-  function repinta(){ pinta(c); }
-  var est=el("div"); avisosEstado(est); if(est.childNodes.length){ var se=el("section"); se.appendChild(est); w.appendChild(se); }
-  verObjetivo(w);
-  if(h<INICIO){ pintaPrologoIntro(w,h); verReglas(w,h); }
-  else if(!D.reglas.length){
-    var sv=seccion(w,"Temporada"); sv.appendChild(el("div","arcCaja arcVacio",'<p class="arcT">Sin reglas</p><p class="arcS">La temporada empezó sin reglas, así que no hay nada que contar. Las reglas se bloquearon el 1 de octubre.</p>'));
-  }else{
-    var R=resumen(D,h,k), e=estadoDia(D, f==="temporada" ? h : FIN, h, k);
-    var s=seccion(w, f==="temporada" ? cabDia(e) : "Temporada cerrada");
-    contador(s,R);
-    var fa=avisoFallos(h,h); if(fa) s.appendChild(fa);
-    if(d==="A") heroA(s,e,h,repinta);
-    else if(d==="B") heroB(s,e,h,repinta);
-    else if(d==="C") heroC(s,h,repinta);
-    else heroD(w,s,h,repinta);
-    if(d!=="D"){ var sr=seccion(w,"Por regla"); sr.appendChild(barras(R.porRegla)); }
-    pintaRevision(w,h,k);
-  }
-  pintaPrologo(w,h);
-  c.scrollTop=sc;
-  if(irRev){ irRev=false; var r=document.getElementById("arcRev"); if(r) r.scrollIntoView(); }
+function num(n,dec){ return (dec ? n.toFixed(dec) : String(Math.round(n))).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g,"."); }
+function signo(n){ return n>0 ? "+"+n : String(n); }
+// la curva de la fuerza (en el color del texto: el acento es solo "hecho")
+function curva(serie,desde){
+  var S2=serie.filter(function(s){ return s.d>=desde; });
+  if(S2.length<2) return "";
+  var W=320, H=64, n=TOTAL-1, x0=entre(desde,S2[0].d);
+  var pts=S2.map(function(s,i){ return ((x0+i)/Math.max(n,1)*W).toFixed(1)+","+(H-2-s.v/100*(H-4)).toFixed(1); }).join(" ");
+  return '<svg class="arcCurva" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+    '<line x1="0" y1="'+(H-2)+'" x2="'+W+'" y2="'+(H-2)+'"/><polyline points="'+pts+'"/></svg>';
 }
-function heroA(s,e,h,repinta){
-  if(fase(h)!=="temporada") return;
+function pintaFuerza(w,F,h){
+  var pro=h<INICIO, s=seccion(w,"Fuerza del Arc");
+  var d7=F.arc-F.hace7;
+  s.appendChild(el("div","arcCont",'<span class="arcN">'+F.arc+' %</span><span class="arcT">'+
+    (pro ? "con lo que ya haces" : (d7 ? signo(d7)+" en 7 días" : "igual que hace 7 días"))+'</span>'));
+  s.appendChild(el("p","arcS", pro
+    ? "Cuenta solo lo automático de septiembre. Las manuales empiezan el día 1. Sube cada día que cumples y baja poco cuando fallas; con los 92 días hechos llega al 99 %."
+    : "Sube cada día que cumples y baja poco cuando fallas: un fallo nunca la tira a cero. Con los 92 días hechos llega al 99 %."));
+  var cv=curva(F.serie, pro ? PROLOGO : INICIO); if(cv) s.appendChild(el("div","arcCurvaW",cv));
   var cj=el("div","arcCaja"); cj.style.marginTop="12px";
-  cj.appendChild(el("p","arcL","Hoy"));
-  cj.appendChild(anillos(e,h,h,repinta,true));
-  s.appendChild(cj);
-}
-function heroB(s,e,h,repinta){
-  var cj=el("div","arcCaja"); cj.style.marginTop="12px";
-  cj.appendChild(el("p","arcL","Hoy, por horas"));
-  e.reglas.forEach(function(x){
-    var f=el("div","arcFila");
-    f.appendChild(el("span","arcT",esc(x.regla.ancla||""))).style.cssText="flex:0 0 52px";
-    if(fase(h)==="temporada") f.appendChild(check(x,h,h,repinta));
-    f.appendChild(el("span","",'<span class="arcT">'+esc(x.regla.nombre)+'</span><span class="arcS">'+esc(fase(h)==="temporada" ? estadoTxt(x,h,h) : subRegla(x.regla))+'</span>'));
-    cj.appendChild(f);
+  F.porRegla.forEach(function(p){
+    var fuera = pro && p.regla.tipo==="manual";
+    cj.appendChild(el("div","arcBar",'<span>'+esc(p.regla.nombre)+'</span><em>'+(fuera ? "empieza el 1/10" : p.v+" %"+(p.v!==p.hace7 ? " · "+signo(p.v-p.hace7)+" en 7 días" : ""))+'</em>'+
+      '<div><i style="width:'+(fuera?0:p.v)+'%"></i></div>'));
   });
   s.appendChild(cj);
 }
-function heroC(s,h,repinta){
-  var cj=el("div","arcCaja"); cj.style.marginTop="12px";
-  if(fase(h)==="temporada"){
-    var e=estadoDia(S.D,h,h,ctx()), ch=el("div","arcChips");
-    e.reglas.forEach(function(x){ ch.appendChild(chip(x,h,h,repinta)); });
-    cj.appendChild(el("p","arcL","Hoy")); cj.appendChild(ch);
+function pintaHoy(w,h,repinta){
+  var e=estadoDia(S.D,h,h,ctx()), s=seccion(w,"Hoy · "+cabDia(e));
+  s.appendChild(el("p","arcT",e.estado==="cumplido" ? "Día cerrado: un voto más por quien quieres ser." : e.hechas+" de "+e.cuentan+" hechas. Cada día cumplido es un voto."));
+  var cj=el("div","arcCaja"); cj.style.marginTop="12px"; cj.appendChild(anillos(e,h,h,repinta,true)); s.appendChild(cj);
+  var fa=avisoFallos(h,h); if(fa) s.appendChild(fa);
+}
+// lo que llevas: numeros de Strava y Hevy, y frente a septiembre por semana
+function pintaLlevas(w,h,k){
+  var pro=h<INICIO, ult=h<FIN?h:FIN;
+  var desde = pro ? PROLOGO : INICIO, t=totales(k.acts,desde,ult), pl=planTotal(S.D,desde,ult,h,k);
+  var s=seccion(w, pro ? "Septiembre, con lo que ya registraste" : "Lo que llevas desde el 1 de octubre");
+  if(!t.sesiones && !pl.s){
+    s.appendChild(el("p","arcS", estadoActs()==="cargando" ? "Trayendo Strava y Hevy…" : "Todavía no hay entrenos de Strava ni de Hevy en estas fechas."));
+    return;
   }
-  var t=el("div","arcTabla"), L=["L","M","X","J","V","S","D"], i;
-  t.appendChild(el("i",""," ")); for(i=0;i<7;i++) t.appendChild(el("i","",L[i]));
-  var d=mas(INICIO,-diaSem(INICIO)), k=ctx();
-  while(d<=FIN){
-    var sem=semanaDe(d<INICIO?INICIO:d);
-    t.appendChild(el("b","","S"+sem.n));
-    for(i=0;i<7;i++,d=mas(d,1)){
-      if(fase(d)!=="temporada"){ t.appendChild(el("span")); continue; }
-      var e2=estadoDia(S.D,d,h,k), sp=el("span","",punto(e2,d,h));
-      sp.setAttribute("role","img"); sp.setAttribute("aria-label",larga(d)+": "+textoDia(e2));
-      t.appendChild(sp);
-    }
-  }
-  cj.appendChild(el("p","arcL","Las 13 semanas")).style.marginTop = fase(h)==="temporada" ? "16px" : "0";
-  cj.appendChild(t);
-  cj.appendChild(el("p","arcS","Punto lleno: día cumplido. Arco: la parte de las reglas que se hizo."));
+  var g=el("div","arcCaja arcTiles");
+  function tile(v,u){ g.appendChild(el("div","",'<b class="arcN">'+v+'</b><span class="arcS">'+esc(u)+'</span>')); }
+  tile(num(t.km,t.km<100?1:0),"km corridos");
+  tile(num(t.horas,1),"horas de entreno");
+  tile(num(t.kg),"kg movidos en Hevy");
+  tile(pl.s ? pl.h+"/"+pl.s : "–","sesiones del plan");
+  s.appendChild(g);
+  if(pro) return;
+  var dias=entre(INICIO,ult)+1, b=baseSept(S.D,k.acts);
+  if(dias<7 || !b){ s.appendChild(el("p","arcS", dias<7 ? "La comparación con septiembre sale al pasar la primera semana." : "No hay datos de septiembre para comparar.")); return; }
+  var a=porSemana(b,30), n=porSemana(t,dias), cj=el("div","arcCaja"); cj.style.marginTop="12px";
+  cj.appendChild(el("p","arcL","Por semana, frente a septiembre"));
+  [["km",a.km,n.km,1],["horas",a.horas,n.horas,1],["kg en Hevy",a.kg,n.kg,0]].forEach(function(x){
+    if(!x[1] && !x[2]) return;
+    var pc = x[1] ? Math.round(100*(x[2]-x[1])/x[1]) : null;
+    cj.appendChild(el("div","arcFila",'<span><span class="arcT">'+esc(x[0])+'</span><span class="arcS">'+num(x[1],x[3])+' en septiembre → '+num(x[2],x[3])+' ahora</span></span>'+
+      '<b class="arcT">'+(pc==null ? "nuevo" : signo(pc)+" %")+'</b>'));
+  });
   s.appendChild(cj);
 }
-function heroD(w,s,h,repinta){
-  // 13 semanas en filas (la 1 ocupa dos: del jueves 1 al domingo 11) y 7 dias en columnas
-  var k=ctx(), g=el("div","arcGrid"), L=["L","M","X","J","V","S","D"], i;
+// la temporada: 13 semanas en filas (la 1 ocupa dos, del jueves 1 al domingo 11) y 7 dias en columnas
+function pintaTemporada(w,h,repinta){
+  var k=ctx(), R=resumen(S.D,h,k), s=seccion(w,"La temporada · "+plural(R.cumplidos,"día cumplido","días cumplidos"));
+  s.appendChild(el("p","arcS","Los días cumplidos solo suman. Relleno: cumplido. Gris: sin cerrar. Con borde: por llegar. Toca un día para verlo."));
+  var g=el("div","arcGrid"), L=["L","M","X","J","V","S","D"], i;
   if(!selDia || fase(selDia)!=="temporada") selDia = fase(h)==="temporada" ? h : null;
   g.appendChild(el("i",""," ")); for(i=0;i<7;i++) g.appendChild(el("i","",L[i]));
   var d=mas(INICIO,-diaSem(INICIO));
@@ -856,17 +923,36 @@ function heroD(w,s,h,repinta){
       g.appendChild(b);
     }
   }
-  // sin caja: la cuadricula usa todo el ancho (celdas de 44 px de alto)
   s.appendChild(g);
-  s.appendChild(el("p","arcS","Relleno: día cumplido. Gris: sin cerrar. Con borde: por llegar. Toca un día para verlo."));
-  if(selDia){
+  if(selDia && selDia!==h){
     var e2=estadoDia(S.D,selDia,h,k), dj=el("div","arcCaja"); dj.style.marginTop="12px";
     dj.appendChild(el("p","arcT",esc(mayus(larga(selDia)))));
     dj.appendChild(el("p","arcS",esc(cabDia(e2)+" · "+(selDia>h ? "todavía no ha llegado" : e2.hechas+" de "+e2.cuentan))));
-    var ch=el("div","arcChips"); e2.reglas.forEach(function(x){ ch.appendChild(chip(x,selDia,h,repinta)); }); dj.appendChild(ch);
+    dj.appendChild(anillos(e2,selDia,h,repinta,true));
     s.appendChild(dj);
   }
-  var sr=seccion(w,"Por regla"); sr.appendChild(barras(resumen(S.D,h,k).porRegla));
+}
+function pinta(c){
+  if(!P || !S){ c.innerHTML='<p class="arcS">Arc no ha arrancado. Cierra la app y vuelve a abrirla.</p>'; return; }
+  var sc=c.scrollTop, h=hoy(), D=S.D, f=fase(h), k=ctx();
+  c.innerHTML=""; var w=el("div","arcV"); w.id="arcP"; c.appendChild(w);
+  function repinta(){ pinta(c); }
+  var est=el("div"); avisosEstado(est); if(est.childNodes.length){ var se=el("section"); se.appendChild(est); w.appendChild(se); }
+  verObjetivo(w);
+  if(!D.reglas.length){
+    if(h<INICIO){ pintaPrologoIntro(w,h); verReglas(w,h); }
+    else{ var sv=seccion(w,"Temporada"); sv.appendChild(el("div","arcCaja arcVacio",'<p class="arcT">Sin reglas</p><p class="arcS">La temporada empezó sin reglas, así que no hay nada que contar. Las reglas se bloquearon el 1 de octubre.</p>')); }
+  }else{
+    if(h<INICIO) pintaPrologoIntro(w,h);
+    pintaFuerza(w,fuerzas(D,h,k),h);
+    if(f==="temporada") pintaHoy(w,h,repinta);
+    if(h<INICIO) verReglas(w,h);
+    pintaLlevas(w,h,k);
+    if(h>=INICIO){ pintaTemporada(w,h,repinta); pintaRevision(w,h,k); }
+  }
+  pintaPrologo(w,h);
+  c.scrollTop=sc;
+  if(irRev){ irRev=false; var r=document.getElementById("arcRev"); if(r) r.scrollIntoView(); }
 }
 function abreAjustes(){ if(P.ajustes) P.ajustes(); }
 function verObjetivo(w){
@@ -943,6 +1029,8 @@ function pintaRevision(w,h,k){
       s.appendChild(cj); return;
     }
     cj.appendChild(el("p","arcS",r.cumplidos+" de "+r.dias+" días cumplidos"+(r.pasada ? "" : " · hoy toca revisarla")));
+    var tw=totales(k.acts,r.desde,r.hasta), pw=planTotal(S.D,r.desde,r.hasta,h,k);
+    if(tw.sesiones || pw.s) cj.appendChild(el("p","arcS",[tw.km ? num(tw.km,1)+" km" : "", tw.horas ? num(tw.horas,1)+" h de entreno" : "", pw.s ? "plan "+pw.h+"/"+pw.s : ""].filter(Boolean).join(" · ")));
     r.porRegla.forEach(function(p){ cj.appendChild(el("p","arcS",esc(p.regla.nombre)+": "+(p.pct==null?"–":p.ok+"/"+p.total))); });
     var id="arcNota"+r.n, lb=el("label","arcL","Qué cambias la semana que viene"); lb.setAttribute("for",id);
     var t=el("textarea"); t.id=id; t.value=r.nota; t.maxLength=500;
@@ -1040,7 +1128,7 @@ function formRegla(repinta){
   }
   return f;
 }
-var DESC={ A:"Anillos en la tarjeta del día", B:"Cada regla en la línea del día, a su hora", C:"Cabecera de temporada y la semana en puntos", D:"Fila compacta en HOY y la cuadrícula aquí" };
+var DESC={ A:"Anillos en la tarjeta del día", B:"Cada regla en la línea del día, a su hora", C:"Cabecera de temporada y la semana en puntos", D:"Una fila compacta en HOY" };
 function pintaDiseno(w,repinta){
   var s=seccion(w,"Diseño"), g=el("div","arcOps"), act=diseno();
   g.setAttribute("role","radiogroup"); g.setAttribute("aria-label","Diseño del Arc");
@@ -1066,7 +1154,7 @@ return {
   TOTAL:TOTAL, SEMANAS:SEMANAS, MIN_REGLAS:MIN_REGLAS, MAX_REGLAS:MAX_REGLAS, DISENOS:DISENOS, DISENO_DEF:DISENO_DEF,
   fase:fase, diaArc:diaArc, semanaArc:semanaArc, editable:editable, mas:mas, preset:preset,
   vacio:vacio, migra:migra, carga:carga, guardaEn:guardaEn, leeDiseno:leeDiseno, guardaDiseno:guardaDiseno,
-  planDelDia:planDelDia, registraAuto:registraAuto, estadoDia:estadoDia, fallosSeguidos:fallosSeguidos,
+  planDelDia:planDelDia, fuerzas:fuerzas, totales:totales, planTotal:planTotal, baseSept:baseSept, registraAuto:registraAuto, estadoDia:estadoDia, fallosSeguidos:fallosSeguidos,
   resumen:resumen, resumenPrologo:resumenPrologo, revision:revision,
   anadeRegla:anadeRegla, editaRegla:editaRegla, borraRegla:borraRegla, marcaCheck:marcaCheck, ponNota:ponNota,
   ponAncla:ponAncla, ponObjetivo:ponObjetivo, objetivoEditable:objetivoEditable,

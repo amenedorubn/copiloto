@@ -6,6 +6,14 @@ Ajustes › Winter Arc. Las cuatro propuestas usan los mismos datos y la misma
 lógica (`arc.js`); solo cambia la vista. La elección se guarda en
 `copiloto.arc.diseno`.
 
+Desde la 2.7.0 el diseño por defecto es **A (anillos)** y la pantalla Winter
+Arc es la misma en los cuatro. Arriba va la **fuerza del Arc**, de 0 a 100 %,
+calculada como el *habit strength* de Loop Habit Tracker: sube con cada día
+cumplido, un fallo solo la baja un poco y tiene una vida media de 13 días.
+Después van hoy en anillos, **lo que llevas** (km, horas, kg y sesiones del
+plan, de Strava y Hevy) frente a septiembre, la temporada en 13 × 7 y la
+revisión del domingo con los números de la semana.
+
 Desde la 2.6.1, la pantalla **Winter Arc** es solo la temporada (objetivo,
 días cumplidos, cuadrícula, revisión). Todo lo que se configura (diseño,
 objetivo, reglas y horas) está en **Ajustes del Arc**, con el diseño lo

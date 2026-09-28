@@ -428,7 +428,8 @@
  },
  "A-dia12-oscuro-arc": {
   "acento": [
-   "ring"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -449,6 +450,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -476,7 +479,8 @@
  },
  "A-dia12-claro-arc": {
   "acento": [
-   "ring"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -497,6 +501,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -527,7 +533,8 @@
  },
  "B-dia12-oscuro-arc": {
   "acento": [
-   "arcCk"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -548,6 +555,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -578,7 +587,8 @@
  },
  "B-dia12-claro-arc": {
   "acento": [
-   "arcCk"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -599,6 +609,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -630,8 +642,8 @@
  },
  "C-dia12-oscuro-arc": {
   "acento": [
-   "arcChip",
-   "dot"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -652,6 +664,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -683,8 +697,8 @@
  },
  "C-dia12-claro-arc": {
   "acento": [
-   "arcChip",
-   "dot"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -705,6 +719,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -735,8 +751,8 @@
  },
  "D-dia12-oscuro-arc": {
   "acento": [
-   "arcGrid",
-   "arcChip"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -757,6 +773,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -812,8 +830,8 @@
  },
  "D-dia12-claro-arc": {
   "acento": [
-   "arcGrid",
-   "arcChip"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -834,6 +852,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -886,7 +906,8 @@
  },
  "A-error-oscuro-arc": {
   "acento": [
-   "ring"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -907,6 +928,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -935,7 +958,8 @@
  },
  "A-error-claro-arc": {
   "acento": [
-   "ring"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -956,6 +980,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -987,7 +1013,8 @@
  },
  "B-error-oscuro-arc": {
   "acento": [
-   "arcCk"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -1008,6 +1035,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -1039,7 +1068,8 @@
  },
  "B-error-claro-arc": {
   "acento": [
-   "arcCk"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -1060,6 +1090,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -1092,8 +1124,8 @@
  },
  "C-error-oscuro-arc": {
   "acento": [
-   "arcChip",
-   "dot"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -1114,6 +1146,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -1146,8 +1180,8 @@
  },
  "C-error-claro-arc": {
   "acento": [
-   "arcChip",
-   "dot"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -1168,6 +1202,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -1199,8 +1235,8 @@
  },
  "D-error-oscuro-arc": {
   "acento": [
-   "arcGrid",
-   "arcChip"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -1221,6 +1257,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
@@ -1277,8 +1315,8 @@
  },
  "D-error-claro-arc": {
   "acento": [
-   "arcGrid",
-   "arcChip"
+   "ring",
+   "arcGrid"
   ],
   "tamanos": [
    "12px",
@@ -1299,6 +1337,8 @@
   "emojis": [],
   "iconos": [],
   "seccion": [
+   40,
+   40,
    40,
    40,
    40,
