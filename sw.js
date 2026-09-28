@@ -1,9 +1,9 @@
-const C="copiloto-2.4.2";
+const C="copiloto-2.5.0";
 const F=["./manifest.webmanifest","./manifest-n1.webmanifest","./manifest-b1.webmanifest","./manifest-r1.webmanifest",
          "./iconos/n1/icon.svg","./iconos/n1/icon-192.png","./iconos/n1/icon-512.png","./iconos/n1/icon-maskable-192.png","./iconos/n1/icon-maskable-512.png","./iconos/n1/apple-touch-icon.png",
          "./iconos/b1/icon.svg","./iconos/b1/icon-192.png","./iconos/b1/icon-512.png","./iconos/b1/icon-maskable-192.png","./iconos/b1/icon-maskable-512.png","./iconos/b1/apple-touch-icon.png",
          "./iconos/r1/icon.svg","./iconos/r1/icon-192.png","./iconos/r1/icon-512.png","./iconos/r1/icon-maskable-192.png","./iconos/r1/icon-maskable-512.png","./iconos/r1/apple-touch-icon.png",
-         "./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2"];
+         "./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2","./arc.js"];
 // Las caches son de todo el dominio: v20/ tiene la suya ("copiloto-v20-…") y no
 // se toca. Aqui solo se borran las versiones viejas de la raiz: las X.Y.Z y la
 // "copiloto-v12" de antes del versionado.
@@ -26,6 +26,12 @@ self.addEventListener("fetch",e=>{
     e.respondWith(fetch(r,{cache:"no-store"}).then(res=>{
       const cp=res.clone(); caches.open(C).then(c=>c.put("./index.html",cp)); return res;
     }).catch(()=>caches.match("./index.html")));
+  }else if(u.origin===location.origin && u.pathname.endsWith("/arc.js")){
+    // Arc va aparte del index.html pero cambia con el: red primero, como el
+    // HTML, para que nunca se junte un index nuevo con un arc.js viejo
+    e.respondWith(fetch(r,{cache:"no-store"}).then(res=>{
+      if(res.ok){ const cp=res.clone(); caches.open(C).then(c=>c.put("./arc.js",cp)); } return res;
+    }).catch(()=>caches.match("./arc.js")));
   }else{                            // iconos, manifest y rutas de la app: cache primero
     e.respondWith(caches.match(r).then(x=>x||fetch(r)));
   }});

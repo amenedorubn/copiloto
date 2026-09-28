@@ -25,3 +25,4 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/check-version.mjs
+      - run: node --test tests/*.test.mjs

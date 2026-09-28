@@ -14,7 +14,9 @@ gimnasio. Se sirve con GitHub Pages.
 | Ruta | Qué es |
 |---|---|
 | `index.html` | La app entera (HTML, CSS y JS en un solo fichero). Lleva `APP_VERSION`. |
-| `sw.js` | Service worker. La caché se llama `copiloto-X.Y.Z`. |
+| `arc.js` | Winter Arc: reglas, días, semanas y su pantalla. Va aparte del `index.html` y se carga `async`: si falla, la app arranca igual. Datos en `copiloto.arc.*`. |
+| `tests/` | Tests de Arc (`node --test tests/*.test.mjs`, sin dependencias). Los pasa el Action *Versión coherente*. |
+| `sw.js` | Service worker. La caché se llama `copiloto-X.Y.Z`. `index.html` y `arc.js` van siempre red primero. |
 | `manifest.webmanifest`, `manifest-n1/b1/r1.webmanifest` | Manifest de la PWA, uno por icono elegible. |
 | `iconos/n1/`, `iconos/b1/`, `iconos/r1/` | Los 3 iconos elegibles en Ajustes (Noche, Burdeos, Roma). Créditos en [CREDITOS.md](CREDITOS.md). |
 | `version.json` | Versión publicada: `{"version","fecha","notas"}`. La app lo consulta para saber si hay una nueva. |

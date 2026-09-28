@@ -13,6 +13,17 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.5.0] - 2026-09-28
+
+### Añadido
+
+- Winter Arc (temporada 1/10–31/12 con prólogo en septiembre) y la simulación en su propia pantalla
+- Arc: de 3 a 5 reglas de sí/no, automáticas (Strava/Hevy) o manuales; se editan hasta el 30/09 y se bloquean el 1/10
+- Arc: una línea en la agenda («Arc · Día 12/92 · Semana 2») con los checks del día y un aviso discreto con 2 fallos seguidos
+- Arc: pantalla con la cuadrícula de 92 días, % por regla, revisión semanal (domingo) y el prólogo de septiembre en gris
+- Ajustes: la simulación pasa a su pantalla («Simulación ›»); el diario de voz se queda en Ajustes
+- Tests de días, semanas y prólogo (`node --test tests/*.test.mjs`)
+
 ## [2.4.2] - 2026-09-28
 
 ### Corregido
@@ -309,6 +320,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.5.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.5.0
 [2.4.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.4.2
 [2.4.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.4.1
 [2.4.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.4.0
