@@ -118,20 +118,27 @@ function esTituloSec(l) {
   if (!mayus && !/[:：]\s*$/.test(l)) return null;
   return norm(sin.replace(/\(.*\)/, ""));
 }
+// Google a veces mete la descripcion con etiquetas y entidades HTML, y los eventos llevan emojis
+function sinHtml(t) {
+  return String(t || "").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|h\d)>/gi, "\n").replace(/<li[^>]*>/gi, "· ")
+    .replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&amp;/gi, "&");
+}
+function sinEmoji(t) { return String(t || "").replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{20E3}\u{2B00}-\u{2BFF}]/gu, ""); }
 function comida(ev) {
   ev = ev || {};
-  var tit = String(ev.titulo || "").trim(), et = "";
+  var tit = sinEmoji(ev.titulo || "").replace(/\s+/g, " ").trim(), et = "";
   var p = tit.split(/\s+[·—–|]\s+/);
   if (p.length > 1 && p[0].length <= 24) { et = p[0]; tit = p.slice(1).join(" · "); }
   var out = { uid: ev.uid || "", fecha: ev.fecha || "", hora: ev.hora || "", fin: ev.fin || "",
     titulo: tit, etiqueta: et, raciones: null, ingredientes: [], pasos: [], notas: [], receta: null };
-  var sec = "", hayPasosNum = false, texto = String(ev.texto || "");
+  var sec = "", hayPasosNum = false, texto = sinHtml(ev.texto);
   var id = texto.match(/(?:receta\s*[:=]\s*|[?&]id=)([a-z0-9-]{3,60})/i);
   if (id) out.receta = id[1].toLowerCase();
   var r = (tit + "\n" + texto).match(/(\d+)\s*raci[oó]n(?:es)?/i) || texto.match(/raciones?\s*[:=]\s*(\d+)/i);
   if (r) out.raciones = +r[1];
   texto.split(/\r?\n/).forEach(function (raw) {
-    var l = raw.trim(); if (!l) return;
+    var l = sinEmoji(raw).trim(); if (!l) return;
     if (/^(receta\s*[:=]|https?:\/\/)/i.test(l)) return;
     var s = esTituloSec(l);
     if (s != null) {
@@ -319,13 +326,28 @@ function paraClaude(cambios, fechaNota) {
   }).join("\n");
 }
 
+/* ------------------------------ una rutina, paso a paso ------------------------------
+   Cada linea con hora ("22:10 · Ducha (10 min)") de una rutina del calendario "Claude"
+   es un paso; su reloj (si dice cuanto dura) espera a que toques Empezar.              */
+function pasosGuia(ev) {
+  var P = [];
+  sinHtml(ev && ev.texto).split(/\r?\n/).forEach(function (raw) {
+    var l = sinEmoji(raw).replace(/^[\s\-–—·•*]+/, "").trim(), m = l.match(/^(\d{1,2})[:.h](\d{2})\s*[·\-–—:]\s*(.+)$/);
+    if (!m) return;
+    var x = m[3].trim(), d = x.match(/\s*\((\d+[^)]*(?:min|h))\)\s*$/);
+    P.push({ titulo: d ? x.slice(0, d.index) : x, detalle: "A las " + dos(+m[1]) + ":" + m[2] + (d ? " · " + d[1] : ""),
+             duracion_s: d ? minutosDe(d[1]) * 60 : 0, manual: true });
+  });
+  return P;
+}
+
 function dos(n) { return n < 10 ? "0" + n : "" + n; }
 function mayus1(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
 function corta(iso) { var p = String(iso).split("-"); return (+p[2]) + "/" + (+p[1]); }
 
 var API = { norm: norm, palabras: palabras, cantidad: cantidad, cantTxt: cantTxt, comida: comida, minutosDe: minutosDe,
   despensa: despensa, estadoDe: estadoDe, parecido: parecido, recetaDe: recetaDe, comidasDe: comidasDe,
-  queToca: queToca, faltan: faltan, vigentes: vigentes, paraClaude: paraClaude, partes: partes,
+  queToca: queToca, faltan: faltan, vigentes: vigentes, paraClaude: paraClaude, partes: partes, pasosGuia: pasosGuia,
   RECETAS_URL: RECETAS_URL, K: { recetas: K_RECETAS, cambios: K_CAMBIOS, pasos: K_PASOS, compra: K_COMPRA, nota: K_NOTA } };
 
 /* ================================ pantalla ================================
@@ -537,6 +559,7 @@ function apunta(cb) { var L = cambios(); L.push(cb); guarda(K_CAMBIOS, L.slice(-
 var CTX = null, SEL = null, cont = null, abiertas = {};
 API.pinta = function (c, ctx) {
   ponCSS(); cont = c; CTX = ctx || {};
+  if (CTX.sel) SEL = CTX.sel;                // se abre con una comida de la linea del dia
   pinta();
   recetas(function () { if (cont === c && document.body.contains(c)) pinta(); });
   nota(CTX.conf, function () { if (cont === c && document.body.contains(c)) pinta(); });
@@ -792,12 +815,20 @@ function listaRecetas(D, CB) {
    tanto", como en esa app) o una comida del calendario (un paso por pantalla;
    si el paso dice "10 min", su temporizador). Pantalla encendida y voz.     */
 var M = null, TICK = null, cerrojo = null;
+/* Una rutina del calendario "Claude" (la de noche, p. ej.) con el mismo modo: ver pasosGuia. */
+API.hayGuia = function (ev) { return pasosGuia(ev).length >= 2; };
+API.guia = function (ev, ctx) {
+  var P = pasosGuia(ev); if (P.length < 2) return false;
+  if (ctx) CTX = ctx;
+  abreModo({ guia: { uid: ev.uid, titulo: sinEmoji(ev.titulo).replace(/\s+/g, " ").trim() }, pasosGuia: P });
+  return true;
+};
 function abreModo(q) {
   ponCSS();
-  var J = q.receta, cm = q.comida;
-  var pasos = J ? J.pasos : (q.pasos || cm.pasos).map(function (p) { return { titulo: p.replace(/[.:].*$/, "").slice(0, 60), detalle: p, duracion_s: minutosDe(p) * 60, soloTexto: true }; });
-  var id = J ? "r:" + J.id : "c:" + cm.uid, S = lee("copiloto.cocina.modo." + id, null);
-  M = { id: id, J: J, cm: cm, pasos: pasos, titulo: J ? J.meta.titulo : cm.titulo,
+  var J = q.receta, cm = q.comida, G = q.guia;
+  var pasos = J ? J.pasos : G ? q.pasosGuia : (q.pasos || cm.pasos).map(function (p) { return { titulo: p.replace(/[.:].*$/, "").slice(0, 60), detalle: p, duracion_s: minutosDe(p) * 60, soloTexto: true }; });
+  var id = J ? "r:" + J.id : G ? "g:" + G.uid : "c:" + cm.uid, S = lee("copiloto.cocina.modo." + id, null);
+  M = { id: id, J: J, cm: cm, G: G, pasos: pasos, titulo: J ? J.meta.titulo : G ? G.titulo : cm.titulo,
         S: S && S.paso < pasos.length ? S : { paso: 0, fin: null, pausa: null, avisados: [], checks: {} } };
   if (!S || S.paso >= pasos.length) empiezaPaso(0);
   var tema = J && J.tema || {};
@@ -866,7 +897,7 @@ function pintaModo(habla) {
     (st.consejo ? '<div class="mPar"><h3>Consejo</h3><p>' + esc(st.consejo) + '</p></div>' : "") +
     (sig ? '<p class="mLuego">Luego: ' + esc((sig.soloTexto ? sig.detalle : sig.titulo).toLowerCase().slice(0, 80)) + '</p>' : "") + '</div>' +
     '<div class="mDock"><div class="mFila">' +
-      (st.duracion_s ? '<button class="mPausa">' + svg(M.S.pausa != null ? "play" : "pausa") + (M.S.pausa != null ? (st.soloTexto && M.S.pausa === st.duracion_s ? "Empezar" : "Seguir") : "Pausa") + '</button><button class="mMas">+1 min</button>' : '<span></span><span></span>') +
+      (st.duracion_s ? '<button class="mPausa">' + svg(M.S.pausa != null ? "play" : "pausa") + (M.S.pausa != null ? ((st.soloTexto || st.manual) && M.S.pausa === st.duracion_s ? "Empezar" : "Seguir") : "Pausa") + '</button><button class="mMas">+1 min</button>' : '<span></span><span></span>') +
       '<button class="mHecho">' + (M.S.paso === n - 1 ? "Terminar" : "Hecho") + '</button></div>' +
       (M.S.paso > 0 ? '<button class="mAtras">Paso anterior</button>' : "") + '</div>';
   box.innerHTML = h;
@@ -887,13 +918,13 @@ function pintaModo(habla) {
   Array.prototype.forEach.call(box.querySelectorAll(".mChecks button"), function (b) {
     b.onclick = function () { var k = M.S.paso + "-" + b.getAttribute("data-k"); M.S.checks[k] = !M.S.checks[k]; guardaModo(); pintaModo(false); };
   });
-  if (habla) di(st.voz_inicio || ((st.soloTexto ? "Paso " + (M.S.paso + 1) + ". " : "") + (st.detalle || st.titulo)));
+  if (habla) di(st.voz_inicio || (st.manual ? st.titulo : (st.soloTexto ? "Paso " + (M.S.paso + 1) + ". " : "") + (st.detalle || st.titulo)));
   tick();
 }
 function empiezaPaso(i) {
   var st = M.pasos[i];
   M.S.paso = i; M.S.avisados = []; M.suena = false; M.S.fin = null; M.S.pausa = null;
-  if (st.duracion_s) { if (st.soloTexto) M.S.pausa = st.duracion_s; else M.S.fin = Date.now() + st.duracion_s * 1000; }
+  if (st.duracion_s) { if (st.soloTexto || st.manual) M.S.pausa = st.duracion_s; else M.S.fin = Date.now() + st.duracion_s * 1000; }
   guardaModo();
 }
 function va(i) { empiezaPaso(i); pintaModo(true); }
@@ -923,7 +954,7 @@ function tick() {
     M.S.avisados.push(kf); guardaModo(); M.suena = true; pita(3); di(st.voz_fin || "Tiempo. Toca hecho.");
   }
   if (M.suena && Date.now() - (M.ultPita || 0) > 5000) { M.ultPita = Date.now(); pita(2); }
-  var e = box.querySelector(".mEst"); if (e) e.textContent = M.S.pausa != null ? (st.soloTexto && pasado === 0 ? "Toca Empezar cuando lo pongas al fuego o al micro" : "En pausa") : r <= 0 ? "Tiempo cumplido · toca Hecho" : "";
+  var e = box.querySelector(".mEst"); if (e) e.textContent = M.S.pausa != null ? (pasado === 0 && st.manual ? "Toca Empezar cuando te pongas" : pasado === 0 && st.soloTexto ? "Toca Empezar cuando lo pongas al fuego o al micro" : "En pausa") : r <= 0 ? "Tiempo cumplido · toca Hecho" : "";
   var h = box.querySelector(".mHecho"); if (h) h.classList.toggle("suena", !!M.suena);
 }
 // lo gastado de una receta: sin lo "al gusto" y sumando lo repetido (el ajo de las albondigas y el de la salsa)
@@ -941,8 +972,16 @@ function juntaIngs(L) {
 function fin() {
   clearInterval(TICK); TICK = null;
   var box = document.getElementById("cocModo"), J = M.J, cm = M.cm;
-  var ings = J ? juntaIngs(J.ingredientes) : cm.ingredientes.filter(function (i) { return i.c; }).map(function (i) { return i.txt; });
+  var ings = J ? juntaIngs(J.ingredientes) : cm ? cm.ingredientes.filter(function (i) { return i.c; }).map(function (i) { return i.txt; }) : [];
   var rep = J && J.meta.reparto;
+  if (M.G) {                                // una rutina: sin nada que apuntar
+    box.innerHTML = '<div class="mTop"><button class="mX" aria-label="Salir">' + svg("cerrar") + '</button><span>' + esc(M.titulo) + '</span></div>' +
+      '<div class="mCuerpo mFin"><h2>Hecho</h2><p>' + esc(M.titulo) + ' completa.</p></div><div class="mDock"><button class="mBig">Salir</button></div>';
+    di(/noche/i.test(M.titulo) ? "Hecho. Buenas noches." : "Hecho.");
+    guarda("copiloto.cocina.modo." + M.id, null);
+    box.querySelector(".mX").onclick = box.querySelector(".mBig").onclick = function () { cierraModo(false); };
+    return;
+  }
   box.innerHTML = '<div class="mTop"><button class="mX" aria-label="Salir">' + svg("cerrar") + '</button><span>' + esc(M.titulo) + '</span></div>' +
     '<div class="mCuerpo mFin"><h2>Hecho</h2>' + (rep && rep.taper ? '<p>' + esc(rep.taper) + '</p>' : "") +
     (ings.length ? '<p>¿Lo apunto como gastado en Mis alimentos?</p><ul>' + ings.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join("") + '</ul>' : "") + '</div>' +

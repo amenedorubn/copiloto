@@ -50,6 +50,15 @@ test("una comida del calendario se parte en ingredientes, pasos y notas", () => 
   assert.ok(c.notas.some((n) => /destapado/.test(n)));
 });
 
+test("una descripcion con HTML de Google y emojis se lee igual", () => {
+  const c = C.comida({ titulo: "🍗 Tupper · Pollo al curry", texto:
+    "<b>🥣 INGREDIENTES:</b><br><ul><li>✅ 500 g solomillos de pollo</li><li>1 cebolla</li></ul><b>CÓMO SE HACE:</b><br>1. Dora el pollo&nbsp;6 min.<br>2. Añade la cebolla." });
+  assert.equal(c.titulo, "Pollo al curry");
+  assert.equal(c.etiqueta, "Tupper");
+  assert.deepEqual(c.ingredientes.map((i) => i.txt), ["500 g solomillos de pollo", "1 cebolla"]);
+  assert.deepEqual(c.pasos, ["Dora el pollo 6 min.", "Añade la cebolla."]);
+});
+
 test("una comida sin apartados: las viñetas con cantidad son ingredientes y los numeros, pasos", () => {
   const c = C.comida({ titulo: "Tostada con huevo", texto: "- 1 rebanada de pan\n- 2 huevos\n1. Tuesta el pan.\n2. Huevos a la plancha 3 min." });
   assert.equal(c.ingredientes.length, 2);
@@ -130,6 +139,13 @@ test("lo que toca: la comida en curso o la siguiente", () => {
   assert.equal(C.queToca(L, "2026-10-01", "15:30").titulo, "Comida", "90 min despues sigue siendo la de ahora");
   assert.equal(C.queToca(L, "2026-10-01", "16:30").titulo, "Cena");
   assert.equal(C.queToca(L, "2026-10-01", "23:00"), null);
+});
+
+test("una rutina con horas se hace paso a paso; su reloj sale de lo que dura", () => {
+  const P = C.pasosGuia({ titulo: "Rutina de noche", texto: "RUTINA:\n21:40 · Overnight oats para mañana (10 min)\n22:00 · Ducha\n· 22:10 · Leer (10 min)\nNotas sueltas" });
+  assert.deepEqual(P.map((p) => [p.titulo, p.duracion_s]), [["Overnight oats para mañana", 600], ["Ducha", 0], ["Leer", 600]]);
+  assert.equal(P[0].detalle, "A las 21:40 · 10 min");
+  assert.equal(C.pasosGuia({ texto: "Sin horas" }).length, 0);
 });
 
 test("lo que falta para las comidas y el texto para Claude", () => {

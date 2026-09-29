@@ -483,6 +483,7 @@
   .linAhora span::after{content:"";flex:1;height:1px;background:currentColor;opacity:.5}
   .linAviso{font-size:13px;font-weight:600;color:#ffb4a0;margin:-2px 6px 12px}
   .det{background:var(--sf);border-radius:20px;padding:6px 16px 10px;margin-top:6px}
+  .det .linGuia{display:flex;width:100%;align-items:center;justify-content:center;margin:10px 0 4px;font-size:15px;font-weight:700}
   .detTxt{margin:8px 0;font-size:14px;font-weight:500;line-height:1.5;color:#c9cdd3}
   .detTxt b,.detLi b,.detPasos b{font-weight:700;color:var(--fg)}
   .detSub{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 4px}
@@ -4407,6 +4408,11 @@ function itemDia(it,esSig,iSel,ya){
   cu.appendChild(cab);
   if(hayMas){
     var det=detalleDia(B); det.hidden=!abierto; cu.appendChild(det);
+    // v2.20: la comida se cocina en Cocina; una rutina con horas se hace paso a paso
+    if(window.Cocina && Cocina.pinta){
+      var bg=com ? el("button","bSec linGuia","Abrir en Cocina") : (Cocina.hayGuia(e) ? el("button","bSec linGuia","Paso a paso") : null);
+      if(bg){ bg.addEventListener("click",function(){ if(com) abreCocina(null,e.uid); else Cocina.guia(e,{ marca:marca, atrasManual:atrasManual }); }); det.appendChild(bg); }
+    }
     cab.setAttribute("aria-expanded",abierto);
     cab.addEventListener("click",function(){ var v=det.hidden; det.hidden=!v; cab.setAttribute("aria-expanded",v); abiertosDia[e.uid]=v; });
   }else cab.disabled=true;
@@ -5674,10 +5680,10 @@ function pintaStats(c){
 /* v2.20 · Cocina: lo que toca comer (calendario "Comidas"), cómo se hace paso a paso
    (las recetas de Copiloto Cocina), la compra y lo que hay en casa (la nota de la
    despensa, por el Worker). Todo lo pinta cocina.js.                                */
-function abreCocina(vuelve){
+function abreCocina(vuelve,sel){
   var c=abrePant("cocina","Cocina","Lo que toca, la compra y lo que hay en casa",vuelve);
   if(!window.Cocina || !Cocina.pinta){ c.innerHTML='<div class="stVacio">Falta un archivo de la app. Actualízala.</div>'; return; }
-  try{ Cocina.pinta(c,{ dia:(datos && datos.dia) || [], hoy:hoyISO(), ahora:ahoraHM(), conf:conf, marca:marca, atrasManual:atrasManual }); }
+  try{ Cocina.pinta(c,{ dia:(datos && datos.dia) || [], hoy:hoyISO(), ahora:ahoraHM(), conf:conf, marca:marca, atrasManual:atrasManual, sel:sel||null }); }
   catch(e){ c.innerHTML='<div class="vacio2">No se ha podido abrir. '+esc(String(e && e.message || e))+'</div>'; }
 }
 function abreSim(vuelve){

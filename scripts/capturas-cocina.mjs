@@ -31,7 +31,9 @@ const EJEMPLO = {
       texto: "INGREDIENTES:\n· 1 brick de crema de verduras\n· 1 rebanada de pan\n· 2 lonchas de pavo\nCÓMO SE HACE:\n1. Calienta la crema 3 min al micro.\n2. Tostada con el pavo." },
     { uid: "c4", fuente: "comida", fecha: "2026-10-02", hora: "14:30", titulo: "Tupper · Albóndigas con rigatoni",
       texto: "Sale del congelador la noche antes.\nCÓMO SE HACE:\n1. Al micro 3-4 min, removiendo a la mitad.\n2. Si queda espeso, un chorrito de agua." },
-    { uid: "c5", fuente: "comida", fecha: "2026-10-03", hora: "14:00", titulo: "Curry de pollo con arroz", texto: "Receta: curry-pollo\n2 raciones" }
+    { uid: "c5", fuente: "comida", fecha: "2026-10-03", hora: "14:00", titulo: "Curry de pollo con arroz", texto: "Receta: curry-pollo\n2 raciones" },
+    { uid: "r1", fuente: "rutina", fecha: "2026-10-01", hora: "21:40", fin: "22:20", titulo: "Rutina de noche · cama 22:20",
+      texto: "21:40 · Prepara la comida de mañana (10 min)\n22:00 · Ducha (10 min)\n22:10 · Leer (10 min)\n22:20 · Cama, móvil fuera" }
   ],
   nota: "DESPENSA EN VIVO — última actualización: 29/09/2026 (noche)\n\n\\## CONGELADOR\nBolsas: cebolla troceada, ajo troceado, 4 bolsas de arroz de microondas (3 min)\n\n" +
     "\\## NEVERA\nLeche semi abierta, yogur natural, 2 lonchas de pavo, 1 tomate\n\n\\## DESPENSA SECA\n6 huevos, rigatoni (1 kg), bote de tomate triturado 800 g, pan rallado, sal, AOVE, pan de molde\n\n" +
@@ -96,6 +98,20 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocFila:has-text('Mañana')"); await p.waitForTimeout(500);
     await p.click(".cocGo"); await p.waitForTimeout(600);
     await p.screenshot({ path: `${OUT}modo-calendario.png` });
+    // en HOY: la comida se abre en Cocina y la rutina con horas, paso a paso
+    await p.click("#cocModo .mX"); await p.waitForTimeout(400);
+    await p.click("#ptVolver"); await p.waitForTimeout(700);
+    const lin = await p.$(".linDia");
+    if (lin) {
+      await p.click(".linIt:has-text('Rutina') .linCab"); await p.waitForTimeout(300);
+      const pl = await p.addStyleTag({ content: "html,body{overflow:visible!important;height:auto!important}#appHoy{position:static!important;min-height:844px}#hCuerpo{overflow:visible!important;flex:none!important}" });
+      await (await p.$(".hTop")).screenshot({ path: `${OUT}hoy-cabecera.png` });
+      await (await p.$(".linIt:has-text('Rutina')")).screenshot({ path: `${OUT}hoy-rutina.png` });
+      await (await p.$(".linIt.sig")).screenshot({ path: `${OUT}hoy-comida.png` });
+      await pl.evaluate((n) => n.remove());
+      await p.click(".linIt:has-text('Rutina') .linGuia"); await p.waitForTimeout(600);
+      await p.screenshot({ path: `${OUT}modo-rutina.png` });
+    } else console.log("sin linea del dia");
   }
   await p.close();
   process.stdout.write(tema + " ");
