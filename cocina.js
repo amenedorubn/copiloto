@@ -373,11 +373,21 @@ var CSS =
   ".cocSec>h3{margin:0;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}" +
   ".cocSec>p.sub{margin:4px 0 0;font-size:13px;font-weight:600;color:var(--mu)}" +
   ".cocHero em{display:block;font-style:normal;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--coc)}" +
-  ".cocHero h2{margin:6px 0 4px;font-size:28px;line-height:1.08;font-weight:800;letter-spacing:-.02em}" +
+  ".cocHero h2{margin:6px 0 4px;font-size:32px;line-height:1.08;font-weight:800;letter-spacing:-.02em}" +
   ".cocMeta{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}" +
   ".cocMeta span{font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;background:var(--sf2);color:var(--fg)}" +
   ".cocSub{margin:16px 0 6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);display:flex;justify-content:space-between;gap:8px}" +
   ".cocSub b{font-weight:700;letter-spacing:0;text-transform:none;color:var(--mu)}" +
+  ".cocLinea{margin:12px 0 0;font-size:14px;font-weight:700;line-height:1.5;color:var(--mu)}" +
+  ".cocAhora{margin-top:14px;background:var(--sf2);border-radius:18px;padding:14px}" +
+  ".cocAhora p{margin:8px 0 0;font-size:20px;line-height:1.4;font-weight:700}" +
+  ".cocAhora small{display:block;margin-top:8px;font-size:13px;font-weight:600;line-height:1.5;color:var(--mu)}" +
+  ".cocPuntos{display:flex;align-items:center;gap:5px}" +
+  ".cocPuntos i{width:18px;height:5px;border-radius:3px;background:var(--ln)}.cocPuntos i.ya{background:var(--mu)}.cocPuntos i.ahora{background:var(--fg)}" +
+  ".cocPuntos span{margin-left:6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}" +
+  ".cocListo{margin-top:12px;height:48px;padding:0 20px!important;border-radius:24px!important;background:var(--fg)!important;color:var(--bg)!important;font-size:15px!important;font-weight:800!important;display:inline-flex;align-items:center;gap:8px}" +
+  ".cocListo svg{width:16px;height:16px}" +
+  ".tj.cocTj{background:linear-gradient(160deg,#e3894e 0%,#c0652f 55%,#98491e 100%);--osc:#98491e}" +
   ".cocIng{list-style:none;margin:0;padding:0}" +
   ".cocIng li{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--ln);font-size:15px;font-weight:600}" +
   ".cocIng li:first-child{border-top:0}" +
@@ -387,13 +397,13 @@ var CSS =
   ".cocIng small{font-size:12px;font-weight:700;color:var(--mu);text-align:right}" +
   ".cocPasos{list-style:none;margin:0;padding:0}" +
   ".cocPasos li{border-top:1px solid var(--ln)}.cocPasos li:first-child{border-top:0}" +
-  ".cocPasos button{width:100%;display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start;text-align:left;padding:10px 0;min-height:48px;font-size:15px;font-weight:600;line-height:1.35;color:var(--fg)}" +
+  ".cocPasos button{width:100%;display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start;text-align:left;padding:10px 0;min-height:48px;font-size:15px;font-weight:600;line-height:1.5;color:var(--fg)}" +
   ".cocPasos button i{width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--ln);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px;font-weight:800;color:var(--mu)}" +
   ".cocPasos button[aria-pressed=true] i{background:var(--fg);box-shadow:none;color:var(--bg)}" +
   ".cocPasos button[aria-pressed=true] i svg{width:16px;height:16px}" +
   ".cocPasos button[aria-pressed=true] span{color:var(--mu);text-decoration:line-through;text-decoration-thickness:1px}" +
   ".cocPasos b{font-weight:800}" +
-  ".cocNota{margin:10px 0 0;font-size:13px;font-weight:600;line-height:1.4;color:var(--mu)}" +
+  ".cocNota{margin:10px 0 0;font-size:13px;font-weight:600;line-height:1.5;color:var(--mu)}" +
   ".cocGo{width:100%;height:56px;border-radius:28px;background:var(--coc)!important;color:#140b04!important;font-size:17px!important;font-weight:800!important;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px}" +
   "html[data-tema=claro] .cocGo{color:#fff!important}" +
   ".cocGo svg{width:20px;height:20px}" +
@@ -403,15 +413,16 @@ var CSS =
   ".cocFila time b{display:block;font-size:13px;color:var(--fg)}" +
   ".cocFila span{font-size:15px;font-weight:700;line-height:1.25;min-width:0}" +
   ".cocFila span small{display:block;font-size:12px;font-weight:600;color:var(--mu);margin-top:2px}" +
-  ".cocFila.sel span{color:var(--coc)}" +
+  ".cocFila.sel{box-shadow:inset 3px 0 0 var(--fg);padding-left:10px;margin-left:-10px;width:calc(100% + 10px)}" +
   ".cocEtq{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);white-space:nowrap}" +
   ".cocZona{margin-top:12px}.cocZona h4{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--fg)}" +
+  ".cocZonaCab{display:block;width:100%;text-align:left;min-height:32px;color:var(--fg)}" +
   ".cocZona h4 small{font-weight:700;color:var(--mu);margin-left:6px}" +
   ".cocPills{display:flex;flex-wrap:wrap;gap:6px}" +
   ".cocPills span{font-size:13px;font-weight:600;padding:6px 10px;border-radius:12px;background:var(--sf2);color:var(--fg);max-width:100%}" +
   ".cocPills span b{font-weight:800;margin-left:4px;color:var(--mu)}" +
   ".cocPills.no span{background:none;box-shadow:inset 0 0 0 1px var(--ln);color:var(--mu)}" +
-  ".cocPills span.nuevo{box-shadow:inset 0 0 0 1.5px var(--coc)}" +
+  ".cocPills span.nuevo{box-shadow:inset 0 0 0 1.5px var(--fg)}" +
   ".cocPills span.gastado{text-decoration:line-through;color:var(--mu)}" +
   ".cocCompra{list-style:none;margin:0;padding:0}" +
   ".cocCompra button{width:100%;display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:center;text-align:left;min-height:48px;padding:6px 0;border-top:1px solid var(--ln);font-size:15px;font-weight:600;color:var(--fg)}" +
@@ -422,7 +433,7 @@ var CSS =
   ".cocCompra small{display:block;font-size:12px;font-weight:600;color:var(--mu)}" +
   ".cocBtn{width:100%;height:48px;border-radius:24px;border:1px solid var(--ln)!important;background:var(--sf2)!important;color:var(--fg);font-size:15px!important;font-weight:700!important;margin-top:12px}" +
   ".cocBtn:disabled{opacity:.5}" +
-  ".cocVacio{font-size:14px;font-weight:600;line-height:1.45;color:var(--mu);margin:8px 0 0}" +
+  ".cocVacio{font-size:14px;font-weight:600;line-height:1.5;color:var(--mu);margin:8px 0 0}" +
   ".cocVacio b{color:var(--fg)}" +
   /* ---- modo cocina ---- */
   "#cocModo{position:fixed;inset:0;z-index:90;background:var(--cb,#101113);color:#f4f5f7;display:flex;flex-direction:column;font-family:Manrope,sans-serif;" +
@@ -435,13 +446,13 @@ var CSS =
   "#cocModo .mTop span{flex:1;min-width:0;font-size:13px;font-weight:700;color:#9aa0a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
   "#cocModo .mProg{display:flex;gap:4px;margin:4px 0 14px;flex:0 0 auto}" +
   "#cocModo .mProg i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.12)}" +
-  "#cocModo .mProg i.ya{background:rgba(255,255,255,.55)}#cocModo .mProg i.ahora{background:var(--ca,#f08a4b)}" +
+  "#cocModo .mProg i.ya{background:rgba(255,255,255,.45)}#cocModo .mProg i.ahora{background:#f4f5f7}" +
   "#cocModo .mCuerpo{flex:1 1 auto;overflow:auto;min-height:0}" +
-  "#cocModo .mPaso{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ca,#f08a4b)}" +
+  "#cocModo .mPaso{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9aa0a8}" +
   "#cocModo .mTags{display:inline-flex;gap:6px;margin-left:8px;vertical-align:1px}" +
   "#cocModo .mTags span{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:none;color:#f4f5f7;background:rgba(255,255,255,.1);padding:3px 8px;border-radius:99px}" +
-  "#cocModo h2{margin:8px 0 8px;font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.02em}" +
-  "#cocModo .mDet{margin:0;font-size:19px;line-height:1.4;font-weight:600;color:#dfe2e6}" +
+  "#cocModo h2{margin:8px 0 8px;font-size:32px;line-height:1.1;font-weight:800;letter-spacing:-.02em}" +
+  "#cocModo .mDet{margin:0;font-size:19px;line-height:1.5;font-weight:600;color:#dfe2e6}" +
   "#cocModo .mDet b{color:#fff}" +
   "#cocModo .mUsa{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}" +
   "#cocModo .mUsa li{font-size:14px;font-weight:600;background:rgba(255,255,255,.08);padding:7px 10px;border-radius:12px}" +
@@ -456,10 +467,10 @@ var CSS =
   "#cocModo .mAvisos li{display:grid;grid-template-columns:52px 1fr;gap:8px;font-size:15px;font-weight:600;padding:6px 0;border-top:1px solid rgba(255,255,255,.08);color:#dfe2e6}" +
   "#cocModo .mAvisos li b{font-variant-numeric:tabular-nums;color:#9aa0a8}" +
   "#cocModo .mAvisos li.ya{color:#6f757d;text-decoration:line-through}" +
-  "#cocModo .mAvisos li.sig b{color:var(--ca,#f08a4b)}" +
+  "#cocModo .mAvisos li.sig{color:#fff}#cocModo .mAvisos li.sig b{color:#fff}" +
   "#cocModo .mPar{margin:14px 0 0;border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.06)}" +
   "#cocModo .mPar h3{margin:0 0 4px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9aa0a8}" +
-  "#cocModo .mPar p{margin:0;font-size:16px;line-height:1.4;font-weight:600}" +
+  "#cocModo .mPar p{margin:0;font-size:16px;line-height:1.5;font-weight:600}" +
   "#cocModo .mChecks{list-style:none;margin:12px 0 0;padding:0}" +
   "#cocModo .mChecks button{width:100%;border-radius:0;display:grid;grid-template-columns:28px 1fr;gap:12px;text-align:left;align-items:center;min-height:48px;background:none;color:#f4f5f7;font-size:16px;font-weight:600;border-top:1px solid rgba(255,255,255,.08)}" +
   "#cocModo .mChecks button i{width:24px;height:24px;border-radius:7px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center}" +
@@ -523,7 +534,7 @@ function cambios() { return lee(K_CAMBIOS, []); }
 function apunta(cb) { var L = cambios(); L.push(cb); guarda(K_CAMBIOS, L.slice(-200)); }
 
 /* ------------------------------ la pantalla ------------------------------ */
-var CTX = null, SEL = null, cont = null;
+var CTX = null, SEL = null, cont = null, abiertas = {};
 API.pinta = function (c, ctx) {
   ponCSS(); cont = c; CTX = ctx || {};
   pinta();
@@ -603,7 +614,58 @@ function hero(cm, D, CB, hoy, ahora) {
     go.addEventListener("click", function () { abreModo(J ? { receta: J } : { comida: cm, pasos: pasos }); });
     s.appendChild(go);
   }
+  if (DIS === "B") return heroB(s, cm, J, pasos, ings, D, CB);
+  if (DIS === "C") return heroC(s, cm, J, pasos, ings, D, CB, h);
   return s;
+}
+/* Tres diseños de "Ahora toca" para elegir (copiloto.cocina.diseno; A por defecto):
+   A · todo a la vista: ingredientes y pasos en la tarjeta
+   B · solo lo que toca ahora: el paso siguiente en grande y lo que falta en una línea
+   C · como las tarjetas de HOY: color de comida, lo esencial y un botón            */
+var DIS = lee("copiloto.cocina.diseno", "A");
+API.diseno = function (d) { if (/^[ABC]$/.test(d)) { DIS = d; guarda("copiloto.cocina.diseno", d); if (cont) pinta(); } return DIS; };
+function resumenIngs(ings, D, CB) {
+  if (!ings.length) return "";
+  if (!D) return ings.length + " ingredientes";
+  var no = ings.filter(function (i) { return estadoDe(i, D, CB).estado === "no"; });
+  return !no.length ? "Todo en casa · " + ings.length + " ingredientes"
+    : "Falta " + no.slice(0, 2).map(function (i) { return (i.cant ? i.nombre : cantidad(i.txt) ? cantidad(i.txt).resto : i.nombre).replace(/\s*\(.*\)$/, "").toLowerCase(); }).join(" y ") +
+      (no.length > 2 ? " y " + (no.length - 2) + " más" : "") + " · " + (ings.length - no.length) + " de " + ings.length + " en casa";
+}
+function heroB(s, cm, J, pasos, ings, D, CB) {
+  var cab = s.querySelector("em").outerHTML + s.querySelector("h2").outerHTML + (s.querySelector(".cocMeta") ? s.querySelector(".cocMeta").outerHTML : "");
+  var go = s.querySelector(".cocGo");
+  var n = el("section", "cocSec cocHero");
+  n.innerHTML = cab;
+  if (ings.length) n.appendChild(el("p", "cocLinea", esc(resumenIngs(ings, D, CB))));
+  if (pasos.length) {
+    var P = lee(K_PASOS, {}), mio = P[cm.uid] || { i: [] }, k = 0;
+    while (k < pasos.length && mio.i[k]) k++;
+    var puntos = pasos.map(function (_, j) { return '<i class="' + (mio.i[j] ? "ya" : j === k ? "ahora" : "") + '"></i>'; }).join("");
+    var caja = el("div", "cocAhora");
+    if (k < pasos.length) {
+      caja.innerHTML = '<div class="cocPuntos">' + puntos + '<span>Paso ' + (k + 1) + ' de ' + pasos.length + '</span></div><p>' + negritas(pasos[k]) + '</p>' +
+        (pasos[k + 1] ? '<small>Luego: ' + esc(pasos[k + 1].slice(0, 70)) + '</small>' : "");
+      var ok = el("button", "cocListo", svg("tick") + "Hecho");
+      ok.addEventListener("click", function () { var Q = lee(K_PASOS, {}); Q[cm.uid] = Q[cm.uid] || { i: [] }; Q[cm.uid].i[k] = true; Q[cm.uid].t = Date.now(); guarda(K_PASOS, Q); pinta(); });
+      caja.appendChild(ok);
+    } else caja.innerHTML = '<div class="cocPuntos">' + puntos + '<span>Todo hecho</span></div><p>Buen provecho.</p>';
+    n.appendChild(caja);
+  }
+  if (go) n.appendChild(go);
+  return n;
+}
+function heroC(s, cm, J, pasos, ings, D, CB, cabHtml) {
+  var go = s.querySelector(".cocGo");
+  var n = el("article", "tj cocTj");
+  var ojo = s.querySelector("em").textContent, meta = [].map.call(s.querySelectorAll(".cocMeta span"), function (x) { return x.textContent; });
+  var largo = cm.titulo.length > 26 ? (cm.titulo.length > 44 ? " muyLargo" : " largo") : "";
+  n.innerHTML = '<div class="tjFondo">' + svg("olla") + '</div><div class="tjEye">' + esc(ojo) + '</div><h3 class="tjTit' + largo + '">' + esc(cm.titulo) + '</h3>' +
+    (meta.length ? '<div class="tjMeta">' + meta.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join("") + '</div>' : "") +
+    '<ul class="tjGym">' + (ings.length ? '<li><span>' + esc(resumenIngs(ings, D, CB)) + '</span></li>' : "") +
+    (pasos.length ? '<li><span>Cómo se hace</span><b>' + pasos.length + ' pasos</b></li>' : "") + '</ul>';
+  if (go) { var g = el("button", "tjGo", svg("olla") + esc(go.textContent)); g.onclick = go.onclick; g.addEventListener("click", function () { go.click(); }); n.appendChild(g); }
+  return n;
 }
 
 function recalienta(cm) { return !cm.receta && /tupper|sobras|recalent/i.test(cm.etiqueta + " " + cm.titulo); }
@@ -680,7 +742,13 @@ function alimentos(D, CB) {
   }
   D.zonas.forEach(function (z) {
     if (!z.items.length) return;
-    var d = el("div", "cocZona", '<h4>' + esc(z.zona) + '<small>' + z.items.length + '</small></h4>'), p = el("div", "cocPills");
+    // las especias casi nunca cambian: plegadas, se abren con un toque
+    var plegada = /especia/i.test(z.zona) && !abiertas[z.zona];
+    var d = el("div", "cocZona"), cab = el("button", "cocZonaCab", '<h4>' + esc(z.zona) + '<small>' + z.items.length + (plegada ? " · ver" : "") + '</small></h4>'), p = el("div", "cocPills");
+    cab.setAttribute("aria-expanded", !plegada);
+    cab.addEventListener("click", function () { abiertas[z.zona] = plegada; pinta(); });
+    d.appendChild(cab);
+    if (plegada) { s.appendChild(d); return; }
     z.items.forEach(function (x) {
       var g = gastados.some(function (y) { return parecido(cantidad(y) ? cantidad(y).resto : y, x.nombre) > 0; });
       p.appendChild(el("span", g ? "gastado" : "", esc(x.nombre) + (x.c ? '<b>' + esc(cantTxt(x.c)) + '</b>' : "")));

@@ -71,6 +71,16 @@ for (const tema of ["oscuro", "claro"]) {
   const pant = "html,body{overflow:visible!important;height:auto!important}#appHoy{display:none!important}#appPant{position:static!important;min-height:844px}#ptCuerpo{overflow:visible!important}";
   const d1 = await p.addStyleTag({ content: pant });
   await p.screenshot({ path: `${OUT}cocina-${tema}.png`, fullPage: true });
+  // una captura corta por seccion, para comparar de un vistazo
+  const secs = await p.$$("#ptCuerpo .cocSec");
+  const nom = ["toca", "semana", "compra", "alimentos", "recetas"];
+  for (let i = 0; i < secs.length; i++) await secs[i].screenshot({ path: `${OUT}${tema}-${i + 1}-${nom[i] || i}.png` });
+  // los tres diseños de "Ahora toca", para elegir
+  for (const d of ["A", "B", "C"]) {
+    await p.evaluate((d) => window.Cocina.diseno(d), d); await p.waitForTimeout(250);
+    await (await p.$("#ptCuerpo > :first-child")).screenshot({ path: `${OUT}${tema}-toca-${d}.png` });
+  }
+  await p.evaluate(() => window.Cocina.diseno("A"));
   await d1.evaluate((n) => n.remove());
   if (tema === "oscuro") {
     await p.screenshot({ path: `${OUT}cocina-arriba.png` });
