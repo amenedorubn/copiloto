@@ -43,3 +43,15 @@ test("si startViewTransition lanza, fn se ejecuta igualmente una vez", () => {
   assert.equal(T.conTransicion(() => { n++; }, entorno(doc)), false);
   assert.equal(n, 1);
 });
+
+test("antes() corre antes de animar y alTerminar() al acabar; sin animar no corren", async () => {
+  const orden = [];
+  const doc = { startViewTransition(fn) { orden.push("svt"); fn(); return { finished: Promise.resolve() }; } };
+  const r = T.conTransicion(() => orden.push("fn"), entorno(doc, { antes: () => orden.push("antes"), alTerminar: () => orden.push("fin") }));
+  await Promise.resolve(); await Promise.resolve();
+  assert.equal(r, true);
+  assert.deepEqual(orden, ["antes", "svt", "fn", "fin"]);
+  const o2 = [];
+  T.conTransicion(() => o2.push("fn"), entorno(docFalso(false), { antes: () => o2.push("antes"), alTerminar: () => o2.push("fin") }));
+  assert.deepEqual(o2, ["fn"]);
+});
