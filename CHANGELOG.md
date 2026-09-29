@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.18.0] - 2026-09-29
+
+### Añadido
+
+- App Android: vuelve la voz de tu móvil (Miro queda a elegir, sin internet) y, mientras habla, la música se calla y sigue sola (Android no deja bajarla de otra app por debajo del 20 %)
+
 ## [2.17.2] - 2026-09-29
 
 ### Corregido
@@ -446,6 +452,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.18.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.18.0
 [2.17.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.17.2
 [2.17.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.17.1
 [2.17.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.17.0

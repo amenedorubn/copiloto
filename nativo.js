@@ -4,10 +4,10 @@
    En el navegador no hace nada (window.Nativo.es === false): la PWA sigue
    exactamente igual. Dentro del APK:
 
-   - Voz: window.speechSynthesis compatible que habla con la voz neuronal que
-     va dentro de la app (Miro, sin internet) y, si esa fallara, con la del
-     sistema. Pide el foco de audio "transitorio con atenuacion": Spotify
-     baja el volumen mientras habla y vuelve solo (en Chrome no se podia).
+   - Voz: window.speechSynthesis compatible que habla con la voz del movil o
+     con Miro, la neuronal que va dentro de la app (sin internet), a elegir.
+     Mientras habla, Spotify se pausa y sigue solo (o baja al 20 %, a elegir);
+     en Chrome se paraba y habia que darle a play.
    - Pantalla encendida: navigator.wakeLock con el flag nativo de Android.
    - Actualizaciones: la web va dentro del APK. Las versiones nuevas se bajan
      como zip de las releases de GitHub y se aplican al abrir la app (o con
@@ -31,14 +31,22 @@
       return !!(h && (h.methods || []).some(function (m) { return m.name === metodo; }));
     } catch (e) { return false; }
   }
-  // la musica mientras habla: "baja" (por defecto, como Google Maps: Android la deja al 20 %),
-  // "pausa" (Spotify se para y sigue solo) o "nada" (la voz por encima, la musica no cambia)
-  var LSM = "copiloto.musica", MODOS = ["baja", "pausa", "nada"];
+  // la musica mientras habla: "pausa" (por defecto: Spotify se calla y sigue solo), "baja"
+  // (como Google Maps: Android la deja al 20 %, no deja menos) o "nada" (la voz por encima)
+  var LSM = "copiloto.musica2", MODOS = ["pausa", "baja", "nada"];
   N.musica = function (v) {
     try {
       if (MODOS.indexOf(v) >= 0) localStorage.setItem(LSM, v);
-      var m = localStorage.getItem(LSM); return MODOS.indexOf(m) >= 0 ? m : "baja";
-    } catch (e) { return "baja"; }
+      var m = localStorage.getItem(LSM); return MODOS.indexOf(m) >= 0 ? m : "pausa";
+    } catch (e) { return "pausa"; }
+  };
+  // la voz: "movil" (por defecto, la que tiene el telefono) o "miro" (la de la app, sin internet)
+  var LSV = "copiloto.voz", VOCES = ["movil", "miro"];
+  N.voz = function (v) {
+    try {
+      if (VOCES.indexOf(v) >= 0) localStorage.setItem(LSV, v);
+      var m = localStorage.getItem(LSV); return VOCES.indexOf(m) >= 0 ? m : "movil";
+    } catch (e) { return "movil"; }
   };
   function musica() { var m = N.musica(); return { pausa: m === "pausa", sinFoco: m === "nada" }; }
 
@@ -67,7 +75,7 @@
       }
       try {
         var mm = musica();
-        C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1, pausa: mm.pausa, sinFoco: mm.sinFoco }, function (r, err) {
+        C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1, pausa: mm.pausa, sinFoco: mm.sinFoco, voz: N.voz() }, function (r, err) {
           if (err || !r) { cierra("error", { error: "synthesis-failed" }); return; }
           if (r.evento === "inicio") { if (!cerrada) avisa(f, "start"); }
           else if (r.evento === "fin") cierra("end");

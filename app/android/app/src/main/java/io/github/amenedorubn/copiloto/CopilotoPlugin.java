@@ -42,9 +42,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Lo nativo de Copiloto: la voz y la pantalla encendida.
  *
- * Voz: primero la neuronal que va dentro de la app (Piper "Miro", es-ES, con
- * sherpa-onnx: no necesita internet ni depende del motor de voz del movil).
- * Si no carga, la del sistema (TextToSpeech). En los dos casos pide el foco de
+ * Voz: la del movil (TextToSpeech, la que el usuario tiene elegida) o la neuronal
+ * que va dentro de la app (Piper "Miro", es-ES, con sherpa-onnx), segun pida la web.
+ * Si la elegida no esta, la otra. En los dos casos pide el foco de
  * audio transitorio y con uso "guia de navegacion", como las apps de navegacion:
  * la musica baja (o se pausa, si se elige asi) mientras habla y vuelve sola al
  * acabar. El foco se retiene desde el pitido hasta el final de la frase y se
@@ -177,6 +177,7 @@ public class CopilotoPlugin extends Plugin {
         Float v = call.getFloat("velocidad", 1f);
         final float velocidad = Math.max(0.5f, Math.min(2f, v == null ? 1f : v));
         final int musica = modo(call);
+        final boolean delMovil = !"miro".equals(call.getString("voz", "miro"));
         final Frase f = new Frase(call, turno.incrementAndGet());
         corta(); // la frase nueva corta la anterior
         if (texto == null || texto.trim().isEmpty()) {
@@ -187,6 +188,10 @@ public class CopilotoPlugin extends Plugin {
         hilo.execute(() -> {
             if (f.turno != turno.get()) {
                 cierra(f, "cortada", null);
+                return;
+            }
+            if (delMovil && sistemaListo) { // la voz del movil, si esta lista
+                hablaSistema(f, texto, velocidad, musica);
                 return;
             }
             OfflineTts t = neural;

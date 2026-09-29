@@ -51,7 +51,7 @@ test("voz: inicio -> onstart, fin -> onend, y speaking se apaga", () => {
   const u = new w.SpeechSynthesisUtterance("Kilómetro cinco");
   u.rate = 1.02; u.onstart = () => ev.push("start"); u.onend = () => ev.push("end"); u.onerror = (e) => ev.push("error:" + e.error);
   w.speechSynthesis.speak(u);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "hablar", { texto: "Kilómetro cinco", velocidad: 1.02, pausa: false, sinFoco: false }]);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "hablar", { texto: "Kilómetro cinco", velocidad: 1.02, pausa: true, sinFoco: false, voz: "movil" }]);
   assert.equal(w.speechSynthesis.speaking, true);
   m.callbacks[0]({ evento: "inicio" }); m.callbacks[0]({ evento: "fin" });
   m.callbacks[0]({ evento: "fin" });                         // un segundo cierre no se repite
@@ -72,20 +72,31 @@ test("voz: cancel pide callar", () => {
   assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "callar", {}]);
 });
 
-test("musica: por defecto baja; si se elige pausa, la voz y el pitido lo piden", async () => {
+test("musica: por defecto se calla y sigue; se puede bajar o no tocar", async () => {
   const m = movil(), w = m.window;
-  assert.equal(w.Nativo.musica(), "baja");
+  assert.equal(w.Nativo.musica(), "pausa");
   await w.Nativo.tono(true);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: false, sinFoco: false }]);
-  assert.equal(w.Nativo.musica("pausa"), "pausa");
-  assert.equal(w.Nativo.musica("otra cosa"), "pausa");        // lo que no vale no se guarda
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: true, sinFoco: false }]);
+  assert.equal(w.Nativo.musica("baja"), "baja");
+  assert.equal(w.Nativo.musica("otra cosa"), "baja");         // lo que no vale no se guarda
   await w.Nativo.tono(false);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: false, pausa: true, sinFoco: false }]);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: false, pausa: false, sinFoco: false }]);
+  assert.equal(w.Nativo.musica("pausa"), "pausa");
   w.speechSynthesis.speak(new w.SpeechSynthesisUtterance("hola"));
   assert.equal(m.llamadas.at(-1)[2].pausa, true);
   assert.equal(w.Nativo.musica("nada"), "nada");            // la voz por encima: sin foco
   await w.Nativo.tono(true);
   assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: false, sinFoco: true }]);
+});
+test("voz: por defecto la del movil; se puede elegir Miro", () => {
+  const m = movil(), w = m.window;
+  assert.equal(w.Nativo.voz(), "movil");
+  w.speechSynthesis.speak(new w.SpeechSynthesisUtterance("uno"));
+  assert.equal(m.llamadas.at(-1)[2].voz, "movil");
+  assert.equal(w.Nativo.voz("miro"), "miro");
+  assert.equal(w.Nativo.voz("otra"), "miro");
+  w.speechSynthesis.speak(new w.SpeechSynthesisUtterance("dos"));
+  assert.equal(m.llamadas.at(-1)[2].voz, "miro");
 });
 test("probar un aviso: pitido y, medio segundo despues, la frase de muestra", async () => {
   const m = movil();
