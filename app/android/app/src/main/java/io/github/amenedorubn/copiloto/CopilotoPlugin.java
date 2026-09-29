@@ -250,6 +250,7 @@ public class CopilotoPlugin extends Plugin {
             cierra(f, "cortada", null);
             return;
         }
+        realza(m, sr);
         AudioTrack t = new AudioTrack.Builder()
             .setAudioAttributes(atributos)
             .setAudioFormat(new AudioFormat.Builder()
@@ -282,6 +283,31 @@ public class CopilotoPlugin extends Plugin {
         boolean cortada = f.turno != turno.get();
         if (!cortada) sueltaFocoLuego();
         cierra(f, cortada ? "cortada" : "fin", null);
+    }
+
+    /**
+     * La voz de Piper sale muy baja: unos -35 dBFS de voz, 30 dB por debajo del pitido, y con
+     * musica no se oia. Se normaliza, se comprime (umbral -28 dB, 4:1, ataque 2 ms, suelta
+     * 80 ms) y se limita suave: queda en unos -13 dBFS de voz con los picos a -0,3 dB.
+     * (Medido en el PC con el mismo modelo: +22 a +25 dB.)
+     */
+    static void realza(float[] m, int sr) {
+        float pico = 0f;
+        for (float v : m) pico = Math.max(pico, Math.abs(v));
+        if (pico < 1e-4f) return;
+        final double ga = Math.exp(-1.0 / (sr * 0.002)), gs = Math.exp(-1.0 / (sr * 0.08));
+        final double umbral = Math.pow(10, -28 / 20.0), inv = 1.0 / 4.0;
+        double env = 0, max = 0;
+        for (int i = 0; i < m.length; i++) {
+            double v = m[i] / pico, a = Math.abs(v);
+            env = a > env ? ga * env + (1 - ga) * a : gs * env + (1 - gs) * a;
+            if (env > umbral) v *= (umbral * Math.pow(env / umbral, inv)) / env;
+            m[i] = (float) v;
+            max = Math.max(max, Math.abs(v));
+        }
+        if (max < 1e-6) return;
+        final double G = 1.5, t = Math.tanh(G);
+        for (int i = 0; i < m.length; i++) m[i] = (float) (Math.tanh(G * m[i] / max) / t * 0.97);
     }
 
     private void hablaSistema(Frase f, String texto, float velocidad, boolean pausa) {
