@@ -1,7 +1,14 @@
 package io.github.amenedorubn.copiloto;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.location.Location;
+import android.net.Uri;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioFormat;
@@ -10,10 +17,17 @@ import android.media.AudioTrack;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.view.WindowManager;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+import androidx.core.content.pm.PackageInfoCompat;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -31,6 +45,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +58,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Lo nativo de Copiloto: la voz y la pantalla encendida.
+ * Lo nativo de Copiloto: la voz, la pantalla encendida, el GPS con la pantalla apagada
+ * (CarreraService), el informe de cada salida (Informe) y el APK nuevo sin cable.
  *
  * Voz: la del movil (TextToSpeech, la que el usuario tiene elegida) o la neuronal
  * que va dentro de la app (Piper "Miro", es-ES, con sherpa-onnx), segun pida la web.
@@ -55,7 +74,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Una frase nueva corta la anterior (como speechSynthesis.cancel + speak).
  */
 @CapacitorPlugin(name = "Copiloto")
-public class CopilotoPlugin extends Plugin {
+public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
     private static final String TAG = "Copiloto";
     private static final String VOZ = "voz";
     private static final String MODELO = VOZ + "/es_ES-miro-high.onnx";
@@ -81,6 +100,9 @@ public class CopilotoPlugin extends Plugin {
     private final Handler principal = new Handler(Looper.getMainLooper());
     private final Runnable sueltaFocoTarea = this::sueltaFocoYa;
     private final ExecutorService sonidos = Executors.newSingleThreadExecutor();
+    private final ExecutorService descargas = Executors.newSingleThreadExecutor();
+    private boolean permisosPedidos = false;
+    private Boolean enBloqueo = null;
 
     /** Una frase: su llamada, su turno y si ya se ha cerrado. */
     private static class Frase {
@@ -96,6 +118,7 @@ public class CopilotoPlugin extends Plugin {
 
     @Override
     public void load() {
+        CarreraService.oyente = this;
         audio = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         atributos = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
@@ -140,6 +163,10 @@ public class CopilotoPlugin extends Plugin {
 
                 @Override
                 public void onDone(String id) {
+                    if (id != null && id.startsWith("aviso")) {
+                        sueltaFocoLuego();
+                        return;
+                    }
                     Frase f = delSistema.remove(id);
                     if (f == null) return;
                     if (f.turno == turno.get()) sueltaFocoLuego();
@@ -179,6 +206,7 @@ public class CopilotoPlugin extends Plugin {
         final int musica = modo(call);
         final boolean delMovil = !"miro".equals(call.getString("voz", "miro"));
         final Frase f = new Frase(call, turno.incrementAndGet());
+        if (Informe.abierto()) Informe.linea("voz", "pide «" + corto(texto) + "» · " + (delMovil ? "móvil" : "miro"));
         corta(); // la frase nueva corta la anterior
         if (texto == null || texto.trim().isEmpty()) {
             cierra(f, "fin", null);
@@ -348,8 +376,15 @@ public class CopilotoPlugin extends Plugin {
         }
     }
 
+    private static String corto(String t) {
+        if (t == null) return "";
+        t = t.replace("\n", " ");
+        return t.length() > 90 ? t.substring(0, 88) + "…" : t;
+    }
+
     private void emite(Frase f, String evento, String error) {
         if (f.cerrada.get()) return;
+        if (Informe.abierto()) Informe.linea("voz", "suena");
         JSObject d = new JSObject();
         d.put("evento", evento);
         if (error != null) d.put("error", error);
@@ -358,6 +393,7 @@ public class CopilotoPlugin extends Plugin {
 
     private void cierra(Frase f, String evento, String error) {
         if (!f.cerrada.compareAndSet(false, true)) return;
+        if (Informe.abierto()) Informe.linea("voz", evento + (error != null ? " (" + error + ")" : ""));
         // fin o error de la ultima frase: la musica vuelve (si la corta otra, esa ya retiene el foco)
         if (!"cortada".equals(evento) && f.turno == turno.get()) sueltaFocoLuego();
         JSObject d = new JSObject();
@@ -388,7 +424,8 @@ public class CopilotoPlugin extends Plugin {
             Object quiero = pausa ? focoPausa : focoBaja;
             if (focoTenido == quiero) return;
             if (focoTenido != null) audio.abandonAudioFocusRequest((AudioFocusRequest) focoTenido);
-            audio.requestAudioFocus((AudioFocusRequest) quiero);
+            int r = audio.requestAudioFocus((AudioFocusRequest) quiero);
+            if (r != AudioManager.AUDIOFOCUS_REQUEST_GRANTED && Informe.abierto()) Informe.linea("voz", "Android no da el foco de audio (" + r + ")");
             focoTenido = quiero;
         } else {
             Integer quiero = pausa ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT : AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
@@ -520,6 +557,269 @@ public class CopilotoPlugin extends Plugin {
         if (f.exists() && !f.delete()) Log.w(TAG, "no se borra " + f);
     }
 
+    /* ------------------- GPS con la pantalla apagada ------------------- */
+
+    /** Enciende o apaga el servicio del GPS. Sin permiso de ubicacion: "sin_permiso". */
+    @PluginMethod
+    public void gps(PluginCall call) {
+        Context c = getContext();
+        if (!Boolean.TRUE.equals(call.getBoolean("activo", true))) {
+            c.stopService(new Intent(c, CarreraService.class));
+            enCarrera(false);
+            call.resolve();
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(c, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            call.reject("sin_permiso");
+            return;
+        }
+        pidePermisos();
+        try {
+            ContextCompat.startForegroundService(c, new Intent(c, CarreraService.class).setAction(CarreraService.EMPIEZA));
+            call.resolve();
+        } catch (Throwable e) {
+            Log.e(TAG, "gps", e);
+            call.reject("no_arranca");
+        }
+    }
+
+    /** Si el servicio esta en marcha de verdad (Android puede no dejarle arrancar). */
+    @PluginMethod
+    public void gpsEstado(PluginCall call) {
+        JSObject d = new JSObject();
+        d.put("vivo", CarreraService.vivo != null);
+        call.resolve(d);
+    }
+
+    /** La web cuenta como va: lo que sale en la notificacion. Es tambien su latido. */
+    @PluginMethod
+    public void carrera(PluginCall call) {
+        boolean corre = Boolean.TRUE.equals(call.getBoolean("corriendo", false));
+        boolean pausa = Boolean.TRUE.equals(call.getBoolean("pausado", false));
+        CarreraService s = CarreraService.vivo;
+        if (s != null) s.actualiza(corre, pausa, call.getString("titulo"), call.getString("texto"));
+        enCarrera(corre && s != null);
+        call.resolve();
+    }
+
+    /**
+     * Con la carrera en marcha: la web no se congela con la pantalla apagada (WebViewVivo)
+     * y el boton de encendido enseña la app sin desbloquear.
+     */
+    private void enCarrera(boolean si) {
+        if (enBloqueo != null && enBloqueo == si) return;
+        enBloqueo = si;
+        Informe.linea("web", si ? "sigue viva con la pantalla apagada" : "normal");
+        getActivity().runOnUiThread(() -> {
+            if (getBridge().getWebView() instanceof WebViewVivo) ((WebViewVivo) getBridge().getWebView()).mantenVisible(si);
+            if (Build.VERSION.SDK_INT >= 27) getActivity().setShowWhenLocked(si);
+        });
+    }
+
+    /** Avisos (una vez por instalacion): las notificaciones y que Android no la duerma. */
+    private void pidePermisos() {
+        if (permisosPedidos) return;
+        permisosPedidos = true;
+        try {
+            if (Build.VERSION.SDK_INT >= 33
+                && ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(getActivity(), new String[] { Manifest.permission.POST_NOTIFICATIONS }, 4711);
+                return; // la bateria, la siguiente vez
+            }
+            PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+            SharedPreferences p = getContext().getSharedPreferences("copiloto", Context.MODE_PRIVATE);
+            String pkg = getContext().getPackageName();
+            if (Build.VERSION.SDK_INT >= 23 && !pm.isIgnoringBatteryOptimizations(pkg) && !p.getBoolean("bateriaPedida", false)) {
+                p.edit().putBoolean("bateriaPedida", true).apply();
+                Intent i = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + pkg));
+                getActivity().startActivity(i);
+            }
+        } catch (Throwable e) {
+            Log.e(TAG, "permisos", e);
+        }
+    }
+
+    @Override
+    public void posicion(Location l, boolean prueba) {
+        JSObject d = new JSObject();
+        d.put("lat", l.getLatitude());
+        d.put("lon", l.getLongitude());
+        d.put("acc", l.hasAccuracy() ? l.getAccuracy() : 50);
+        if (l.hasSpeed()) d.put("vel", l.getSpeed());
+        if (l.hasAltitude()) d.put("alt", l.getAltitude());
+        if (l.hasBearing()) d.put("rumbo", l.getBearing());
+        d.put("t", l.getTime() > 0 ? l.getTime() : System.currentTimeMillis());
+        if (prueba) d.put("prueba", true);
+        notifyListeners("posicion", d);
+    }
+
+    @Override
+    public void accion(String que) {
+        JSObject d = new JSObject();
+        d.put("que", que);
+        notifyListeners("accion", d);
+    }
+
+    @Override
+    public void pantalla(boolean encendida) {
+        JSObject d = new JSObject();
+        d.put("encendida", encendida);
+        notifyListeners("pantalla", d);
+    }
+
+    /** Lo dice el propio servicio cuando la web no responde (con la voz del movil). */
+    @Override
+    public void avisoNativo(String texto) {
+        if (!sistemaListo) return;
+        turno.incrementAndGet();
+        corta();
+        retenFoco(PAUSA);
+        sistema.setSpeechRate(1f);
+        sistema.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "aviso" + System.currentTimeMillis());
+    }
+
+    /* ------------------------ informe de la salida ------------------------ */
+
+    /** Una linea de la web ({tipo, texto}) o su Diario de voz entero ({diario}). */
+    @PluginMethod
+    public void informe(PluginCall call) {
+        String diario = call.getString("diario");
+        if (diario != null) Informe.diario(diario);
+        String t = call.getString("texto");
+        if (t != null) Informe.linea(call.getString("tipo", "web"), t);
+        call.resolve();
+    }
+
+    /** Comparte el ultimo informe (y su diario) por WhatsApp, correo... */
+    @PluginMethod
+    public void compartirInforme(PluginCall call) {
+        java.io.File[] fs = Informe.ultimo(getContext());
+        if (fs.length == 0) {
+            call.reject("sin_informe");
+            return;
+        }
+        try {
+            ArrayList<Uri> us = new ArrayList<>();
+            for (java.io.File f : fs) us.add(FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f));
+            Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE).setType("text/plain")
+                .putParcelableArrayListExtra(Intent.EXTRA_STREAM, us)
+                .putExtra(Intent.EXTRA_SUBJECT, "Informe de Copiloto " + fs[0].getName().replace(".txt", ""))
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().startActivity(Intent.createChooser(i, "Informe de la salida"));
+            JSObject d = new JSObject();
+            d.put("nombre", fs[0].getName());
+            call.resolve(d);
+        } catch (Throwable e) {
+            Log.e(TAG, "compartir", e);
+            call.reject("no_se_comparte");
+        }
+    }
+
+    /* --------------------------- APK sin cable --------------------------- */
+
+    /** La version del APK instalado (lo nativo; la web puede ir por delante). */
+    @PluginMethod
+    public void apk(PluginCall call) {
+        try {
+            PackageManager pm = getContext().getPackageManager();
+            PackageInfo pi = pm.getPackageInfo(getContext().getPackageName(), 0);
+            JSObject d = new JSObject();
+            d.put("version", pi.versionName);
+            d.put("codigo", PackageInfoCompat.getLongVersionCode(pi));
+            d.put("puedeInstalar", Build.VERSION.SDK_INT < 26 || pm.canRequestPackageInstalls());
+            call.resolve(d);
+        } catch (Throwable e) {
+            call.reject("sin_version");
+        }
+    }
+
+    /**
+     * Baja el APK nuevo ({url, checksum, version}), comprueba su SHA-256 y abre el instalador
+     * de Android, que pregunta "¿Actualizar?". Responde {evento:"progreso", pct} mientras baja
+     * y al final "instalando", "permiso" (hay que permitir instalar apps de Copiloto) o "error".
+     */
+    @PluginMethod(returnType = PluginMethod.RETURN_CALLBACK)
+    public void instalaApk(PluginCall call) {
+        call.setKeepAlive(true);
+        final String url = call.getString("url", "");
+        final String suma = call.getString("checksum", "");
+        final String v = call.getString("version", "nueva").replaceAll("[^0-9.]", "");
+        final Context c = getContext();
+        if (!url.startsWith("https://") || !suma.matches("[0-9a-fA-F]{64}")) {
+            finApk(call, "error", "sin_url");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 26 && !c.getPackageManager().canRequestPackageInstalls()) {
+            Intent i = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + c.getPackageName()));
+            getActivity().startActivity(i);
+            finApk(call, "permiso", null);
+            return;
+        }
+        descargas.execute(() -> {
+            java.io.File d = new java.io.File(c.getCacheDir(), "apk");
+            borra(d);
+            if (!d.mkdirs()) Log.w(TAG, "sin carpeta apk");
+            java.io.File f = new java.io.File(d, "copiloto-" + v + ".apk");
+            HttpURLConnection con = null;
+            try {
+                con = (HttpURLConnection) new URL(url).openConnection();
+                con.setConnectTimeout(20000);
+                con.setReadTimeout(30000);
+                con.setInstanceFollowRedirects(true);
+                if (con.getResponseCode() != 200) throw new IllegalStateException("http " + con.getResponseCode());
+                long total = con.getContentLengthLong(), hecho = 0;
+                int pctAnt = -1;
+                MessageDigest sha = MessageDigest.getInstance("SHA-256");
+                try (InputStream in = con.getInputStream(); OutputStream out = new FileOutputStream(f)) {
+                    byte[] b = new byte[65536];
+                    int n;
+                    while ((n = in.read(b)) > 0) {
+                        out.write(b, 0, n);
+                        sha.update(b, 0, n);
+                        hecho += n;
+                        int pct = total > 0 ? (int) (hecho * 100 / total) : -1;
+                        if (pct != pctAnt && pct % 2 == 0) {
+                            pctAnt = pct;
+                            JSObject p = new JSObject();
+                            p.put("evento", "progreso");
+                            p.put("pct", pct);
+                            call.resolve(p);
+                        }
+                    }
+                }
+                StringBuilder hex = new StringBuilder();
+                for (byte x : sha.digest()) hex.append(String.format(Locale.ROOT, "%02x", x));
+                if (!hex.toString().equalsIgnoreCase(suma)) throw new IllegalStateException("suma");
+                Uri u = FileProvider.getUriForFile(c, c.getPackageName() + ".fileprovider", f);
+                Intent i = new Intent(Intent.ACTION_VIEW).setDataAndType(u, "application/vnd.android.package-archive")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                getActivity().runOnUiThread(() -> {
+                    try {
+                        getActivity().startActivity(i);
+                        finApk(call, "instalando", null);
+                    } catch (Throwable e) {
+                        Log.e(TAG, "instalador", e);
+                        finApk(call, "error", "instalador");
+                    }
+                });
+            } catch (Throwable e) {
+                Log.e(TAG, "apk", e);
+                if (!f.delete()) Log.w(TAG, "apk a medias");
+                finApk(call, "error", "suma".equals(e.getMessage()) ? "suma" : "descarga");
+            } finally {
+                if (con != null) con.disconnect();
+            }
+        });
+    }
+
+    private void finApk(PluginCall call, String evento, String error) {
+        JSObject d = new JSObject();
+        d.put("evento", evento);
+        if (error != null) d.put("error", error);
+        call.resolve(d);
+        getBridge().releaseCall(call);
+    }
+
     /* ------------------------ pantalla encendida ------------------------ */
 
     @PluginMethod
@@ -534,6 +834,14 @@ public class CopilotoPlugin extends Plugin {
 
     @Override
     protected void handleOnDestroy() {
+        // sin la web el GPS no sirve de nada: al volver a abrir, la carrera se retoma sola
+        if (CarreraService.oyente == this) CarreraService.oyente = null;
+        try {
+            getContext().stopService(new Intent(getContext(), CarreraService.class));
+        } catch (Throwable e) {
+            // no estaba
+        }
+        descargas.shutdown();
         turno.incrementAndGet();
         corta();
         sueltaFocoYa();

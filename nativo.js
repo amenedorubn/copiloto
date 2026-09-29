@@ -6,9 +6,14 @@
 
    - Voz: window.speechSynthesis compatible que habla con la voz del movil o
      con Miro, la neuronal que va dentro de la app (sin internet), a elegir.
-     Mientras habla, Spotify se pausa y sigue solo (o baja al 20 %, a elegir);
+     Mientras habla, Spotify se pausa y sigue solo (o no se toca, a elegir);
      en Chrome se paraba y habia que darle a play.
    - Pantalla encendida: navigator.wakeLock con el flag nativo de Android.
+   - GPS con la pantalla apagada: navigator.geolocation.watchPosition con el
+     servicio nativo (notificacion con km, tiempo, ritmo, Pausa y "¿Como voy?").
+     Con el GPS nativo, la pantalla puede apagarse (Ajustes).
+   - Informe de cada salida, que se guarda solo en el movil (GPS, pantalla,
+     voz, bateria y el Diario de voz), y APK nuevo sin cable desde Ajustes.
    - Actualizaciones: la web va dentro del APK. Las versiones nuevas se bajan
      como zip de las releases de GitHub y se aplican al abrir la app (o con
      "Actualizar ahora"). Si una version no llega a arrancar, el actualizador
@@ -112,10 +117,19 @@
   /* ------------------------- pantalla encendida ------------------------- */
   // Cada parte de la app guarda su "cerrojo" y lo pide otra vez al volver a la
   // pantalla sin soltar el anterior: manda el ultimo. Soltar uno viejo no apaga nada.
+  // Con el GPS nativo en marcha la pantalla puede apagarse: GPS y voz siguen (Ajustes)
+  var LSP = "copiloto.pantalla", PANTALLAS = ["apaga", "encendida"];
+  N.pantallaCarrera = !tiene("gps") ? null : function (v) {
+    try {
+      if (PANTALLAS.indexOf(v) >= 0) localStorage.setItem(LSP, v);
+      var m = localStorage.getItem(LSP); return PANTALLAS.indexOf(m) >= 0 ? m : "apaga";
+    } catch (e) { return "apaga"; }
+  };
   var ultimo = null;
   var cerrojo = {
     request: function (tipo) {
-      return llama(P, "pantalla", { encendida: true }).then(function () {
+      var enciende = !(N.gpsNativo && N.pantallaCarrera && N.pantallaCarrera() === "apaga");
+      return (enciende ? llama(P, "pantalla", { encendida: true }) : Promise.resolve()).then(function () {
         var s = {
           type: tipo || "screen", released: false, onrelease: null, _h: [],
           addEventListener: function (t, h) { if (t === "release" && typeof h === "function") s._h.push(h); },
@@ -137,6 +151,122 @@
     }
   };
   pon(navigator, "wakeLock", cerrojo);
+
+  /* ------------------------ informe de la salida ------------------------ */
+  // Se guarda solo en el movil (lo abre el servicio del GPS): lo que pasa con el GPS, la
+  // pantalla, la voz y la bateria, y el Diario de voz. Se comparte desde Ajustes.
+  function nada() {}
+  N.informe = tiene("informe") ? function (tipo, texto) { llama(P, "informe", { tipo: tipo, texto: String(texto) }).catch(nada); } : nada;
+  N.informeDiario = tiene("informe") ? function () {
+    try { var d = localStorage.getItem("copiloto.diario.v1"); if (d) llama(P, "informe", { diario: d }).catch(nada); } catch (e) {}
+  } : nada;
+  N.compartirInforme = tiene("compartirInforme") ? function () { return llama(P, "compartirInforme"); } : null;
+  if (window.addEventListener) window.addEventListener("error", function (e) {
+    N.informe("error", (e && e.message || "?") + " · " + String(e && e.filename || "").split("/").pop() + ":" + (e && e.lineno || 0));
+  });
+
+  /* --------------------- GPS con la pantalla apagada --------------------- */
+  // En Chrome el GPS se corta al bloquear el movil. En la app las posiciones las da un
+  // servicio nativo en primer plano (con su notificacion: km, tiempo, ritmo, Pausa y
+  // "¿Como voy?") que sigue con la pantalla apagada. La web no cambia: usa el
+  // watchPosition de siempre. Si el servicio no arranca, el GPS del navegador.
+  N.gpsNativo = false;
+  var geoReal = navigator.geolocation;
+  if (tiene("gps") && geoReal) {
+    var vig = {}, sigId = 1, modo = "nativo", encendido = false, pidiendo = false;
+    var ultFix = 0, desde = 0, errDado = false, ultNoti = 0, ultDiario = 0, ultEstado = "";
+    var hay = function () { for (var k in vig) return true; return false; };
+    var quiere = function () {
+      if (!hay()) return false;
+      if (window.corriendo) return true;
+      var g = document.getElementById("appGPS");
+      return !!(g && !g.hidden && document.visibilityState === "visible");
+    };
+    var aWeb = function (por) {            // sin servicio: el GPS del navegador, como en Chrome
+      if (modo === "web") return;
+      modo = "web"; encendido = false; N.gpsNativo = false;
+      for (var k in vig) { var w = vig[k]; if (w.real == null) w.real = geoReal.watchPosition(w.ok, w.mal, w.op); }
+      N.informe("gps", "sin servicio nativo (" + por + "): GPS del navegador");
+    };
+    var revisa = function () {
+      if (modo !== "nativo") return;
+      var q = quiere();
+      if (q && !encendido && !pidiendo) {
+        pidiendo = true;
+        llama(P, "gps", { activo: true }).then(function () {
+          pidiendo = false; encendido = true; N.gpsNativo = true; desde = Date.now(); ultFix = 0; errDado = false;
+          setTimeout(function () {           // Android puede no dejarle arrancar
+            llama(P, "gpsEstado").then(function (e) { if (encendido && e && !e.vivo) aWeb("no arranca"); }, nada);
+          }, 2500);
+          cuenta(true);
+        }, function (e) { pidiendo = false; aWeb(e && e.message || "error"); });
+      } else if (!q && encendido) {
+        encendido = false; N.gpsNativo = false;
+        N.informeDiario();
+        llama(P, "gps", { activo: false }).catch(nada);
+      }
+    };
+    var txt = function (id) { var e = document.getElementById(id); return e ? String(e.textContent || "").replace(/\s+/g, " ").trim() : ""; };
+    // la notificacion (y el latido: si deja de llegar, el servicio avisa de que la web se ha parado)
+    var cuenta = function (ya) {
+      if (!encendido) return;
+      var corre = !!window.corriendo, pausa = !!window.pausado, est = corre + "/" + pausa, ahora = Date.now();
+      if (!ya && est === ultEstado && ahora - ultNoti < 2500) return;
+      ultNoti = ahora; ultEstado = est;
+      var t, x;
+      if (!corre) { t = "GPS listo"; x = txt("gps") || "Dale a Empezar"; }
+      else {
+        var r = txt("rAct"), obj = txt("kmObj"), km = txt("kmNum"), ver = txt("veredicto");
+        t = txt("dist") + " km · " + txt("reloj") + (pausa ? " · en pausa" : "");
+        x = (r && r.indexOf("-") < 0 ? r + "/km · " : "") + km + (obj ? " · objetivo " + obj : "") + (ver ? " · " + ver : "");
+      }
+      llama(P, "carrera", { corriendo: corre, pausado: pausa, titulo: t, texto: x }).catch(nada);
+      if (ahora - ultDiario > 60000) { ultDiario = ahora; N.informeDiario(); }
+    };
+    var llega = function (d, err) {
+      if (err || !d || modo !== "nativo" || !encendido) return;
+      ultFix = Date.now(); errDado = false;
+      var pos = { coords: { latitude: d.lat, longitude: d.lon, accuracy: d.acc,
+                            speed: d.vel == null ? null : d.vel, altitude: d.alt == null ? null : d.alt,
+                            heading: d.rumbo == null ? null : d.rumbo, altitudeAccuracy: null },
+                  timestamp: d.t || ultFix };
+      for (var k in vig) { try { vig[k].ok(pos); } catch (e) {} }
+      // con la pantalla apagada los temporizadores de la web van frenados, y los avisos
+      // salen de pintar(): se pinta con cada posicion
+      if (document.visibilityState !== "visible" && typeof window.pintar === "function") { try { window.pintar(); } catch (e) {} }
+      cuenta(false);
+    };
+    C.nativeCallback(P, "addListener", { eventName: "posicion" }, llega);
+    C.nativeCallback(P, "addListener", { eventName: "accion" }, function (d) {
+      if (!d || !window.corriendo) return;
+      if (d.que === "pausa") { var b = document.getElementById("pausa"); if (b) b.click(); cuenta(true); }
+      else if (d.que === "comovoy" && !window.pausado && typeof window.diceEstado === "function") window.diceEstado();
+    });
+    // sin posiciones en 20 s: el error de siempre ("sin señal"), como el timeout del navegador
+    setInterval(function () {
+      revisa();
+      if (encendido && !errDado && Date.now() - (ultFix || desde) > 20000) {
+        errDado = true;
+        for (var k in vig) { try { if (vig[k].mal) vig[k].mal({ code: 3, message: "sin señal", TIMEOUT: 3 }); } catch (e) {} }
+      }
+      cuenta(false);
+    }, 3000);
+    document.addEventListener("visibilitychange", function () { setTimeout(revisa, 0); });
+    pon(navigator, "geolocation", {
+      getCurrentPosition: function (ok, mal, op) { return geoReal.getCurrentPosition(ok, mal, op); },
+      watchPosition: function (ok, mal, op) {
+        var id = sigId++; vig[id] = { ok: ok, mal: mal, op: op, real: null };
+        if (modo === "web") vig[id].real = geoReal.watchPosition(ok, mal, op);
+        setTimeout(revisa, 0);
+        return id;
+      },
+      clearWatch: function (id) {
+        var w = vig[id]; if (!w) return;
+        if (w.real != null) geoReal.clearWatch(w.real);
+        delete vig[id]; setTimeout(revisa, 0);
+      }
+    });
+  }
 
   /* --------------------------- actualizaciones --------------------------- */
   var REPO = "amenedorubn/copiloto", ZIP = "copiloto-web.zip", LS = "copiloto.app.v1";
@@ -208,5 +338,37 @@
       return false;
     }
     return { comprueba: comprueba, actualiza: actualiza, enCurso: enCurso, compara: compara, arranque: arranque };
+  };
+
+  /* ---------------------------- APK sin cable ---------------------------- */
+  // Lo nativo (GPS, voz, permisos) solo cambia con un APK nuevo. Las releases que lo
+  // traen llevan copiloto.apk: la app lo baja, comprueba su SHA-256 y Android pregunta
+  // "¿Actualizar?". La primera vez hay que permitir instalar apps de Copiloto.
+  // -> Promise({instalada, nueva: null | {version, url, checksum, mb}})
+  N.apkNueva = tiene("instalaApk") ? function (compara) {
+    return Promise.all([
+      llama(P, "apk"),
+      fetch("https://api.github.com/repos/" + REPO + "/releases?per_page=15",
+            { cache: "no-store", headers: { Accept: "application/vnd.github+json" } })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    ]).then(function (x) {
+      var yo = x[0] || {}, mejor = null;
+      (x[1] || []).forEach(function (j) {
+        if (j.draft || j.prerelease) return;
+        var a = (j.assets || []).filter(function (s) { return s.name === "copiloto.apk"; })[0];
+        var suma = a && /^sha256:[0-9a-f]{64}$/i.test(a.digest || "") ? a.digest.slice(7) : "";
+        var v = String(j.tag_name || "").replace(/^v/, "");
+        if (!suma || !/^\d+\.\d+\.\d+$/.test(v)) return;
+        if (!mejor || compara(v, mejor.version) > 0)
+          mejor = { version: v, url: a.browser_download_url, checksum: suma, mb: Math.round((a.size || 0) / 1048576) };
+      });
+      return { instalada: String(yo.version || ""), nueva: mejor && compara(mejor.version, String(yo.version || "0")) > 0 ? mejor : null };
+    });
+  } : null;
+  // cada({evento: "progreso"|"instalando"|"permiso"|"error", pct, error})
+  N.instalaApk = function (u, cada) {
+    C.nativeCallback(P, "instalaApk", { url: u.url, checksum: u.checksum, version: u.version }, function (r, err) {
+      cada(err || !r ? { evento: "error", error: "nativo" } : r);
+    });
   };
 })();

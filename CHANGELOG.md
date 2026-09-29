@@ -13,6 +13,17 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.19.0] - 2026-09-29
+
+### Añadido
+
+- App Android: GPS y voz con la pantalla apagada (notificación con km, tiempo, ritmo, Pausa y «¿Cómo voy?»), informe de cada salida que se guarda solo, el APK nuevo se instala sin cable desde Ajustes y el gesto atrás ya no saca de la app a mitad de entreno
+- App Android: Ajustes → «Pantalla en carrera» (se apaga sola o siempre encendida) y «Compartir el último informe»
+
+### Corregido
+
+- Al reabrir la app en la pantalla del GPS sin haber empezado vuelve «Probar aviso con la música puesta»
+
 ## [2.18.1] - 2026-09-29
 
 ### Corregido
@@ -458,6 +469,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.19.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.19.0
 [2.18.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.18.1
 [2.18.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.18.0
 [2.17.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.17.2

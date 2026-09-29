@@ -12,25 +12,31 @@ const espera = () => new Promise((r) => setTimeout(r, 0));
 const plano = (x) => JSON.parse(JSON.stringify(x));
 
 // un "movil": Capacitor que apunta las llamadas y deja responder a mano
-function movil({ nativo = true, release = null, version = "2.16.0", metodos = ["hablar", "callar", "estado", "pantalla", "tono"] } = {}) {
-  const llamadas = [], callbacks = [], ls = {};
+function movil({ nativo = true, release = null, version = "2.16.0", metodos = ["hablar", "callar", "estado", "pantalla", "tono"],
+                 geo = null, doc = null, rechaza = [], vivo = true } = {}) {
+  const llamadas = [], callbacks = [], ls = {}, oyentes = {};
   const Capacitor = nativo ? {
     isNativePlatform: () => true,
     PluginHeaders: [{ name: "Copiloto", methods: metodos.map((name) => ({ name, rtype: "promise" })) }],
     nativePromise: (p, m, d) => { llamadas.push([p, m, d]);
+      if (rechaza.includes(m)) return Promise.reject(new Error("sin_permiso"));
       if (m === "download") return Promise.resolve({ id: "b-" + d.version, version: d.version });
+      if (m === "gpsEstado") return Promise.resolve({ vivo });
       return Promise.resolve({}); },
-    nativeCallback: (p, m, d, cb) => { llamadas.push([p, m, d]); callbacks.push(cb); return "id"; },
+    nativeCallback: (p, m, d, cb) => { llamadas.push([p, m, d]); callbacks.push(cb);
+      if (m === "addListener") oyentes[d.eventName] = cb; return "id"; },
   } : undefined;
   const window = {
     Capacitor, APP_VERSION: version,
     localStorage: { getItem: (k) => (k in ls ? ls[k] : null), setItem: (k, v) => { ls[k] = String(v); } },
     fetch: async () => release ? { ok: true, json: async () => release } : { ok: false, status: 404 },
   };
-  const navigator = {};
-  const ctx = vm.createContext({ window, navigator, localStorage: window.localStorage, fetch: window.fetch, setTimeout, Promise, JSON, Object, String });
+  const navigator = geo ? { geolocation: geo } : {};
+  const intervalos = [];
+  const ctx = vm.createContext({ window, navigator, localStorage: window.localStorage, fetch: window.fetch, setTimeout, Promise, JSON, Object, String,
+                                 document: doc, setInterval: (f) => intervalos.push(f) });
   vm.runInContext(CODIGO, ctx);
-  return { window, navigator, llamadas, callbacks, ls };
+  return { window, navigator, llamadas, callbacks, ls, oyentes, intervalos };
 }
 const release = (v, conZip = true) => ({ tag_name: "v" + v, body: "notas", published_at: "2026-10-01T10:00:00Z",
   assets: conZip ? [{ name: "copiloto-web.zip", digest: "sha256:" + "ab".repeat(32), browser_download_url: "https://github.com/x/y/releases/download/v" + v + "/copiloto-web.zip" }] : [] });
@@ -179,4 +185,89 @@ test("comprueba: un zip sin su SHA-256 no se baja (el actualizador lo rechazaria
 test("listo avisa al actualizador de que esta version arranca", () => {
   const m = movil(); m.window.Nativo.listo();
   assert.deepEqual(plano(m.llamadas.at(-1)), ["CapacitorUpdater", "notifyAppReady", {}]);
+});
+
+/* ------------------------ GPS con la pantalla apagada ------------------------ */
+const CON_GPS = ["hablar", "callar", "estado", "pantalla", "tono", "gps", "gpsEstado", "carrera", "informe", "compartirInforme"];
+// el GPS del navegador, de mentira: apunta quien lo usa
+function geoFalso() {
+  const g = { vigila: [], quita: [] };
+  g.watchPosition = (ok) => { g.vigila.push(ok); return 100 + g.vigila.length; };
+  g.clearWatch = (id) => g.quita.push(id);
+  g.getCurrentPosition = () => {};
+  return g;
+}
+// la pantalla del GPS abierta (o no) y lo que pinta
+function docGPS(abierto = true, textos = {}) {
+  const els = { appGPS: { hidden: !abierto } };
+  for (const k in textos) els[k] = { textContent: textos[k] };
+  return { visibilityState: "visible", getElementById: (id) => els[id] || null, addEventListener: () => {} };
+}
+const espera2 = () => new Promise((r) => setTimeout(r, 5));
+
+test("gps: con el APK nuevo, watchPosition va al servicio nativo y la posicion llega como la del navegador", async () => {
+  const geo = geoFalso(), m = movil({ metodos: CON_GPS, geo, doc: docGPS() }), pos = [];
+  const id = m.navigator.geolocation.watchPosition((p) => pos.push(p));
+  await espera2();
+  assert.ok(m.llamadas.some(([p, mm, d]) => p === "Copiloto" && mm === "gps" && d.activo === true));
+  assert.equal(geo.vigila.length, 0, "el del navegador no se usa");
+  assert.equal(m.window.Nativo.gpsNativo, true);
+  m.oyentes.posicion({ lat: 40.1, lon: -3.6, acc: 6, vel: 2.5, t: 1000 });
+  assert.equal(pos.length, 1);
+  assert.deepEqual(plano(pos[0]), { coords: { latitude: 40.1, longitude: -3.6, accuracy: 6, speed: 2.5, altitude: null, heading: null, altitudeAccuracy: null }, timestamp: 1000 });
+  m.navigator.geolocation.clearWatch(id);
+  await espera2();
+  assert.ok(m.llamadas.some(([, mm, d]) => mm === "gps" && d.activo === false), "sin nadie mirando, el servicio se para");
+});
+
+test("gps: si el servicio no arranca (sin permiso), el GPS del navegador de siempre", async () => {
+  const geo = geoFalso(), m = movil({ metodos: CON_GPS, geo, doc: docGPS(), rechaza: ["gps"] }), pos = [];
+  m.navigator.geolocation.watchPosition((p) => pos.push(p));
+  await espera2();
+  assert.equal(geo.vigila.length, 1);
+  assert.equal(m.window.Nativo.gpsNativo, false);
+});
+
+test("gps: un APK viejo sin servicio deja el GPS del navegador intacto", () => {
+  const geo = geoFalso(), m = movil({ geo, doc: docGPS() });
+  assert.equal(m.navigator.geolocation, geo);
+  assert.equal(m.window.Nativo.pantallaCarrera, null);
+});
+
+test("gps: fuera de la pantalla del GPS y sin correr no se enciende", async () => {
+  const geo = geoFalso(), m = movil({ metodos: CON_GPS, geo, doc: docGPS(false) });
+  m.navigator.geolocation.watchPosition(() => {});
+  await espera2();
+  assert.ok(!m.llamadas.some(([, mm]) => mm === "gps"));
+  m.window.corriendo = true; m.intervalos.forEach((f) => f());     // empieza el entreno: ya si
+  await espera2();
+  assert.ok(m.llamadas.some(([, mm, d]) => mm === "gps" && d.activo === true));
+});
+
+test("gps: la notificacion lleva km, tiempo y ritmo; sus botones pausan y dicen como voy", async () => {
+  const doc = docGPS(true, { dist: "3,42", reloj: "22:10", rAct: "6:31", kmNum: "Km 4", kmObj: "6:29-6:53", veredicto: "Dentro del plan" });
+  const m = movil({ metodos: CON_GPS, geo: geoFalso(), doc }), w = m.window;
+  let pausas = 0, estados = 0;
+  doc.getElementById("dist"); w.corriendo = true;
+  const b = { click: () => pausas++ };
+  const orig = doc.getElementById; doc.getElementById = (id) => (id === "pausa" ? b : orig(id));
+  w.diceEstado = () => estados++;
+  m.navigator.geolocation.watchPosition(() => {});
+  await espera2();
+  const c = m.llamadas.filter(([, mm]) => mm === "carrera").at(-1);
+  assert.deepEqual(plano(c[2]), { corriendo: true, pausado: false, titulo: "3,42 km · 22:10",
+                                  texto: "6:31/km · Km 4 · objetivo 6:29-6:53 · Dentro del plan" });
+  m.oyentes.accion({ que: "pausa" }); m.oyentes.accion({ que: "comovoy" });
+  assert.equal(pausas, 1); assert.equal(estados, 1);
+});
+
+test("pantalla: con el GPS nativo y 'se apaga sola' no se enciende; con 'siempre encendida', si", async () => {
+  const m = movil({ metodos: CON_GPS, geo: geoFalso(), doc: docGPS() }), w = m.window;
+  m.navigator.geolocation.watchPosition(() => {});
+  await espera2();
+  await m.navigator.wakeLock.request("screen");
+  assert.ok(!m.llamadas.some(([, mm]) => mm === "pantalla"));
+  w.Nativo.pantallaCarrera("encendida");
+  await m.navigator.wakeLock.request("screen");
+  assert.deepEqual(plano(m.llamadas.filter(([, mm]) => mm === "pantalla").at(-1)), ["Copiloto", "pantalla", { encendida: true }]);
 });

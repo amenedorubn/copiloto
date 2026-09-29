@@ -2,16 +2,50 @@ package io.github.amenedorubn.copiloto;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.webkit.WebView;
+
+import androidx.activity.OnBackPressedCallback;
 
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(CopilotoPlugin.class); // voz y pantalla encendida (ver CopilotoPlugin)
+        registerPlugin(CopilotoPlugin.class); // voz, pantalla, GPS e informe (ver CopilotoPlugin)
         super.onCreate(savedInstanceState);
+        WebView w = getBridge().getWebView();
+        // con la pantalla apagada, que Android no trate a la web como prescindible
+        if (Build.VERSION.SDK_INT >= 26) w.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                atras();
+            }
+        });
         recibeConexion(getIntent());
+    }
+
+    /**
+     * El gesto de atras lo decide la web (window.atrasApp), como en Chrome: cierra la hoja,
+     * vuelve a HOY o, con un entreno en marcha, no hace nada. Solo sale si ella lo dice.
+     * Sin esto Android sacaba de la app a mitad de entreno y el GPS se paraba.
+     */
+    private void atras() {
+        WebView w = getBridge() == null ? null : getBridge().getWebView();
+        if (w == null) {
+            moveTaskToBack(true);
+            return;
+        }
+        w.evaluateJavascript("(function(){try{return window.atrasApp?window.atrasApp():'vieja'}catch(e){return 'salir'}})()", v -> {
+            if ("\"vieja\"".equals(v)) { // una web de antes, sin atrasApp: su historial
+                if (w.canGoBack()) w.goBack();
+                else moveTaskToBack(true);
+            } else if (!"\"ok\"".equals(v)) {
+                moveTaskToBack(true);
+            }
+        });
     }
 
     @Override

@@ -33,6 +33,13 @@
 
         </activity>
 
+        <!-- el GPS del entreno con la pantalla apagada, con su notificacion (CarreraService) -->
+        <service
+            android:name=".CarreraService"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:foregroundServiceType="location" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -53,4 +60,12 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <!-- el zumbido al acabar un aviso -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- el GPS con la pantalla apagada: servicio en primer plano con su notificacion -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- el APK nuevo sin cable: Android pregunta antes de instalarlo -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>
