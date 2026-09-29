@@ -51,7 +51,7 @@ test("voz: inicio -> onstart, fin -> onend, y speaking se apaga", () => {
   const u = new w.SpeechSynthesisUtterance("Kilómetro cinco");
   u.rate = 1.02; u.onstart = () => ev.push("start"); u.onend = () => ev.push("end"); u.onerror = (e) => ev.push("error:" + e.error);
   w.speechSynthesis.speak(u);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "hablar", { texto: "Kilómetro cinco", velocidad: 1.02, pausa: false }]);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "hablar", { texto: "Kilómetro cinco", velocidad: 1.02, pausa: false, sinFoco: false }]);
   assert.equal(w.speechSynthesis.speaking, true);
   m.callbacks[0]({ evento: "inicio" }); m.callbacks[0]({ evento: "fin" });
   m.callbacks[0]({ evento: "fin" });                         // un segundo cierre no se repite
@@ -76,13 +76,24 @@ test("musica: por defecto baja; si se elige pausa, la voz y el pitido lo piden",
   const m = movil(), w = m.window;
   assert.equal(w.Nativo.musica(), "baja");
   await w.Nativo.tono(true);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: false }]);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: false, sinFoco: false }]);
   assert.equal(w.Nativo.musica("pausa"), "pausa");
   assert.equal(w.Nativo.musica("otra cosa"), "pausa");        // lo que no vale no se guarda
   await w.Nativo.tono(false);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: false, pausa: true }]);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: false, pausa: true, sinFoco: false }]);
   w.speechSynthesis.speak(new w.SpeechSynthesisUtterance("hola"));
   assert.equal(m.llamadas.at(-1)[2].pausa, true);
+  assert.equal(w.Nativo.musica("nada"), "nada");            // la voz por encima: sin foco
+  await w.Nativo.tono(true);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: false, sinFoco: true }]);
+});
+test("probar un aviso: pitido y, medio segundo despues, la frase de muestra", async () => {
+  const m = movil();
+  m.window.Nativo.pruebaAviso();
+  assert.equal(m.llamadas.at(-1)[1], "tono");
+  await new Promise((r) => setTimeout(r, 600));
+  assert.equal(m.llamadas.at(-1)[1], "hablar");
+  assert.match(m.llamadas.at(-1)[2].texto, /Así suenan los avisos/);
 });
 test("pitido: un APK viejo sin tono deja Nativo.tono vacio (aviso() usa el de la web)", () => {
   assert.equal(movil({ metodos: ["hablar", "callar", "estado", "pantalla"] }).window.Nativo.tono, null);

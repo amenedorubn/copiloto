@@ -31,13 +31,16 @@
       return !!(h && (h.methods || []).some(function (m) { return m.name === metodo; }));
     } catch (e) { return false; }
   }
-  // la musica mientras habla: "baja" (por defecto) o "pausa" (se para y sigue sola)
-  var LSM = "copiloto.musica";
+  // la musica mientras habla: "baja" (por defecto, como Google Maps: Android la deja al 20 %),
+  // "pausa" (Spotify se para y sigue solo) o "nada" (la voz por encima, la musica no cambia)
+  var LSM = "copiloto.musica", MODOS = ["baja", "pausa", "nada"];
   N.musica = function (v) {
-    try { if (v === "baja" || v === "pausa") localStorage.setItem(LSM, v); return localStorage.getItem(LSM) === "pausa" ? "pausa" : "baja"; }
-    catch (e) { return "baja"; }
+    try {
+      if (MODOS.indexOf(v) >= 0) localStorage.setItem(LSM, v);
+      var m = localStorage.getItem(LSM); return MODOS.indexOf(m) >= 0 ? m : "baja";
+    } catch (e) { return "baja"; }
   };
-  function pausa() { return N.musica() === "pausa"; }
+  function musica() { var m = N.musica(); return { pausa: m === "pausa", sinFoco: m === "nada" }; }
 
   /* -------------------------------- voz -------------------------------- */
   function Frase(t) {
@@ -63,7 +66,8 @@
         avisa(f, tipo, extra);
       }
       try {
-        C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1, pausa: pausa() }, function (r, err) {
+        var mm = musica();
+        C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1, pausa: mm.pausa, sinFoco: mm.sinFoco }, function (r, err) {
           if (err || !r) { cierra("error", { error: "synthesis-failed" }); return; }
           if (r.evento === "inicio") { if (!cerrada) avisa(f, "start"); }
           else if (r.evento === "fin") cierra("end");
@@ -87,7 +91,15 @@
   N.estadoVoz = function () { return llama(P, "estado"); };
   // el pitido de los avisos, nativo: con un <audio> de la web Android le quitaria el
   // foco a Spotify para siempre (se para y no vuelve). Solo si el APK ya lo trae.
-  N.tono = tiene("tono") ? function (bien) { return llama(P, "tono", { sube: !!bien, pausa: pausa() }); } : null;
+  N.tono = tiene("tono") ? function (bien) { var mm = musica(); return llama(P, "tono", { sube: !!bien, pausa: mm.pausa, sinFoco: mm.sinFoco }); } : null;
+  // Ajustes: un aviso de muestra (pitido y voz), para elegir de oido que hacer con la musica
+  N.pruebaAviso = function () {
+    if (N.tono) N.tono(true).catch(function () {});
+    setTimeout(function () {
+      var u = new Frase("Así suenan los avisos. Kilómetro cinco: vas a cinco quince el kilómetro, perfecto, mantén el ritmo.");
+      u.rate = 1.02; voz.cancel(); voz.speak(u);
+    }, 520);
+  };
 
   /* ------------------------- pantalla encendida ------------------------- */
   // Cada parte de la app guarda su "cerrojo" y lo pide otra vez al volver a la
