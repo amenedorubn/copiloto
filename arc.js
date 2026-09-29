@@ -107,15 +107,16 @@ function limpiaGuardada(r,hoy){
    El Arc en capitulos. Las de partida salen de los planes reales (28/09):
    ver presetEtapas(). Nombre y fechas se cambian cuando se quiera: ordenan,
    no cambian lo que cuenta.                                             */
-// "Hoja de ruta": de la Calzada hacia la carrera de Roma al Faro (la Torre de
+// "Hoja de ruta" en bloques de 4 semanas (29/09): de la Calzada (subir hasta el 20K) al Faro (la Torre de
 // Hercules, Navidad en A Coruña). Salen del calendario y los vuelos reales
 // (28/09). El icono, el destino del miliario y la consigna van por id.
 function presetEtapas(){
   return [
-    { id:"e1", nombre:"Calzada", sub:"Del cambio del 1 de septiembre a la carrera de Roma", desde:"2026-09-01", hasta:"2026-10-18", icono:"path" },
-    { id:"e2", nombre:"Tierra firme", sub:"Quince días en casa: recuperar de Roma y coger ritmo", desde:"2026-10-19", hasta:"2026-11-02", icono:"house-line" },
-    { id:"e3", nombre:"Travesía", sub:"México y un noviembre de maletas: nunca falles dos veces", desde:"2026-11-03", hasta:"2026-11-30", icono:"globe-hemisphere-west" },
-    { id:"e4", nombre:"Faro", sub:"Diciembre rumbo a la Torre: Navidad en A Coruña", desde:"2026-12-01", hasta:"2026-12-31", icono:"lighthouse" }
+    { id:"e1", nombre:"Calzada", sub:"Subir la intensidad hasta el test de 20 km", desde:"2026-09-01", hasta:"2026-09-27", icono:"path" },
+    { id:"e2", nombre:"Foro", sub:"Cuatro semanas para Roma: afinar, correr y recuperar", desde:"2026-09-28", hasta:"2026-10-25", icono:"flag-checkered" },
+    { id:"e3", nombre:"Travesía", sub:"Preparar México y el viaje: nunca falles dos veces", desde:"2026-10-26", hasta:"2026-11-22", icono:"globe-hemisphere-west" },
+    { id:"e4", nombre:"Vuelta", sub:"De vuelta en casa: recuperar el ritmo antes de Navidad", desde:"2026-11-23", hasta:"2026-12-20", icono:"house-line" },
+    { id:"e5", nombre:"Faro", sub:"Navidad en A Coruña: cerrar el año", desde:"2026-12-21", hasta:"2026-12-31", icono:"lighthouse" }
   ];
 }
 // los viajes (la app no lee vuelos: van aqui, editables). Solo nombres de ciudad.
@@ -190,8 +191,10 @@ function migra(x,hoy){
     }
     D.reglas.forEach(function(r){ if(r.id==="dormir" && r.tipo==="manual" && r.nombre==="Dormir 7 h o más") r.dato="sueno"; });
     if(Array.isArray(x.etapas) && x.etapas.length===ETAPAS_28.length &&
-       x.etapas.every(function(e,i){ var p=presetEtapas()[i]; return e && e.nombre===ETAPAS_28[i] && e.desde===p.desde && e.hasta===p.hasta; })) D.etapas=presetEtapas();
+       x.etapas.every(function(e,i){ var p=[["2026-09-01","2026-10-18"],["2026-10-19","2026-11-02"],["2026-11-03","2026-11-30"],["2026-12-01","2026-12-31"]][i]; return e && e.nombre===ETAPAS_28[i] && e.desde===p[0] && e.hasta===p[1]; })) D.etapas=presetEtapas();
   }
+  var p29=[["Calzada","2026-09-01","2026-10-18"],["Tierra firme","2026-10-19","2026-11-02"],["Travesía","2026-11-03","2026-11-30"],["Faro","2026-12-01","2026-12-31"]];
+  if(D.etapas.length===4 && D.etapas.every(function(e,i){ return e.nombre===p29[i][0] && e.desde===p29[i][1] && e.hasta===p29[i][2]; })){ D.etapas=presetEtapas(); antes=true; }
   return antes ? { D:D, migrado:true } : { D:D };
 }
 function carga(almacen,hoy){
@@ -487,16 +490,19 @@ function statsEtapa(D,e,hoy,c,F){
    Van por id de etapa: si se renombra, no se pierden. Una etapa creada a mano
    cuenta hasta su ultimo dia.                                           */
 var DESTINOS={
-  e1:[{ fecha:"2026-10-18", arriba:"DÍAS A", abajo:"ROMA", cero:["HOY","ROMA"], icono:"flag-checkered", plur:"días a Roma", sing:"día a Roma", hoyTxt:"hoy corres en Roma" }],
-  e2:[{ fecha:"2026-11-03", arriba:"DÍAS A", abajo:"MÉXICO", cero:["HOY","MÉXICO"], icono:"airplane-tilt", plur:"días a México", sing:"día a México", hoyTxt:"hoy vuelas a México" }],
-  e3:[{ fecha:"2026-11-18", arriba:"DÍAS PARA", abajo:"VOLVER", cero:["HOY","MADRID"], icono:"airplane-tilt", plur:"días para volver", sing:"día para volver", hoyTxt:"hoy vuelves a Madrid" },
-      { fecha:"2026-12-01", arriba:"DÍAS PARA", abajo:"DICIEMBRE", cero:["HOY","DICIEMBRE"], icono:"snowflake", plur:"días para diciembre", sing:"día para diciembre", hoyTxt:"empieza diciembre" }],
+  e1:[{ fecha:"2026-09-27", arriba:"DÍAS AL", abajo:"TEST 20K", cero:["HOY","20K"], icono:"sneaker-move", plur:"días al test de 20 km", sing:"día al test de 20 km", hoyTxt:"hoy es el test de 20 km" }],
+  e2:[{ fecha:"2026-10-18", arriba:"DÍAS A", abajo:"ROMA", cero:["HOY","ROMA"], icono:"flag-checkered", plur:"días a Roma", sing:"día a Roma", hoyTxt:"hoy corres en Roma" },
+      { fecha:"2026-10-26", arriba:"DÍAS PARA", abajo:"TRAVESÍA", cero:["HOY","TRAVESÍA"], icono:"globe-hemisphere-west", plur:"días de recuperar", sing:"día de recuperar", hoyTxt:"empieza la Travesía" }],
+  e3:[{ fecha:"2026-11-03", arriba:"DÍAS A", abajo:"MÉXICO", cero:["HOY","MÉXICO"], icono:"airplane-tilt", plur:"días a México", sing:"día a México", hoyTxt:"hoy vuelas a México" },
+      { fecha:"2026-11-18", arriba:"DÍAS PARA", abajo:"VOLVER", cero:["HOY","MADRID"], icono:"airplane-tilt", plur:"días para volver", sing:"día para volver", hoyTxt:"hoy vuelves a Madrid" },
+      { fecha:"2026-11-23", arriba:"DÍAS PARA", abajo:"LA VUELTA", cero:["HOY","VUELTA"], icono:"house-line", plur:"días para la Vuelta", sing:"día para la Vuelta", hoyTxt:"empieza la Vuelta" }],
   e4:[{ fecha:"2026-12-19", arriba:"DÍAS A", abajo:"CORUÑA", cero:["HOY","CORUÑA"], icono:"lighthouse", plur:"días a Coruña", sing:"día a Coruña", hoyTxt:"hoy vuelas a Coruña" },
-      { fecha:"2026-12-31", arriba:"DÍAS PARA", abajo:"SELLAR", cero:["HOY SE","SELLA"], icono:"seal-check", plur:"días para sellar el Arc", sing:"día para sellar el Arc", hoyTxt:"hoy se sella el Arc" }]
+      { fecha:"2026-12-21", arriba:"DÍAS PARA", abajo:"EL FARO", cero:["HOY","FARO"], icono:"lighthouse", plur:"días para el Faro", sing:"día para el Faro", hoyTxt:"empieza el Faro" }],
+  e5:[{ fecha:"2026-12-31", arriba:"DÍAS PARA", abajo:"SELLAR", cero:["HOY SE","SELLA"], icono:"seal-check", plur:"días para sellar el Arc", sing:"día para sellar el Arc", hoyTxt:"hoy se sella el Arc" }]
 };
-// lo que pide cada etapa (la consigna). Por id; una etapa nueva no lleva
-var CONSIGNAS={ e1:"Llegar a Roma con el plan hecho", e2:"Recuperar de la carrera y coger ritmo en casa",
-                e3:"De viaje, nunca falles dos veces", e4:"Cerrar el año con la fuerza más alta del Arc" };
+// lo que pide cada fase (la consigna). Por id; una fase nueva no lleva
+var CONSIGNAS={ e1:"Subir la intensidad sin romperse", e2:"Llegar a Roma con el plan hecho y recuperar",
+                e3:"De viaje, nunca falles dos veces", e4:"Recuperar el ritmo en casa", e5:"Cerrar el año con la fuerza más alta del Arc" };
 var ROMANOS=["I","II","III","IV","V","VI"];
 function romano(n){ return ROMANOS[n-1] || String(n); }
 function destinoDe(D,e,hoy){
@@ -772,6 +778,15 @@ var CSS=
   ".arcChip.on{border-color:var(--arc)} .arcChip.on svg{color:var(--arc)}"+
   ".arcChip:disabled{opacity:.55;cursor:default}"+
   /* A · anillos en la tarjeta del dia: van en el color del texto de la tarjeta */
+  /* A · el Arc en HOY: bajo la semana, encima del entreno, con su superficie propia (ambar muy tenue) */
+  ".arcV{--arcSf:#211b0f}"+
+  "html[data-tema=claro] .arcV{--arcSf:#f6ecd6}"+
+  ".arcHoyA{background:var(--arcSf);padding:4px 16px 12px}"+
+  ".arcHoyA .arcL{color:var(--fg)}"+
+  ".arcHoyA .arcAn small{color:var(--fg)}"+
+  ".arcHoyA .ring .pista{stroke:var(--mu);opacity:.35}"+
+  ".arcHoyA .ring .arco{stroke:var(--arc)}"+
+  ".arcHoyA .ring path{fill:var(--fg)}"+
   ".arcA{position:relative;margin-top:16px;padding-top:8px;border-top:1px solid currentColor;border-top-color:rgba(127,127,127,.35)}"+
   ".arcA .arcL{color:inherit}"+
   ".arcA .arcAviso,.arcA .arcMal,html[data-tema=claro] .arcA .arcMal{color:inherit}"+
@@ -1144,12 +1159,12 @@ function vista(iso){
   }
   var e=estadoDia(D,iso,h,ctx()), o={};
   if(d==="A"){
-    var a=el("div","arcV arcA"), cab=el("button","arcAbre",'<span class="arcL">'+esc(lineaEtapa(D,iso,h) || cabDia(e))+'</span>'+ico("caret-right"));
+    var a=el("section","arcV arcBloque arcHoyA"), cab=el("button","arcAbre",'<span class="arcL">'+esc(lineaEtapa(D,iso,h) || cabDia(e))+'</span>'+ico("caret-right"));
     cab.addEventListener("click",abre()); a.appendChild(cab);
     a.appendChild(anillos(e,iso,h,rep,false));
     var fa=avisoFallos(iso,h); if(fa) a.appendChild(fa);
     var ea2=el("div"); avisosEstado(ea2); if(ea2.childNodes.length) a.appendChild(ea2);
-    o.tarjeta=a;
+    o.antes=a;
   }else if(d==="B"){
     var top=el("div","arcV arcBDia"), bb=el("button","arcAbre",'<span class="arcL">Arc · '+esc(cabDia(e))+'</span>'+ico("caret-right"));
     bb.addEventListener("click",abre()); top.appendChild(bb);
@@ -1493,7 +1508,7 @@ function pintaPide(w,e,h,k,F,st){
   cj.appendChild(el("p","arcL","Lo que pide "+esc(e.nombre)));
   if(cons) cj.appendChild(el("p","arcT arcPideC",esc(cons)));
   var ult=h<e.hasta?h:e.hasta, n0=cj.childNodes.length;
-  if(e.id==="e2"){
+  if(e.id==="e4"){
     var z=suenoDe(k.salud,e.desde,ult);
     if(z.noches) filaPide(cj,"Noches de 7 h o más",z.conSiete+" de "+z.noches,100*z.conSiete/z.noches);
     if(z.acuesta) filaPide(cj,"Hora media de acostarse",z.acuesta);
@@ -1502,9 +1517,9 @@ function pintaPide(w,e,h,k,F,st){
     var vo=volviste(S.D,e.desde,e.hasta,h,k);
     if(vo.f) filaPide(cj,"Volviste al día siguiente",vo.v+" de "+plural(vo.f,"vez","veces"),100*vo.v/vo.f);
     else if(st.contados) filaPide(cj,"Días a medias seguidos de otro","ninguno");
-    var mx=cuenta(S.D,e.desde,"2026-11-18"<e.hasta?"2026-11-18":e.hasta,h,k);
+    var mx=cuenta(S.D,"2026-11-03"<e.desde?e.desde:"2026-11-03","2026-11-18"<e.hasta?"2026-11-18":e.hasta,h,k);
     if(mx.cumplidos) filaPide(cj,"Días cumplidos en México",String(mx.cumplidos));
-  }else if(e.id==="e4"){
+  }else if(e.id==="e5"){
     var mxF=Math.max.apply(null,F.serie.map(function(x){ return x.v; }).concat([0]));
     filaPide(cj,"Fuerza · máx. del Arc "+mxF+" %",F.arc+" %",F.arc);
     var ks=kmSemana(k.acts,h);
@@ -1610,12 +1625,12 @@ function acta(w,e,n,h,F){
   if(st.hecho && st.hecho.kg) cifra(num(st.hecho.kg),"kg en Hevy");
   if(st.sueno && st.sueno.media) cifra(horasTxt(st.sueno.media),"sueño medio");
   cj.appendChild(g);
-  var hito = e.id==="e1" ? { i:"flag-checkered", t:CARRERA.texto, d:CARRERA.fecha } : e.id==="e2" ? { i:"airplane-tilt", t:"Salida a México", d:"2026-11-03" }
+  var hito = e.id==="e1" ? { i:"sneaker-move", t:"Test de 20 km", d:"2026-09-27" } : e.id==="e2" ? { i:"flag-checkered", t:CARRERA.texto, d:CARRERA.fecha }
            : e.id==="e3" ? { i:"airplane-tilt", t:"Vuelta de México", d:"2026-11-18" } : e.id==="e4" ? { i:"lighthouse", t:"A Coruña", d:"2026-12-19" } : null;
   if(hito){
     var hr=el("div","arcProx",ico(hito.i)+'<span><span class="arcT">'+esc(hito.t)+'</span></span><span class="arcS">'+esc(diaCorto(hito.d))+'</span>');
     cj.appendChild(hr);
-    if(e.id==="e1"){                                      // lo que dice Strava de la carrera, si la hay
+    if(e.id==="e2"){                                      // lo que dice Strava de la carrera, si la hay
       var c=(k.acts||[]).filter(function(a){ return a.fecha===CARRERA.fecha && tipoAct(a)==="correr"; }).sort(function(a,b){ return (b.distancia||0)-(a.distancia||0); })[0];
       if(c) cj.appendChild(el("p","arcS",num((c.distancia||0)/1000,2)+" km · "+horasTxt(Math.round((c.mov||0)/60))));
     }

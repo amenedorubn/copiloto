@@ -220,40 +220,47 @@ test("totales: km, horas y kg solo de lo que traen Strava y Hevy", () => {
 });
 
 /* ------------------------------- etapas ------------------------------- */
-test("etapas de partida: cuatro, sin huecos del 1/9 al 31/12, cortes en Roma, México y diciembre", () => {
+test("fases de partida: cinco bloques de 4 semanas del 1/9 al 31/12, sin huecos", () => {
   const D = Arc.vacio(HOY);
-  assert.equal(D.etapas.length, 4);
+  assert.deepEqual(D.etapas.map((e) => e.nombre), ["Calzada", "Foro", "Travesía", "Vuelta", "Faro"]);
   assert.equal(D.etapas[0].desde, "2026-09-01");
-  assert.equal(D.etapas[3].hasta, "2026-12-31");
-  for (let i = 1; i < 4; i++) assert.equal(D.etapas[i].desde, Arc.mas(D.etapas[i - 1].hasta, 1));
-  assert.equal(Arc.etapaDe(D, "2026-10-18").n, 1);     // el dia de Roma aun es la etapa 1
-  assert.equal(Arc.etapaDe(D, "2026-10-19").n, 2);
-  assert.equal(Arc.etapaDe(D, "2026-11-03").n, 3);     // vuelo a México
-  assert.equal(Arc.etapaDe(D, "2026-12-01").n, 4);
-  D.etapas.forEach((e) => { assert.ok(e.nombre.length <= 40); assert.ok(e.icono); });
+  assert.equal(D.etapas[4].hasta, "2026-12-31");
+  for (let i = 1; i < 5; i++) assert.equal(D.etapas[i].desde, Arc.mas(D.etapas[i - 1].hasta, 1));
+  assert.deepEqual(D.etapas.slice(1, 4).map((e) => Arc.mas(e.hasta, 1) === Arc.mas(e.desde, 28)), [true, true, true]);   // 28 días
+  assert.equal(Arc.etapaDe(D, "2026-09-27").n, 1);     // el test de 20 km cierra la Calzada
+  assert.equal(Arc.etapaDe(D, HOY).n, 2);              // hoy empieza el Foro
+  assert.equal(Arc.etapaDe(D, "2026-10-18").n, 2);     // Roma
+  assert.equal(Arc.etapaDe(D, "2026-11-03").n, 3);     // México
+  D.etapas.forEach((e) => { assert.ok(e.nombre.length <= 22); assert.ok(e.icono); });
 });
-test("etapas: se cambian y se validan; las de la 2.8 sin tocar pasan a las nuevas", () => {
+test("etapas: se cambian y se validan; las de la 2.8 y la 2.9 sin tocar pasan a las nuevas", () => {
   const D = Arc.vacio(HOY);
-  assert.ok(Arc.ponEtapa(D, D.etapas[2].id, { nombre: "México", desde: "2026-11-03", hasta: "2026-11-18" }).ok);
-  assert.ok(Arc.ponEtapa(D, D.etapas[2].id, { nombre: "México", desde: "2026-11-20", hasta: "2026-11-18" }).error);
-  assert.ok(Arc.anadeEtapa(D, { nombre: "Noviembre", desde: "2026-11-19", hasta: "2026-11-30" }).ok);
-  assert.equal(D.etapas.length, 5);
+  assert.ok(Arc.ponEtapa(D, "e3", { nombre: "México", desde: "2026-10-26", hasta: "2026-11-18" }).ok);
+  assert.ok(Arc.ponEtapa(D, "e3", { nombre: "México", desde: "2026-11-20", hasta: "2026-11-18" }).error);
+  assert.ok(Arc.anadeEtapa(D, { nombre: "Noviembre", desde: "2026-11-19", hasta: "2026-11-22" }).ok);
+  assert.equal(D.etapas.length, 6);
   const v28 = { v: 2, reglas: Arc.preset(HOY), checks: {}, auto: {}, plan: {}, notas: {},
     etapas: ["Hacia Roma", "De Roma a México", "México y noviembre de viajes", "Diciembre"].map((n, i) => ({ id: "e" + (i + 1), nombre: n,
       desde: ["2026-09-01", "2026-10-19", "2026-11-03", "2026-12-01"][i], hasta: ["2026-10-18", "2026-11-02", "2026-11-30", "2026-12-31"][i] })) };
   assert.deepEqual(Arc.migra(v28, HOY).D.etapas.map((e) => e.nombre), Arc.presetEtapas().map((e) => e.nombre));
+  const v29 = { ...v28, v: 3, etapas: [["Calzada", "2026-09-01", "2026-10-18"], ["Tierra firme", "2026-10-19", "2026-11-02"], ["Travesía", "2026-11-03", "2026-11-30"], ["Faro", "2026-12-01", "2026-12-31"]]
+    .map(([n, d, h], i) => ({ id: "e" + (i + 1), nombre: n, desde: d, hasta: h })) };
+  assert.equal(Arc.migra(v29, HOY).D.etapas.length, 5);
   const tocada = JSON.parse(JSON.stringify(v28)); tocada.etapas[0].nombre = "Mi Roma";
   assert.equal(Arc.migra(tocada, HOY).D.etapas[0].nombre, "Mi Roma");   // si las cambió, se respetan
 });
-test("etapas: numeros de la etapa en curso", () => {
+test("etapas: numeros de la fase en curso", () => {
   const D = Arc.vacio(HOY), c = { acts: [{ ...run("2026-09-10"), distancia: 8000, mov: 2400 }], eventos: () => [] };
-  const st = Arc.statsEtapa(D, D.etapas[0], HOY, c, Arc.fuerzas(D, HOY, c));
+  const F = Arc.fuerzas(D, HOY, c);
+  const st = Arc.statsEtapa(D, D.etapas[1], HOY, c, F);
   assert.equal(st.estado, "actual");
-  assert.equal(st.dias, 48);
-  assert.equal(st.llevas, 28);
-  assert.equal(st.faltan, 20);
-  assert.equal(st.hecho.km, 8);
-  assert.equal(Arc.statsEtapa(D, D.etapas[2], HOY, c, null).empiezaEn, 36);
+  assert.equal(st.dias, 28);
+  assert.equal(st.llevas, 1);
+  assert.equal(st.faltan, 27);
+  const cal = Arc.statsEtapa(D, D.etapas[0], HOY, c, F);
+  assert.equal(cal.estado, "pasada");
+  assert.equal(cal.hecho.km, 8);
+  assert.equal(Arc.statsEtapa(D, D.etapas[2], HOY, c, null).empiezaEn, 28);
 });
 
 /* ------------------------------- datos ------------------------------- */
@@ -289,29 +296,28 @@ test("el 17/09 real (caminata sin grabar) no sale como sin cumplir", () => {
   assert.equal(e.reglas[0].ok, true);
   assert.notEqual(e.estado, "fallado");
 });
-test("miliario: la cuenta atras de cada etapa a su destino real", () => {
-  const D = Arc.vacio(HOY), [e1, e2, e3, e4] = D.etapas;
-  assert.deepEqual([Arc.destinoDe(D, e1, HOY).n, Arc.destinoDe(D, e1, HOY).abajo], [20, "ROMA"]);
-  assert.equal(Arc.destinoDe(D, e1, "2026-10-17").arriba, "DÍA A");            // singular
-  assert.equal(Arc.destinoDe(D, e1, "2026-10-18").frase, "hoy corres en Roma");
-  assert.equal(Arc.destinoDe(D, e2, "2026-10-19").abajo, "MÉXICO");
+test("miliario: la cuenta atras de cada fase a su destino real", () => {
+  const D = Arc.vacio(HOY), [e1, e2, e3, e4, e5] = D.etapas;
+  assert.deepEqual([Arc.destinoDe(D, e2, HOY).n, Arc.destinoDe(D, e2, HOY).abajo], [20, "ROMA"]);
+  assert.equal(Arc.destinoDe(D, e2, "2026-10-17").arriba, "DÍA A");            // singular
+  assert.equal(Arc.destinoDe(D, e2, "2026-10-18").frase, "hoy corres en Roma");
+  assert.equal(Arc.destinoDe(D, e2, "2026-10-20").abajo, "TRAVESÍA");
+  assert.equal(Arc.destinoDe(D, e3, "2026-10-27").abajo, "MÉXICO");
   assert.equal(Arc.destinoDe(D, e3, "2026-11-10").abajo, "VOLVER");
-  assert.equal(Arc.destinoDe(D, e3, "2026-11-20").abajo, "DICIEMBRE");
   assert.equal(Arc.destinoDe(D, e4, "2026-12-10").abajo, "CORUÑA");
-  assert.equal(Arc.destinoDe(D, e4, "2026-12-25").abajo, "SELLAR");
-  const nueva = { id: "e9", nombre: "Enero", desde: "2026-12-20", hasta: "2026-12-31" };
-  assert.equal(Arc.destinoDe(D, nueva, "2026-12-21").n, 10);                  // una etapa nueva cuenta a su final
+  assert.equal(Arc.destinoDe(D, e5, "2026-12-25").abajo, "SELLAR");
+  const nueva = { id: "u9", nombre: "Enero", desde: "2026-12-20", hasta: "2026-12-31" };
+  assert.equal(Arc.destinoDe(D, nueva, "2026-12-21").n, 10);                  // una fase nueva cuenta a su final
 });
 test("la linea de HOY: numeral, nombre y lo que viene; viajes y primer dia", () => {
   const D = Arc.vacio(HOY);
-  assert.equal(Arc.lineaEtapa(D, HOY), "I Calzada · 20 días a Roma");
-  assert.equal(Arc.lineaEtapa(D, "2026-10-10"), "I Calzada · hoy, Madrid → A Coruña");
-  assert.equal(Arc.lineaEtapa(D, "2026-10-18"), "I Calzada · hoy corres en Roma");
-  assert.equal(Arc.lineaEtapa(D, "2026-10-19"), "II Tierra firme · empieza hoy");
-  assert.equal(Arc.lineaEtapa(D, "2026-12-31"), "IV Faro · hoy se sella el Arc");
+  assert.equal(Arc.lineaEtapa(D, HOY), "II Foro · empieza hoy");
+  assert.equal(Arc.lineaEtapa(D, "2026-09-29"), "II Foro · 19 días a Roma");
+  assert.equal(Arc.lineaEtapa(D, "2026-10-10"), "II Foro · hoy, Madrid → A Coruña");
+  assert.equal(Arc.lineaEtapa(D, "2026-10-18"), "II Foro · hoy corres en Roma");
+  assert.equal(Arc.lineaEtapa(D, "2026-12-31"), "V Faro · hoy se sella el Arc");
   assert.equal(Arc.lineaEtapa(D, "2027-01-02"), null);
-  assert.ok(Arc.lineaEtapa(D, "2026-11-19").startsWith("III Travesía"));      // el 19/11 es posible: no se anuncia como hecho
-  assert.ok(!Arc.lineaEtapa(D, "2026-11-19").includes("A Coruña"));
+  assert.equal(Arc.lineaEtapa(D, "2026-10-01", HOY), "II Foro · día 4 de 28");  // otro día: sin "hoy"
 });
 test("viajes: vienen los reales, con ciudades y sin codigos; se editan y validan", () => {
   const D = Arc.vacio(HOY);
