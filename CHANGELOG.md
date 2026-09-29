@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.11.0] - 2026-09-29
+
+### Añadido
+
+- Winter Arc sin ajustes: diseño fijo en anillos; reglas, fases y viajes fijos (el estudio empieza en el Foro, el 3/11 a Ciudad de México); el sueño de Huawei se importa desde su sección
+
 ## [2.10.0] - 2026-09-29
 
 ### Añadido
@@ -368,6 +374,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.11.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.11.0
 [2.10.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.10.0
 [2.9.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.9.0
 [2.8.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.8.0

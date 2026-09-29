@@ -16,6 +16,8 @@ const run = (fecha) => ({ fecha, fuente: "strava", deporte: "Run" });
 const walk = (fecha) => ({ fecha, fuente: "strava", deporte: "Walk" });
 const gym = (fecha) => ({ fecha, fuente: "hevy", deporte: "WeightTraining" });
 const ev = (tipo, plan = true, titulo = "") => ({ tipo, plan, titulo });
+// las manuales, apuntadas desde otra fecha (para probar el "alta")
+const conAlta = (d) => { const D = Arc.vacio(HOY); D.reglas.forEach((r) => { if (r.alta) r.alta = d; }); return D; };
 
 /* ------------------------------- dias ------------------------------- */
 test("el Arc empieza el 1/9 y acaba el 31/12: 122 dias", () => {
@@ -91,7 +93,7 @@ test("antes del alta de una regla manual, sin toque ni datos, no se sabe: 'sin d
   assert.equal(Arc.fallosSeguidos(D, HOY, { acts: [], eventos: () => null }), 0);
 });
 test("desde el alta, una manual sin marcar es un fallo (hoy aun abierto)", () => {
-  const D = Arc.vacio("2026-09-20");
+  const D = conAlta("2026-09-20");
   const c = { acts: [], eventos: () => [] };
   assert.equal(Arc.estadoDia(D, "2026-09-25", HOY, c).estado, "fallado");
   assert.equal(Arc.estadoDia(D, HOY, HOY, c).estado, "hoy");
@@ -104,7 +106,7 @@ test("un toque en un dia pasado vale aunque sea antes del alta; el futuro y fuer
   assert.ok(Arc.marcaCheck(D, "2026-08-31", "estudio", true, HOY).error);
 });
 test("aviso: 2 fallos seguidos hasta ayer, no 1", () => {
-  const D = Arc.vacio("2026-09-01"), c = { acts: [], eventos: () => [] };
+  const D = conAlta("2026-09-01"), c = { acts: [], eventos: () => [] };
   for (const d of ["2026-09-24", "2026-09-25"]) for (const id of ["dormir", "estudio"]) Arc.marcaCheck(D, d, id, true, HOY);
   assert.equal(Arc.fallosSeguidos(D, HOY, c), 2);            // 26 y 27
   assert.equal(Arc.fallosSeguidos(D, "2026-09-27", c), 1);
@@ -195,7 +197,7 @@ test("el fichero de salud: se valida, se mezcla y la media de acostarse cruza me
 
 /* ------------------------------- la fuerza ------------------------------- */
 function todo(hasta, falla = []) {
-  const D = Arc.vacio("2026-09-01");
+  const D = conAlta("2026-09-01");
   for (let d = "2026-09-01"; d <= hasta; d = Arc.mas(d, 1)) if (!falla.includes(d))
     for (const id of ["dormir", "estudio"]) Arc.marcaCheck(D, d, id, true, hasta);
   return D;
@@ -233,21 +235,14 @@ test("fases de partida: cinco bloques de 4 semanas del 1/9 al 31/12, sin huecos"
   assert.equal(Arc.etapaDe(D, "2026-11-03").n, 3);     // México
   D.etapas.forEach((e) => { assert.ok(e.nombre.length <= 22); assert.ok(e.icono); });
 });
-test("etapas: se cambian y se validan; las de la 2.8 y la 2.9 sin tocar pasan a las nuevas", () => {
-  const D = Arc.vacio(HOY);
-  assert.ok(Arc.ponEtapa(D, "e3", { nombre: "México", desde: "2026-10-26", hasta: "2026-11-18" }).ok);
-  assert.ok(Arc.ponEtapa(D, "e3", { nombre: "México", desde: "2026-11-20", hasta: "2026-11-18" }).error);
-  assert.ok(Arc.anadeEtapa(D, { nombre: "Noviembre", desde: "2026-11-19", hasta: "2026-11-22" }).ok);
-  assert.equal(D.etapas.length, 6);
-  const v28 = { v: 2, reglas: Arc.preset(HOY), checks: {}, auto: {}, plan: {}, notas: {},
-    etapas: ["Hacia Roma", "De Roma a México", "México y noviembre de viajes", "Diciembre"].map((n, i) => ({ id: "e" + (i + 1), nombre: n,
-      desde: ["2026-09-01", "2026-10-19", "2026-11-03", "2026-12-01"][i], hasta: ["2026-10-18", "2026-11-02", "2026-11-30", "2026-12-31"][i] })) };
-  assert.deepEqual(Arc.migra(v28, HOY).D.etapas.map((e) => e.nombre), Arc.presetEtapas().map((e) => e.nombre));
-  const v29 = { ...v28, v: 3, etapas: [["Calzada", "2026-09-01", "2026-10-18"], ["Tierra firme", "2026-10-19", "2026-11-02"], ["Travesía", "2026-11-03", "2026-11-30"], ["Faro", "2026-12-01", "2026-12-31"]]
-    .map(([n, d, h], i) => ({ id: "e" + (i + 1), nombre: n, desde: d, hasta: h })) };
-  assert.equal(Arc.migra(v29, HOY).D.etapas.length, 5);
-  const tocada = JSON.parse(JSON.stringify(v28)); tocada.etapas[0].nombre = "Mi Roma";
-  assert.equal(Arc.migra(tocada, HOY).D.etapas[0].nombre, "Mi Roma");   // si las cambió, se respetan
+test("fases, reglas y viajes vienen del código: al cargar siempre son los de esta versión", () => {
+  const v = { v: 3, reglas: [], etapas: [{ id: "e1", nombre: "Mi Roma", desde: "2026-09-01", hasta: "2026-10-18" }], viajes: [], checks: { "2026-09-28": { estudio: 1 } }, auto: {}, plan: {}, notas: {} };
+  const D = Arc.migra(v, HOY).D;
+  assert.deepEqual(D.etapas.map((e) => e.nombre), ["Calzada", "Foro", "Travesía", "Vuelta", "Faro"]);
+  assert.deepEqual(D.reglas.map((r) => r.id), ["plan", "dormir", "estudio"]);
+  assert.equal(D.reglas[2].alta, "2026-09-28");                  // el estudio empieza con el Foro
+  assert.equal(D.viajes.length, 9);
+  assert.deepEqual(D.checks, v.checks);                          // lo marcado no se pierde
 });
 test("etapas: numeros de la fase en curso", () => {
   const D = Arc.vacio(HOY), c = { acts: [{ ...run("2026-09-10"), distancia: 8000, mov: 2400 }], eventos: () => [] };
@@ -275,7 +270,7 @@ test("datos con version: v1/v2 -> v3, mas nueva y rotos", () => {
   assert.equal(Arc.carga(almacen({ [Arc.K_DATOS]: "{no" }), HOY).error, "roto");
   assert.equal(Arc.carga({ getItem() { throw new Error("x"); } }, HOY).error, "almacen");
 });
-test("se guarda bajo copiloto.arc.* y se lee igual; el diseño por defecto es A", () => {
+test("se guarda bajo copiloto.arc.* y se lee igual; el diseño es siempre A", () => {
   const st = almacen();
   const D = Arc.vacio(HOY);
   Arc.marcaCheck(D, HOY, "estudio", true, HOY);
@@ -283,9 +278,7 @@ test("se guarda bajo copiloto.arc.* y se lee igual; el diseño por defecto es A"
   assert.ok(Arc.guardaEn(st, D));
   assert.deepEqual(Object.keys(st.m), ["copiloto.arc.datos"]);
   assert.deepEqual(Arc.carga(st, HOY).D, D);
-  assert.ok(Arc.guardaDiseno(st, "B"));
-  assert.equal(Arc.leeDiseno(st), "B");
-  assert.equal(Arc.leeDiseno(almacen()), "A");
+  assert.equal(Arc.leeDiseno(almacen({ "copiloto.arc.diseno": "B" })), "A");
 });
 
 /* --------------------------- la hoja de ruta --------------------------- */
@@ -319,21 +312,15 @@ test("la linea de HOY: numeral, nombre y lo que viene; viajes y primer dia", () 
   assert.equal(Arc.lineaEtapa(D, "2027-01-02"), null);
   assert.equal(Arc.lineaEtapa(D, "2026-10-01", HOY), "II Foro · día 4 de 28");  // otro día: sin "hoy"
 });
-test("viajes: vienen los reales, con ciudades y sin codigos; se editan y validan", () => {
+test("viajes: los reales, seguros, con ciudades y sin codigos; el 3/11 a Ciudad de México", () => {
   const D = Arc.vacio(HOY);
-  assert.equal(D.viajes.length, 10);
-  D.viajes.forEach((v) => { assert.ok(!/\b[A-Z]{3}\b/.test(v.de + v.a), "sin códigos: " + v.a); });
-  assert.ok(D.viajes.find((v) => v.a === "Bélgica y Ámsterdam").posible);
-  assert.ok(Arc.anadeViaje(D, { de: "Madrid", a: "Bruselas", fecha: "2026-11-24" }).ok);
-  assert.ok(Arc.anadeViaje(D, { de: "Madrid", a: "Bruselas", fecha: "" }).error);     // sin fecha solo si es posible
-  assert.ok(Arc.anadeViaje(D, { de: "Madrid", a: "", fecha: "2026-11-24" }).error);
-  const id = D.viajes[0].id;
-  assert.ok(Arc.ponViaje(D, id, { de: "Madrid", a: "A Coruña", fecha: "2026-10-09" }).ok);
-  assert.ok(Arc.borraViaje(D, id).ok);
-  assert.equal(Arc.viajesDe(D).length, 10);
+  assert.equal(D.viajes.length, 9);
+  D.viajes.forEach((v) => { assert.ok(!/[A-Z]{3}/.test(v.de + v.a)); assert.ok(!v.posible); assert.ok(v.fecha); });
+  assert.deepEqual(D.viajes.filter((v) => v.fecha === "2026-11-03").map((v) => v.a), ["Ciudad de México"]);
+  assert.deepEqual(D.viajes.filter((v) => v.fecha === "2026-11-12").map((v) => v.de + " → " + v.a), ["Ciudad de México → Cancún"]);
 });
 test("nunca dos veces: de los dias a medias, cuantos siguio uno cumplido", () => {
-  const D = Arc.vacio("2026-09-01"), c = { acts: [], eventos: () => [] };
+  const D = conAlta("2026-09-01"), c = { acts: [], eventos: () => [] };
   const todo = (d) => ["dormir", "estudio"].forEach((id) => Arc.marcaCheck(D, d, id, true, HOY));
   ["2026-09-01", "2026-09-03", "2026-09-06"].forEach(todo);       // a medias el 2 (vuelve el 3), el 4 y el 5 (vuelve el 6)
   const v = Arc.volviste(D, "2026-09-01", "2026-09-06", HOY, c);
@@ -354,11 +341,8 @@ test("fuerza: una regla sin ningun dia con datos no hunde la media", () => {
   assert.equal(f.arc, f.porRegla[0].v);
   assert.ok(f.arc > 70);
 });
-test("migracion v2: las reglas cambiadas se respetan; renombrar dormir deja de leer Huawei", () => {
-  const r = Arc.preset(HOY).map(({ alta, dato, ...x }) => x); r[2] = { ...r[2], nombre: "Leer 30 min" };
-  const m = Arc.migra({ v: 2, reglas: r, checks: {}, auto: {}, plan: {}, notas: {} }, HOY);
-  assert.equal(m.D.reglas[2].nombre, "Leer 30 min");
-  assert.equal(m.D.reglas[1].dato, "sueno");                      // dormir sin tocar lee Huawei
-  assert.ok(Arc.editaRegla(m.D, "dormir", { nombre: "Meditar 10 min", tipo: "manual" }, HOY).ok);
-  assert.equal(Arc.migra(JSON.parse(JSON.stringify(m.D)), HOY).D.reglas[1].dato, undefined);
+test("dormir lee Huawei; estudio y dormir se apuntan desde el 28/09", () => {
+  const D = Arc.vacio(HOY);
+  assert.equal(D.reglas[1].dato, "sueno");
+  assert.equal(Arc.estadoDia(D, "2026-09-20", HOY, { acts: [], eventos: () => [] }).reglas[2].ok, null);  // antes del Foro: sin datos
 });

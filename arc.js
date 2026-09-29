@@ -80,7 +80,7 @@ function editable(hoy){ return hoy<=EDITA_HASTA; }
 // "alta": desde cuando la app apunta una regla manual. Antes de eso, sin un
 // toque ni datos, el dia es "sin datos" (no se sabe), no un fallo.
 function preset(hoy){
-  var alta = hoy && enArc(hoy) ? hoy : INICIO;
+  var alta = "2026-09-28";                                // la app apunta las manuales desde el Foro
   return [
     { id:"plan", nombre:"Cumplir el plan de Entreno", tipo:"auto", fuente:"plan", ancla:"20:00" },
     { id:"dormir", nombre:"Dormir 7 h o más", tipo:"manual", dato:"sueno", ayuda:"Se marca al levantarse y cuenta para ese día", ancla:"08:00", alta:alta },
@@ -126,11 +126,10 @@ function presetViajes(){
     { id:"v2", fecha:"2026-10-14", de:"A Coruña", a:"Madrid" },
     { id:"v3", fecha:"2026-10-17", de:"Madrid", a:"Roma" },
     { id:"v4", fecha:"2026-10-19", de:"Roma", a:"Madrid" },
-    { id:"v5", fecha:"2026-11-03", de:"Madrid", a:"Cancún", via:"Ciudad de México" },
+    { id:"v5", fecha:"2026-11-03", de:"Madrid", a:"Ciudad de México" },
     { id:"v6", fecha:"2026-11-12", de:"Ciudad de México", a:"Cancún" },
     { id:"v7", fecha:"2026-11-17", de:"Cancún", a:"Madrid", via:"Ciudad de México", llega:"2026-11-18" },
-    { id:"v8", fecha:"2026-11-19", de:"Madrid", a:"A Coruña", posible:true },
-    { id:"v9", fecha:"", de:"", a:"Bélgica y Ámsterdam", posible:true },
+    { id:"v8", fecha:"2026-11-19", de:"Madrid", a:"A Coruña" },
     { id:"v10", fecha:"2026-12-19", de:"Madrid", a:"A Coruña" }
   ];
 }
@@ -193,6 +192,7 @@ function migra(x,hoy){
     if(Array.isArray(x.etapas) && x.etapas.length===ETAPAS_28.length &&
        x.etapas.every(function(e,i){ var p=[["2026-09-01","2026-10-18"],["2026-10-19","2026-11-02"],["2026-11-03","2026-11-30"],["2026-12-01","2026-12-31"]][i]; return e && e.nombre===ETAPAS_28[i] && e.desde===p[0] && e.hasta===p[1]; })) D.etapas=presetEtapas();
   }
+  D.reglas=preset(hoy); D.etapas=presetEtapas(); D.viajes=presetViajes();
   var p29=[["Calzada","2026-09-01","2026-10-18"],["Tierra firme","2026-10-19","2026-11-02"],["Travesía","2026-11-03","2026-11-30"],["Faro","2026-12-01","2026-12-31"]];
   if(D.etapas.length===4 && D.etapas.every(function(e,i){ return e.nombre===p29[i][0] && e.desde===p29[i][1] && e.hasta===p29[i][2]; })){ D.etapas=presetEtapas(); antes=true; }
   return antes ? { D:D, migrado:true } : { D:D };
@@ -698,7 +698,7 @@ function borraEtapa(D,id){
   D.etapas=L.filter(function(e){ return e.id!==id; });
   return { ok:true };
 }
-function leeDiseno(almacen){ var x=null; try{ x=almacen.getItem(K_DISENO); }catch(e){} return DISENOS[x] ? x : DISENO_DEF; }
+function leeDiseno(){ return "A"; }                        // diseño fijo: anillos
 function guardaDiseno(almacen,x){ if(!DISENOS[x]) return false; try{ almacen.setItem(K_DISENO,x); return true; }catch(e){ return false; } }
 
 /* ===========================================================================
@@ -1286,12 +1286,11 @@ function pintaLlevas(w,h,k){
 // la temporada: 13 semanas en filas (la 1 ocupa dos, del jueves 1 al domingo 11) y 7 dias en columnas
 
 // el sueño: lo que dice Huawei, con su fecha. Sin inventar noches que no hay
-function pintaSueno(w,h){
+function pintaSueno(w,h,repinta){
   var s=seccion(w,"Sueño");
   if(!SALUD){
     s.appendChild(el("p","arcS","Todavía no hay datos de Huawei Health en este móvil. Con ellos, «Dormir 7 h o más» se marca solo y ves a qué hora te acuestas."));
-    if(P.ajustes && !S.soloLectura){ var b=el("button","arcBot2","Importar el fichero de Huawei"); b.addEventListener("click",abreAjustes); s.appendChild(b); }
-    return;
+    botonSalud(s,repinta); return;
   }
   var hasta = SALUD.hasta<h ? SALUD.hasta : h, zA=suenoDe(SALUD.dias,INICIO,hasta);
   var noches=Object.keys(SALUD.dias).filter(function(d){ return d>=INICIO && d<=hasta && typeof SALUD.dias[d].sueno==="number"; }).sort();
@@ -1307,18 +1306,14 @@ function pintaSueno(w,h){
   var atras=entre(SALUD.hasta,h);
   s.appendChild(el("p","arcS","Datos de "+esc(SALUD.fuente||"Huawei Health")+" hasta el "+esc(larga(SALUD.hasta))+"."+
     (atras>7 ? " Faltan "+plural(atras,"noche")+": importa el siguiente fichero." : "")));
-  if(atras>7 && P.ajustes && !S.soloLectura){ var b2=el("button","arcBot2","Importar el fichero nuevo"); b2.addEventListener("click",abreAjustes); s.appendChild(b2); }
+  botonSalud(s,repinta);
 }
-// en Ajustes del Arc: importar el fichero de Huawei (el de scripts/salud-arc.mjs)
+// importar el fichero de Huawei (el de scripts/salud-arc.mjs); cada uno suma los dias que traiga
 var msgSalud="";
-function pintaSaludAjustes(w,repinta){
-  var s=seccion(w,"Sueño y pasos · Huawei Health");
-  s.appendChild(el("p","arcS", SALUD
-    ? "En este móvil: "+Object.keys(SALUD.dias).length+" días, del "+corta(SALUD.desde)+" al "+corta(SALUD.hasta)+". Cada fichero nuevo suma los días que traiga."
-    : "Todavía no hay datos. El fichero sale de la exportación de Huawei Health y se queda solo en este móvil."));
+function botonSalud(s,repinta){
   if(S.soloLectura) return;
   var inp=el("input"); inp.type="file"; inp.accept="application/json,.json"; inp.id="arcSaludF"; inp.hidden=true;
-  var b=el("button","arcBot",SALUD ? "Importar otro fichero" : "Importar el fichero");
+  var b=el("button","arcBot2",SALUD ? "Importar el fichero nuevo" : "Importar el fichero de Huawei");
   b.addEventListener("click",function(){ inp.click(); });
   inp.addEventListener("change",function(){
     var f=inp.files && inp.files[0]; if(!f) return;
@@ -1352,7 +1347,7 @@ function pinta(c){
   }else{
     if(enArc(h)) pintaHoy(w,h,repinta);
     pintaFuerza(w,F,h);
-    pintaSueno(w,h);
+    pintaSueno(w,h,repinta);
     pintaLlevas(w,h,k);
     pintaRecorrido(w,h,F);
     pintaRevision(w,h,k);
@@ -1610,7 +1605,7 @@ function futura(w,e){
       '<span class="arcS">'+(v.posible ? '<span class="arcL">Posible</span> ' : '')+esc(v.fecha ? (v.llega ? "llega "+diaCorto(v.llega) : diaCorto(v.fecha)) : "sin fecha")+'</span>');
     w.appendChild(f);
   });
-  if(P.ajustes && !S.soloLectura){ var b=el("button","arcBot2","Editar viajes"); b.addEventListener("click",abreAjustes); w.appendChild(b); }
+
 }
 // el acta de una etapa sellada
 function acta(w,e,n,h,F){
@@ -1745,10 +1740,8 @@ function pintaViajesAjustes(w,repinta){
 }
 function abreAjustes(){ if(P.ajustes) P.ajustes(); }
 function verObjetivo(w){
-  var s=seccion(w,"Objetivo"), o=String(S.D.objetivo||"").trim();
-  if(o){ s.appendChild(el("p","arcT",esc(o))); return; }
-  s.appendChild(el("p","arcS","Todavía no has escrito el objetivo del Arc."));
-  if(P.ajustes && !S.soloLectura){ var b=el("button","arcBot2","Escribir el objetivo"); b.addEventListener("click",abreAjustes); s.appendChild(b); }
+  var o=String(S.D.objetivo||"").trim(); if(!o) return;
+  var s=seccion(w,"Objetivo"); s.appendChild(el("p","arcT",esc(o)));
 }
 
 /* ------------------------- ajustes del Arc -------------------------
