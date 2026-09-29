@@ -1,1 +1,1 @@
-{"version":"2.16.1","fecha":"2026-09-29","notas":"App Android: las actualizaciones se bajan con su SHA-256 (el que da GitHub en la release), que el actualizador exige"}
+{"version":"2.16.2","fecha":"2026-09-29","notas":"Ajustes → «Pasar la conexión a la app Android»: un toque en Chrome le pasa a la app la dirección del Worker y la clave"}

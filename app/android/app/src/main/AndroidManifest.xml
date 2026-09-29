@@ -23,6 +23,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- la conexion (Worker y clave) que pasa la web desde Ajustes: copiloto://config?url=..&key=.. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="copiloto" android:host="config" />
+            </intent-filter>
+
         </activity>
 
         <provider
