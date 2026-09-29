@@ -116,7 +116,7 @@ function presetEtapas(){
     { id:"e2", nombre:"Foro", sub:"Cuatro semanas para Roma: afinar, correr y recuperar", desde:"2026-09-28", hasta:"2026-10-25", icono:"flag-checkered" },
     { id:"e3", nombre:"Travesía", sub:"Preparar México y el viaje: nunca falles dos veces", desde:"2026-10-26", hasta:"2026-11-22", icono:"globe-hemisphere-west" },
     { id:"e4", nombre:"Vuelta", sub:"De vuelta en casa: recuperar el ritmo antes de Navidad", desde:"2026-11-23", hasta:"2026-12-20", icono:"house-line" },
-    { id:"e5", nombre:"Faro", sub:"Navidad en A Coruña: cerrar el año", desde:"2026-12-21", hasta:"2026-12-31", icono:"lighthouse" }
+    { id:"e5", nombre:"Faro", sub:"Navidad en A Coruña: cerrar el año", desde:"2026-12-21", hasta:"2026-12-31", icono:"torre-hercules" }
   ];
 }
 // los viajes (la app no lee vuelos: van aqui, editables). Solo nombres de ciudad.
@@ -409,17 +409,18 @@ var M=Math.pow(0.5,1/13);
 function fuerzas(D,hoy,c){
   c=ctxDe(c);
   var ult = hoy<FIN ? hoy : FIN;
-  var R=D.reglas.map(function(r){ return { regla:r, v:0, serie:{}, visto:false }; }), serie=[];
+  var R=D.reglas.map(function(r){ return { regla:r, v:0, serie:{}, visto:false, n:0 }; }), serie=[];
   for(var d=INICIO; d<=ult; d=mas(d,1)){
     var e=estadoDia(D,d,hoy,c);
     for(var i=0;i<R.length;i++){
       var x=e.reglas[i], r=R[i];
-      if(x.ok!==null && !(d===hoy && !x.ok)){ r.v = r.v*M + (x.ok?1:0)*(1-M); r.visto=true; }
+      if(x.ok!==null && !(d===hoy && !x.ok)){ r.v = r.v*M + (x.ok?1:0)*(1-M); r.visto=true; r.n++; }
       r.serie[d]=r.v;
     }
-    // una regla sin ningun dia con datos todavia no hunde la media
-    var Rv=R.filter(function(r){ return r.visto; });
-    serie.push({ d:d, v: Rv.length ? Math.round(100*Rv.reduce(function(s,r){ return s+r.serie[d]; },0)/Rv.length) : 0 });
+    // la media pesa cada regla por los dias que lleva con datos: una regla recien
+    // empezada no hunde la fuerza de las que llevan todo el Arc
+    var pes=R.reduce(function(s,r){ return s+r.n; },0);
+    serie.push({ d:d, v: pes ? Math.round(100*R.reduce(function(s,r){ return s+r.serie[d]*r.n; },0)/pes) : 0 });
   }
   var hace=mas(ult,-7), pct=function(v){ return Math.round(100*(v||0)); };
   function en(d){ var s=serie.filter(function(x){ return x.d===d; })[0]; return s ? s.v : 0; }
@@ -496,8 +497,8 @@ var DESTINOS={
   e3:[{ fecha:"2026-11-03", arriba:"DÍAS A", abajo:"MÉXICO", cero:["HOY","MÉXICO"], icono:"airplane-tilt", plur:"días a México", sing:"día a México", hoyTxt:"hoy vuelas a México" },
       { fecha:"2026-11-18", arriba:"DÍAS PARA", abajo:"VOLVER", cero:["HOY","MADRID"], icono:"airplane-tilt", plur:"días para volver", sing:"día para volver", hoyTxt:"hoy vuelves a Madrid" },
       { fecha:"2026-11-23", arriba:"DÍAS PARA", abajo:"LA VUELTA", cero:["HOY","VUELTA"], icono:"house-line", plur:"días para la Vuelta", sing:"día para la Vuelta", hoyTxt:"empieza la Vuelta" }],
-  e4:[{ fecha:"2026-12-19", arriba:"DÍAS A", abajo:"CORUÑA", cero:["HOY","CORUÑA"], icono:"lighthouse", plur:"días a Coruña", sing:"día a Coruña", hoyTxt:"hoy vuelas a Coruña" },
-      { fecha:"2026-12-21", arriba:"DÍAS PARA", abajo:"EL FARO", cero:["HOY","FARO"], icono:"lighthouse", plur:"días para el Faro", sing:"día para el Faro", hoyTxt:"empieza el Faro" }],
+  e4:[{ fecha:"2026-12-19", arriba:"DÍAS A", abajo:"CORUÑA", cero:["HOY","CORUÑA"], icono:"torre-hercules", plur:"días a Coruña", sing:"día a Coruña", hoyTxt:"hoy vuelas a Coruña" },
+      { fecha:"2026-12-21", arriba:"DÍAS PARA", abajo:"EL FARO", cero:["HOY","FARO"], icono:"torre-hercules", plur:"días para el Faro", sing:"día para el Faro", hoyTxt:"empieza el Faro" }],
   e5:[{ fecha:"2026-12-31", arriba:"DÍAS PARA", abajo:"SELLAR", cero:["HOY SE","SELLA"], icono:"seal-check", plur:"días para sellar el Arc", sing:"día para sellar el Arc", hoyTxt:"hoy se sella el Arc" }]
 };
 // lo que pide cada fase (la consigna). Por id; una fase nueva no lleva
@@ -730,7 +731,10 @@ var PH={
   "trash":"M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z",
   "warning-circle":"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"
 };
-function ico(n){ return '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="'+(PH[n]||PH.circle)+'"/></svg>'; }
+// iconos propios (mismo trazo que Phosphor regular) para lo que Phosphor no tiene
+var PROPIOS={ "torre-hercules":'<g fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><path d="M44 232h168"/><path d="M94 232V112h68v120"/><path d="M84 112h88"/><path d="M94 214l68-26M94 174l68-26M94 134l68-18"/><path d="M108 112V78h40v34"/><path d="M100 78h56"/><path d="M118 78V58h20v20"/><path d="M114 58c0-12 6-20 14-20s14 8 14 20"/><path d="M128 38V24"/></g>' };
+function ico(n){ return PROPIOS[n] ? '<svg viewBox="0 0 256 256" aria-hidden="true">'+PROPIOS[n]+'</svg>'
+                                   : '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="'+(PH[n]||PH.circle)+'"/></svg>'; }
 function esc(t){ return String(t==null?"":t).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function el(tag,cls,html){ var d=document.createElement(tag); if(cls) d.className=cls; if(html!=null) d.innerHTML=html; return d; }
 function plural(n,uno,varios){ return n+" "+(n===1?uno:(varios||uno+"s")); }
@@ -911,7 +915,8 @@ var CSS=
   ".arcTramoLi.futura .arcTramoN .arcT{color:var(--mu)}"+
   ".arcTramoT{grid-column:2/-1;display:block;line-height:0}"+
   ".arcTramoS{grid-column:2/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
-  ".arcTramoDentro{margin:0 0 20px}"+
+  ".arcTramoDentro{margin:0 0 20px 36px}"+
+  ".arcTramoDentro .arcGrid{gap:2px}"+
   ".arcViaje{display:grid;grid-template-columns:20px 1fr;column-gap:12px;align-items:center;min-height:44px;padding:4px 0}"+
   ".arcViaje svg{width:20px;height:20px;color:var(--mu)}"+
   ".arcViaje .arcS{grid-column:2}"+
@@ -1345,12 +1350,10 @@ function pinta(c){
       (editable(h) ? "Hacen falta de "+MIN_REGLAS+" a "+MAX_REGLAS+". Se ponen con el engranaje de arriba hasta el 30 de septiembre."
                    : "El Arc siguió sin reglas, así que no hay nada que contar.")+'</p>'));
   }else{
-    if(enArc(h)) pintaHoy(w,h,repinta);
     pintaFuerza(w,F,h);
     pintaSueno(w,h,repinta);
     pintaLlevas(w,h,k);
     pintaRecorrido(w,h,F);
-    pintaRevision(w,h,k);
   }
   c.scrollTop=sc;
   if(irRev){ irRev=false; var r=document.getElementById("arcRev"); if(r) r.scrollIntoView(); }
@@ -1365,14 +1368,15 @@ function pinta(c){
    cumplido) y en los checks de Hoy; lo demas, en tinta.                    */
 var DIAS_C=["lun","mar","mié","jue","vie","sáb","dom"];
 function diaCorto(iso){ return DIAS_C[diaSem(iso)]+" "+corta(iso); }
-function icoSvg(n,x,y,t,cls){ return '<svg class="'+(cls||"")+'" x="'+x.toFixed(1)+'" y="'+y+'" width="'+t+'" height="'+t+'" viewBox="0 0 256 256"><path fill="currentColor" d="'+(PH[n]||PH.circle)+'"/></svg>'; }
+function icoSvg(n,x,y,t,cls){ if(PROPIOS[n]) return '<svg class="'+(cls||"")+'" x="'+x.toFixed(1)+'" y="'+y+'" width="'+t+'" height="'+t+'" viewBox="0 0 256 256">'+PROPIOS[n]+'</svg>';
+  return '<svg class="'+(cls||"")+'" x="'+x.toFixed(1)+'" y="'+y+'" width="'+t+'" height="'+t+'" viewBox="0 0 256 256"><path fill="currentColor" d="'+(PH[n]||PH.circle)+'"/></svg>'; }
 var tramoAbierto=null, actaDe=null;
 // los iconos de viaje de una etapa: ida (avion o faro si es A Coruña), carrera y sello
 function marcasViaje(e){
   var M=[], V=viajesEntre(S.D,e.desde,e.hasta);
   V.forEach(function(v){
     if(v.a==="Madrid" || (v.de && v.de!=="Madrid")) return;             // vuelta a casa o vuelo dentro del destino
-    M.push({ d:v.fecha, icono: /Coruña/.test(v.a) ? "lighthouse" : "airplane-tilt", pri:1, posible:!!v.posible, v:v });
+    M.push({ d:v.fecha, icono: /Coruña/.test(v.a) ? "torre-hercules" : "airplane-tilt", pri:1, posible:!!v.posible, v:v });
   });
   if(CARRERA.fecha>=e.desde && CARRERA.fecha<=e.hasta) M.push({ d:CARRERA.fecha, icono:"flag-checkered", pri:3, tinta:true });
   if(e.hasta===FIN) M.push({ d:FIN, icono:"seal-check", pri:2, tinta:true });
@@ -1485,7 +1489,7 @@ function proxima(e,h){
   if(V.length){
     var v=V[0], vuelta=viajesDe(S.D).filter(function(u){ return u.fecha && u.fecha>v.fecha && u.a==="Madrid"; })[0];
     var fin = vuelta ? (vuelta.llega||vuelta.fecha) : null;
-    return { nombre:v.a+(v.posible?" · posible":""), fecha:v.fecha, n:entre(h,v.fecha), icono:/Coruña/.test(v.a)?"lighthouse":"airplane-tilt",
+    return { nombre:v.a+(v.posible?" · posible":""), fecha:v.fecha, n:entre(h,v.fecha), icono:/Coruña/.test(v.a)?"torre-hercules":"airplane-tilt",
              fechas: fin ? diaCorto(v.fecha).replace(/ \w+$/,"")+" – "+diaCorto(fin) : diaCorto(v.fecha) };
   }
   if(CARRERA.fecha>=h && CARRERA.fecha>=e.desde && CARRERA.fecha<=e.hasta)
@@ -1600,7 +1604,7 @@ function futura(w,e){
   if(CONSIGNAS[e.id]) w.appendChild(el("p","arcT",esc(CONSIGNAS[e.id])));
   var V=viajesDe(S.D).filter(function(v){ return (v.fecha && v.fecha>=e.desde && v.fecha<=e.hasta) || (!v.fecha && e.id==="e3"); });
   V.forEach(function(v){
-    var f=el("div","arcViaje"+(v.posible?" posible":""),ico(v.a==="Madrid" ? "house-line" : /Coruña/.test(v.a) ? "lighthouse" : "airplane-tilt")+
+    var f=el("div","arcViaje"+(v.posible?" posible":""),ico(v.a==="Madrid" ? "house-line" : /Coruña/.test(v.a) ? "torre-hercules" : "airplane-tilt")+
       '<span class="arcT">'+esc(textoViaje(v))+'</span>'+
       '<span class="arcS">'+(v.posible ? '<span class="arcL">Posible</span> ' : '')+esc(v.fecha ? (v.llega ? "llega "+diaCorto(v.llega) : diaCorto(v.fecha)) : "sin fecha")+'</span>');
     w.appendChild(f);
@@ -1621,7 +1625,7 @@ function acta(w,e,n,h,F){
   if(st.sueno && st.sueno.media) cifra(horasTxt(st.sueno.media),"sueño medio");
   cj.appendChild(g);
   var hito = e.id==="e1" ? { i:"sneaker-move", t:"Test de 20 km", d:"2026-09-27" } : e.id==="e2" ? { i:"flag-checkered", t:CARRERA.texto, d:CARRERA.fecha }
-           : e.id==="e3" ? { i:"airplane-tilt", t:"Vuelta de México", d:"2026-11-18" } : e.id==="e4" ? { i:"lighthouse", t:"A Coruña", d:"2026-12-19" } : null;
+           : e.id==="e3" ? { i:"airplane-tilt", t:"Vuelta de México", d:"2026-11-18" } : e.id==="e4" ? { i:"torre-hercules", t:"A Coruña", d:"2026-12-19" } : null;
   if(hito){
     var hr=el("div","arcProx",ico(hito.i)+'<span><span class="arcT">'+esc(hito.t)+'</span></span><span class="arcS">'+esc(diaCorto(hito.d))+'</span>');
     cj.appendChild(hr);

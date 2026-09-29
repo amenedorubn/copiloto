@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.12.0] - 2026-09-29
+
+### Añadido
+
+- Winter Arc más limpio: fuera de Ajustes, sin Hoy ni revisión semanal, la línea de la hoja de ruta ya no pisa las fases, la fuerza no se hunde con reglas nuevas y el Faro es la Torre de Hércules
+
 ## [2.11.0] - 2026-09-29
 
 ### Añadido
@@ -374,6 +380,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.12.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.12.0
 [2.11.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.11.0
 [2.10.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.10.0
 [2.9.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.9.0
