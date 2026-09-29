@@ -1,1 +1,1 @@
-{"version":"2.19.0","fecha":"2026-09-29","notas":"App Android: GPS y voz con la pantalla apagada (notificación con km, tiempo, ritmo, Pausa y «¿Cómo voy?»), informe de cada salida que se guarda solo, el APK nuevo se instala sin cable desde Ajustes y el gesto atrás ya no saca de la app a mitad de entreno"}
+{"version":"2.19.1","fecha":"2026-09-29","notas":"App Android: el informe de cada salida apunta también el móvil, la versión de Android y la del WebView (primera versión que llega sin cable)"}

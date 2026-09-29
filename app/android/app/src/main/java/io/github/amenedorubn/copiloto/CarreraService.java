@@ -236,6 +236,7 @@ public class CarreraService extends Service {
         inicio = SystemClock.elapsedRealtime();
         Informe.abre(this);
         Informe.linea("servicio", "empieza · batería " + bateria() + " % · app " + version());
+        Informe.linea("móvil", Build.MANUFACTURER + " " + Build.MODEL + " · Android " + Build.VERSION.RELEASE + " · WebView " + webView());
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         cerrojo = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "copiloto:carrera");
         cerrojo.setReferenceCounted(false);
@@ -333,6 +334,16 @@ public class CarreraService extends Service {
 
     private static boolean igual(String a, String b) {
         return a == null ? b == null : a.equals(b);
+    }
+
+    /** La version del WebView (Chrome) que pinta la web: cambia sola con Play y puede cambiar cosas. */
+    private static String webView() {
+        try {
+            android.content.pm.PackageInfo p = Build.VERSION.SDK_INT >= 26 ? android.webkit.WebView.getCurrentWebViewPackage() : null;
+            return p == null ? "?" : p.versionName;
+        } catch (Throwable e) {
+            return "?";
+        }
     }
 
     private String version() {
