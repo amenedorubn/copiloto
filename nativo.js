@@ -31,9 +31,9 @@
       return !!(h && (h.methods || []).some(function (m) { return m.name === metodo; }));
     } catch (e) { return false; }
   }
-  // la musica mientras habla: "pausa" (por defecto: Spotify se calla y sigue solo), "baja"
-  // (como Google Maps: Android la deja al 20 %, no deja menos) o "nada" (la voz por encima)
-  var LSM = "copiloto.musica2", MODOS = ["pausa", "baja", "nada"];
+  // la musica mientras habla: "pausa" (por defecto: Spotify se calla y sigue solo) o "nada"
+  // (la voz por encima). Bajarla al 20 % (como Google Maps) no se notaba en el OnePlus: fuera.
+  var LSM = "copiloto.musica2", MODOS = ["pausa", "nada"];
   N.musica = function (v) {
     try {
       if (MODOS.indexOf(v) >= 0) localStorage.setItem(LSM, v);

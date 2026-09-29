@@ -72,16 +72,14 @@ test("voz: cancel pide callar", () => {
   assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "callar", {}]);
 });
 
-test("musica: por defecto se calla y sigue; se puede bajar o no tocar", async () => {
+test("musica: por defecto se calla y sigue; se puede no tocar", async () => {
   const m = movil(), w = m.window;
   assert.equal(w.Nativo.musica(), "pausa");
   await w.Nativo.tono(true);
   assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: true, sinFoco: false }]);
-  assert.equal(w.Nativo.musica("baja"), "baja");
-  assert.equal(w.Nativo.musica("otra cosa"), "baja");         // lo que no vale no se guarda
+  assert.equal(w.Nativo.musica("baja"), "pausa");             // bajar ya no se ofrece: no vale
   await w.Nativo.tono(false);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: false, pausa: false, sinFoco: false }]);
-  assert.equal(w.Nativo.musica("pausa"), "pausa");
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: false, pausa: true, sinFoco: false }]);
   w.speechSynthesis.speak(new w.SpeechSynthesisUtterance("hola"));
   assert.equal(m.llamadas.at(-1)[2].pausa, true);
   assert.equal(w.Nativo.musica("nada"), "nada");            // la voz por encima: sin foco
