@@ -1,1 +1,1 @@
-{"version":"2.16.2","fecha":"2026-09-29","notas":"Ajustes → «Pasar la conexión a la app Android»: un toque en Chrome le pasa a la app la dirección del Worker y la clave"}
+{"version":"2.17.0","fecha":"2026-09-29","notas":"App Android: con Spotify sonando, cada aviso baja la música (o la pausa, a elegir en Ajustes) y la devuelve sola al acabar: el pitido también es nativo"}

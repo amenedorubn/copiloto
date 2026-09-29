@@ -12,10 +12,11 @@ const espera = () => new Promise((r) => setTimeout(r, 0));
 const plano = (x) => JSON.parse(JSON.stringify(x));
 
 // un "movil": Capacitor que apunta las llamadas y deja responder a mano
-function movil({ nativo = true, release = null, version = "2.16.0" } = {}) {
+function movil({ nativo = true, release = null, version = "2.16.0", metodos = ["hablar", "callar", "estado", "pantalla", "tono"] } = {}) {
   const llamadas = [], callbacks = [], ls = {};
   const Capacitor = nativo ? {
     isNativePlatform: () => true,
+    PluginHeaders: [{ name: "Copiloto", methods: metodos.map((name) => ({ name, rtype: "promise" })) }],
     nativePromise: (p, m, d) => { llamadas.push([p, m, d]);
       if (m === "download") return Promise.resolve({ id: "b-" + d.version, version: d.version });
       return Promise.resolve({}); },
@@ -50,7 +51,7 @@ test("voz: inicio -> onstart, fin -> onend, y speaking se apaga", () => {
   const u = new w.SpeechSynthesisUtterance("Kilómetro cinco");
   u.rate = 1.02; u.onstart = () => ev.push("start"); u.onend = () => ev.push("end"); u.onerror = (e) => ev.push("error:" + e.error);
   w.speechSynthesis.speak(u);
-  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "hablar", { texto: "Kilómetro cinco", velocidad: 1.02 }]);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "hablar", { texto: "Kilómetro cinco", velocidad: 1.02, pausa: false }]);
   assert.equal(w.speechSynthesis.speaking, true);
   m.callbacks[0]({ evento: "inicio" }); m.callbacks[0]({ evento: "fin" });
   m.callbacks[0]({ evento: "fin" });                         // un segundo cierre no se repite
@@ -69,6 +70,23 @@ test("voz: cancel pide callar", () => {
   const m = movil();
   m.window.speechSynthesis.cancel();
   assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "callar", {}]);
+});
+
+test("musica: por defecto baja; si se elige pausa, la voz y el pitido lo piden", async () => {
+  const m = movil(), w = m.window;
+  assert.equal(w.Nativo.musica(), "baja");
+  await w.Nativo.tono(true);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: true, pausa: false }]);
+  assert.equal(w.Nativo.musica("pausa"), "pausa");
+  assert.equal(w.Nativo.musica("otra cosa"), "pausa");        // lo que no vale no se guarda
+  await w.Nativo.tono(false);
+  assert.deepEqual(plano(m.llamadas.at(-1)), ["Copiloto", "tono", { sube: false, pausa: true }]);
+  w.speechSynthesis.speak(new w.SpeechSynthesisUtterance("hola"));
+  assert.equal(m.llamadas.at(-1)[2].pausa, true);
+});
+test("pitido: un APK viejo sin tono deja Nativo.tono vacio (aviso() usa el de la web)", () => {
+  assert.equal(movil({ metodos: ["hablar", "callar", "estado", "pantalla"] }).window.Nativo.tono, null);
+  assert.equal(typeof movil().window.Nativo.tono, "function");
 });
 
 /* ------------------------------ pantalla ------------------------------ */

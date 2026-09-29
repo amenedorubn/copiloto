@@ -8,6 +8,8 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
@@ -43,8 +45,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Voz: primero la neuronal que va dentro de la app (Piper "Miro", es-ES, con
  * sherpa-onnx: no necesita internet ni depende del motor de voz del movil).
  * Si no carga, la del sistema (TextToSpeech). En los dos casos pide el foco de
- * audio transitorio con atenuacion y con uso "guia de navegacion", como las
- * apps de navegacion: la musica baja mientras habla y vuelve sola al acabar.
+ * audio transitorio y con uso "guia de navegacion", como las apps de navegacion:
+ * la musica baja (o se pausa, si se elige asi) mientras habla y vuelve sola al
+ * acabar. El foco se retiene desde el pitido hasta el final de la frase y se
+ * suelta un poco despues, para que la musica no suba y baje entre medias.
  *
  * hablar() es una llamada de callback: responde {evento:"inicio"} cuando
  * empieza a sonar y despues una sola vez {evento:"fin"|"cortada"|"error"}.
@@ -70,8 +74,13 @@ public class CopilotoPlugin extends Plugin {
 
     private AudioManager audio;
     private AudioAttributes atributos;
-    private Object foco; // AudioFocusRequest (API 26+)
+    private Object focoBaja; // AudioFocusRequest (API 26+): la musica baja
+    private Object focoPausa; // AudioFocusRequest (API 26+): la musica se pausa y sigue sola
+    private Object focoTenido; // con cual se tiene ahora (null: sin foco)
     private final AudioManager.OnAudioFocusChangeListener escucha = cambio -> {};
+    private final Handler principal = new Handler(Looper.getMainLooper());
+    private final Runnable sueltaFocoTarea = this::sueltaFocoYa;
+    private final ExecutorService sonidos = Executors.newSingleThreadExecutor();
 
     /** Una frase: su llamada, su turno y si ya se ha cerrado. */
     private static class Frase {
@@ -93,7 +102,11 @@ public class CopilotoPlugin extends Plugin {
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
             .build();
         if (Build.VERSION.SDK_INT >= 26) {
-            foco = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            focoBaja = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                .setAudioAttributes(atributos)
+                .setOnAudioFocusChangeListener(escucha)
+                .build();
+            focoPausa = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(atributos)
                 .setOnAudioFocusChangeListener(escucha)
                 .build();
@@ -129,7 +142,7 @@ public class CopilotoPlugin extends Plugin {
                 public void onDone(String id) {
                     Frase f = delSistema.remove(id);
                     if (f == null) return;
-                    if (f.turno == turno.get()) sueltaFoco();
+                    if (f.turno == turno.get()) sueltaFocoLuego();
                     cierra(f, "fin", null);
                 }
 
@@ -163,12 +176,14 @@ public class CopilotoPlugin extends Plugin {
         final String texto = call.getString("texto", "");
         Float v = call.getFloat("velocidad", 1f);
         final float velocidad = Math.max(0.5f, Math.min(2f, v == null ? 1f : v));
+        final boolean pausa = Boolean.TRUE.equals(call.getBoolean("pausa", false));
         final Frase f = new Frase(call, turno.incrementAndGet());
         corta(); // la frase nueva corta la anterior
         if (texto == null || texto.trim().isEmpty()) {
             cierra(f, "fin", null);
             return;
         }
+        retenFoco(pausa); // la musica baja ya, mientras se genera la frase
         hilo.execute(() -> {
             if (f.turno != turno.get()) {
                 cierra(f, "cortada", null);
@@ -177,7 +192,7 @@ public class CopilotoPlugin extends Plugin {
             OfflineTts t = neural;
             if (t != null) {
                 try {
-                    suena(f, t.generate(texto, 0, velocidad));
+                    suena(f, t.generate(texto, 0, velocidad), pausa);
                     return;
                 } catch (Throwable e) {
                     Log.e(TAG, "voz neuronal: frase", e);
@@ -188,7 +203,7 @@ public class CopilotoPlugin extends Plugin {
                 cierra(f, "cortada", null);
                 return;
             }
-            hablaSistema(f, texto, velocidad);
+            hablaSistema(f, texto, velocidad, pausa);
         });
     }
 
@@ -196,7 +211,25 @@ public class CopilotoPlugin extends Plugin {
     public void callar(PluginCall call) {
         turno.incrementAndGet();
         corta();
-        sueltaFoco();
+        sueltaFocoLuego(); // si detras viene otra frase (cancel + speak), la musica no llega a subir
+        call.resolve();
+    }
+
+    /** El pitido de los avisos (el mismo que el de la web), con la musica bajada. */
+    @PluginMethod
+    public void tono(PluginCall call) {
+        final boolean sube = !Boolean.FALSE.equals(call.getBoolean("sube", true));
+        final boolean pausa = Boolean.TRUE.equals(call.getBoolean("pausa", false));
+        retenFoco(pausa);
+        sonidos.execute(() -> {
+            try {
+                suenaTono(sube);
+            } catch (Throwable e) {
+                Log.e(TAG, "tono", e);
+            } finally {
+                sueltaFocoLuego(); // la voz llega medio segundo despues y lo vuelve a retener
+            }
+        });
         call.resolve();
     }
 
@@ -209,7 +242,7 @@ public class CopilotoPlugin extends Plugin {
         call.resolve(d);
     }
 
-    private void suena(Frase f, GeneratedAudio a) throws InterruptedException {
+    private void suena(Frase f, GeneratedAudio a, boolean pausa) throws InterruptedException {
         float[] m = a.getSamples();
         int sr = a.getSampleRate();
         if (m == null || m.length == 0) throw new IllegalStateException("frase vacia");
@@ -230,7 +263,7 @@ public class CopilotoPlugin extends Plugin {
         try {
             t.write(m, 0, m.length, AudioTrack.WRITE_BLOCKING);
             pista = t;
-            pideFoco();
+            retenFoco(pausa);
             t.play();
             emite(f, "inicio", null);
             long limite = System.currentTimeMillis() + (m.length * 1000L) / sr + 2000;
@@ -247,18 +280,18 @@ public class CopilotoPlugin extends Plugin {
             t.release();
         }
         boolean cortada = f.turno != turno.get();
-        if (!cortada) sueltaFoco();
+        if (!cortada) sueltaFocoLuego();
         cierra(f, cortada ? "cortada" : "fin", null);
     }
 
-    private void hablaSistema(Frase f, String texto, float velocidad) {
+    private void hablaSistema(Frase f, String texto, float velocidad, boolean pausa) {
         if (!sistemaListo) {
             cierra(f, "error", "sin_voz");
             return;
         }
         String id = "f" + f.turno;
         delSistema.put(id, f);
-        pideFoco();
+        retenFoco(pausa);
         sistema.setSpeechRate(velocidad);
         if (sistema.speak(texto, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
             delSistema.remove(id);
@@ -295,6 +328,8 @@ public class CopilotoPlugin extends Plugin {
 
     private void cierra(Frase f, String evento, String error) {
         if (!f.cerrada.compareAndSet(false, true)) return;
+        // fin o error de la ultima frase: la musica vuelve (si la corta otra, esa ya retiene el foco)
+        if (!"cortada".equals(evento) && f.turno == turno.get()) sueltaFocoLuego();
         JSObject d = new JSObject();
         d.put("evento", evento);
         if (error != null) d.put("error", error);
@@ -302,21 +337,71 @@ public class CopilotoPlugin extends Plugin {
         getBridge().releaseCall(f.call);
     }
 
-    private void pideFoco() {
+    /** Pide el foco (o cambia de "bajar" a "pausar") y anula una suelta pendiente. */
+    private synchronized void retenFoco(boolean pausa) {
+        principal.removeCallbacks(sueltaFocoTarea);
         if (audio == null) return;
         if (Build.VERSION.SDK_INT >= 26) {
-            audio.requestAudioFocus((AudioFocusRequest) foco);
+            Object quiero = pausa ? focoPausa : focoBaja;
+            if (focoTenido == quiero) return;
+            if (focoTenido != null) audio.abandonAudioFocusRequest((AudioFocusRequest) focoTenido);
+            audio.requestAudioFocus((AudioFocusRequest) quiero);
+            focoTenido = quiero;
         } else {
-            audio.requestAudioFocus(escucha, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+            Integer quiero = pausa ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT : AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
+            if (quiero.equals(focoTenido)) return;
+            audio.requestAudioFocus(escucha, AudioManager.STREAM_MUSIC, quiero);
+            focoTenido = quiero;
         }
     }
 
-    private void sueltaFoco() {
-        if (audio == null) return;
-        if (Build.VERSION.SDK_INT >= 26) {
-            if (foco != null) audio.abandonAudioFocusRequest((AudioFocusRequest) foco);
-        } else {
-            audio.abandonAudioFocus(escucha);
+    /** Suelta el foco dentro de 0,7 s, salvo que antes llegue otro pitido o frase. */
+    private void sueltaFocoLuego() {
+        principal.removeCallbacks(sueltaFocoTarea);
+        principal.postDelayed(sueltaFocoTarea, 700);
+    }
+
+    private synchronized void sueltaFocoYa() {
+        principal.removeCallbacks(sueltaFocoTarea);
+        if (audio == null || focoTenido == null) return;
+        if (Build.VERSION.SDK_INT >= 26) audio.abandonAudioFocusRequest((AudioFocusRequest) focoTenido);
+        else audio.abandonAudioFocus(escucha);
+        focoTenido = null;
+    }
+
+    /** El pitido de la web (wavURL): barrido de 0,3 s, 880->1320 Hz si va bien y 760->520 si no. */
+    private void suenaTono(boolean sube) throws InterruptedException {
+        final int sr = 8000;
+        final double dur = 0.30, f0 = sube ? 880 : 760, f1 = sube ? 1320 : 520;
+        final int n = (int) (sr * dur);
+        float[] m = new float[n];
+        for (int k = 0; k < n; k++) {
+            double f = f0 + (f1 - f0) * k / (sr * dur);
+            double e = Math.min(1, Math.min(k / (sr * 0.01), (sr * dur - k) / (sr * 0.03)));
+            m[k] = (float) (0.79 * e * Math.sin(2 * Math.PI * f * k / sr));
+        }
+        AudioTrack t = new AudioTrack.Builder()
+            .setAudioAttributes(atributos)
+            .setAudioFormat(new AudioFormat.Builder()
+                .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                .setSampleRate(sr)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                .build())
+            .setBufferSizeInBytes(n * 4)
+            .setTransferMode(AudioTrack.MODE_STATIC)
+            .build();
+        try {
+            t.write(m, 0, n, AudioTrack.WRITE_BLOCKING);
+            t.play();
+            long limite = System.currentTimeMillis() + 1000;
+            while (t.getPlaybackHeadPosition() < n && System.currentTimeMillis() < limite) Thread.sleep(10);
+        } finally {
+            try {
+                t.stop();
+            } catch (Throwable e) {
+                // ya estaba parado
+            }
+            t.release();
         }
     }
 
@@ -407,7 +492,8 @@ public class CopilotoPlugin extends Plugin {
     protected void handleOnDestroy() {
         turno.incrementAndGet();
         corta();
-        sueltaFoco();
+        sueltaFocoYa();
+        sonidos.shutdown();
         try {
             if (sistema != null) sistema.shutdown();
         } catch (Throwable e) {

@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.17.0] - 2026-09-29
+
+### Añadido
+
+- App Android: con Spotify sonando, cada aviso baja la música (o la pausa, a elegir en Ajustes) y la devuelve sola al acabar: el pitido también es nativo
+
 ## [2.16.2] - 2026-09-29
 
 ### Corregido
@@ -428,6 +434,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.17.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.17.0
 [2.16.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.16.2
 [2.16.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.16.1
 [2.16.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.16.0

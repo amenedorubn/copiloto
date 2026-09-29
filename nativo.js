@@ -24,6 +24,20 @@
 
   var P = "Copiloto", U = "CapacitorUpdater";
   function llama(plugin, metodo, datos) { return C.nativePromise(plugin, metodo, datos || {}); }
+  // lo que trae el APK instalado (un APK viejo con una web nueva no tiene lo ultimo)
+  function tiene(metodo) {
+    try {
+      var h = (C.PluginHeaders || []).filter(function (x) { return x.name === P; })[0];
+      return !!(h && (h.methods || []).some(function (m) { return m.name === metodo; }));
+    } catch (e) { return false; }
+  }
+  // la musica mientras habla: "baja" (por defecto) o "pausa" (se para y sigue sola)
+  var LSM = "copiloto.musica";
+  N.musica = function (v) {
+    try { if (v === "baja" || v === "pausa") localStorage.setItem(LSM, v); return localStorage.getItem(LSM) === "pausa" ? "pausa" : "baja"; }
+    catch (e) { return "baja"; }
+  };
+  function pausa() { return N.musica() === "pausa"; }
 
   /* -------------------------------- voz -------------------------------- */
   function Frase(t) {
@@ -49,7 +63,7 @@
         avisa(f, tipo, extra);
       }
       try {
-        C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1 }, function (r, err) {
+        C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1, pausa: pausa() }, function (r, err) {
           if (err || !r) { cierra("error", { error: "synthesis-failed" }); return; }
           if (r.evento === "inicio") { if (!cerrada) avisa(f, "start"); }
           else if (r.evento === "fin") cierra("end");
@@ -71,6 +85,9 @@
   pon(window, "SpeechSynthesisUtterance", Frase);
   // cual de las dos voces esta lista: {neural, sistema}
   N.estadoVoz = function () { return llama(P, "estado"); };
+  // el pitido de los avisos, nativo: con un <audio> de la web Android le quitaria el
+  // foco a Spotify para siempre (se para y no vuelve). Solo si el APK ya lo trae.
+  N.tono = tiene("tono") ? function (bien) { return llama(P, "tono", { sube: !!bien, pausa: pausa() }); } : null;
 
   /* ------------------------- pantalla encendida ------------------------- */
   // Cada parte de la app guarda su "cerrojo" y lo pide otra vez al volver a la
