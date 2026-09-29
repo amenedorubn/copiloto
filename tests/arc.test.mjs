@@ -241,7 +241,7 @@ test("fases, reglas y viajes vienen del código: al cargar siempre son los de es
   assert.deepEqual(D.etapas.map((e) => e.nombre), ["Calzada", "Foro", "Travesía", "Vuelta", "Faro"]);
   assert.deepEqual(D.reglas.map((r) => r.id), ["plan", "dormir", "estudio"]);
   assert.equal(D.reglas[2].alta, "2026-09-28");                  // el estudio empieza con el Foro
-  assert.equal(D.viajes.length, 9);
+  assert.equal(D.viajes.length, 8);
   assert.deepEqual(D.checks, v.checks);                          // lo marcado no se pierde
 });
 test("etapas: numeros de la fase en curso", () => {
@@ -314,7 +314,7 @@ test("la linea de HOY: numeral, nombre y lo que viene; viajes y primer dia", () 
 });
 test("viajes: los reales, seguros, con ciudades y sin codigos; el 3/11 a Ciudad de México", () => {
   const D = Arc.vacio(HOY);
-  assert.equal(D.viajes.length, 9);
+  assert.equal(D.viajes.length, 8);
   D.viajes.forEach((v) => { assert.ok(!/[A-Z]{3}/.test(v.de + v.a)); assert.ok(!v.posible); assert.ok(v.fecha); });
   assert.deepEqual(D.viajes.filter((v) => v.fecha === "2026-11-03").map((v) => v.a), ["Ciudad de México"]);
   assert.deepEqual(D.viajes.filter((v) => v.fecha === "2026-11-12").map((v) => v.de + " → " + v.a), ["Ciudad de México → Cancún"]);

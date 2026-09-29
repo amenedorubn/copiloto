@@ -129,7 +129,6 @@ function presetViajes(){
     { id:"v5", fecha:"2026-11-03", de:"Madrid", a:"Ciudad de México" },
     { id:"v6", fecha:"2026-11-12", de:"Ciudad de México", a:"Cancún" },
     { id:"v7", fecha:"2026-11-17", de:"Cancún", a:"Madrid", via:"Ciudad de México", llega:"2026-11-18" },
-    { id:"v8", fecha:"2026-11-19", de:"Madrid", a:"A Coruña" },
     { id:"v10", fecha:"2026-12-19", de:"Madrid", a:"A Coruña" }
   ];
 }
@@ -732,7 +731,7 @@ var PH={
   "warning-circle":"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"
 };
 // iconos propios (mismo trazo que Phosphor regular) para lo que Phosphor no tiene
-var PROPIOS={ "torre-hercules":'<g fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><path d="M44 232h168"/><path d="M94 232V112h68v120"/><path d="M84 112h88"/><path d="M94 214l68-26M94 174l68-26M94 134l68-18"/><path d="M108 112V78h40v34"/><path d="M100 78h56"/><path d="M118 78V58h20v20"/><path d="M114 58c0-12 6-20 14-20s14 8 14 20"/><path d="M128 38V24"/></g>' };
+var PROPIOS={ "torre-hercules":'<g fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"><path d="M32 236h192"/><path d="M64 236v-14h128v14"/><path d="M78 222V102h100v120"/><path d="M70 102h116"/><path d="M78 206l100-32M78 164l100-32M78 124l100-22"/><path d="M102 102V68h52v34"/><path d="M96 68h64"/><path d="M118 102V68M138 102V68"/><path d="M116 68c0-14 5-24 12-24s12 10 12 24"/><path d="M128 44V30"/></g>' };
 function ico(n){ return PROPIOS[n] ? '<svg viewBox="0 0 256 256" aria-hidden="true">'+PROPIOS[n]+'</svg>'
                                    : '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="'+(PH[n]||PH.circle)+'"/></svg>'; }
 function esc(t){ return String(t==null?"":t).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
