@@ -1,67 +1,84 @@
-# Arc · cuatro propuestas
+# Winter Arc · cuatro propuestas (v3, «Hoja de ruta»)
 
-Se cambian en el móvil en **Ajustes del Arc › Diseño** (A, B, C o D). Esa
-pantalla se abre con el engranaje de la pantalla Winter Arc o desde
-Ajustes › Winter Arc. Las cuatro propuestas usan los mismos datos y la misma
-lógica (`arc.js`); solo cambia la vista. La elección se guarda en
-`copiloto.arc.diseno`.
+El diseño se cambia en el móvil en **Ajustes del Arc › Diseño** (A, B, C o D).
+Esa pantalla se abre con el engranaje de Winter Arc o desde Ajustes › Winter
+Arc. Las cuatro propuestas usan los mismos datos y la misma lógica (`arc.js`);
+solo cambia lo que se ve en HOY. La pantalla Winter Arc es la misma en las
+cuatro. La elección se guarda en `copiloto.arc.diseno`, y por defecto es
+**A**, la que eligió el usuario.
 
-Desde la 2.7.0 el diseño por defecto es **A (anillos)** y la pantalla Winter
-Arc es la misma en los cuatro. Arriba va la **fuerza del Arc**, de 0 a 100 %,
-calculada como el *habit strength* de Loop Habit Tracker: sube con cada día
-cumplido, un fallo solo la baja un poco y tiene una vida media de 13 días.
-Después van hoy en anillos, **lo que llevas** (km, horas, kg y sesiones del
-plan, de Strava y Hevy) frente a septiembre, la temporada en 13 × 7 y la
-revisión del domingo con los números de la semana.
+## Qué es el Arc desde la v3
 
-Desde la 2.6.1, la pantalla **Winter Arc** es solo la temporada (objetivo,
-días cumplidos, cuadrícula, revisión). Todo lo que se configura (diseño,
-objetivo, reglas y horas) está en **Ajustes del Arc**, con el diseño lo
-primero. Capturas: `ajustes-ESTADO-TEMA.png`.
+- **Empieza el 1 de septiembre y dura 122 días.** Ya no hay prólogo:
+  septiembre cuenta con lo que se sabe.
+- **Cuatro etapas con numeral romano, del 1/9 al 31/12:** I **Calzada** (hasta
+  la carrera de Roma), II **Tierra firme**, III **Travesía** (México y el
+  noviembre de viajes) y IV **Faro** (Navidad en A Coruña, la Torre). El
+  camino empieza en una obra romana y acaba en otra que es casa. Salió de un
+  panel de 3 diseños con juez, en el que ganó el enfoque «viaje».
+- **Arriba de todo, la etapa en curso:**
+  - el **miliario**, un mojón con la cuenta atrás al siguiente destino real
+    («20 días a Roma»);
+  - la **tira de la etapa**, una marca por día, con los viajes y las
+    estancias fuera de casa;
+  - la **próxima parada**;
+  - **«Lo que pide la etapa»**: su consigna con números reales de Strava,
+    Hevy y Huawei.
+- **La Hoja de ruta:** las etapas con una espina que se rellena al sellarlas.
+  La etapa en curso se abre con su rejilla de días, donde se marca «hecho sin
+  registrar». La que acaba deja un **acta** con días cumplidos, fuerza, km,
+  horas, kg y sueño medio.
+- **Lo que no se sabe no es un fallo:** un día sin datos no suma ni resta,
+  una caminata sin registro no se exige y nunca se escribe «fallo»: se dice
+  «a medias» o «sin registro».
+- **El sueño sale de Huawei Health:** un fichero que genera
+  `scripts/salud-arc.mjs` y se importa en Ajustes del Arc. Con él, «Dormir 7 h
+  o más» se marca solo.
 
-- **A · Anillos:** optimiza marcar sin salir de la tarjeta viva del entreno (3 anillos, un toque). Sacrifica: alarga la tarjeta, pone checks junto a *Empezar* y no enseña la semana.
-- **B · Línea del día:** optimiza el contexto (cada regla a su hora, entre comidas y rutinas, con su check). Sacrifica: queda por debajo del pliegue, del Arc solo se ve «Día 12/92» y hay que ajustar las horas.
-- **C · Temporada:** optimiza que se note el método (días cumplidos que solo suman, la semana en 7 puntos, la revisión del domingo como tarjeta). Sacrifica: la cabecera empuja la tarjeta del entreno unos 250 px hacia abajo.
-- **D · Cuadrícula:** optimiza no estorbar HOY (una fila compacta con los 3 checks) y ver la temporada entera en la pantalla Arc (13 semanas × 7 días, hoy marcado, % por regla). Sacrifica: en HOY los checks son solo iconos y no se ve la semana.
+## Las cuatro propuestas en HOY
 
-**Recomendación: D**, que es la que viene por defecto. Hasta Roma (18/10), HOY tiene que dejar la tarjeta y *Empezar* arriba, y D solo añade una fila debajo. Tras la carrera merece la pena probar C, que es la que mejor transmite el método.
+- **A · Anillos** (por defecto): los 3 anillos van en la tarjeta del día, bajo la línea «I CALZADA · 20 DÍAS A ROMA». Optimiza marcar sin salir de la tarjeta. Sacrifica: alarga la tarjeta del entreno.
+- **B · Línea del día:** cada regla es una fila de la línea del día, a su hora (se ajusta en Ajustes del Arc). Optimiza el contexto. Sacrifica: queda por debajo del pliegue.
+- **C · Temporada:** una cabecera con la semana en 7 puntos y la revisión del domingo como tarjeta. Optimiza que se vea la semana. Sacrifica: empuja la tarjeta del entreno hacia abajo.
+- **D · Cuadrícula:** una fila compacta con los 3 checks. Optimiza no estorbar. Sacrifica: los checks son solo iconos.
 
-## Cambios frente al encargo
+## Capturas (390 × 844, página entera)
 
-- **D:** «13×7» se hace con las semanas en filas y los días en columnas (la semana 1 ocupa dos filas, del jueves 1 al domingo 11). Probé primero semanas en columnas: 14 columnas no caben en 358 px con zonas táctiles de 44 px. En filas, cada día mide 44 px.
-- **Prólogo:** en HOY es la misma fila en los cuatro diseños. En septiembre no se puede marcar nada, así que no hay nada que diseñar distinto.
-- **Tema claro:** es nuevo, para poder hacer estas capturas. Por defecto la app sigue en oscuro (Ajustes › Tema: Oscuro, Claro o Como el móvil). Solo cambia HOY, las hojas y las pantallas Arc y Simulación; el GPS, la cinta y la ficha de lo hecho siguen en oscuro.
+Nombre: `DISEÑO-ESTADO-TEMA-PANTALLA.png`. Los ajustes, en `ajustes-ESTADO-TEMA.png`.
 
-## Capturas (390 × 844)
+| Estado | Qué es |
+|---|---|
+| `vacio` | 28/09, sin reglas |
+| `lleno` | 12/10, con datos de prueba (sueño incluido). Solo existen en `scripts/capturas-arc.mjs`; los datos reales de salud no salen del móvil ni van al repo |
+| `error` | 12/10 sin conexión: con la copia del calendario y sin Strava ni Hevy |
 
-Nombre: `DISEÑO-ESTADO-TEMA-PANTALLA.png`. Estados:
-- `prologo`: 28/09, sin reglas.
-- `dia12`: 12/10 con datos de prueba, que solo existen en el script de capturas.
-- `error`: 12/10 sin conexión, con la copia del calendario pero sin Strava ni Hevy.
-
-Las capturas son de página entera, para que se vea también lo que queda por debajo del pliegue.
-
-| | HOY oscuro | HOY claro | Arc oscuro | Arc claro |
+| | HOY oscuro | HOY claro | Winter Arc oscuro | Winter Arc claro |
 |---|---|---|---|---|
-| **A** prólogo | [A](A-prologo-oscuro-hoy.png) | [A](A-prologo-claro-hoy.png) | [A](A-prologo-oscuro-arc.png) | [A](A-prologo-claro-arc.png) |
-| **A** día 12 | [A](A-dia12-oscuro-hoy.png) | [A](A-dia12-claro-hoy.png) | [A](A-dia12-oscuro-arc.png) | [A](A-dia12-claro-arc.png) |
+| **A** vacío | [A](A-vacio-oscuro-hoy.png) | [A](A-vacio-claro-hoy.png) | [A](A-vacio-oscuro-arc.png) | [A](A-vacio-claro-arc.png) |
+| **A** lleno | [A](A-lleno-oscuro-hoy.png) | [A](A-lleno-claro-hoy.png) | [A](A-lleno-oscuro-arc.png) | [A](A-lleno-claro-arc.png) |
 | **A** error | [A](A-error-oscuro-hoy.png) | [A](A-error-claro-hoy.png) | [A](A-error-oscuro-arc.png) | [A](A-error-claro-arc.png) |
-| **B** prólogo | [B](B-prologo-oscuro-hoy.png) | [B](B-prologo-claro-hoy.png) | [B](B-prologo-oscuro-arc.png) | [B](B-prologo-claro-arc.png) |
-| **B** día 12 | [B](B-dia12-oscuro-hoy.png) | [B](B-dia12-claro-hoy.png) | [B](B-dia12-oscuro-arc.png) | [B](B-dia12-claro-arc.png) |
+| **B** vacío | [B](B-vacio-oscuro-hoy.png) | [B](B-vacio-claro-hoy.png) | [B](B-vacio-oscuro-arc.png) | [B](B-vacio-claro-arc.png) |
+| **B** lleno | [B](B-lleno-oscuro-hoy.png) | [B](B-lleno-claro-hoy.png) | [B](B-lleno-oscuro-arc.png) | [B](B-lleno-claro-arc.png) |
 | **B** error | [B](B-error-oscuro-hoy.png) | [B](B-error-claro-hoy.png) | [B](B-error-oscuro-arc.png) | [B](B-error-claro-arc.png) |
-| **C** prólogo | [C](C-prologo-oscuro-hoy.png) | [C](C-prologo-claro-hoy.png) | [C](C-prologo-oscuro-arc.png) | [C](C-prologo-claro-arc.png) |
-| **C** día 12 | [C](C-dia12-oscuro-hoy.png) | [C](C-dia12-claro-hoy.png) | [C](C-dia12-oscuro-arc.png) | [C](C-dia12-claro-arc.png) |
+| **C** vacío | [C](C-vacio-oscuro-hoy.png) | [C](C-vacio-claro-hoy.png) | [C](C-vacio-oscuro-arc.png) | [C](C-vacio-claro-arc.png) |
+| **C** lleno | [C](C-lleno-oscuro-hoy.png) | [C](C-lleno-claro-hoy.png) | [C](C-lleno-oscuro-arc.png) | [C](C-lleno-claro-arc.png) |
 | **C** error | [C](C-error-oscuro-hoy.png) | [C](C-error-claro-hoy.png) | [C](C-error-oscuro-arc.png) | [C](C-error-claro-arc.png) |
-| **D** prólogo | [D](D-prologo-oscuro-hoy.png) | [D](D-prologo-claro-hoy.png) | [D](D-prologo-oscuro-arc.png) | [D](D-prologo-claro-arc.png) |
-| **D** día 12 | [D](D-dia12-oscuro-hoy.png) | [D](D-dia12-claro-hoy.png) | [D](D-dia12-oscuro-arc.png) | [D](D-dia12-claro-arc.png) |
+| **D** vacío | [D](D-vacio-oscuro-hoy.png) | [D](D-vacio-claro-hoy.png) | [D](D-vacio-oscuro-arc.png) | [D](D-vacio-claro-arc.png) |
+| **D** lleno | [D](D-lleno-oscuro-hoy.png) | [D](D-lleno-claro-hoy.png) | [D](D-lleno-oscuro-arc.png) | [D](D-lleno-claro-arc.png) |
 | **D** error | [D](D-error-oscuro-hoy.png) | [D](D-error-claro-hoy.png) | [D](D-error-oscuro-arc.png) | [D](D-error-claro-arc.png) |
+| Ajustes | [vacío oscuro](ajustes-vacio-oscuro.png) · [vacío claro](ajustes-vacio-claro.png) | [lleno oscuro](ajustes-lleno-oscuro.png) · [lleno claro](ajustes-lleno-claro.png) | [error oscuro](ajustes-error-oscuro.png) · [error claro](ajustes-error-claro.png) | |
 
 ## Revisión (checklist de `../DISENO-ARC.md`)
 
-Resultado de la auditoría en las 48 pantallas: `revision.json`, con **0 pantallas con fallos**. Lo que encontró y se corrigió antes de publicar:
+`revision.json`: **54 pantallas, 0 con fallos.** Lo que encontró la auditoría
+y se corrigió antes de publicar:
 
-1. **C y D, acento:** la leyenda «cumplido» era un 3.er uso del acento. Ahora la leyenda es solo texto.
-2. **Diseño, pesos:** la letra de cada opción heredaba peso 900 (4 pesos en pantalla). Ahora es 800.
-3. **A, contraste:** el aviso de fallos seguidos, en gris sobre la tarjeta azul, quedaba en 2,1:1 (oscuro) y 1,05:1 (claro). Ahora usa el color del texto de la tarjeta: 6,6:1.
-4. **C, contraste:** las automáticas eran botones desactivados, al 55 % de opacidad. Ahora son indicadores, no botones, con contraste completo.
-5. **D, tamaño:** la cuadrícula de 14 columnas se salía de la pantalla y bajaba de 44 px. Ahora son 13 semanas en filas × 7 días, con celdas de 44 px.
+| Versión | Hallazgo | Arreglo |
+|---|---|---|
+| v3 | Las celdas de la rejilla de la etapa medían 41 px de ancho | Ahora ocupan todo el ancho: 47 px |
+| v3 | El número de los días cumplidos salía gris sobre blanco (2,9:1), porque una regla de `span` le caía al número | La regla pasa a aplicarse solo a las celdas |
+| 2.6 | Leyendas con el acento (un 3.er uso) | Van en texto |
+| 2.6 | Un peso 900 heredado | Fijado a 800 |
+| 2.6 | Aviso gris sobre la tarjeta azul (1,05:1) | Hereda el color de la tarjeta |
+| 2.6 | Automáticas como botones desactivados | Van como indicadores |
+| 2.6 | Cuadrícula que se salía de la pantalla | Corregida |

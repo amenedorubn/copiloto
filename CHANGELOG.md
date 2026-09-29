@@ -13,6 +13,18 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.9.0] - 2026-09-29
+
+### Añadido
+
+- Winter Arc desde el 1 de septiembre en cuatro etapas (Calzada, Tierra firme, Travesía, Faro) con cuenta atrás, sueño de Huawei y días sin datos que no cuentan; la cinta vuelve a enseñar los km
+- Cinta: los km hechos y los que quedan vuelven a verse bajo el anillo (el rediseño del 24/09 los había ocultado), y el tiempo del siguiente bloque dice «dura 3:52»
+- Winter Arc: empieza el 1/9 (122 días, 18 semanas); ya no hay prólogo
+- Etapas «Hoja de ruta»: I Calzada (hasta la carrera de Roma), II Tierra firme, III Travesía (México y noviembre), IV Faro (Navidad en A Coruña), con miliario (días al siguiente destino), tira de días con los viajes, «Lo que pide la etapa» y acta al sellarla. Viajes editables en Ajustes del Arc
+- Lo que no se sabe no es un fallo: días sin datos que no cuentan, caminata sin registro que no se exige, «hecho sin registrar» para lo automático, y nunca «fallo»: «a medias»
+- Sueño de Huawei Health: se importa en Ajustes del Arc el fichero de scripts/salud-arc.mjs y «Dormir 7 h o más» se marca solo; media, hora de acostarse y de levantarse
+- Arreglos de la revisión: la fuerza no se hunde con reglas sin datos, la migración respeta reglas y etapas cambiadas, el objetivo tardío se guarda entero
+
 ## [2.8.0] - 2026-09-28
 
 ### Añadido
@@ -350,6 +362,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.9.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.9.0
 [2.8.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.8.0
 [2.7.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.7.0
 [2.6.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.6.1

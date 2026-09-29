@@ -1,11 +1,11 @@
-// Capturas de las 4 propuestas del Arc (HOY y pantalla Arc; prologo, dia 12
-// y error; claro y oscuro) a 390x844, y la revision de docs/DISENO-ARC.md en
+// Capturas de las 4 propuestas del Arc (HOY, pantalla Arc y sus ajustes; sin
+// reglas, con datos y sin conexion; claro y oscuro) a 390x844, y la revision de docs/DISENO-ARC.md en
 // cada una. Los datos de prueba viven SOLO aqui: localStorage simulado y red
 // interceptada; la app no trae ninguno.
 //
 //   npm i --no-save playwright-core                 (una vez; usa el Chrome instalado)
 //   python -m http.server 8777 --bind 127.0.0.1 &   (desde la raiz del repo)
-//   node scripts/capturas-arc.mjs [carpeta] [filtro]  p. ej. node scripts/capturas-arc.mjs "" C-dia12
+//   node scripts/capturas-arc.mjs [carpeta] [filtro]  p. ej. node scripts/capturas-arc.mjs "" C-lleno
 import { chromium } from "playwright-core";
 import { createRequire } from "node:module";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -39,9 +39,9 @@ for (let d = "2026-08-31", i = 0; d <= "2026-10-12"; d = Arc.mas(d, 1), i++) {
 const ctx = { acts, eventos: (iso) => eventos.filter((e) => e.fecha === iso).map((e) => ({ tipo: e.plan ? e.plan.tipo : "libre", plan: !!e.plan })) };
 
 function datosDia12() {
-  const D = Arc.vacio();
+  const D = Arc.vacio("2026-09-20");
   const sinDormir = ["2026-10-03", "2026-10-10", "2026-10-11"], sinEstudio = ["2026-10-06", "2026-10-10", "2026-10-11"];
-  for (let d = "2026-10-01"; d <= "2026-10-11"; d = Arc.mas(d, 1)) {
+  for (let d = "2026-09-20"; d <= "2026-10-11"; d = Arc.mas(d, 1)) {
     if (!sinDormir.includes(d)) Arc.marcaCheck(D, d, "dormir", true, "2026-10-12");
     if (!sinEstudio.includes(d)) Arc.marcaCheck(D, d, "estudio", true, "2026-10-12");
   }
@@ -49,10 +49,14 @@ function datosDia12() {
   Arc.registraAuto(D, ctx, "2026-10-12");      // lo que la app habria ido guardando
   return D;
 }
+// sueño de prueba (NO son datos reales: los de verdad no salen del móvil)
+const salud = { v: 1, fuente: "Huawei Health", dias: {} };
+for (let d = "2026-08-31", i = 0; d <= "2026-10-08"; d = Arc.mas(d, 1), i++)
+  salud.dias[d] = { sueno: 390 + (i * 37) % 90, acuesta: ["23:10", "23:40", "00:15", "23:25"][i % 4], levanta: ["06:20", "06:35", "07:05"][i % 3], pasos: 9000 + (i * 1733) % 9000 };
 const ESTADOS = {
-  prologo: { hoy: "2026-09-28", datos: () => ({ ...Arc.vacio(), reglas: [] }), red: true },
-  dia12: { hoy: "2026-10-12", datos: datosDia12, red: true },
-  error: { hoy: "2026-10-12", datos: datosDia12, red: false },
+  vacio: { hoy: "2026-09-28", datos: () => ({ ...Arc.vacio("2026-09-28"), reglas: [] }), red: true, salud: null },
+  lleno: { hoy: "2026-10-12", datos: datosDia12, red: true, salud },
+  error: { hoy: "2026-10-12", datos: datosDia12, red: false, salud },
 };
 const DESPLIEGA = "html,body{overflow:visible!important;height:auto!important}body{padding:0!important;max-width:390px!important}";
 
@@ -68,6 +72,7 @@ for (const est of Object.keys(ESTADOS)) for (const dis of ["A", "B", "C", "D"]) 
     "copiloto.arc.datos": JSON.stringify(E.datos()),
     "copiloto.arc.diseno": dis, "copiloto.tema": tema,
   };
+  if (E.salud) ls["copiloto.arc.salud"] = JSON.stringify(E.salud);
   if (!E.red) ls["copiloto.agenda.v1"] = JSON.stringify({ generado: "2026-10-12T06:00:00Z", zona: "Europe/Madrid", eventos, dia: [], bajado: "2026-10-12T06:00:00Z" });
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1.25, colorScheme: tema === "claro" ? "light" : "dark" });
   p.on("pageerror", (e) => { errores++; console.log("PAGEERROR", nombre, e.message); });

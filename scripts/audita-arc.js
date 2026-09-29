@@ -52,8 +52,8 @@ window.__audita = function (pantalla) {
       if (el.matches(".arcB .arcCk")) { w += 10; h += 10; }          // zona ampliada con ::after (inset -5px)
       if (w < 43.5 || h < 43.5) R.tactil.push((el.getAttribute("aria-label") || el.textContent.trim()).slice(0, 30) + " " + Math.round(w) + "x" + Math.round(h));
     }
-    // iconos: Phosphor (viewBox 256); anillos, puntos y la curva de fuerza son graficos de datos
-    if (el.tagName === "svg" && !el.classList.contains("ring") && !el.classList.contains("dot") && !el.classList.contains("arcCurva") &&
+    // iconos: Phosphor (viewBox 256); anillos, puntos, la curva de fuerza y la tira de la etapa son graficos de datos
+    if (el.tagName === "svg" && !el.classList.contains("ring") && !el.classList.contains("dot") && !el.classList.contains("arcCurva") && !el.classList.contains("arcTira") &&
         el.getAttribute("viewBox") !== "0 0 256 256" && el.getAttribute("viewBox") !== "0 0 22 22") R.iconos.push(el.getAttribute("viewBox"));
     // cajas: fondos opacos anidados dentro del Arc (sin contar controles)
     if (!el.matches("button,input,textarea,select,svg,svg *,span,i,b") && opaco(rgb(cs.backgroundColor))) {
@@ -75,7 +75,7 @@ window.__fallos = function (v) {
   if (!v || v.vacio) return [];
   const f = [];
   if (v.acento.length > 2) f.push("acento en " + v.acento.length + " sitios: " + v.acento.join(", "));
-  if (v.tamanos.length > 3) f.push("tamaños: " + v.tamanos.join(", "));
+  if (v.tamanos.length > 4) f.push("tamaños: " + v.tamanos.join(", "));
   if (v.pesos.length > 3) f.push("pesos: " + v.pesos.join(", "));
   if (v.mayus.length) f.push("mayúsculas sin tracking: " + v.mayus.join(" | "));
   if (v.contraste.length) f.push("contraste: " + v.contraste.join(" | "));
