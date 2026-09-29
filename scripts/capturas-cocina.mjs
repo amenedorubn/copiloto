@@ -41,7 +41,7 @@ const EJEMPLO = {
 };
 const F = process.env.FIXTURE ? JSON.parse(readFileSync(process.env.FIXTURE, "utf8")) : EJEMPLO;
 
-const b = await chromium.launch({ executablePath: CHROME });
+const b = await chromium.launch({ executablePath: CHROME, args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
 let errores = 0;
 for (const tema of ["oscuro", "claro"]) {
   const ls = { "copiloto.conf.v1": JSON.stringify({ url: "http://api.test", key: "k" }), "copiloto.tema": tema };
@@ -54,6 +54,8 @@ for (const tema of ["oscuro", "claro"]) {
       getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, removeItem: (k) => { delete m[k]; },
       clear() {}, key: (i) => Object.keys(m)[i] || null, get length() { return Object.keys(m).length; } } });
     window.speechSynthesis && (window.speechSynthesis.speak = () => {});
+    // en Windows Chrome no trae BarcodeDetector (en Android si): uno que mira y no encuentra nada
+    if (!("BarcodeDetector" in window)) window.BarcodeDetector = class { detect() { return Promise.resolve([]); } };
   }, ls);
   await p.route("http://api.test/**", async (r) => {
     const u = new URL(r.request().url());
@@ -111,7 +113,21 @@ for (const tema of ["oscuro", "claro"]) {
       await pl.evaluate((n) => n.remove());
       await p.click(".linIt:has-text('Rutina') .linGuia"); await p.waitForTimeout(600);
       await p.screenshot({ path: `${OUT}modo-rutina.png` });
+      await p.click("#cocModo .mX"); await p.waitForTimeout(400);
     } else console.log("sin linea del dia");
+    // el escaner: camara de mentira de Chrome y un codigo escrito a mano (Open Food Facts de verdad)
+    await p.click("#hCocina"); await p.waitForTimeout(800);
+    await p.click(".cocBtn:has-text('Escanear')"); await p.waitForTimeout(1500);
+    await p.screenshot({ path: `${OUT}esc-camara.png` });
+    await p.fill("#cocEsc input", process.env.CODIGO || "8431876302196");
+    await p.click("#cocEsc .eMano button");
+    await p.waitForSelector("#cocEsc .eOk", { timeout: 15000 }).catch(() => {});
+    await p.screenshot({ path: `${OUT}esc-resultado.png` });
+    if (await p.$("#cocEsc .eOk")) { await p.click("#cocEsc .eOk"); await p.waitForTimeout(400); }
+    await p.screenshot({ path: `${OUT}esc-anadido.png` });
+    await p.click("#cocEsc .eFin"); await p.waitForTimeout(600);
+    const al = await p.$("#ptCuerpo .cocSec:has(h3:text('Mis alimentos'))");
+    if (al) await al.screenshot({ path: `${OUT}esc-alimentos.png` });
   }
   await p.close();
   process.stdout.write(tema + " ");

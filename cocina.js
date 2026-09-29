@@ -321,7 +321,7 @@ function paraClaude(cambios, fechaNota) {
   var V = vigentes(cambios, fechaNota); if (!V.length) return "";
   return "Despensa: cambios desde la nota" + (fechaNota ? " del " + corta(fechaNota) : "") + "\n" + V.map(function (cb) {
     var d = new Date(cb.t);
-    return "- " + dos(d.getDate()) + "/" + dos(d.getMonth() + 1) + " " + (cb.tipo === "compra" ? "Comprado" : "Gastado en " + (cb.de || "una receta")) +
+    return "- " + dos(d.getDate()) + "/" + dos(d.getMonth() + 1) + " " + (cb.tipo === "compra" ? "Comprado" + (cb.zona ? " (" + cb.zona.toLowerCase() + ")" : "") : "Gastado en " + (cb.de || "una receta")) +
       ": " + cb.items.join(", ");
   }).join("\n");
 }
@@ -341,6 +341,24 @@ function pasosGuia(ev) {
   return P;
 }
 
+/* ------------------------------ lo que compras, escaneado ------------------------------
+   El codigo de barras se busca en Open Food Facts (gratis y abierto, sin cuenta).
+   -> {codigo, nombre, marca, cantidad, zona, txt} o null si no lo conoce.              */
+var OFF_URL = "https://world.openfoodfacts.org/api/v2/product/";
+function productoOFF(j) {
+  if (!j || j.status !== 1 || !j.product) return null;
+  var p = j.product, nombre = String(p.product_name_es || p.product_name || p.generic_name_es || p.generic_name || "").trim();
+  if (!nombre) return null;
+  var marca = String(p.brands || "").split(",").pop().trim(), cant = String(p.quantity || "").replace(/\s+/g, " ").trim();
+  var cats = (p.categories_tags || []).join(" ");
+  var zona = /frozen|congel|ice-cream|helado/.test(cats) ? "Congelador"
+           : /dairies|dairy|yogurt|cheese|meat|poultry|fish|fresh|refrigerat|milk|eggs|cream|sausage|ham/.test(cats) ? "Nevera" : "Despensa";
+  nombre = mayus1(nombre.toLowerCase());
+  return { codigo: String(j.code || ""), nombre: nombre, marca: marca, cantidad: cant, zona: zona,
+           txt: nombre + (marca || cant ? " (" + [marca, cant].filter(Boolean).join(", ") + ")" : "") };
+}
+function esCodigo(c) { return /^\d{8}$|^\d{12,14}$/.test(String(c || "").trim()); }
+
 function dos(n) { return n < 10 ? "0" + n : "" + n; }
 function mayus1(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
 function corta(iso) { var p = String(iso).split("-"); return (+p[2]) + "/" + (+p[1]); }
@@ -348,6 +366,7 @@ function corta(iso) { var p = String(iso).split("-"); return (+p[2]) + "/" + (+p
 var API = { norm: norm, palabras: palabras, cantidad: cantidad, cantTxt: cantTxt, comida: comida, minutosDe: minutosDe,
   despensa: despensa, estadoDe: estadoDe, parecido: parecido, recetaDe: recetaDe, comidasDe: comidasDe,
   queToca: queToca, faltan: faltan, vigentes: vigentes, paraClaude: paraClaude, partes: partes, pasosGuia: pasosGuia,
+  productoOFF: productoOFF, esCodigo: esCodigo, OFF_URL: OFF_URL,
   RECETAS_URL: RECETAS_URL, K: { recetas: K_RECETAS, cambios: K_CAMBIOS, pasos: K_PASOS, compra: K_COMPRA, nota: K_NOTA } };
 
 /* ================================ pantalla ================================
@@ -362,6 +381,7 @@ var ICO = {
   play: '<path d="M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z"/>',
   pausa: '<path d="M200,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h40a16,16,0,0,0,16-16V48A16,16,0,0,0,200,32Zm0,176H160V48h40ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Zm0,176H56V48H96Z"/>',
   reloj: '<path d="M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z"/>',
+  barras: '<path d="M232,48V88a8,8,0,0,1-16,0V56H184a8,8,0,0,1,0-16h40A8,8,0,0,1,232,48ZM72,200H40V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16Zm152-40a8,8,0,0,0-8,8v32H184a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,224,160ZM32,96a8,8,0,0,0,8-8V56H72a8,8,0,0,0,0-16H32a8,8,0,0,0-8,8V88A8,8,0,0,0,32,96ZM80,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,80,80Zm104,88V88a8,8,0,0,0-16,0v80a8,8,0,0,0,16,0ZM144,80a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,144,80Zm-32,0a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,112,80Z"/>',
   cerrar: '<path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>'
 };
 function svg(k, cls) { return '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"' + (cls ? ' class="' + cls + '"' : '') + '>' + ICO[k] + '</svg>'; }
@@ -515,6 +535,37 @@ var CSS =
   "#cocModo .mFin li{font-size:15px;font-weight:600;padding:7px 0;border-top:1px solid rgba(255,255,255,.08);color:#dfe2e6}" +
   "#cocModo .mBig{width:100%;height:60px;border-radius:30px!important;background:var(--ca,#f08a4b);color:#140b04;font-size:18px;font-weight:800;margin-top:18px}" +
   "#cocModo .mSec{width:100%;height:52px;border-radius:26px!important;background:rgba(255,255,255,.1);color:#f4f5f7;font-size:16px;font-weight:700;margin-top:10px}";
+CSS +=
+  /* ---- escaner ---- */
+  "#cocEsc{position:fixed;inset:0;z-index:91;background:#101113;color:#f4f5f7;display:flex;flex-direction:column;font-family:Manrope,sans-serif;" +
+  "padding:calc(8px + var(--safe-area-inset-top,env(safe-area-inset-top,0px))) 16px calc(12px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}" +
+  "#cocEsc button{flex:none;padding:0;font-family:inherit;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+  "#cocEsc svg{background:none;border-radius:0}" +
+  "#cocEsc .eTop{display:flex;align-items:center;gap:8px;flex:0 0 auto}" +
+  "#cocEsc .eTop button{width:44px;height:44px;border-radius:14px!important;background:none;color:#f4f5f7;display:flex;align-items:center;justify-content:center}" +
+  "#cocEsc .eTop svg{width:22px;height:22px}#cocEsc .eTop span{font-size:15px;font-weight:800}" +
+  "#cocEsc .eCuerpo{flex:1 1 auto;overflow:auto;min-height:0}" +
+  "#cocEsc .eCam{position:relative;height:260px;border-radius:20px;overflow:hidden;background:#1c1f24;margin-top:8px}" +
+  "#cocEsc video{width:100%;height:100%;object-fit:cover;display:block}" +
+  "#cocEsc .eVisor{position:absolute;left:12%;right:12%;top:30%;bottom:30%;border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.4);outline:2px solid rgba(255,255,255,.9)}" +
+  "#cocEsc .eSin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:15px;font-weight:600;line-height:1.5;color:#9aa0a8}" +
+  "#cocEsc .eMano{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}" +
+  "#cocEsc input{min-height:52px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#1c1f24;color:#f4f5f7;padding:0 14px;font:600 17px Manrope,sans-serif;letter-spacing:.04em}" +
+  "#cocEsc .eMano button{height:52px;padding:0 18px!important;border-radius:26px!important;background:rgba(255,255,255,.12);color:#f4f5f7;font-size:15px;font-weight:800}" +
+  "#cocEsc .eRes{margin-top:14px;background:#1c1f24;border-radius:20px;padding:14px}" +
+  "#cocEsc .eRes small{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9aa0a8}" +
+  "#cocEsc .eRes h3{margin:6px 0 2px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.01em}" +
+  "#cocEsc .eRes p{margin:0;font-size:15px;font-weight:600;line-height:1.5;color:#9aa0a8}" +
+  "#cocEsc .eZonas{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}" +
+  "#cocEsc .eZonas button{height:44px;border-radius:14px!important;background:rgba(255,255,255,.08);color:#f4f5f7;font-size:14px;font-weight:700}" +
+  "#cocEsc .eZonas button[aria-pressed=true]{box-shadow:inset 0 0 0 2px #f4f5f7}" +
+  "#cocEsc .eOk{width:100%;height:56px;border-radius:28px!important;background:#f08a4b;color:#140b04;font-size:17px;font-weight:800;margin-top:12px}" +
+  "#cocEsc .eOtro{width:100%;height:44px;background:none;color:#9aa0a8;font-size:14px;font-weight:700;margin-top:4px}" +
+  "#cocEsc .eLista{list-style:none;margin:14px 0 0;padding:0}" +
+  "#cocEsc .eLista li{font-size:15px;font-weight:600;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);color:#dfe2e6}" +
+  "#cocEsc .eLista li small{color:#9aa0a8;margin-left:6px}" +
+  "#cocEsc .eFin{width:100%;height:52px;border-radius:26px!important;background:rgba(255,255,255,.1);color:#f4f5f7;font-size:16px;font-weight:700;margin-top:10px;flex:0 0 auto}" +
+  ".cocBtn svg{width:18px;height:18px;vertical-align:-3px;margin-right:6px}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
   var st = document.createElement("style"); st.id = "cocCss"; st.textContent = CSS; document.head.appendChild(st);
@@ -720,8 +771,12 @@ function compra(L, D, CB, hoy) {
     if (items.some(function (i) { return parecido(i.txt, f.nombre) > 0; })) return;
     items.push({ k: "f:" + norm(f.nombre), txt: f.txt, sub: "Para " + f.para.slice(0, 2).join(" y ") });
   });
-  if (!D) { s.appendChild(el("p", "cocVacio", "Sale en cuanto la app pueda leer tu despensa (abajo, en <b>Mis alimentos</b>).")); return s; }
-  if (!items.length) { s.appendChild(el("p", "cocVacio", "No falta nada para las comidas de estos días.")); return s; }
+  function escanea() {                     // lo comprado, con el codigo de barras
+    var b = el("button", "cocBtn", svg("barras") + "Escanear lo que has comprado");
+    b.addEventListener("click", abreEscaner); return b;
+  }
+  if (!D) { s.appendChild(el("p", "cocVacio", "La lista sale en cuanto la app pueda leer tu despensa (abajo, en <b>Mis alimentos</b>).")); s.appendChild(escanea()); return s; }
+  if (!items.length) { s.appendChild(el("p", "cocVacio", "No falta nada para las comidas de estos días.")); s.appendChild(escanea()); return s; }
   if (D.compra && D.compra.titulo) s.appendChild(el("p", "sub", esc(D.compra.titulo)));
   var ul = el("ul", "cocCompra");
   items.forEach(function (it) {
@@ -739,6 +794,7 @@ function compra(L, D, CB, hoy) {
     var M = lee(K_COMPRA, {}); n.forEach(function (i) { delete M[i.k]; }); guarda(K_COMPRA, M); pinta();
   });
   s.appendChild(ok);
+  s.appendChild(escanea());
   return s;
 }
 function mas7(iso) { var d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10); }
@@ -760,10 +816,10 @@ function alimentos(D, CB) {
   s.appendChild(el("p", "sub", "Según tu nota" + (D.fecha ? " del " + corta(D.fecha) : "") + (CB.length ? " · " + CB.length + (CB.length === 1 ? " cambio" : " cambios") + " desde entonces" : "") +
     (NOTA.sinRed || NOTA.error ? " · la última copia (ahora no se puede leer)" : "")));
   var nuevos = [], gastados = [];
-  CB.forEach(function (cb) { cb.items.forEach(function (x) { (cb.tipo === "compra" ? nuevos : gastados).push(x); }); });
+  CB.forEach(function (cb) { cb.items.forEach(function (x) { if (cb.tipo === "compra") nuevos.push({ txt: x, zona: cb.zona }); else gastados.push(x); }); });
   if (nuevos.length) {
     var z0 = el("div", "cocZona", '<h4>Comprado<small>desde la nota</small></h4>'), p0 = el("div", "cocPills");
-    nuevos.forEach(function (x) { p0.appendChild(el("span", "nuevo", esc(x))); });
+    nuevos.forEach(function (x) { p0.appendChild(el("span", "nuevo", esc(x.txt) + (x.zona ? '<b>' + esc(x.zona.toLowerCase()) + '</b>' : ""))); });
     z0.appendChild(p0); s.appendChild(z0);
   }
   D.zonas.forEach(function (z) {
@@ -852,7 +908,87 @@ function cierraModo(desdeAtras) {
   if (!desdeAtras && history.state && history.state.pant === "cocina" && CTX && CTX.atrasManual) CTX.atrasManual();
   if (cont && document.body.contains(cont)) pinta();
 }
-API.atras = function () { if (!M) return false; cierraModo(true); return true; };   // el gesto de atras cierra el modo
+API.atras = function () {                   // el gesto de atras cierra el escaner o el modo paso a paso
+  if (ESC) { cierraEscaner(true); return true; }
+  if (!M) return false; cierraModo(true); return true;
+};
+
+/* ------------------------------- el escaner -------------------------------
+   La camara de atras y BarcodeDetector (Chrome en Android); si no hay camara o no
+   lo sabe leer, el numero se escribe a mano. Cada producto entra en Mis alimentos
+   como comprado (con su zona) y se sigue escaneando.                           */
+var ESC = null;
+function abreEscaner() {
+  ponCSS();
+  var box = document.getElementById("cocEsc") || document.body.appendChild(el("div"));
+  box.id = "cocEsc"; box.hidden = false;
+  ESC = { box: box, stream: null, det: null, parado: false, res: null, zona: "Despensa", hechos: [], t: null };
+  if (CTX && CTX.marca) CTX.marca("escaner");
+  box.innerHTML = '<div class="eTop"><button class="eX" aria-label="Salir">' + svg("cerrar") + '</button><span>Escanear lo que has comprado</span></div>' +
+    '<div class="eCuerpo"><div class="eCam"><video playsinline muted></video><div class="eVisor" hidden></div><div class="eSin">Abriendo la cámara…</div></div>' +
+    '<form class="eMano"><input inputmode="numeric" pattern="[0-9]*" maxlength="14" placeholder="o escribe el número" aria-label="Número del código de barras"><button type="submit">Buscar</button></form>' +
+    '<div class="eRes" hidden></div><ul class="eLista"></ul></div><button class="eFin">Terminar</button>';
+  box.querySelector(".eX").onclick = box.querySelector(".eFin").onclick = function () { cierraEscaner(false); };
+  box.querySelector(".eMano").onsubmit = function (ev) { ev.preventDefault(); var v = box.querySelector("input").value.replace(/\D/g, ""); if (esCodigo(v)) buscaCodigo(v); else avisoEsc("Un código de barras tiene 8 o 13 números."); };
+  var sin = box.querySelector(".eSin"), video = box.querySelector("video");
+  if (!("BarcodeDetector" in window)) { sin.textContent = "Este navegador no sabe leer códigos con la cámara. Escribe el número de debajo de las barras."; return; }
+  try { ESC.det = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e"] }); } catch (e) { sin.textContent = "No se puede leer con la cámara aquí. Escribe el número."; return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { sin.textContent = "Sin cámara aquí. Escribe el número."; return; }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(function (st) {
+    if (!ESC) { st.getTracks().forEach(function (t) { t.stop(); }); return; }
+    ESC.stream = st; video.srcObject = st; video.play().catch(function () {});
+    sin.hidden = true; box.querySelector(".eVisor").hidden = false; mira();
+  }, function () {
+    sin.textContent = window.Nativo && Nativo.es ? "En la app Android la cámara llega con el próximo APK. Escribe el número, o escanea desde Chrome."
+                                                 : "Sin permiso para la cámara. Dáselo en el candado de la barra, o escribe el número.";
+  });
+  function mira() {
+    if (!ESC || !ESC.det) return;
+    if (!ESC.parado && video.readyState >= 2) {
+      ESC.det.detect(video).then(function (c) { if (ESC && !ESC.parado && c && c.length && esCodigo(c[0].rawValue)) buscaCodigo(c[0].rawValue); }, function () {});
+    }
+    ESC.t = setTimeout(mira, 300);
+  }
+}
+function avisoEsc(t) { var r = ESC && ESC.box.querySelector(".eRes"); if (!r) return; r.hidden = false; r.innerHTML = '<p>' + esc(t) + '</p>'; }
+function buscaCodigo(codigo) {
+  if (!ESC) return;
+  ESC.parado = true; pita(1);
+  var r = ESC.box.querySelector(".eRes"); r.hidden = false; r.innerHTML = '<small>Código ' + esc(codigo) + '</small><p>Buscando en Open Food Facts…</p>';
+  fetch(OFF_URL + encodeURIComponent(codigo) + ".json?fields=code,product_name,product_name_es,generic_name,generic_name_es,brands,quantity,categories_tags", { cache: "no-store" })
+    .then(function (x) { return x.json(); }).then(function (j) { resultado(codigo, productoOFF(j)); }, function () { resultado(codigo, null, true); });
+}
+function resultado(codigo, p, sinRed) {
+  if (!ESC) return;
+  var r = ESC.box.querySelector(".eRes");
+  ESC.res = p; ESC.zona = p ? p.zona : "Despensa";
+  r.innerHTML = '<small>Código ' + esc(codigo) + '</small>' +
+    (p ? '<h3>' + esc(p.nombre) + '</h3><p>' + esc([p.marca, p.cantidad].filter(Boolean).join(" · ") || "Open Food Facts") + '</p>'
+       : '<h3>' + (sinRed ? "Sin conexión" : "No está en Open Food Facts") + '</h3><p>Escribe qué es y se apunta igual.</p><input class="eNom" placeholder="p. ej. crema de calabaza" aria-label="Qué es" style="width:100%;margin-top:10px">') +
+    '<div class="eZonas">' + ["Nevera", "Despensa", "Congelador"].map(function (z) { return '<button aria-pressed="' + (z === ESC.zona) + '">' + z + '</button>'; }).join("") + '</div>' +
+    '<button class="eOk">Añadir a Mis alimentos</button><button class="eOtro">Otro producto</button>';
+  Array.prototype.forEach.call(r.querySelectorAll(".eZonas button"), function (b) {
+    b.onclick = function () { ESC.zona = b.textContent; Array.prototype.forEach.call(r.querySelectorAll(".eZonas button"), function (x) { x.setAttribute("aria-pressed", x === b); }); };
+  });
+  r.querySelector(".eOk").onclick = function () {
+    var txt = p ? p.txt : (r.querySelector(".eNom").value || "").trim();
+    if (!txt) { r.querySelector(".eNom").focus(); return; }
+    apunta({ t: Date.now(), tipo: "compra", items: [txt], zona: ESC.zona, codigo: codigo });
+    ESC.hechos.push({ txt: txt, zona: ESC.zona });
+    ESC.box.querySelector(".eLista").innerHTML = '<li><b>Añadido ahora</b></li>' + ESC.hechos.map(function (h) { return '<li>' + esc(h.txt) + '<small>' + esc(h.zona) + '</small></li>'; }).join("");
+    otro();
+  };
+  r.querySelector(".eOtro").onclick = otro;
+  function otro() { r.hidden = true; r.innerHTML = ""; ESC.box.querySelector("input").value = ""; setTimeout(function () { if (ESC) ESC.parado = false; }, 800); }
+}
+function cierraEscaner(desdeAtras) {
+  if (!ESC) return;
+  clearTimeout(ESC.t);
+  if (ESC.stream) ESC.stream.getTracks().forEach(function (t) { t.stop(); });
+  ESC.box.hidden = true; ESC.box.innerHTML = ""; ESC = null;
+  if (!desdeAtras && history.state && history.state.pant === "escaner" && CTX && CTX.atrasManual) CTX.atrasManual();
+  if (cont && document.body.contains(cont)) pinta();
+}
 function di(t) {
   if (!t || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
   try { var u = new SpeechSynthesisUtterance(t); u.lang = "es-ES"; u.rate = 1.02; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}

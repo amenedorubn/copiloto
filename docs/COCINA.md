@@ -42,6 +42,14 @@ Se limpian el HTML que mete Google y los emojis.
 - Pantalla encendida (`navigator.wakeLock`) y voz (`speechSynthesis`; en el APK, la nativa).
 - Al terminar una receta: «Apuntar lo gastado» (lo repetido se suma, lo «al gusto» no cuenta).
 
+## Escanear lo comprado
+
+«La compra» → «Escanear lo que has comprado»: cámara de atrás con `BarcodeDetector` (Chrome en
+Android) y el número a mano si no hay cámara. El código se busca en Open Food Facts (gratis, sin
+cuenta); si no lo conoce, se escribe qué es. Entra en Mis alimentos como comprado, con su zona.
+En el APK hace falta un APK nuevo (permiso de cámara o el escáner de Google Play Services, que no
+lo pide): hasta entonces, el número a mano.
+
 ## Diseño
 
 Tres diseños de «Ahora toca» (`localStorage` `copiloto.cocina.diseno`): **A** todo a la vista,
