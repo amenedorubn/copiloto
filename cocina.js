@@ -438,7 +438,7 @@ var CSS =
   ".cocFila.sel{box-shadow:inset 3px 0 0 var(--fg);padding-left:10px;margin-left:-10px;width:calc(100% + 10px)}" +
   ".cocEtq{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);white-space:nowrap}" +
   ".cocZona{margin-top:12px}.cocZona h4{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--fg)}" +
-  ".cocZonaCab{display:block;width:100%;text-align:left;min-height:32px;color:var(--fg)}" +
+  ".cocZonaCab{display:flex;align-items:center;width:100%;text-align:left;min-height:44px;color:var(--fg)}.cocZonaCab h4{margin:0}" +
   ".cocZona h4 small{font-weight:700;color:var(--mu);margin-left:6px}" +
   ".cocPills{display:flex;flex-wrap:wrap;gap:6px}" +
   ".cocPills span{font-size:13px;font-weight:600;padding:6px 10px;border-radius:12px;background:var(--sf2);color:var(--fg);max-width:100%}" +
@@ -525,7 +525,7 @@ var R = lee(K_RECETAS, null) || { t: 0, lista: [], json: {} };
 var cargando = null;
 function recetas(cb) {                     // el indice y las recetas de Copiloto Cocina, con copia para sin red
   if (cargando) return cargando.then(cb);
-  if (R.lista.length && Date.now() - R.t < 6 * 3600e3) { cb && cb(); return Promise.resolve(); }
+  if (R.lista.length && Date.now() - R.t < 10 * 60e3) { cb && cb(); return Promise.resolve(); }   // las nuevas de Claude, a los 10 min
   cargando = fetch(RECETAS_URL + "index.json", { cache: "no-store" }).then(function (r) { if (!r.ok) throw r.status; return r.json(); })
     .then(function (idx) {
       return Promise.all(idx.map(function (x) {
@@ -549,7 +549,7 @@ function nota(conf, cb) {                    // la nota de la despensa, por el W
       if (j && j.texto) NOTA = { t: Date.now(), texto: j.texto, fecha: j.fecha || null };
       else NOTA = { t: Date.now(), texto: NOTA && NOTA.texto || "", error: (j && j.error) || "sin_datos" };
       guarda(K_NOTA, NOTA);
-    }, function () { if (NOTA) NOTA.sinRed = true; })
+    }, function () { NOTA = NOTA || { t: 0, texto: "" }; NOTA.sinRed = true; })
     .then(function () { pidiendoNota = null; cb && cb(); });
 }
 function cambios() { return lee(K_CAMBIOS, []); }
@@ -750,12 +750,15 @@ function alimentos(D, CB) {
     var err = NOTA && NOTA.error;
     s.appendChild(el("p", "cocVacio", err === "sin_configurar"
       ? "Lo que hay en casa sale de tu nota <b>Despensa habitual</b> de Obsidian, la que actualiza Claude cuando se lo cuentas. Falta darle permiso al Worker para leerla (una vez)."
+      : err === "ruta_desconocida" ? "Tu Worker todavía no sabe leer la despensa: falta desplegar su versión nueva."
       : !CTX.conf || !CTX.conf.key ? "Conecta la app en Ajustes para ver tu despensa."
       : NOTA && NOTA.sinRed ? "Sin conexión: no se puede leer tu nota de la despensa ahora."
+      : err ? "No se ha podido leer tu nota de la despensa (" + esc(err) + "). Lo demás funciona igual."
       : "Leyendo tu nota de la despensa…"));
     return s;
   }
-  s.appendChild(el("p", "sub", "Según tu nota" + (D.fecha ? " del " + corta(D.fecha) : "") + (CB.length ? " · " + CB.length + (CB.length === 1 ? " cambio" : " cambios") + " desde entonces" : "")));
+  s.appendChild(el("p", "sub", "Según tu nota" + (D.fecha ? " del " + corta(D.fecha) : "") + (CB.length ? " · " + CB.length + (CB.length === 1 ? " cambio" : " cambios") + " desde entonces" : "") +
+    (NOTA.sinRed || NOTA.error ? " · la última copia (ahora no se puede leer)" : "")));
   var nuevos = [], gastados = [];
   CB.forEach(function (cb) { cb.items.forEach(function (x) { (cb.tipo === "compra" ? nuevos : gastados).push(x); }); });
   if (nuevos.length) {
