@@ -1,0 +1,26 @@
+{
+  "appId": "io.github.amenedorubn.copiloto",
+  "appName": "Copiloto",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "amenedorubn.github.io"
+  },
+  "android": {
+    "backgroundColor": "#0a0b0d"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "statsUrl": "",
+      "appReadyTimeout": 15000,
+      "autoDeleteFailed": true,
+      "autoDeletePrevious": true,
+      "resetWhenUpdate": true
+    }
+  }
+}

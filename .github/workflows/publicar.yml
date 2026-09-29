@@ -61,3 +61,15 @@ jobs:
               bash scripts/releases.sh "$t"
             fi
           done
+
+      # La app Android lleva la web dentro y se actualiza sola bajando este zip
+      # de la ultima release (ver nativo.js). Solo la version actual de main.
+      - name: Subir la web para la app Android
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          v=$(node -p "require('./version.json').version")
+          node app/prepara-web.mjs --zip "$PWD/copiloto-web.zip"
+          gh release upload "v$v" copiloto-web.zip --clobber
+          echo "+ copiloto-web.zip en v$v"

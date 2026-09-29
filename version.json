@@ -1,1 +1,1 @@
-{"version":"2.15.0","fecha":"2026-09-29","notas":"Estadísticas de carrera y gimnasio (4 semanas, km por semana, carga, lo mejor, progresión por ejercicio con 1RM estimado); la ficha de gym compara cada ejercicio con la última vez; transiciones de ida y vuelta entre pantallas"}
+{"version":"2.16.0","fecha":"2026-09-29","notas":"App Android (APK con Capacitor 8): la web va dentro y se actualiza sola desde las releases; voz Miro sin internet que baja la música y la devuelve; pantalla encendida nativa. En la web, los .js de la app van red primero en el service worker"}

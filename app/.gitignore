@@ -1,0 +1,5 @@
+node_modules/
+www/
+# lo grande se baja con node app/descarga-voz.mjs (no cabe en el repo)
+android/app/libs/
+android/app/src/main/assets/voz/

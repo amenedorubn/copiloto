@@ -1,0 +1,19 @@
+{
+  "name": "copiloto-app",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Copiloto como app Android (Capacitor 8). La web vive en la raiz del repo; esto solo la empaqueta.",
+  "scripts": {
+    "web": "node prepara-web.mjs",
+    "sync": "node prepara-web.mjs && npx cap sync android",
+    "apk": "node prepara-web.mjs && npx cap sync android && cd android && gradlew.bat assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capgo/capacitor-updater": "^8.51.25"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2"
+  }
+}
