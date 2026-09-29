@@ -1,1 +1,1 @@
-{"version":"2.16.0","fecha":"2026-09-29","notas":"App Android (APK con Capacitor 8): la web va dentro y se actualiza sola desde las releases; voz Miro sin internet que baja la música y la devuelve; pantalla encendida nativa. En la web, los .js de la app van red primero en el service worker"}
+{"version":"2.16.1","fecha":"2026-09-29","notas":"App Android: las actualizaciones se bajan con su SHA-256 (el que da GitHub en la release), que el actualizador exige"}

@@ -32,7 +32,7 @@ function movil({ nativo = true, release = null, version = "2.16.0" } = {}) {
   return { window, navigator, llamadas, callbacks, ls };
 }
 const release = (v, conZip = true) => ({ tag_name: "v" + v, body: "notas", published_at: "2026-10-01T10:00:00Z",
-  assets: conZip ? [{ name: "copiloto-web.zip", browser_download_url: "https://github.com/x/y/releases/download/v" + v + "/copiloto-web.zip" }] : [] });
+  assets: conZip ? [{ name: "copiloto-web.zip", digest: "sha256:" + "ab".repeat(32), browser_download_url: "https://github.com/x/y/releases/download/v" + v + "/copiloto-web.zip" }] : [] });
 const compara = (a, b) => { const p = (v) => v.split(".").map(Number); a = p(a); b = p(b);
   for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1; return 0; };
 
@@ -94,7 +94,7 @@ test("comprueba: version nueva con zip -> punto y descarga en segundo plano", as
   const r = await A.comprueba(); await espera();
   assert.equal(r.estado, "nueva"); assert.equal(r.version, "2.17.0");
   assert.deepEqual(puntos, [true]);
-  assert.ok(m.llamadas.some(([p, mm, d]) => p === "CapacitorUpdater" && mm === "download" && d.version === "2.17.0"));
+  assert.ok(m.llamadas.some(([p, mm, d]) => p === "CapacitorUpdater" && mm === "download" && d.version === "2.17.0" && d.checksum === "ab".repeat(32)));
   assert.equal(JSON.parse(m.ls["copiloto.app.v1"]).pendiente.version, "2.17.0");
 });
 test("comprueba: sin zip todavia, o misma version -> al dia y sin descargar", async () => {
@@ -131,6 +131,12 @@ test("arranque: la version pedida ya corre -> se limpia", () => {
   assert.equal(actualizador(m).A.arranque(), false);
   const s = JSON.parse(m.ls["copiloto.app.v1"]);
   assert.equal(s.intento, null); assert.equal(s.pendiente, null); assert.equal(s.fallidas, undefined);
+});
+test("comprueba: un zip sin su SHA-256 no se baja (el actualizador lo rechazaria)", async () => {
+  const r = release("2.17.0"); delete r.assets[0].digest;
+  const m = movil({ release: r }), { A } = actualizador(m);
+  assert.equal((await A.comprueba()).estado, "al_dia");
+  assert.ok(!m.llamadas.some(([, mm]) => mm === "download"));
 });
 test("listo avisa al actualizador de que esta version arranca", () => {
   const m = movil(); m.window.Nativo.listo();

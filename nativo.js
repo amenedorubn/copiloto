@@ -107,15 +107,17 @@
   function guarda(o) { try { localStorage.setItem(LS, JSON.stringify(o)); } catch (e) {} }
   function vActual() { return String(window.APP_VERSION || ""); }
 
-  // la ultima release publicada que ya tiene su zip -> {version, url, notas, fecha}
+  // la ultima release publicada que ya tiene su zip -> {version, url, checksum, notas, fecha}
   N.ultima = function () {
     return fetch("https://api.github.com/repos/" + REPO + "/releases/latest",
                  { cache: "no-store", headers: { Accept: "application/vnd.github+json" } })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (j) {
         var a = (j.assets || []).filter(function (x) { return x.name === ZIP; })[0];
-        return { version: String(j.tag_name || "").replace(/^v/, ""), url: a ? a.browser_download_url : "",
-                 notas: j.body || "", fecha: String(j.published_at || "").slice(0, 10) };
+        // el actualizador exige el SHA-256 del zip: GitHub lo da en cada archivo de la release
+        var suma = a && /^sha256:[0-9a-f]{64}$/i.test(a.digest || "") ? a.digest.slice(7) : "";
+        return { version: String(j.tag_name || "").replace(/^v/, ""), url: a && suma ? a.browser_download_url : "",
+                 checksum: suma, notas: j.body || "", fecha: String(j.published_at || "").slice(0, 10) };
       });
   };
   // el bundle cargo bien: si no se llama en 15 s, el actualizador vuelve a la version anterior
@@ -129,7 +131,7 @@
       var s = lee();
       if (s.pendiente && s.pendiente.version === u.version) return Promise.resolve(s.pendiente);
       if (bajando) return bajando;
-      bajando = llama(U, "download", { url: u.url, version: u.version }).then(function (b) {
+      bajando = llama(U, "download", { url: u.url, version: u.version, checksum: u.checksum }).then(function (b) {
         var t = lee(); t.pendiente = { id: b.id, version: u.version }; guarda(t); bajando = null; return t.pendiente;
       }, function (e) { bajando = null; throw e; });
       return bajando;
