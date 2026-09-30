@@ -156,6 +156,24 @@ test("lo que tengo: la nota, su compra ya hecha y lo apuntado en la app", () => 
   assert.equal(C.zonaPara("Lentejas"), "Despensa");
 });
 
+test("en Comprar solo alimentos: ni apartados como ANTES DE EMPEZAR ni consejos", () => {
+  const c = C.comida({ uid: "b", fecha: "2026-10-02", hora: "14:30", titulo: "Pollo al pimentón con boniato", texto: [
+    "INGREDIENTES:", "· 400 g contramuslos de pollo", "· 1 boniato grande", "El pimentón va solo en el adobo, no en el boniato desde el principio, se quemaría",
+    "ADOBO:", "· 1 cdta pimentón dulce", "· Sal al gusto",
+    "ANTES DE EMPEZAR:", "· Saca el pollo de la nevera 15 min antes", "OJO", "· El horno, precalentado",
+    "CÓMO SE HACE:", "1. Adoba el pollo.", "2. Al horno 25 min."].join("\n") });
+  assert.deepEqual(c.ingredientes.map((i) => i.nombre), ["contramuslos de pollo", "boniato grande", "pimentón dulce", "Sal al gusto"]);
+  assert.equal(c.pasos[0], "Saca el pollo de la nevera 15 min antes", "antes de empezar: el primer paso");
+  assert.ok(c.notas.some((n) => /pimentón va solo/.test(n)) && c.notas.some((n) => /precalentado/.test(n)));
+  const D = C.despensa(NOTA);
+  const dos = C.comida({ uid: "d", fecha: "2026-10-03", titulo: "Pollo otra vez", texto: "INGREDIENTES:\n· 300 g contramuslos de pollo" });
+  const f = C.faltan([c, dos], D, [], "2026-09-30");
+  assert.deepEqual(f.map((x) => C.alimento(x.nombre)), ["Contramuslos de pollo", "Boniato grande", "Pimentón dulce"]);
+  assert.deepEqual(f[0].c, { n: 700, ud: "g" }, "lo de dos comidas, sumado");
+  assert.equal(C.alimento("tomate triturado (sin azúcar), del bueno"), "Tomate triturado");
+  assert.equal(C.cantidad("2 lomos de salmón").resto, "lomos de salmón", "el de es del nombre si no hay unidad");
+});
+
 test("el movil y Chrome: los cambios se juntan por id y lo borrado queda borrado", () => {
   const a = [{ id: "1", t: 1, tipo: "compra", items: ["x"] }, { t: 5, tipo: "gasto", items: ["y"] }];
   const b = [{ id: "1", t: 1, tipo: "compra", items: ["x"], borrado: true, tb: 9 }, { id: "2", t: 3, tipo: "acaba", items: ["z"] }];

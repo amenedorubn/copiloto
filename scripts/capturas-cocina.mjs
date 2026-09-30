@@ -35,6 +35,9 @@ const EJEMPLO = {
     { uid: "c5", fuente: "comida", fecha: "2026-10-03", hora: "14:00", titulo: "Curry de pollo con arroz", texto: "Receta: curry-pollo\n2 raciones" },
     { uid: "c6", fuente: "comida", fecha: "2026-10-04", hora: "21:00", titulo: "Cena · Salmón al horno con patatas",
       texto: "INGREDIENTES:\n· 2 lomos de salmón\n· 3 patatas\n· 1 limón\n· AOVE y sal\nCÓMO SE HACE:\n1. Patatas en rodajas al horno 200 °C, 20 min.\n2. El salmón encima, 12 min." },
+    { uid: "c7", fuente: "comida", fecha: "2026-10-05", hora: "14:30", titulo: "Pollo al pimentón con boniato",
+      texto: "INGREDIENTES:\n· 400 g contramuslos de pollo\n· 1 boniato grande\nEl pimentón va solo en el adobo, no en el boniato desde el principio, se quemaría\n" +
+        "ADOBO:\n· 1 cdta pimentón dulce\nANTES DE EMPEZAR:\n· Saca el pollo de la nevera 15 min antes\nCÓMO SE HACE:\n1. Adoba el pollo.\n2. Al horno 200 °C, 25 min." },
     { uid: "r1", fuente: "rutina", fecha: "2026-10-01", hora: "21:40", fin: "22:20", titulo: "Rutina de noche · cama 22:20",
       texto: "21:40 · Prepara la comida de mañana (10 min)\n22:00 · Ducha (10 min)\n22:10 · Leer (10 min)\n22:20 · Cama, móvil fuera" }
   ],
@@ -51,7 +54,7 @@ let errores = 0;
 for (const tema of ["oscuro", "claro"]) {
   const ls = { "copiloto.conf.v1": JSON.stringify({ url: "http://api.test", key: "k" }), "copiloto.tema": tema,
                "copiloto.cocina.lista.v1": JSON.stringify([{ id: "m1", t: Date.parse(F.hoy + "T09:00:00"), txt: "Café molido" }]) };
-  const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: tema === "claro" ? "light" : "dark" });
+  const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, colorScheme: tema === "claro" ? "light" : "dark" });
   p.on("pageerror", (e) => { errores++; console.log("PAGEERROR", tema, e.message); });
   await p.clock.install({ time: new Date(F.hoy + "T" + (F.hora || "13:50") + ":00") });
   await p.addInitScript((ls) => {
@@ -81,10 +84,27 @@ for (const tema of ["oscuro", "claro"]) {
   await p.waitForTimeout(1500);
   await p.click("#hCocina"); await p.waitForTimeout(1200);
   // una por subpestaña, del tamaño de la pantalla: se ve si hace falta bajar
-  for (const [k, n] of [["ahora", "Ahora"], ["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Tengo"], ["recetas", "Recetas"]]) {
+  for (const [k, n] of [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Tengo"], ["recetas", "Recetas"]]) {
     await p.click(`.cocSeg button:has-text('${n}')`); await p.waitForTimeout(350);
     await p.screenshot({ path: `${OUT}${tema}-${k}.png` });
   }
+  // deslizar a los lados: de Semana a Comprar y vuelta
+  const desliza = (dx) => p.evaluate((dx) => {
+    const el = document.querySelector("#ptCuerpo .cocSec"), t = (x) => new Touch({ identifier: 1, target: el, clientX: x, clientY: 500 });
+    el.dispatchEvent(new TouchEvent("touchstart", { touches: [t(220)], changedTouches: [t(220)], bubbles: true }));
+    el.dispatchEvent(new TouchEvent("touchend", { touches: [], changedTouches: [t(220 + dx)], bubbles: true }));
+  }, dx);
+  const pestaña = () => p.$eval(".cocSeg [aria-selected=true]", (x) => x.textContent);
+  await p.click(".cocSeg button:has-text('Semana')"); await p.waitForTimeout(300);
+  await desliza(-120); await p.waitForTimeout(80);
+  if (tema === "oscuro") await p.screenshot({ path: `${OUT}desliza.png` });
+  await p.waitForTimeout(300);
+  const a1 = await pestaña(); await desliza(-120); await p.waitForTimeout(300);
+  const a2 = await pestaña(); await desliza(140); await desliza(140); await p.waitForTimeout(300);
+  const a3 = await pestaña(); await desliza(140); await p.waitForTimeout(300);
+  const a4 = await pestaña();
+  console.log("deslizar:", a1, a2, a3, a4);
+  if (!/^Comprar/.test(a1) || a2 !== "Tengo" || a3 !== "Semana" || a4 !== "Semana") { errores++; console.log("DESLIZAR MAL"); }
   if (tema === "oscuro") {
     // Tengo: tocar algo -> Se acabó / a la lista; y ver una zona sola
     await p.click(".cocSeg button:has-text('Tengo')"); await p.waitForTimeout(300);
@@ -97,11 +117,11 @@ for (const tema of ["oscuro", "claro"]) {
     await p.screenshot({ path: `${OUT}tengo-despensa.png` });
     // Comprar: marcar uno -> al carro (y a Tengo)
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
-    await p.click(".cocCompra li:not(.cocGrupo) button >> nth=0"); await p.waitForTimeout(300);
+    await p.click(".cocCompra li button >> nth=0"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}comprar-carro.png` });
-    // el modo paso a paso de lo que toca
-    await p.click(".cocSeg button:has-text('Ahora')"); await p.waitForTimeout(300);
-    await p.click("#ptCuerpo .tjGo"); await p.waitForTimeout(800);
+    // el modo paso a paso de lo que toca, desde Semana
+    await p.click(".cocSeg button:has-text('Semana')"); await p.waitForTimeout(300);
+    await p.click("#ptCuerpo .cocFila.sel"); await p.waitForTimeout(800);
     await p.screenshot({ path: `${OUT}modo-paso1.png` });
     await p.click(".mHecho"); await p.waitForTimeout(600);
     await p.clock.runFor(185000); await p.waitForTimeout(400);

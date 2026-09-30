@@ -80,7 +80,8 @@ function cantidad(txt) {
   }
   var n = numero(m[1]); if (n == null) return null;
   var u = (m[2] || "").toLowerCase().replace(/\.$/, ""), resto = m[3] || "";
-  if (u && !UDS[u]) { resto = (m[2] + " " + resto).trim(); u = ""; }
+  // "2 lomos de salmón": "lomos" no es una unidad, asi que el "de" es del nombre
+  if (u && !UDS[u]) { resto = s.slice(m[1].length).replace(/^\s*x\s+/i, "").trim(); u = ""; }
   var ud = UDS[u] || "ud";
   if (ud === "kg") { n *= 1000; ud = "g"; }
   if (ud === "l") { n *= 1000; ud = "ml"; }
@@ -110,8 +111,18 @@ function cantTxt(c) {
      CÓMO SE HACE:
      1. ...
    -> {titulo, etiqueta, raciones, ingredientes:[{txt,c,nombre}], pasos:[txt], notas:[txt], receta}  */
-var SEC_ING = /^(ingredientes?|necesitas|lo que necesitas|lista|compra)/, SEC_PASOS = /^(como se hace|preparacion|pasos|elaboracion|instrucciones|receta|como|modo)/;
+var SEC_ING = /^(ingredientes?|necesitas|lo que necesitas|lista|compra)/;
+var SEC_PASOS = /^(como se hace|preparacion|pasos|elaboracion|instrucciones|receta|como|modo|antes de empezar|antes de nada|preparativos|mise en place)/;
 var SEC_NOTA = /^(tupper|reparto|guardar|recalentar|notas?|consejo|aviso|descongelar|al servir|servir)/;
+// dentro de los ingredientes, "Para la salsa:" o "ADOBO:" siguen siendo ingredientes
+var SUB_ING = /^(para|salsa|masa|relleno|adobo|marinado|guarnicion|alino|base|cobertura|topping|decoracion|acompanamiento|extras?|opcional)\b/;
+// una frase (un consejo, un aviso) no es un ingrediente: "El pimentón va solo en el adobo, no en..."
+var RE_FRASE = /^(el|la|los|las|lo|si|no|ojo|nota|importante|truco|antes|mientras|luego|despues|cuidado|reserva|guarda|todo|usa|puedes|mejor|recuerda|atencion|aviso)\b/;
+function esFrase(t) {
+  if (cantidad(t)) return false;
+  var n = norm(t), w = n ? n.split(" ").length : 0;
+  return RE_FRASE.test(n) || w > 7 || (/[:;]/.test(t) && w > 4);
+}
 function limpiaLinea(l) { return l.replace(/^[\s\-–—·•*▪◦]+/, "").replace(/\s+/g, " ").trim(); }
 function esTituloSec(l) {
   var sin = l.replace(/[:：]\s*$/, "").trim();
@@ -148,6 +159,9 @@ function comida(ev) {
       if (SEC_PASOS.test(s)) { sec = "pasos"; return; }
       if (SEC_NOTA.test(s)) { sec = "nota"; return; }
       if (/^raciones?/.test(s)) return;
+      if (sec === "ing" && SUB_ING.test(s)) return;
+      // otro apartado en MAYUSCULAS ("OJO", "TRUCO"...): lo que va debajo no son ingredientes
+      if (!/[a-zá-úñ]/.test(l)) { sec = "nota"; return; }
     }
     // "INGREDIENTES: 500 g carne, 1 huevo" en una sola linea
     var enLinea = l.match(/^([^:]{3,30}):\s*(.+)$/);
@@ -160,7 +174,7 @@ function comida(ev) {
     var num = l.match(/^(\d{1,2})[.)]\s+(.+)$/);
     if (num) { out.pasos.push(limpiaLinea(num[2])); hayPasosNum = true; return; }
     var vi = /^[\-–—·•*▪◦]/.test(l);
-    if (sec === "ing" || (!sec && vi && !hayPasosNum && cantidad(limpiaLinea(l)))) { out.ingredientes.push(ingrediente(limpiaLinea(l))); return; }
+    if ((sec === "ing" && !esFrase(limpiaLinea(l))) || (!sec && vi && !hayPasosNum && cantidad(limpiaLinea(l)))) { out.ingredientes.push(ingrediente(limpiaLinea(l))); return; }
     if (sec === "pasos") { out.pasos.push(limpiaLinea(l)); return; }
     out.notas.push(limpiaLinea(l));
   });
@@ -355,19 +369,30 @@ function sumaMin(h, m) {
   var p = h.split(":"), t = Math.min(23 * 60 + 59, +p[0] * 60 + +p[1] + m);
   return dos(Math.floor(t / 60)) + ":" + dos(t % 60);
 }
-// lo que falta para las comidas de estos dias: lo que no esta en lo que tengo
+// lo que falta para las comidas de estos dias: lo que no esta en lo que tengo. Solo alimentos (una
+// frase no); si sale en dos comidas, una vez y con las cantidades sumadas si van en lo mismo
 function faltan(lista, D, cambios, hoy) {
   var vistos = {}, out = [];
   lista.forEach(function (c) {
     c.ingredientes.forEach(function (i) {
-      if (/\bal gusto\b|^sal\b|^agua\b|^aceite|aove|pimienta/i.test(i.txt)) return;
+      if (/\bal gusto\b|^sal\b|^agua\b|^aceite|aove|pimienta/i.test(i.txt) || esFrase(i.txt)) return;
       var e = estadoDe(i, D, cambios, hoy); if (e.estado === "hay") return;
-      var k = palabras(i.nombre).join(" "); if (!k || vistos[k]) { if (vistos[k]) vistos[k].para.push(c.titulo); return; }
-      vistos[k] = { txt: i.txt, nombre: i.nombre, para: [c.titulo], fecha: c.fecha, uid: c.uid };
+      var k = palabras(i.nombre).join(" "), ya = vistos[k];
+      if (!k) return;
+      if (ya) {
+        ya.para.push(c.titulo);
+        if (ya.c && i.c && ya.c.ud === i.c.ud) ya.c = { n: Math.round((ya.c.n + i.c.n) * 100) / 100, ud: ya.c.ud };
+        return;
+      }
+      vistos[k] = { txt: i.txt, nombre: i.nombre, c: i.c, para: [c.titulo], fecha: c.fecha, uid: c.uid };
       out.push(vistos[k]);
     });
   });
   return out;
+}
+// el alimento, sin lo de detras: "tomate triturado (sin azúcar), del bueno" -> "Tomate triturado"
+function alimento(n) {
+  return mayus1(String(n || "").replace(/\s*\([^)]*\)/g, "").replace(/\s*[,;:].*$/, "").replace(/\s+/g, " ").trim());
 }
 
 /* ------------------------------ lo que va en grande en HOY ------------------------------
@@ -528,7 +553,7 @@ function mayus1(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.s
 function corta(iso) { var p = String(iso).split("-"); return (+p[2]) + "/" + (+p[1]); }
 
 var API = { norm: norm, palabras: palabras, cantidad: cantidad, cantTxt: cantTxt, comida: comida, minutosDe: minutosDe,
-  despensa: despensa, estadoDe: estadoDe, casa: casa, zonaPara: zonaPara, mezcla: mezcla, parecido: parecido, recetaDe: recetaDe, comidasDe: comidasDe,
+  despensa: despensa, estadoDe: estadoDe, casa: casa, zonaPara: zonaPara, mezcla: mezcla, parecido: parecido, alimento: alimento, esFrase: esFrase, recetaDe: recetaDe, comidasDe: comidasDe,
   queToca: queToca, faltan: faltan, vigentes: vigentes, paraClaude: paraClaude, partes: partes, pasosGuia: pasosGuia,
   productoOFF: productoOFF, esCodigo: esCodigo, OFF_URL: OFF_URL, queGrande: queGrande, nutriTxt: nutriTxt, avisosComida: avisosComida,
   RECETAS_URL: RECETAS_URL, K: { recetas: K_RECETAS, cambios: K_CAMBIOS, pasos: K_PASOS, compra: K_COMPRA, nota: K_NOTA, lista: K_LISTA } };
@@ -774,10 +799,16 @@ CSS +=
   ".cocHojaBot button+button{background:var(--sf);color:var(--fg);box-shadow:inset 0 0 0 1px var(--ln)}" +
   ".cocBtn{display:flex!important;align-items:center;justify-content:center;gap:8px}.cocBtn svg{margin:0!important;flex:none}" +
   ".cocCompra li.conQuita>button{border-top:0!important}" +
-  ".cocCompra li.cocGrupo{padding:14px 0 2px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}" +
-  ".cocCompra li.cocGrupo+li button,.cocCompra li.cocGrupo+li.conQuita{border-top:0!important}" +
-  ".cocCompra li.cocGrupo:first-child{padding-top:4px}" +
-  ".cocFila{grid-template-columns:84px 1fr auto!important}" +
+  ".cocCompra button{grid-template-columns:28px 1fr auto!important}" +
+  ".cocCompra button em{font-style:normal;font-size:14px;font-weight:700;color:var(--mu);white-space:nowrap;padding-left:8px}" +
+  ".cocDia{margin:14px 0 2px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}.cocDia:first-child{margin-top:0}" +
+  ".cocFila{grid-template-columns:64px 1fr 20px!important}.cocDia+.cocFila{border-top:0}" +
+  ".cocFila .cocIr{display:flex;color:var(--mu)}.cocFila .cocIr svg{width:18px;height:18px}" +
+  "div.cocFila{opacity:.8}" +
+  "@keyframes cocDer{from{transform:translateX(36px);opacity:.2}}@keyframes cocIzq{from{transform:translateX(-36px);opacity:.2}}" +
+  ".cocDer{animation:cocDer .22s ease-out}.cocIzq{animation:cocIzq .22s ease-out}" +
+  "@media (prefers-reduced-motion:reduce){.cocDer,.cocIzq{animation:none}}" +
+  ".cocSeg{grid-template-columns:repeat(4,minmax(0,1fr))!important}" +
   "#cocEsc .eCam.nativo{height:170px}" +
   ".cocZonas{margin-top:12px}" +
   ".cocZonaFila{width:100%;display:grid;grid-template-columns:1fr auto 20px;gap:10px;align-items:center;text-align:left;min-height:64px;padding:10px 0;border-top:1px solid var(--ln);color:var(--fg)}" +
@@ -847,10 +878,10 @@ function sincroniza() {
   var conf = (CTX && CTX.conf) || (MCTX && MCTX.conf);
   if (!conf || !conf.url || !conf.key || subiendo || typeof fetch !== "function") return;
   subiendo = true;
-  var antes = JSON.stringify([conId(cambios()), lista()]);
+  var antes = JSON.stringify([conId(cambios()), lista()]), cuerpo = { cambios: conId(cambios()), lista: lista() };
   fetch(conf.url.replace(/\/+$/, "") + "/cocina", { method: "POST", cache: "no-store",
     headers: { "X-Copiloto-Key": conf.key, "Content-Type": "application/json" },
-    body: JSON.stringify({ cambios: conId(cambios()), lista: lista() }) })
+    body: JSON.stringify(cuerpo) })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (j) {
       if (!j || !Array.isArray(j.cambios)) return;
@@ -868,19 +899,28 @@ var CTX = null, MCTX = null, SEL = null, cont = null, abiertas = {};
 // solo se repinta la pestaña si sigue abierta: #ptCuerpo es el mismo para Estadísticas o Arc
 function diaHoy() { return (CTX && CTX.hoy) || isoDe(Date.now()); }
 function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CTX.activa || CTX.activa())); }
-/* Cada cosa en su sitio, sin scroll largo: cinco subpestañas arriba (fijas al bajar). */
-var SUBS = [["ahora", "Ahora"], ["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Tengo"], ["recetas", "Recetas"]];
-var SUB = "ahora", ZONA = null, TOCADO = null, ANADIR = false;
+/* Cada cosa en su sitio, sin scroll largo: cuatro subpestañas arriba (fijas al bajar) y se pasa
+   de una a otra deslizando a los lados. Lo que toca ahora ya va en grande en HOY.            */
+var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Tengo"], ["recetas", "Recetas"]];
+var SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0;
+function subDe(s) { return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 API.pinta = function (c, ctx) {
   ponCSS(); cont = c; CTX = ctx || {}; MCTX = CTX;
-  SUB = CTX.sub || "ahora"; TOCADO = null; ANADIR = false;
+  SUB = subDe(CTX.sub); TOCADO = null; ANADIR = false; ZONA = null;
   if (CTX.sel) SEL = CTX.sel;                // se abre con una comida de la linea del dia
+  gestos(c);
   pinta();
   recetas(function () { if (cont === c && enTab()) pinta(); });
   nota(CTX.conf, function () { if (cont === c && enTab()) pinta(); });
   sincroniza();
 };
-API.sub = function (s) { if (SUBS.some(function (x) { return x[0] === s; })) { SUB = s; TOCADO = null; if (enTab()) { pinta(); cont.scrollTop = 0; } } return SUB; };
+API.sub = function (s) { if (enTab()) cambiaSub(subDe(s)); else SUB = subDe(s); return SUB; };
+function cambiaSub(s) {
+  if (s === SUB) return;
+  var i = SUBS.map(function (x) { return x[0]; }).indexOf(SUB), j = SUBS.map(function (x) { return x[0]; }).indexOf(s);
+  ENTRA = j > i ? 1 : -1; SUB = s; TOCADO = null; ANADIR = false;
+  pinta(); cont.scrollTop = 0;
+}
 function pinta() {
   var c = cont; if (!c) return;
   var hoy = CTX.hoy, ahora = CTX.ahora || "00:00";
@@ -891,11 +931,10 @@ function pinta() {
   var LC = listaCompra(L, D, CB, hoy);
   var y = c.scrollTop, foco = document.activeElement && document.activeElement.id; c.innerHTML = "";
   c.appendChild(barra(LC.items.length));
-  if (SUB === "semana") c.appendChild(semana(L, toca, hoy));
-  else if (SUB === "comprar") c.appendChild(compra(LC, D));
-  else if (SUB === "tengo") c.appendChild(alimentos(D, CB, hoy));
-  else if (SUB === "recetas") c.appendChild(listaRecetas(D, CB, hoy));
-  else { c.appendChild(hero(toca, D, CB, hoy, ahora)); var ig = ingsSec(toca, D, CB, hoy); if (ig) c.appendChild(ig); }
+  var pag = SUB === "comprar" ? compra(LC, D) : SUB === "tengo" ? alimentos(D, CB, hoy)
+          : SUB === "recetas" ? listaRecetas(D, CB, hoy) : semana(L, toca, hoy);
+  if (ENTRA) { pag.classList.add(ENTRA > 0 ? "cocDer" : "cocIzq"); ENTRA = 0; }
+  c.appendChild(pag);
   c.scrollTop = y;
   if (foco && document.getElementById(foco)) document.getElementById(foco).focus();
 }
@@ -904,29 +943,32 @@ function barra(nCompra) {
   SUBS.forEach(function (s) {
     var x = el("button", "", esc(s[1]) + (s[0] === "comprar" && nCompra ? '<b>' + nCompra + '</b>' : ""));
     x.setAttribute("role", "tab"); x.setAttribute("aria-selected", SUB === s[0]);
-    x.addEventListener("click", function () { if (SUB === s[0]) return; SUB = s[0]; TOCADO = null; ANADIR = false; pinta(); cont.scrollTop = 0; });
+    x.addEventListener("click", function () { cambiaSub(s[0]); });
     b.appendChild(x);
   });
   return nav;
 }
-// los ingredientes de lo que toca, cada uno con si esta en casa (debajo de la tarjeta, en Ahora)
-function ingsDe(cm) {
-  var rec = recetaDe(cm, R.lista), Jr = rec && R.json[rec.id], J = recalienta(cm) ? null : Jr;
-  return cm.ingredientes.length ? cm.ingredientes : (J ? J.ingredientes.map(function (i) { return { txt: i.cantidad + " " + i.nombre, nombre: i.nombre, cant: i.cantidad }; }) : []);
-}
-function ingsSec(cm, D, CB, hoy) {
-  if (!cm) return null;
-  var ings = ingsDe(cm); if (!ings.length) return null;
-  var s = el("section", "cocSec"), no = 0, ul = el("ul", "cocIng");
-  ings.forEach(function (i) {
-    var e = estadoDe(i, D, CB, hoy), txt = i.cant ? i.nombre : i.txt;
-    if (e.estado === "no") no++;
-    ul.appendChild(el("li", e.estado === "?" ? "" : e.estado, '<i></i><span>' + esc(txt) + '</span><small>' +
-      esc(i.cant ? i.cant : e.estado === "no" ? "no hay" : e.zona || "") + '</small>'));
-  });
-  s.innerHTML = '<h3>Ingredientes</h3><p class="sub">' + esc(!D ? ings.length + " ingredientes" : no ? no + " no " + (no === 1 ? "está" : "están") + " en casa: salen en Comprar" : "Todo en casa") + '</p>';
-  s.appendChild(ul);
-  return s;
+// deslizar a los lados: a la izquierda, la siguiente; a la derecha, la anterior. Los bordes son el
+// "atras" de Android y las zonas de Tengo se desplazan solas: ahi no.
+function gestos(c) {
+  if (c.cocGestos) return; c.cocGestos = true;
+  var x0 = null, y0 = 0, t0 = 0;
+  c.addEventListener("touchstart", function (e) {
+    x0 = null;
+    if (!enTab() || e.touches.length !== 1) return;
+    var t = e.touches[0], w = window.innerWidth || 400;
+    if (t.clientX < 28 || t.clientX > w - 28) return;
+    if (e.target.closest && e.target.closest(".cocChips,input,textarea,select")) return;
+    x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+  }, { passive: true });
+  c.addEventListener("touchend", function (e) {
+    if (x0 == null || !enTab()) return;
+    var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6 || Date.now() - t0 > 900) return;
+    var ks = SUBS.map(function (x) { return x[0]; }), j = ks.indexOf(SUB) + (dx < 0 ? 1 : -1);
+    if (j >= 0 && j < ks.length) cambiaSub(ks[j]);
+  }, { passive: true });
+  c.addEventListener("touchcancel", function () { x0 = null; }, { passive: true });
 }
 
 function hero(cm, D, CB, hoy, ahora) {
@@ -1063,17 +1105,27 @@ function heroC(s, cm, J, pasos, ings, D, CB, cabHtml) {
 }
 
 function recalienta(cm) { return !cm.receta && /tupper|sobras|recalent/i.test(cm.etiqueta + " " + cm.titulo); }
+// lo que abre el paso a paso de una comida: su receta, sus pasos o, si es un tupper, recalentar
+function modoDe(cm) {
+  var rec = recetaDe(cm, R.lista), Jr = rec && R.json[rec.id];
+  if (Jr && !recalienta(cm)) return { receta: Jr };
+  var pasos = cm.pasos.length ? cm.pasos : (Jr && Jr.meta.reparto && Jr.meta.reparto.recalentar) || [];
+  return pasos.length ? { comida: cm, pasos: pasos } : null;
+}
 function semana(L, toca, hoy) {
   var s = el("section", "cocSec");
-  s.innerHTML = '<h3>Esta semana</h3>';
-  if (!L.length) { s.appendChild(el("p", "cocVacio", "Sin comidas planificadas.")); return s; }
-  L.slice(0, 14).forEach(function (cm) {
-    var rec = recetaDe(cm, R.lista);
-    var b = el("button", "cocFila" + (toca && cm.uid === toca.uid ? " sel" : ""),
-      '<time><b>' + esc(diaTxt(cm.fecha, hoy)) + '</b>' + esc(cm.hora || "") + '</time><span>' + esc(cm.titulo) +
-      '<small>' + esc(queComida(cm.hora) + (cm.raciones ? " · " + cm.raciones + (cm.raciones === 1 ? " ración" : " raciones") : "")) + '</small></span>' +
-      '<em class="cocEtq">' + esc(cm.etiqueta && !/^(desayuno|comida|cena|merienda|media mañana)$/i.test(cm.etiqueta) ? cm.etiqueta : rec ? "Receta" : "") + '</em>');
-    b.addEventListener("click", function () { SEL = cm.uid; SUB = "ahora"; pinta(); cont.scrollTop = 0; });
+  if (!L.length) { s.appendChild(el("p", "cocVacio", "No hay comidas en el calendario <b>Comidas</b> para los próximos días. Cuando Claude meta el plan de la semana, salen aquí.")); return s; }
+  var dia = null;
+  L.slice(0, 16).forEach(function (cm) {
+    if (cm.fecha !== dia) { dia = cm.fecha; s.appendChild(el("h4", "cocDia", esc(diaTxt(cm.fecha, hoy)))); }
+    var q = modoDe(cm), ahora = toca && cm.uid === toca.uid;
+    var et = cm.etiqueta && !/^(desayuno|comida|cena|merienda|media mañana)$/i.test(cm.etiqueta) ? cm.etiqueta : "";
+    var b = el(q ? "button" : "div", "cocFila" + (ahora ? " sel" : ""),
+      '<time><b>' + esc(cm.hora || "") + '</b>' + esc(queComida(cm.hora)) + '</time><span>' + esc(cm.titulo) +
+      '<small>' + esc([ahora ? "Ahora" : "", et, cm.raciones ? cm.raciones + (cm.raciones === 1 ? " ración" : " raciones") : "",
+                       q ? (q.receta ? "Receta paso a paso" : (q.pasos.length + " pasos")) : ""].filter(Boolean).join(" · ")) + '</small></span>' +
+      (q ? '<em class="cocIr">' + svg("der") + '</em>' : '<em></em>'));
+    if (q) b.addEventListener("click", function () { SEL = cm.uid; abreModo(q); });
     s.appendChild(b);
   });
   return s;
@@ -1084,13 +1136,13 @@ function semana(L, toca, hoy) {
 function listaCompra(L, D, CB, hoy) {
   var items = [], todos = conId(cambios()).filter(function (cb) { return !cb.borrado; });
   if (D) faltan(L.filter(function (x) { return x.fecha <= mas7(hoy); }), D, CB, hoy).forEach(function (f) {
-    items.push({ k: "f:" + palabras(f.nombre).join(" "), txt: f.txt, nombre: f.nombre, grupo: diaTxt(f.fecha, hoy) + " · " + f.para[0],
-                 sub: f.para.length > 1 ? "También para " + f.para.slice(1, 3).join(" y ") : "" });
+    items.push({ k: "f:" + palabras(f.nombre).join(" "), txt: f.c ? cantTxt(f.c) + " " + f.nombre : f.txt, nombre: f.nombre,
+                 ver: alimento(f.nombre), cant: f.c ? cantTxt(f.c) : "" });
   });
   lista().forEach(function (x) {
     if (x.borrado || todos.some(function (cb) { return cb.lista === "m:" + x.id; })) return;
     if (items.some(function (i) { return parecido(i.nombre, x.txt) > 0; })) return;
-    items.push({ k: "m:" + x.id, txt: x.txt, nombre: x.txt, id: x.id, grupo: "Apuntado por ti" });
+    items.push({ k: "m:" + x.id, txt: x.txt, nombre: x.txt, id: x.id, ver: x.txt, cant: "" });
   });
   var carro = todos.filter(function (cb) { return cb.tipo === "compra" && cb.lista && Date.now() - cb.t < 12 * 3600e3; });
   return { items: items, carro: carro };
@@ -1099,12 +1151,11 @@ function compra(LC, D) {
   var s = el("section", "cocSec");
   var n = LC.items.length;
   s.innerHTML = '<p class="cocLead">' + (n ? n + (n === 1 ? " cosa" : " cosas") + " que comprar" : "Nada que comprar") + '</p><p class="sub">' +
-    (D ? "Lo que falta para las comidas de los próximos 7 días, y lo que apuntes tú" : "Lo que apuntes tú (lo de las comidas sale cuando se pueda leer lo que tienes)") + '</p>';
+    (D ? "Lo que falta para las comidas de esta semana" : "Lo que apuntes (lo de las comidas sale cuando se pueda leer lo que tienes)") + '</p>';
   if (LC.items.length) {
-    var ul = el("ul", "cocCompra"), grupo = null;
+    var ul = el("ul", "cocCompra");
     LC.items.forEach(function (it) {
-      if (it.grupo !== grupo) { grupo = it.grupo; ul.appendChild(el("li", "cocGrupo", esc(grupo))); }
-      var b = el("button", "", '<i></i><span>' + esc(it.txt) + (it.sub ? '<small>' + esc(it.sub) + '</small>' : "") + '</span>');
+      var b = el("button", "", '<i></i><span>' + esc(it.ver) + '</span><em>' + esc(it.cant) + '</em>');
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {         // al carro: ya esta en Tengo
         apunta({ t: Date.now(), tipo: "compra", items: [it.txt], zona: zonaPara(it.nombre), lista: it.k });
@@ -1120,7 +1171,7 @@ function compra(LC, D) {
   if (LC.carro.length) {
     var c = el("div", "cocZona", '<h4>En el carro<small>ya en Tengo · toca para quitarlo</small></h4>'), uc = el("ul", "cocCompra");
     LC.carro.forEach(function (cb) {
-      var b = el("button", "", '<i>' + svg("tick") + '</i><span>' + esc(cb.items.join(", ")) + '</span>');
+      var b = el("button", "", '<i>' + svg("tick") + '</i><span>' + esc(cb.items.map(function (x) { var c = cantidad(x); return alimento(c ? c.resto : x); }).join(", ")) + '</span><em></em>');
       b.setAttribute("aria-pressed", "true");
       b.addEventListener("click", function () { desapunta(cb.id); pinta(); });
       uc.appendChild(el("li")).appendChild(b);

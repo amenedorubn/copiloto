@@ -14,15 +14,21 @@ Pestaña de HOY (icono de la olla, junto a Estadísticas). La pinta `cocina.js`;
 
 ## Las subpestañas
 
-Arriba, fijas al bajar: **Ahora** (la tarjeta de lo que toca y sus ingredientes), **Semana**,
-**Comprar**, **Tengo** y **Recetas**. Cada una cabe en la pantalla o casi.
+Arriba, fijas al bajar: **Semana**, **Comprar**, **Tengo** y **Recetas**; se pasa de una a otra
+tocándolas o deslizando a los lados (no desde los bordes, que son el «atrás» de Android). Cada una
+cabe en la pantalla o casi. Lo que toca ahora ya va en grande en HOY.
+
+- **Semana** = las comidas por días, con la de ahora marcada. Un toque abre su paso a paso
+  (la receta, sus pasos o, si es un tupper, recalentar).
 
 - **Tengo** = la nota + lo que ha pasado después en la app (`Cocina.casa`), por orden: la compra de
   la nota cuya fecha ya pasó (está en casa), lo comprado (se suma a lo que había), lo gastado al
   cocinar (se resta si va en lo mismo; sin cantidad se queda) y «Se acabó» (fuera). En «Todo», una
   fila por zona; al tocarla, lo que hay dentro. Tocar algo: «Se acabó» o «Se acabó · a la lista».
-- **Comprar** = lo que falta para las comidas de los próximos 7 días (agrupado por comida) y lo que
-  apuntas tú. Marcarlo lo pasa a Tengo («En el carro», se puede desmarcar 12 h). La lista de
+- **Comprar** = lo que falta para las comidas de los próximos 7 días y lo que apuntas tú: solo el
+  alimento y su cantidad (sumada si sale en dos comidas). Un apartado en MAYÚSCULAS que no es de
+  ingredientes («OJO») no cuenta, «ANTES DE EMPEZAR» son pasos y una frase («El pimentón va…») no es
+  un alimento. Marcarlo lo pasa a Tengo («En el carro», se puede desmarcar 12 h). La lista de
   compra de la nota no sale: es historia.
 
 La app **no escribe** en la nota (solo se toca con `upsert_knowledge` desde la app de Claude). Lo

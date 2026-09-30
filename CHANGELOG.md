@@ -13,6 +13,22 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.22.0] - 2026-09-30
+
+### Añadido
+
+- Cocina: se pasa de una subpestaña a otra deslizando el dedo a los lados
+
+### Cambiado
+
+- Cocina: Ahora y Semana, juntas en Semana (lo que toca ya va en grande en HOY). Cada comida, por días, abre su paso a paso con un toque; fuera la lista de ingredientes de debajo de la tarjeta
+- Comprar: solo el alimento y su cantidad (sumada si sale en dos comidas), sin agrupar por comida
+
+### Corregido
+
+- Comprar ya no enseña apartados de la receta como «ANTES DE EMPEZAR» ni consejos («El pimentón va solo en el adobo…»): un apartado desconocido en mayúsculas ya no es de ingredientes, «Antes de empezar» son pasos y una frase no es un alimento
+- «2 lomos de salmón» ya no pierde el «de» («Lomos salmón»)
+
 ## [2.21.0] - 2026-09-30
 
 ### Añadido
@@ -504,6 +520,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.22.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.22.0
 [2.21.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.21.0
 [2.20.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.20.0
 [2.19.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.19.1
