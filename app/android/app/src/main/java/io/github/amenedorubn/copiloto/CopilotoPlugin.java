@@ -34,6 +34,9 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 import com.k2fsa.sherpa.onnx.GeneratedAudio;
 import com.k2fsa.sherpa.onnx.OfflineTts;
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig;
@@ -749,6 +752,44 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
         JSObject d = new JSObject();
         d.put("programados", n);
         call.resolve(d);
+    }
+
+    /* ------------------------ escaner de Cocina ------------------------ */
+
+    /** El escaner de codigos de barras de Google Play Services: su propia pantalla, sin pedir
+     *  permiso de camara (el WebView no trae BarcodeDetector). {codigo} o {cancelado: true}. */
+    @PluginMethod
+    public void escanea(PluginCall call) {
+        if (getActivity() == null) {
+            call.reject("sin_pantalla");
+            return;
+        }
+        getActivity().runOnUiThread(() -> {
+            try {
+                GmsBarcodeScannerOptions op = new GmsBarcodeScannerOptions.Builder()
+                        .setBarcodeFormats(Barcode.FORMAT_EAN_13, Barcode.FORMAT_EAN_8, Barcode.FORMAT_UPC_A, Barcode.FORMAT_UPC_E)
+                        .enableAutoZoom()
+                        .build();
+                GmsBarcodeScanning.getClient(getActivity(), op).startScan()
+                        .addOnSuccessListener(b -> {
+                            JSObject d = new JSObject();
+                            d.put("codigo", b.getRawValue());
+                            call.resolve(d);
+                        })
+                        .addOnCanceledListener(() -> {
+                            JSObject d = new JSObject();
+                            d.put("cancelado", true);
+                            call.resolve(d);
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.w(TAG, "escaner: " + e);
+                            call.reject(String.valueOf(e.getMessage()));
+                        });
+            } catch (Throwable t) {
+                Log.w(TAG, "escaner: " + t);
+                call.reject(String.valueOf(t.getMessage()));
+            }
+        });
     }
 
     /* ------------------------ informe de la salida ------------------------ */

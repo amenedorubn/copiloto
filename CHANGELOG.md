@@ -13,6 +13,21 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.21.0] - 2026-09-30
+
+### Añadido
+
+- Cocina en 5 subpestañas fijas arriba (Ahora, Semana, Comprar, Tengo, Recetas): cada cosa en su sitio y sin scroll largo
+- Tengo: lo que hay en casa por zonas (una fila por zona; al tocarla, lo que hay dentro). Tocar algo: «Se acabó» o «Se acabó · a la lista». Añadir y escanear entran solos: ya no hay que pasárselo a Claude
+- Comprar: lo que falta para las comidas de los próximos 7 días, agrupado por comida, y lo que apuntes tú. Al marcarlo pasa a Tengo («En el carro», y se puede desmarcar)
+- Lo apuntado en Cocina se guarda también en el Worker (/cocina): el móvil y Chrome ven lo mismo
+- App Android: escanear con la cámara con el escáner de Google Play Services (sin pedir permiso de cámara)
+- Al cocinar, lo gastado se resta de lo que tienes si va en lo mismo (300 g de 1 kg de arroz: quedan 700 g)
+
+### Corregido
+
+- La compra ya no enseña la lista de compra de la nota (ya hecha) ni «De tu nota»: lo de una compra con fecha pasada cuenta como que ya está en casa
+
 ## [2.20.0] - 2026-09-30
 
 ### Añadido
@@ -489,6 +504,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.21.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.21.0
 [2.20.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.20.0
 [2.19.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.19.1
 [2.19.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.19.0

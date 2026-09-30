@@ -1,6 +1,7 @@
-// Capturas de la pestaña Cocina a 390x844 (oscuro y claro): la pantalla entera, el modo
-// paso a paso de una receta y el final. Los datos de prueba viven SOLO aquí (o en el
-// FIXTURE que se le pase): calendario y Worker interceptados, localStorage simulado.
+// Capturas de la pestaña Cocina a 390x844 (oscuro y claro): una por subpestaña (Ahora, Semana,
+// Comprar, Tengo, Recetas), lo que pasa al tocar en Tengo y en Comprar, el modo paso a paso,
+// HOY y el escaner (el de Chrome y el de la app Android, de mentira). Los datos de prueba viven
+// SOLO aquí (o en el FIXTURE que se le pase): calendario y Worker interceptados, localStorage simulado.
 //
 //   npm i --no-save playwright-core                 (una vez; usa el Chrome instalado)
 //   python -m http.server 8777 --bind 127.0.0.1 &   (desde la raiz del repo)
@@ -32,19 +33,24 @@ const EJEMPLO = {
     { uid: "c4", fuente: "comida", fecha: "2026-10-02", hora: "14:30", titulo: "Tupper · Albóndigas con rigatoni",
       texto: "Sale del congelador la noche antes.\nCÓMO SE HACE:\n1. Al micro 3-4 min, removiendo a la mitad.\n2. Si queda espeso, un chorrito de agua." },
     { uid: "c5", fuente: "comida", fecha: "2026-10-03", hora: "14:00", titulo: "Curry de pollo con arroz", texto: "Receta: curry-pollo\n2 raciones" },
+    { uid: "c6", fuente: "comida", fecha: "2026-10-04", hora: "21:00", titulo: "Cena · Salmón al horno con patatas",
+      texto: "INGREDIENTES:\n· 2 lomos de salmón\n· 3 patatas\n· 1 limón\n· AOVE y sal\nCÓMO SE HACE:\n1. Patatas en rodajas al horno 200 °C, 20 min.\n2. El salmón encima, 12 min." },
     { uid: "r1", fuente: "rutina", fecha: "2026-10-01", hora: "21:40", fin: "22:20", titulo: "Rutina de noche · cama 22:20",
       texto: "21:40 · Prepara la comida de mañana (10 min)\n22:00 · Ducha (10 min)\n22:10 · Leer (10 min)\n22:20 · Cama, móvil fuera" }
   ],
-  nota: "DESPENSA EN VIVO — última actualización: 29/09/2026 (noche)\n\n\\## CONGELADOR\nBolsas: cebolla troceada, ajo troceado, 4 bolsas de arroz de microondas (3 min)\n\n" +
+  // la compra de la nota es del sabado 26/09: ya esta hecha (sale en Tengo, no en Comprar)
+  nota: "DESPENSA EN VIVO — última actualización: 25/09/2026 (noche)\n\n\\## CONGELADOR\nBolsas: cebolla troceada, ajo troceado, 4 bolsas de arroz de microondas (3 min)\n\n" +
     "\\## NEVERA\nLeche semi abierta, yogur natural, 2 lonchas de pavo, 1 tomate\n\n\\## DESPENSA SECA\n6 huevos, rigatoni (1 kg), bote de tomate triturado 800 g, pan rallado, sal, AOVE, pan de molde\n\n" +
-    "\\## ESPECIAS\nOrégano, pimentón dulce, perejil, curry, pimienta negra\n\n\\## NO HAY\nPollo, carne picada, crema de verduras\n\n\\## COMPRA (jueves 1/10)\n500 g carne picada mixta, 500 g solomillos de pollo, 1 brick de crema de verduras"
+    "\\## ESPECIAS\nOrégano, pimentón dulce, perejil, curry, pimienta negra\n\n\\## NO HAY\nPollo, carne picada, crema de verduras\n\n" +
+    "\\## COMPRA (sábado 26/09)\n500 g carne picada mixta, 500 g solomillos de pollo. Solo si falta: pan de molde"
 };
 const F = process.env.FIXTURE ? JSON.parse(readFileSync(process.env.FIXTURE, "utf8")) : EJEMPLO;
 
 const b = await chromium.launch({ executablePath: CHROME, args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
 let errores = 0;
 for (const tema of ["oscuro", "claro"]) {
-  const ls = { "copiloto.conf.v1": JSON.stringify({ url: "http://api.test", key: "k" }), "copiloto.tema": tema };
+  const ls = { "copiloto.conf.v1": JSON.stringify({ url: "http://api.test", key: "k" }), "copiloto.tema": tema,
+               "copiloto.cocina.lista.v1": JSON.stringify([{ id: "m1", t: Date.parse(F.hoy + "T09:00:00"), txt: "Café molido" }]) };
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: tema === "claro" ? "light" : "dark" });
   p.on("pageerror", (e) => { errores++; console.log("PAGEERROR", tema, e.message); });
   await p.clock.install({ time: new Date(F.hoy + "T" + (F.hora || "13:50") + ":00") });
@@ -57,11 +63,13 @@ for (const tema of ["oscuro", "claro"]) {
     // en Windows Chrome no trae BarcodeDetector (en Android si): uno que mira y no encuentra nada
     if (!("BarcodeDetector" in window)) window.BarcodeDetector = class { detect() { return Promise.resolve([]); } };
   }, ls);
+  let kv = { cambios: [], lista: [] };   // el /cocina del Worker, de mentira: guarda lo ultimo
   await p.route("http://api.test/**", async (r) => {
     const u = new URL(r.request().url());
     if (u.pathname === "/agenda") return r.fulfill({ json: { generado: new Date().toISOString(), zona: "Europe/Madrid", eventos: [], dia: F.dia } });
     if (u.pathname === "/despensa") return r.fulfill({ json: { texto: F.nota } });
     if (u.pathname === "/hecho") return r.fulfill({ json: { actividades: [] } });
+    if (u.pathname === "/cocina") { const j = r.request().postDataJSON() || {}; kv = { cambios: j.cambios || kv.cambios, lista: j.lista || kv.lista }; return r.fulfill({ json: kv }); }
     return r.abort("failed");
   });
   await p.route("https://raw.githubusercontent.com/amenedorubn/cocina/main/recetas/**", async (r) => {
@@ -72,23 +80,28 @@ for (const tema of ["oscuro", "claro"]) {
   await p.goto(URL_APP);
   await p.waitForTimeout(1500);
   await p.click("#hCocina"); await p.waitForTimeout(1200);
-  const pant = "html,body{overflow:visible!important;height:auto!important}#appHoy{display:none!important}#appPant{position:static!important;min-height:844px}#ptCuerpo{overflow:visible!important}";
-  const d1 = await p.addStyleTag({ content: pant });
-  await p.screenshot({ path: `${OUT}cocina-${tema}.png`, fullPage: true });
-  // una captura corta por seccion, para comparar de un vistazo
-  const secs = await p.$$("#ptCuerpo .cocSec");
-  const nom = ["toca", "semana", "compra", "alimentos", "recetas"];
-  for (let i = 0; i < secs.length; i++) await secs[i].screenshot({ path: `${OUT}${tema}-${i + 1}-${nom[i] || i}.png` });
-  // los tres diseños de "Ahora toca", para elegir
-  for (const d of ["A", "B", "C"]) {
-    await p.evaluate((d) => window.Cocina.diseno(d), d); await p.waitForTimeout(250);
-    await (await p.$("#ptCuerpo > :first-child")).screenshot({ path: `${OUT}${tema}-toca-${d}.png` });
+  // una por subpestaña, del tamaño de la pantalla: se ve si hace falta bajar
+  for (const [k, n] of [["ahora", "Ahora"], ["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Tengo"], ["recetas", "Recetas"]]) {
+    await p.click(`.cocSeg button:has-text('${n}')`); await p.waitForTimeout(350);
+    await p.screenshot({ path: `${OUT}${tema}-${k}.png` });
   }
-  await p.evaluate(() => window.Cocina.diseno("A"));
-  await d1.evaluate((n) => n.remove());
   if (tema === "oscuro") {
-    await p.screenshot({ path: `${OUT}cocina-arriba.png` });
-    await p.click(".cocGo"); await p.waitForTimeout(800);
+    // Tengo: tocar algo -> Se acabó / a la lista; y ver una zona sola
+    await p.click(".cocSeg button:has-text('Tengo')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}tengo-todo.png` });
+    await p.click(".cocZonaFila:has-text('Nevera')"); await p.waitForTimeout(300);
+    await p.click(".cocPills button:has-text('Yogur')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}tengo-tocado.png` });
+    await p.click(".cocHojaBot button:has-text('a la lista')"); await p.waitForTimeout(300);
+    await p.click(".cocChips button:has-text('Despensa')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}tengo-despensa.png` });
+    // Comprar: marcar uno -> al carro (y a Tengo)
+    await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
+    await p.click(".cocCompra li:not(.cocGrupo) button >> nth=0"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}comprar-carro.png` });
+    // el modo paso a paso de lo que toca
+    await p.click(".cocSeg button:has-text('Ahora')"); await p.waitForTimeout(300);
+    await p.click("#ptCuerpo .tjGo"); await p.waitForTimeout(800);
     await p.screenshot({ path: `${OUT}modo-paso1.png` });
     await p.click(".mHecho"); await p.waitForTimeout(600);
     await p.clock.runFor(185000); await p.waitForTimeout(400);
@@ -96,27 +109,13 @@ for (const tema of ["oscuro", "claro"]) {
     for (let i = 0; i < 6; i++) { if (!(await p.$(".mHecho"))) break; await p.click(".mHecho"); await p.waitForTimeout(300); }
     await p.screenshot({ path: `${OUT}modo-fin.png` });
     await p.click("#cocModo .mX"); await p.waitForTimeout(500);
-    // una comida del calendario sin receta: un paso por pantalla, con su reloj si dice "N min"
-    await p.click(".cocFila:has-text('Mañana')"); await p.waitForTimeout(500);
-    await p.click(".cocGo"); await p.waitForTimeout(600);
-    await p.screenshot({ path: `${OUT}modo-calendario.png` });
-    // en HOY: la comida se abre en Cocina y la rutina con horas, paso a paso
-    await p.click("#cocModo .mX"); await p.waitForTimeout(400);
+    // en HOY: la comida a su hora va en grande
     await p.click("#ptVolver"); await p.waitForTimeout(700);
-    const lin = await p.$(".linDia");
-    if (lin) {
-      await p.click(".linIt:has-text('Rutina') .linCab"); await p.waitForTimeout(300);
-      const pl = await p.addStyleTag({ content: "html,body{overflow:visible!important;height:auto!important}#appHoy{position:static!important;min-height:844px}#hCuerpo{overflow:visible!important;flex:none!important}" });
-      await (await p.$(".hTop")).screenshot({ path: `${OUT}hoy-cabecera.png` });
-      await (await p.$(".linIt:has-text('Rutina')")).screenshot({ path: `${OUT}hoy-rutina.png` });
-      await (await p.$("#hCuerpo .tj")).screenshot({ path: `${OUT}hoy-comida.png` });   // a su hora, la comida va en grande
-      await pl.evaluate((n) => n.remove());
-      await p.click(".linIt:has-text('Rutina') .linGuia"); await p.waitForTimeout(600);
-      await p.screenshot({ path: `${OUT}modo-rutina.png` });
-      await p.click("#cocModo .mX"); await p.waitForTimeout(400);
-    } else console.log("sin linea del dia");
-    // el escaner: camara de mentira de Chrome y un codigo escrito a mano (Open Food Facts de verdad)
+    const tj = await p.$("#hCuerpo .tj");
+    if (tj) await tj.screenshot({ path: `${OUT}hoy-comida.png` });
+    // el escaner de Chrome: camara de mentira y un codigo escrito a mano (Open Food Facts de verdad)
     await p.click("#hCocina"); await p.waitForTimeout(800);
+    await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await p.click(".cocBtn:has-text('Escanear')"); await p.waitForTimeout(1500);
     await p.screenshot({ path: `${OUT}esc-camara.png` });
     await p.fill("#cocEsc input", process.env.CODIGO || "8431876302196");
@@ -124,10 +123,21 @@ for (const tema of ["oscuro", "claro"]) {
     await p.waitForSelector("#cocEsc .eOk", { timeout: 15000 }).catch(() => {});
     await p.screenshot({ path: `${OUT}esc-resultado.png` });
     if (await p.$("#cocEsc .eOk")) { await p.click("#cocEsc .eOk"); await p.waitForTimeout(400); }
-    await p.screenshot({ path: `${OUT}esc-anadido.png` });
     await p.click("#cocEsc .eFin"); await p.waitForTimeout(600);
-    const al = await p.$("#ptCuerpo .cocSec:has(h3:text('Mis alimentos'))");
-    if (al) await al.screenshot({ path: `${OUT}esc-alimentos.png` });
+    // en la app Android: el escaner de Google (aqui, de mentira) y vuelta con el producto
+    await p.evaluate(() => { window.Nativo.es = true; window.Nativo.escanea = () => new Promise((ok) => setTimeout(() => ok({ codigo: "8480000591463" }), 300)); });
+    await p.click(".cocBtn:has-text('Escanear')"); await p.waitForTimeout(150);
+    await p.screenshot({ path: `${OUT}esc-nativo-abriendo.png` });
+    await p.waitForSelector("#cocEsc .eOk", { timeout: 15000 }).catch(() => {});
+    await p.screenshot({ path: `${OUT}esc-nativo-resultado.png` });
+    await p.evaluate(() => { window.Nativo.escanea = () => Promise.resolve({ cancelado: true }); });
+    if (await p.$("#cocEsc .eOk")) { await p.click("#cocEsc .eOk"); await p.waitForTimeout(500); }
+    await p.screenshot({ path: `${OUT}esc-nativo-otro.png` });
+    await p.click("#cocEsc .eFin"); await p.waitForTimeout(600);
+    await p.evaluate(() => { window.Nativo.es = false; });
+    await p.click(".cocSeg button:has-text('Tengo')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}esc-tengo.png` });
+    console.log("\nKV:", kv.cambios.length, "cambios,", kv.lista.length, "en la lista");
   }
   await p.close();
   process.stdout.write(tema + " ");

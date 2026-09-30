@@ -24,6 +24,8 @@ La web (la de GitHub Pages) va **dentro** del APK con Capacitor 8: la app arranc
 - `Informe.java`: el **informe de cada salida**, que se guarda solo: GPS, pantalla, voz, batería, el ritmo actual cada 20 s y el Diario de voz.
 - Voz que no se rinde: si la del móvil falla (30/09, primera frase de la salida), esa frase la dice Miro y el motor se reinicia; `nativo.js` además reintenta antes de que la web se pase al audio, que corta Spotify.
 - `AvisoReceiver.java` / `ArranqueReceiver.java`: los avisos de Cocina (el tupper la noche antes, la avena al salir) como notificación con AlarmManager; vuelven tras reiniciar. Ver docs/COCINA.md.
+- Escáner de Cocina (`escanea`): el de Google Play Services (`play-services-code-scanner`), sin
+  permiso de cámara; el manifest le pide a Play Services que lo baje al instalar (`barcode_ui`).
 - `MainActivity.java`: el gesto de atrás lo decide la web (`window.atrasApp`): con un entreno en marcha no sale nunca.
 - `nativo.js` (raíz del repo): conecta todo esto con la web. En el navegador no hace nada.
 

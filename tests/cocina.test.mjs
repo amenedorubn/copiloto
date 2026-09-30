@@ -124,7 +124,46 @@ test("¿esta en casa?: sale en una zona, no hay, o lo cambio una compra despues"
   const compra = [{ t: Date.parse("2026-09-26T12:00:00"), tipo: "compra", items: ["500 g solomillos de pollo"] }];
   assert.equal(C.estadoDe(pollo, D, compra).estado, "hay");
   const gasto = compra.concat([{ t: Date.parse("2026-09-27T14:00:00"), tipo: "gasto", de: "Curry", items: ["500 g solomillos de pollo"] }]);
-  assert.equal(C.estadoDe(pollo, D, gasto).estado, "gastado");
+  assert.equal(C.estadoDe(pollo, D, gasto).estado, "no", "gastado entero: ya no esta");
+});
+
+test("lo que tengo: la nota, su compra ya hecha y lo apuntado en la app", () => {
+  const D = C.despensa(NOTA), t = (d) => Date.parse(d + "T12:00:00");
+  assert.equal(D.compra.fecha, "2026-09-26");
+  const nombres = (H) => H.todos.map((x) => x.nombre.toLowerCase());
+  // antes del sabado la compra de la nota no esta; despues, si (y ya no sale como que falta)
+  assert.ok(!nombres(C.casa(D, [], "2026-09-25")).includes("solomillos de pollo"));
+  const H = C.casa(D, [], "2026-09-30");
+  assert.ok(nombres(H).includes("solomillos de pollo"));
+  assert.equal(H.zonas.find((z) => z.items.some((x) => /solomillos/i.test(x.nombre))).zona, "Nevera", "el pollo, a la nevera");
+  assert.deepEqual(C.faltan([C.comida(EVENTO)], D, [], "2026-09-30").map((x) => x.nombre), ["leche de coco"]);
+  // comprar suma, gastar resta lo que va en lo mismo, "se acabó" lo quita
+  const cb = [
+    { id: "a", t: t("2026-09-27"), tipo: "compra", items: ["1 kg arroz basmati"], zona: "Despensa" },
+    { id: "b", t: t("2026-09-28"), tipo: "gasto", de: "Curry", items: ["300 g arroz basmati", "1 cebolla"] },
+    { id: "c", t: t("2026-09-28"), tipo: "compra", items: ["2 yogur natural"] },
+    { id: "d", t: t("2026-09-29"), tipo: "acaba", items: ["Pan rallado"] },
+    { id: "e", t: t("2026-09-29"), tipo: "acaba", items: ["Medio tomate"], borrado: true }
+  ];
+  const H2 = C.casa(D, cb, "2026-09-30"), de = (n) => H2.todos.find((x) => x.nombre.toLowerCase() === n);
+  assert.deepEqual(de("arroz basmati").c, { n: 700, ud: "g" });
+  assert.equal(H2.zonas.find((z) => z.items.includes(de("arroz basmati"))).zona, "Despensa seca", "la zona de la nota que empieza igual");
+  assert.ok(de("cebolla troceada"), "sin cantidad no se sabe cuanto queda: se queda");
+  assert.ok(!de("pan rallado"), "se acabó");
+  assert.ok(de("tomate"), "lo desmarcado no cuenta");
+  assert.equal(C.zonaPara("Yogur griego"), "Nevera");
+  assert.equal(C.zonaPara("Guisantes congelados"), "Congelador");
+  assert.equal(C.zonaPara("Lentejas"), "Despensa");
+});
+
+test("el movil y Chrome: los cambios se juntan por id y lo borrado queda borrado", () => {
+  const a = [{ id: "1", t: 1, tipo: "compra", items: ["x"] }, { t: 5, tipo: "gasto", items: ["y"] }];
+  const b = [{ id: "1", t: 1, tipo: "compra", items: ["x"], borrado: true, tb: 9 }, { id: "2", t: 3, tipo: "acaba", items: ["z"] }];
+  const m = C.mezcla(a, b);
+  assert.deepEqual(m.map((x) => x.id), ["1", "2", "t5"], "por fecha; los viejos sin id la sacan de su fecha");
+  assert.equal(m[0].borrado, true);
+  assert.equal(C.mezcla(m, a).length, 3, "juntar otra vez no duplica");
+  assert.equal(C.vigentes(m).length, 2);
 });
 
 test("lo que toca: la comida en curso o la siguiente", () => {

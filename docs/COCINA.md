@@ -9,12 +9,25 @@ Pestaña de HOY (icono de la olla, junto a Estadísticas). La pinta `cocina.js`;
 |---|---|---|
 | Lo que toca y la semana | Calendario de Google «Comidas» (lo rellena Claude) | `/agenda` del Worker, en `dia` con `fuente: "comida"` |
 | Recetas paso a paso | Copiloto Cocina (`amenedorubn/cocina`, repo público) | `raw.githubusercontent.com/.../recetas/*.json`, con copia en el móvil para sin red |
-| Mis alimentos y la compra | Nota de Obsidian «Despensa habitual», bloque «Estado actual» (repo privado `mivault`) | `/despensa` del Worker, solo lectura |
-| Lo gastado y lo comprado | La app | `localStorage` (`copiloto.cocina.cambios.v1`), como cambios desde la fecha de la nota |
+| El punto de partida de Tengo | Nota de Obsidian «Despensa habitual», bloque «Estado actual» (repo privado `mivault`) | `/despensa` del Worker, solo lectura |
+| Lo comprado, gastado, lo que se acaba y la lista | La app (Tengo y Comprar) | `localStorage` (`copiloto.cocina.cambios.v1`, `copiloto.cocina.lista.v1`) y el Worker (`/cocina`, en KV) |
 
-La app **no escribe** en la nota: «Pasarle los cambios a Claude» copia un texto para que Claude la
-actualice (la nota solo se toca con `upsert_knowledge` desde la app de Claude). Los cambios anteriores
-a la fecha de la nota dejan de contar solos.
+## Las subpestañas
+
+Arriba, fijas al bajar: **Ahora** (la tarjeta de lo que toca y sus ingredientes), **Semana**,
+**Comprar**, **Tengo** y **Recetas**. Cada una cabe en la pantalla o casi.
+
+- **Tengo** = la nota + lo que ha pasado después en la app (`Cocina.casa`), por orden: la compra de
+  la nota cuya fecha ya pasó (está en casa), lo comprado (se suma a lo que había), lo gastado al
+  cocinar (se resta si va en lo mismo; sin cantidad se queda) y «Se acabó» (fuera). En «Todo», una
+  fila por zona; al tocarla, lo que hay dentro. Tocar algo: «Se acabó» o «Se acabó · a la lista».
+- **Comprar** = lo que falta para las comidas de los próximos 7 días (agrupado por comida) y lo que
+  apuntas tú. Marcarlo lo pasa a Tengo («En el carro», se puede desmarcar 12 h). La lista de
+  compra de la nota no sale: es historia.
+
+La app **no escribe** en la nota (solo se toca con `upsert_knowledge` desde la app de Claude). Lo
+apuntado en la app va al Worker (`/cocina`): se junta por id, y lo desmarcado queda borrado en los
+dos sitios. Los cambios de antes del día de la nota dejan de contar solos (los de ese día, no).
 
 ## Un evento de «Comidas»
 
@@ -44,11 +57,11 @@ Se limpian el HTML que mete Google y los emojis.
 
 ## Escanear lo comprado
 
-«La compra» → «Escanear lo que has comprado»: cámara de atrás con `BarcodeDetector` (Chrome en
-Android) y el número a mano si no hay cámara. El código se busca en Open Food Facts (gratis, sin
-cuenta); si no lo conoce, se escribe qué es. Entra en Mis alimentos como comprado, con su zona.
-En el APK hace falta un APK nuevo (permiso de cámara o el escáner de Google Play Services, que no
-lo pide): hasta entonces, el número a mano.
+Comprar o Tengo → «Escanear»: en Chrome, cámara de atrás con `BarcodeDetector`; en la app Android
+(2.21 o posterior), el escáner de Google Play Services (`Nativo.escanea`, su propia pantalla, sin
+permiso de cámara; el WebView no trae `BarcodeDetector`). Siempre se puede escribir el número. El
+código se busca en Open Food Facts (gratis, sin cuenta); si no lo conoce, se escribe qué es. Entra
+en Tengo como comprado, con su zona y lo de su etiqueta por 100 g.
 
 ## En HOY, lo que toca por la hora
 
