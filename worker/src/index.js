@@ -57,7 +57,9 @@ export default {
             KV: !!env.COPILOTO,
             STRAVA_CONECTADO: await conectado(env),
             HEVY: !!env.HEVY_API_KEY,
-            HEVY_PRUEBA: await pruebaHevy(env)
+            HEVY_PRUEBA: await pruebaHevy(env),
+            // lee la nota de la despensa de verdad, pero aqui solo dice si funciona (nunca que pone)
+            VAULT_PRUEBA: env.VAULT_TOKEN ? await despensa(env).then((r) => r.error || (r.texto ? "ok" : "vacia"), (e) => "fallo") : null
           }
         }, 200, origen);
       }
