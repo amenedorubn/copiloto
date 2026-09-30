@@ -483,6 +483,7 @@
   .linAhora span::after{content:"";flex:1;height:1px;background:currentColor;opacity:.5}
   .linAviso{font-size:13px;font-weight:600;color:#ffb4a0;margin:-2px 6px 12px}
   .det{background:var(--sf);border-radius:20px;padding:6px 16px 10px;margin-top:6px}
+  .det .linGuia{display:flex;width:100%;align-items:center;justify-content:center;margin:10px 0 4px;font-size:15px;font-weight:700}
   .detTxt{margin:8px 0;font-size:14px;font-weight:500;line-height:1.5;color:#c9cdd3}
   .detTxt b,.detLi b,.detPasos b{font-weight:700;color:var(--fg)}
   .detSub{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 4px}
@@ -907,6 +908,7 @@
       <h2><span id="hTitulo">Hoy</span><button id="hHoy" hidden>Hoy</button></h2>
     </div>
     <div class="hAcc">
+      <button id="hCocina" class="icoBtn" aria-label="Cocina"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M88,48V16a8,8,0,0,1,16,0V48a8,8,0,0,1-16,0Zm40,8a8,8,0,0,0,8-8V16a8,8,0,0,0-16,0V48A8,8,0,0,0,128,56Zm32,0a8,8,0,0,0,8-8V16a8,8,0,0,0-16,0V48A8,8,0,0,0,160,56Zm92.8,46.4L224,124v60a32,32,0,0,1-32,32H64a32,32,0,0,1-32-32V124L3.2,102.4a8,8,0,0,1,9.6-12.8L32,104V80a8,8,0,0,1,8-8H216a8,8,0,0,1,8,8v24l19.2-14.4a8,8,0,0,1,9.6,12.8ZM208,88H48v96a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16Z"/></svg></button>
       <button id="hStats" class="icoBtn" aria-label="Estadísticas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg></button>
       <button id="hConf" class="icoBtn" aria-label="Ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
@@ -3625,6 +3627,7 @@ window.retomaCinta=retoma;
 <!-- Arc va aparte y async: si tarda o falla, la app arranca igual sin el -->
 <script src="transiciones.js"></script>
 <script src="stats.js"></script>
+<script src="cocina.js"></script>
 <script src="arc.js" async onload="window.arcListo&&window.arcListo()" onerror="window.arcFallo=true"></script>
 <script>
 /* ===========================================================================
@@ -4408,6 +4411,11 @@ function itemDia(it,esSig,iSel,ya){
   cu.appendChild(cab);
   if(hayMas){
     var det=detalleDia(B); det.hidden=!abierto; cu.appendChild(det);
+    // v2.20: la comida se cocina en Cocina; una rutina con horas se hace paso a paso
+    if(window.Cocina && Cocina.pinta){
+      var bg=com ? el("button","bSec linGuia","Abrir en Cocina") : (Cocina.hayGuia(e) ? el("button","bSec linGuia","Paso a paso") : null);
+      if(bg){ bg.addEventListener("click",function(){ if(com) abreCocina(null,e.uid); else Cocina.guia(e,{ marca:marca, atrasManual:atrasManual }); }); det.appendChild(bg); }
+    }
     cab.setAttribute("aria-expanded",abierto);
     cab.addEventListener("click",function(){ var v=det.hidden; det.hidden=!v; cab.setAttribute("aria-expanded",v); abiertosDia[e.uid]=v; });
   }else cab.disabled=true;
@@ -5498,6 +5506,7 @@ function volverDeGPS(){ if(window.terminaSim) window.terminaSim();
 window.salDeGPS=volverDeGPS;
 // lo que hace "atras" segun lo que haya delante; false si no habia nada (se sale de la app)
 function atras(){
+  if(window.Cocina && Cocina.atras && Cocina.atras()) return true;   // el modo paso a paso de Cocina
   if(pantTipo){ var pv=pantVuelve; cierraPant(true); if(pv) pv(); return true; }
   if(hojaTipo){ cierraHoja(true); return true; }
   if(fichaAbierta){ cierraFicha(true); return true; }
@@ -5670,6 +5679,15 @@ function pintaStats(c){
   }
   h+='</section>';
   c.innerHTML=h;
+}
+/* v2.20 · Cocina: lo que toca comer (calendario "Comidas"), cómo se hace paso a paso
+   (las recetas de Copiloto Cocina), la compra y lo que hay en casa (la nota de la
+   despensa, por el Worker). Todo lo pinta cocina.js.                                */
+function abreCocina(vuelve,sel){
+  var c=abrePant("cocina","Cocina","Lo que toca, la compra y lo que hay en casa",vuelve);
+  if(!window.Cocina || !Cocina.pinta){ c.innerHTML='<div class="stVacio">Falta un archivo de la app. Actualízala.</div>'; return; }
+  try{ Cocina.pinta(c,{ dia:(datos && datos.dia) || [], hoy:hoyISO(), ahora:ahoraHM(), conf:conf, marca:marca, atrasManual:atrasManual, sel:sel||null }); }
+  catch(e){ c.innerHTML='<div class="vacio2">No se ha podido abrir. '+esc(String(e && e.message || e))+'</div>'; }
 }
 function abreSim(vuelve){
   var c=abrePant("sim","Simulación","Probar el copiloto",vuelve);
@@ -6112,6 +6130,7 @@ function abreLibre(){
 }
 E("hConf").addEventListener("click",abreConf);
 E("hStats").addEventListener("click",function(){ abreStats(null); });
+E("hCocina").addEventListener("click",function(){ abreCocina(null); });
 E("hLibre").addEventListener("click",abreLibre);
 E("hHoy").addEventListener("click",function(){ vaA(hoyISO(),0); });
 E("hEstado").addEventListener("click",function(){ if(estadoMal) abreConf(); else baja(); });

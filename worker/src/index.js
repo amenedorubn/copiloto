@@ -10,6 +10,8 @@
      ICAL_URL      direccion iCal secreta del calendario "Entreno"
      ICAL_COMIDAS  (opcional) direccion iCal secreta del calendario "Comidas"
      ICAL_RUTINA   (opcional) direccion iCal secreta del calendario "Claude"
+     VAULT_TOKEN   (opcional) token de GitHub de solo lectura del repo de Obsidian
+                   (mivault, Contents: Read-only) para la despensa de la app
 
    Rutas:
      GET /salud                      sin clave. Dice si el Worker vive y si
@@ -17,6 +19,8 @@
      GET /agenda?desde=&hasta=       con clave. Entrenos del rango.
      GET /hecho?desde=&hasta=        con clave. Actividades de Strava del rango.
      GET /hecho/detalle?id=          con clave. Una actividad con sus series.
+     GET /despensa                   con clave. El bloque "Estado actual" de la
+                                     nota "Despensa habitual" (solo lectura).
    =========================================================================== */
 
 import { rutas, ruta, conectar, vuelta } from "./strava.js";
@@ -48,6 +52,7 @@ export default {
             ICAL_URL: !!env.ICAL_URL,
             ICAL_COMIDAS: !!env.ICAL_COMIDAS,
             ICAL_RUTINA: !!env.ICAL_RUTINA,
+            VAULT_TOKEN: !!env.VAULT_TOKEN,
             STRAVA_APP: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET),
             KV: !!env.COPILOTO,
             STRAVA_CONECTADO: await conectado(env),
@@ -91,6 +96,14 @@ export default {
         if (fallo) return json(fallo, fallo.codigo, origen);
         const r = url.pathname === "/hecho" ? await hechos(env, url) : await detalle(env, url);
         return json(r, r.codigo || (r.error ? 400 : 200), origen);
+      }
+
+      // la despensa en vivo de la pestaña Cocina: solo el bloque que manda de la nota
+      if (url.pathname === "/despensa") {
+        const fallo = revisaClave(req, env);
+        if (fallo) return json(fallo, fallo.codigo, origen);
+        const r = await despensa(env);
+        return json(r, r.codigo || (r.error && r.error !== "sin_configurar" ? 502 : 200), origen);
       }
 
       if (url.pathname === "/rutas" || url.pathname === "/ruta") {
@@ -204,6 +217,31 @@ async function agenda(env, url) {
   const out = { generado: new Date().toISOString(), zona, desde, hasta, eventos, dia };
   if (diaFallos.length) out.diaFallos = diaFallos;
   return out;
+}
+
+/* ------------------------------- despensa -------------------------------
+   La nota de Obsidian vive en un repo privado de GitHub (mivault). Con un token
+   de solo lectura se baja la nota y se devuelve SOLO su bloque "Estado actual"
+   (lo que hay hoy en casa), nunca la nota entera. La app no escribe: los
+   cambios se le pasan a Claude, que es quien actualiza la nota.             */
+const NOTA_DESPENSA = "00 Claude Inbox/preferencia-despensa-habitual.md";
+async function despensa(env) {
+  if (!env.VAULT_TOKEN) return { error: "sin_configurar",
+    mensaje: "Falta el secreto VAULT_TOKEN (token de GitHub de solo lectura del repo de Obsidian)." };
+  const repo = env.VAULT_REPO || "amenedorubn/mivault";
+  const ruta = (env.VAULT_DESPENSA || NOTA_DESPENSA).split("/").map(encodeURIComponent).join("/");
+  const r = await fetch("https://api.github.com/repos/" + repo + "/contents/" + ruta, {
+    headers: { Authorization: "Bearer " + env.VAULT_TOKEN, Accept: "application/vnd.github.raw+json",
+               "User-Agent": "copiloto-api", "X-GitHub-Api-Version": "2022-11-28" },
+    cf: { cacheTtl: 60, cacheEverything: false }
+  });
+  if (!r.ok) return { error: "github_" + r.status, codigo: 502 };
+  const md = await r.text();
+  const i = md.indexOf("<!-- upsert:begin:estado -->"), j = md.indexOf("<!-- upsert:end:estado -->");
+  if (i < 0 || j < i) return { error: "sin_estado", codigo: 502, mensaje: "La nota no tiene el bloque Estado actual." };
+  const texto = md.slice(i + "<!-- upsert:begin:estado -->".length, j).trim();
+  const f = md.match(/^updated_at:\s*(\S+)/m);
+  return { texto, actualizada: f ? f[1] : null };
 }
 
 function porInicio(a, b) { return a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0; }
