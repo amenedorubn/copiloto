@@ -72,22 +72,35 @@
     speaking: false, pending: false, paused: false, onvoiceschanged: null,
     speak: function (f) {
       if (!f) return;
-      var cerrada = false; actual = f; voz.speaking = true;
+      var cerrada = false, empezo = false, intento = 0; actual = f; voz.speaking = true;
       function cierra(tipo, extra) {
         if (cerrada) return; cerrada = true;
         if (actual === f) { actual = null; voz.speaking = false; }
         avisa(f, tipo, extra);
       }
-      try {
-        var mm = musica();
-        C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1, pausa: mm.pausa, sinFoco: mm.sinFoco, voz: N.voz() }, function (r, err) {
-          if (err || !r) { cierra("error", { error: "synthesis-failed" }); return; }
-          if (r.evento === "inicio") { if (!cerrada) avisa(f, "start"); }
-          else if (r.evento === "fin") cierra("end");
-          else if (r.evento === "cortada") cierra("error", { error: "interrupted" });
-          else cierra("error", { error: "synthesis-failed", detalle: r.error || "" });
-        });
-      } catch (x) { setTimeout(function () { cierra("error", { error: "synthesis-failed" }); }, 0); }
+      // Si falla antes de sonar (30/09: la voz del movil dio error en la primera frase y la web
+      // se paso entera a la voz por audio, que corta Spotify), otra vez al momento y luego con
+      // la otra voz. Solo si fallan las dos se entera la web.
+      function lanza(v) {
+        try {
+          var mm = musica();
+          C.nativeCallback(P, "hablar", { texto: f.text, velocidad: +f.rate || 1, pausa: mm.pausa, sinFoco: mm.sinFoco, voz: v }, function (r, err) {
+            if (cerrada) return;
+            if (!err && r && r.evento === "inicio") { empezo = true; avisa(f, "start"); return; }
+            if (!err && r && r.evento === "fin") { cierra("end"); return; }
+            if (!err && r && r.evento === "cortada") { cierra("error", { error: "interrupted" }); return; }
+            if (!empezo && intento < 2 && actual === f) {
+              intento++;
+              var otra = intento === 1 ? v : (v === "miro" ? "movil" : "miro");
+              if (N.informe) N.informe("voz", "reintento " + intento + " con " + (otra === "miro" ? "Miro" : "la del móvil"));
+              setTimeout(function () { if (!cerrada && actual === f) lanza(otra); }, intento === 1 ? 600 : 0);
+              return;
+            }
+            cierra("error", { error: "synthesis-failed", detalle: (r && r.error) || "" });
+          });
+        } catch (x) { setTimeout(function () { cierra("error", { error: "synthesis-failed" }); }, 0); }
+      }
+      lanza(N.voz());
     },
     cancel: function () { actual = null; voz.speaking = false; llama(P, "callar").catch(function () {}); },
     pause: function () {}, resume: function () {},
@@ -128,7 +141,9 @@
   var ultimo = null;
   var cerrojo = {
     request: function (tipo) {
-      var enciende = !(N.gpsNativo && N.pantallaCarrera && N.pantallaCarrera() === "apaga");
+      // con el GPS nativo pedido (aunque aun este arrancando: al tocar Empezar se piden los dos
+      // a la vez), la pantalla puede apagarse. El 30/09 se quedo encendida toda la salida.
+      var enciende = !(N.gpsPrevisto && N.gpsPrevisto() && N.pantallaCarrera && N.pantallaCarrera() === "apaga");
       return (enciende ? llama(P, "pantalla", { encendida: true }) : Promise.resolve()).then(function () {
         var s = {
           type: tipo || "screen", released: false, onrelease: null, _h: [],
@@ -182,9 +197,11 @@
       var g = document.getElementById("appGPS");
       return !!(g && !g.hidden && document.visibilityState === "visible");
     };
+    N.gpsPrevisto = function () { return modo === "nativo" && hay(); };
     var aWeb = function (por) {            // sin servicio: el GPS del navegador, como en Chrome
       if (modo === "web") return;
       modo = "web"; encendido = false; N.gpsNativo = false;
+      if (ultimo && !ultimo.released) llama(P, "pantalla", { encendida: true }).catch(nada);   // sin el, la pantalla no se puede apagar
       for (var k in vig) { var w = vig[k]; if (w.real == null) w.real = geoReal.watchPosition(w.ok, w.mal, w.op); }
       N.informe("gps", "sin servicio nativo (" + por + "): GPS del navegador");
     };
@@ -222,10 +239,32 @@
       }
       llama(P, "carrera", { corriendo: corre, pausado: pausa, titulo: t, texto: x }).catch(nada);
       if (ahora - ultDiario > 60000) { ultDiario = ahora; N.informeDiario(); }
+      if (corre && !pausa && ahora - ultRitmo > 20000) { ultRitmo = ahora; apuntaRitmo(); }
+    };
+    // El ritmo actual, cada 20 s, al informe: lo que enseña la pantalla, la media de la
+    // velocidad del GPS (de donde sale) y lo recorrido en 30 s. El 30/09 "no iba del todo bien".
+    var ultRitmo = 0, ultAcc = null;
+    var ritmoTxt = function (s) {
+      if (!isFinite(s) || s <= 0) return "—";
+      var m = Math.floor(s / 60), g = Math.round(s % 60); if (g === 60) { m++; g = 0; }
+      return m + ":" + (g < 10 ? "0" : "") + g;
+    };
+    var apuntaRitmo = function () {
+      try {
+        var V = window.VEL || [], H = window.HIST || [], ahora = Date.now(), vs = [];
+        for (var i = V.length - 1; i >= 0 && ahora - V[i][0] <= 20000; i--) vs.push(V[i][1]);
+        var gps = typeof window.ritmoVel === "function" ? window.ritmoVel(20000, 8) : NaN, dd = "—";
+        for (var j = H.length - 1; j >= 0; j--) if (ahora - H[j][0] >= 30000) {
+          var d = (window.dist || 0) - H[j][1], dt = (ahora - H[j][0]) / 1000; if (d > 5) dd = ritmoTxt(dt / (d / 1000)); break;
+        }
+        N.informe("ritmo", "pantalla " + (txt("rAct") || "—") + " · GPS 20 s " + ritmoTxt(gps) + " (" + vs.length + " muestras" +
+          (vs.length ? ", " + Math.min.apply(null, vs).toFixed(1) + "–" + Math.max.apply(null, vs).toFixed(1) + " m/s" : "") + ")" +
+          " · 30 s por distancia " + dd + (ultAcc != null ? " · GPS " + Math.round(ultAcc) + " m" : ""));
+      } catch (e) {}
     };
     var llega = function (d, err) {
       if (err || !d || modo !== "nativo" || !encendido) return;
-      ultFix = Date.now(); errDado = false;
+      ultFix = Date.now(); errDado = false; ultAcc = d.acc;
       var pos = { coords: { latitude: d.lat, longitude: d.lon, accuracy: d.acc,
                             speed: d.vel == null ? null : d.vel, altitude: d.alt == null ? null : d.alt,
                             heading: d.rumbo == null ? null : d.rumbo, altitudeAccuracy: null },

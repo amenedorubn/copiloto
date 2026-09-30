@@ -70,7 +70,7 @@ test("voz: una frase cortada llega como error 'interrupted' (lo que espera habla
   w.speechSynthesis.speak(u); m.callbacks[0]({ evento: "cortada" });
   const v = new w.SpeechSynthesisUtterance("dos"); v.onerror = (e) => ev.push(e.error);
   w.speechSynthesis.speak(v); m.callbacks[1](null, { message: "sin motor" });
-  assert.deepEqual(ev, ["interrupted", "synthesis-failed"]);
+  assert.deepEqual(ev, ["interrupted"], "un fallo del puente se reintenta antes de avisar (ver 30/09)");
 });
 test("voz: cancel pide callar", () => {
   const m = movil();
@@ -270,4 +270,40 @@ test("pantalla: con el GPS nativo y 'se apaga sola' no se enciende; con 'siempre
   w.Nativo.pantallaCarrera("encendida");
   await m.navigator.wakeLock.request("screen");
   assert.deepEqual(plano(m.llamadas.filter(([, mm]) => mm === "pantalla").at(-1)), ["Copiloto", "pantalla", { encendida: true }]);
+});
+
+/* ------------------------------ 30/09: la salida de prueba ------------------------------ */
+test("voz: si falla antes de sonar, otra vez con la misma y luego con la otra; la web solo ve el fallo si fallan todas", async () => {
+  const m = movil(), w = m.window, ev = [];
+  const u = new w.SpeechSynthesisUtterance("Kilómetro uno");
+  u.onstart = () => ev.push("start"); u.onend = () => ev.push("end"); u.onerror = (e) => ev.push("error:" + e.error);
+  w.speechSynthesis.speak(u);
+  const hablar = () => m.llamadas.filter(([, mm]) => mm === "hablar");
+  m.callbacks[0]({ evento: "error", error: "sistema" });
+  assert.equal(hablar().length, 1, "no reintenta al instante");
+  await new Promise((r) => setTimeout(r, 650));
+  assert.equal(hablar().length, 2); assert.equal(hablar()[1][2].voz, "movil");
+  m.callbacks[1]({ evento: "error", error: "sistema" });
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(hablar().length, 3); assert.equal(hablar()[2][2].voz, "miro", "la tercera, con la otra voz");
+  assert.deepEqual(ev, [], "la web no se entera mientras se reintenta");
+  m.callbacks[2]({ evento: "inicio" }); m.callbacks[2]({ evento: "fin" });
+  assert.deepEqual(ev, ["start", "end"]);
+});
+
+test("voz: fallan todas -> la web recibe el error (y decide ella)", async () => {
+  const m = movil(), w = m.window, ev = [];
+  const u = new w.SpeechSynthesisUtterance("x"); u.onerror = (e) => ev.push(e.error);
+  w.speechSynthesis.speak(u);
+  m.callbacks[0]({ evento: "error" }); await new Promise((r) => setTimeout(r, 650));
+  m.callbacks[1]({ evento: "error" }); await new Promise((r) => setTimeout(r, 5));
+  m.callbacks[2]({ evento: "error" });
+  assert.deepEqual(ev, ["synthesis-failed"]);
+});
+
+test("pantalla: Empezar pide GPS y pantalla a la vez; con el GPS nativo aun arrancando no se enciende", async () => {
+  const m = movil({ metodos: CON_GPS, geo: geoFalso(), doc: docGPS() });
+  m.navigator.geolocation.watchPosition(() => {});          // pideGPS()
+  await m.navigator.wakeLock.request("screen");               // pantalla(), sin esperar a nada
+  assert.ok(!m.llamadas.some(([, mm]) => mm === "pantalla"));
 });

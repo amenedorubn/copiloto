@@ -1580,7 +1580,10 @@ function habla(txt,fin){
   function aAudio(){ if(empezo||pasado) return; pasado=true;
     try{ speechSynthesis.cancel(); }catch(e){}
     if(navigator.onLine===false){ marcaDiario(reg,"muda"); if(fin) fin(); return; }
-    ttsVa=false; vozAudio(txt,fin,reg); }
+    // en la app Android solo esta frase va por audio: la siguiente vuelve a la voz nativa
+    // (el audio de la web le quita el sonido a Spotify y a veces no se lo devuelve)
+    if(!(window.Nativo && Nativo.es)) ttsVa=false;
+    vozAudio(txt,fin,reg); }
   try{ var u=new SpeechSynthesisUtterance(txt); u.lang="es-ES"; u.rate=1.02; u.volume=1;
        u.onstart=function(){ empezo=true; ttsVa=true; marcaDiario(reg,"voz"); };
        u.onend=function(){ if(!pasado && fin) fin(); };
