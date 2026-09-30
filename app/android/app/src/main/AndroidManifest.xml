@@ -40,6 +40,19 @@
             android:stopWithTask="true"
             android:foregroundServiceType="location" />
 
+        <!-- los avisos de Cocina (el tupper, la avena) y volver a ponerlos al encender el movil -->
+        <receiver
+            android:name=".AvisoReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".ArranqueReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -68,4 +81,6 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- el APK nuevo sin cable: Android pregunta antes de instalarlo -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- los avisos de Cocina vuelven a su hora tras reiniciar el movil -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 </manifest>

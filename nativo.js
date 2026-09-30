@@ -176,6 +176,8 @@
     try { var d = localStorage.getItem("copiloto.diario.v1"); if (d) llama(P, "informe", { diario: d }).catch(nada); } catch (e) {}
   } : nada;
   N.compartirInforme = tiene("compartirInforme") ? function () { return llama(P, "compartirInforme"); } : null;
+  // los avisos de Cocina (el tupper la noche antes, la avena al salir): [{id, cuando, titulo, texto}]
+  N.avisos = tiene("avisos") ? function (lista) { return llama(P, "avisos", { lista: lista || [] }); } : null;
   if (window.addEventListener) window.addEventListener("error", function (e) {
     N.informe("error", (e && e.message || "?") + " · " + String(e && e.filename || "").split("/").pop() + ":" + (e && e.lineno || 0));
   });

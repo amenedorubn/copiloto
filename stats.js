@@ -141,6 +141,49 @@
     return null;
   }
 
+  /* ---------------------------- el peso que toca hoy ----------------------------
+     La regla del plan: mismo peso en todas las series (y 2 reps en recamara). Si la ultima
+     vez TODAS las series de trabajo llegaron al tope de reps del plan, toca subir un escalon
+     (5 lb); si no, repetir ese peso. El nombre del plan ("Press pecho") se busca en Hevy
+     ("Press de Pecho (Maquina)"): sin lo de entre parentesis ni palabras de relleno, las del
+     nombre mas corto tienen que estar todas en el otro.                                   */
+  var RELLENO = { de: 1, del: 1, la: 1, el: 1, al: 1, con: 1, en: 1, para: 1, a: 1, y: 1, maquina: 1, machine: 1 };
+  function palabrasEj(t) {
+    return String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\([^)]*\)/g, " ")
+      .replace(/[^a-z0-9ñ ]+/g, " ").split(/\s+/).filter(function (w) { return w && !RELLENO[w]; })
+      .map(function (w) { return w.length > 4 ? w.replace(/(es|s)$/, "") : w; });
+  }
+  function mismoEjercicio(a, b) {                        // 0 (no) a 1 (igual)
+    var A = palabrasEj(a), B = palabrasEj(b); if (!A.length || !B.length) return 0;
+    var c = A.filter(function (w) { return B.indexOf(w) >= 0; }).length;
+    return c === Math.min(A.length, B.length) ? c / Math.max(A.length, B.length) : 0;
+  }
+  function topeReps(reps) {                              // "10/10/8-10" o "8-10" -> {min: 8, max: 10}
+    var n = String(reps == null ? "" : reps).match(/\d+/g);
+    if (!n) return null;
+    n = n.map(Number);
+    return { min: Math.min.apply(null, n), max: Math.max.apply(null, n) };
+  }
+  var ESCALON_KG = 5 / 2.20462;                          // 5 lb
+  function pesoQueToca(acts, nombre, reps, antesDe) {
+    var R = topeReps(reps), L = ordena(acts);
+    for (var n = L.length - 1; n >= 0; n--) {
+      var a = L[n];
+      if (!esGym(a) || (antesDe && a.fecha >= antesDe)) continue;
+      var e = null, pm = 0;
+      (a.ejercicios || []).forEach(function (x) { var p = mismoEjercicio(nombre, x.titulo); if (p > pm) { pm = p; e = x; } });
+      if (!e) continue;
+      var S = (e.sets || []).filter(function (x) { return x.tipo !== "warmup" && x.kg && x.reps; });
+      if (!S.length) continue;
+      var kg = Math.max.apply(null, S.map(function (x) { return x.kg; }));
+      var alTope = !!R && S.every(function (x) { return x.reps >= R.max; });
+      return { fecha: a.fecha, titulo: e.titulo, sets: S.map(function (x) { return { kg: x.kg, reps: x.reps }; }),
+               kg: alTope ? kg + ESCALON_KG : kg, sube: alTope, tope: R ? R.max : null };
+    }
+    return null;
+  }
+
   return { mas: mas, lunes: lunes, esRun: esRun, esGym: esGym, esCinta: esCinta, bloque: bloque, semanas: semanas,
-    carga: carga, records: records, e1rm: e1rm, mejorSerie: mejorSerie, ejercicios: ejercicios, anterior: anterior };
+    carga: carga, records: records, e1rm: e1rm, mejorSerie: mejorSerie, ejercicios: ejercicios, anterior: anterior,
+    mismoEjercicio: mismoEjercicio, topeReps: topeReps, pesoQueToca: pesoQueToca };
 });

@@ -86,3 +86,24 @@ test("ejercicios: progresion por ejercicio y anterior de una sesion", () => {
   assert.equal(a.fecha, "2026-09-17"); assert.equal(a.kg, 82.5);
   assert.equal(S.anterior([g1, g2, g3], g1, "Sentadilla"), null);
 });
+
+test("el peso que toca: el nombre del plan en Hevy, y subir 5 lb si la ultima vez todas llegaron al tope", () => {
+  const lb = (x) => x / 2.20462;
+  const A = [
+    gym("2026-09-21", [ej("Press de Pecho (Máquina)", [[lb(75), 8, "warmup"], [lb(105), 10], [lb(105), 10], [lb(105), 10]]),
+                       ej("Mariposa (Pec Deck)", [[lb(70), 9], [lb(70), 7]])]),
+    gym("2026-09-25", [ej("Máquina para Fondos Sentado", [[lb(110), 10], [lb(110), 10], [lb(110), 9]])]),
+    gym("2026-09-28", [ej("Press de Pecho (Máquina)", [[lb(110), 9]])])        // hoy: no cuenta para hoy
+  ];
+  assert.ok(S.mismoEjercicio("Press pecho", "Press de Pecho (Máquina)") > 0);
+  assert.equal(S.mismoEjercicio("Press pecho", "Press de Hombros Sentado (Máquina)"), 0);
+  assert.ok(S.mismoEjercicio("Fondos sentado", "Máquina para Fondos Sentado") > 0);
+  assert.deepEqual(S.topeReps("10/10/8-10"), { min: 8, max: 10 });
+  const p = S.pesoQueToca(A, "Press pecho", "10/10/8-10", "2026-09-28");
+  assert.equal(p.fecha, "2026-09-21"); assert.equal(p.sube, true, "10/10/10 sin contar el calentamiento");
+  assert.equal(Math.round(p.kg * 2.20462), 110);
+  const m = S.pesoQueToca(A, "Mariposa", "12/12/10-12", "2026-09-28");
+  assert.equal(m.sube, false); assert.equal(Math.round(m.kg * 2.20462), 70, "no llego: se repite el peso");
+  assert.equal(S.pesoQueToca(A, "Fondos sentado", 10, "2026-09-28").sube, false, "10/10/9: repetir");
+  assert.equal(S.pesoQueToca(A, "Curl predicador", 10, "2026-09-28"), null, "sin historial: nada");
+});

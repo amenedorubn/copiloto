@@ -109,7 +109,7 @@ for (const tema of ["oscuro", "claro"]) {
       const pl = await p.addStyleTag({ content: "html,body{overflow:visible!important;height:auto!important}#appHoy{position:static!important;min-height:844px}#hCuerpo{overflow:visible!important;flex:none!important}" });
       await (await p.$(".hTop")).screenshot({ path: `${OUT}hoy-cabecera.png` });
       await (await p.$(".linIt:has-text('Rutina')")).screenshot({ path: `${OUT}hoy-rutina.png` });
-      await (await p.$(".linIt.sig")).screenshot({ path: `${OUT}hoy-comida.png` });
+      await (await p.$("#hCuerpo .tj")).screenshot({ path: `${OUT}hoy-comida.png` });   // a su hora, la comida va en grande
       await pl.evaluate((n) => n.remove());
       await p.click(".linIt:has-text('Rutina') .linGuia"); await p.waitForTimeout(600);
       await p.screenshot({ path: `${OUT}modo-rutina.png` });

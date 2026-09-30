@@ -13,6 +13,20 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.20.0] - 2026-09-30
+
+### Añadido
+
+- Pestaña Cocina (lo que toca, paso a paso, la compra, Mis alimentos de tu nota de Obsidian y escanear lo comprado con sus calorías) y HOY pone en grande lo que toca por la hora: el entreno a la suya y luego cada comida
+- Rutina con horas del calendario «Claude», paso a paso desde la línea del día
+- Gimnasio: el peso que toca en cada ejercicio (el de la última vez en Hevy; si llegaste al tope de repeticiones en todas las series, sube 5 lb)
+- App Android: el informe de cada salida apunta el ritmo actual cada 20 s
+
+### Corregido
+
+- App Android: si la voz falla antes de sonar se reintenta, y con la otra voz, en vez de pasar la salida entera al audio de la web, que le quitaba el sonido a Spotify (30/09)
+- App Android: la pantalla se apaga en carrera aunque el GPS nativo aún esté arrancando al tocar Empezar (el 30/09 se quedó encendida los 44 min)
+
 ## [2.19.1] - 2026-09-29
 
 ### Corregido
@@ -475,6 +489,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.20.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.20.0
 [2.19.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.19.1
 [2.19.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.19.0
 [2.18.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.18.1

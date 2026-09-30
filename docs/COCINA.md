@@ -50,10 +50,24 @@ cuenta); si no lo conoce, se escribe qué es. Entra en Mis alimentos como compra
 En el APK hace falta un APK nuevo (permiso de cámara o el escáner de Google Play Services, que no
 lo pide): hasta entonces, el número a mano.
 
+## En HOY, lo que toca por la hora
+
+Hoy, la tarjeta grande es lo que toca (`Cocina.queGrande`): el entreno a su hora y, cuando pasa
+(hecho, o 30 min después de su fin), cada comida a la suya hasta su fin (o 1 h después). Tocar un
+entreno en la línea del día manda sobre la hora. La comida en grande es la tarjeta del diseño C.
+
+## Avisos del tupper y de la avena (app Android)
+
+`Cocina.avisosComida` saca de «Comidas» los de 48 h: un tupper que sale del congelador, la noche
+antes a las 21:30 (salvo que el calendario ya traiga su «Descongelar…»); un desayuno de avena en
+tarro, 45 min antes; y los eventos que ya son un aviso, a su hora. El APK los pone como
+notificación con AlarmManager (`AvisoReceiver`), con «Hecho» y «En 30 min», y los vuelve a poner
+al reiniciar el móvil. Necesita el APK 2.20 o posterior.
+
 ## Diseño
 
 Tres diseños de «Ahora toca» (`localStorage` `copiloto.cocina.diseno`): **A** todo a la vista,
-**B** el paso que toca, **C** como las tarjetas de HOY. Acento `--coc` (mandarina, como el calendario)
+**B** el paso que toca, **C** como las tarjetas de HOY (el elegido el 30/09, por defecto). Acento `--coc` (mandarina, como el calendario)
 con dos usos por pantalla; en el modo paso a paso, el color de la receta (`tema` de Copiloto Cocina).
 
 Capturas a 390 px: `node scripts/capturas-cocina.mjs [carpeta]` (datos de ejemplo del propio script;

@@ -21,7 +21,9 @@ La web (la de GitHub Pages) va **dentro** del APK con Capacitor 8: la app arranc
   - Cerrojo parcial (la CPU no se duerme). Si la web deja de mandar su latido 45 s, el servicio lo dice en voz alta.
   - Se enciende al abrir la pantalla del GPS y se apaga al salir sin correr.
 - `WebViewVivo.java`: con un entreno en marcha la web sigue «a la vista» aunque la pantalla se apague. Probado en el OnePlus: sin esto el WebView congela la página al minuto y no hay avisos.
-- `Informe.java`: el **informe de cada salida**, que se guarda solo: GPS, pantalla, voz, batería y el Diario de voz.
+- `Informe.java`: el **informe de cada salida**, que se guarda solo: GPS, pantalla, voz, batería, el ritmo actual cada 20 s y el Diario de voz.
+- Voz que no se rinde: si la del móvil falla (30/09, primera frase de la salida), esa frase la dice Miro y el motor se reinicia; `nativo.js` además reintenta antes de que la web se pase al audio, que corta Spotify.
+- `AvisoReceiver.java` / `ArranqueReceiver.java`: los avisos de Cocina (el tupper la noche antes, la avena al salir) como notificación con AlarmManager; vuelven tras reiniciar. Ver docs/COCINA.md.
 - `MainActivity.java`: el gesto de atrás lo decide la web (`window.atrasApp`): con un entreno en marcha no sale nunca.
 - `nativo.js` (raíz del repo): conecta todo esto con la web. En el navegador no hace nada.
 

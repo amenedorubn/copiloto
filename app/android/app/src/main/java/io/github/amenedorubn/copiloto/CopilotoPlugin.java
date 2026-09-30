@@ -87,7 +87,7 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
 
     private volatile OfflineTts neural;
     private volatile String estadoNeural = "cargando";
-    private TextToSpeech sistema;
+    private volatile TextToSpeech sistema;
     private volatile boolean sistemaListo = false;
     private volatile AudioTrack pista;
 
@@ -109,6 +109,9 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
         final PluginCall call;
         final int turno;
         final AtomicBoolean cerrada = new AtomicBoolean(false);
+        String texto = "";
+        float velocidad = 1f;
+        int musica = 0;
 
         Frase(PluginCall c, int t) {
             call = c;
@@ -147,14 +150,21 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
                 android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DEFAULT);
             }
         });
-        sistema = new TextToSpeech(getContext(), estado -> {
+        iniciaSistema();
+    }
+
+    /** La voz del movil (TextToSpeech). Se vuelve a crear si falla: Android puede cerrar su motor. */
+    private void iniciaSistema() {
+        final TextToSpeech[] tts = new TextToSpeech[1];
+        tts[0] = new TextToSpeech(getContext(), estado -> {
             if (estado != TextToSpeech.SUCCESS) return;
-            int r = sistema.setLanguage(Locale.forLanguageTag("es-ES"));
+            TextToSpeech s = tts[0];
+            int r = s.setLanguage(Locale.forLanguageTag("es-ES"));
             if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                sistema.setLanguage(Locale.forLanguageTag("es"));
+                s.setLanguage(Locale.forLanguageTag("es"));
             }
-            sistema.setAudioAttributes(atributos);
-            sistema.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            s.setAudioAttributes(atributos);
+            s.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override
                 public void onStart(String id) {
                     Frase f = delSistema.get(id);
@@ -176,13 +186,13 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
                 @Override
                 public void onError(String id) {
                     Frase f = delSistema.remove(id);
-                    if (f != null) cierra(f, "error", "sistema");
+                    if (f != null) fallaSistema(f, "sistema");
                 }
 
                 @Override
                 public void onError(String id, int codigo) {
                     Frase f = delSistema.remove(id);
-                    if (f != null) cierra(f, "error", "sistema " + codigo);
+                    if (f != null) fallaSistema(f, "sistema " + codigo);
                 }
 
                 @Override
@@ -191,7 +201,51 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
                     if (f != null) cierra(f, "cortada", null);
                 }
             });
+            sistema = s;
             sistemaListo = true;
+        });
+        if (sistema == null) sistema = tts[0];
+    }
+
+    private long ultimoReinicio = 0;
+
+    /**
+     * La voz del movil fallo (30/09: la primera frase de la salida dio error y la web se paso
+     * al audio, que corta Spotify). Esa frase la dice Miro, si esta, y el motor del movil se
+     * vuelve a arrancar (como mucho una vez cada 30 s) para las siguientes.
+     */
+    private void fallaSistema(Frase f, String error) {
+        if (Informe.abierto()) Informe.linea("voz", "la del móvil falla (" + error + "): la dice Miro y se reinicia");
+        reiniciaSistema();
+        final OfflineTts t = neural;
+        if (t != null && f.turno == turno.get() && !f.cerrada.get()) {
+            hilo.execute(() -> {
+                try {
+                    suena(f, t.generate(f.texto, 0, f.velocidad), f.musica);
+                } catch (Throwable e) {
+                    Log.e(TAG, "voz neuronal tras fallo", e);
+                    cierra(f, "error", error);
+                }
+            });
+            return;
+        }
+        cierra(f, "error", error);
+    }
+
+    private synchronized void reiniciaSistema() {
+        long ahora = System.currentTimeMillis();
+        if (ahora - ultimoReinicio < 30000) return;
+        ultimoReinicio = ahora;
+        final TextToSpeech viejo = sistema;
+        sistemaListo = false;
+        principal.post(() -> {
+            try {
+                if (viejo != null) viejo.shutdown();
+            } catch (Throwable e) {
+                // ya cerrado
+            }
+            sistema = null;
+            iniciaSistema();
         });
     }
 
@@ -206,6 +260,9 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
         final int musica = modo(call);
         final boolean delMovil = !"miro".equals(call.getString("voz", "miro"));
         final Frase f = new Frase(call, turno.incrementAndGet());
+        f.texto = texto == null ? "" : texto;
+        f.velocidad = velocidad;
+        f.musica = musica;
         if (Informe.abierto()) Informe.linea("voz", "pide «" + corto(texto) + "» · " + (delMovil ? "móvil" : "miro"));
         corta(); // la frase nueva corta la anterior
         if (texto == null || texto.trim().isEmpty()) {
@@ -343,17 +400,18 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
     }
 
     private void hablaSistema(Frase f, String texto, float velocidad, int musica) {
-        if (!sistemaListo) {
-            cierra(f, "error", "sin_voz");
+        TextToSpeech s = sistema;
+        if (!sistemaListo || s == null) {
+            fallaSistema(f, "sin_voz");            // reiniciandose: esta frase, con Miro
             return;
         }
         String id = "f" + f.turno;
         delSistema.put(id, f);
         retenFoco(musica);
-        sistema.setSpeechRate(velocidad);
-        if (sistema.speak(texto, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
+        s.setSpeechRate(velocidad);
+        if (s.speak(texto, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
             delSistema.remove(id);
-            cierra(f, "error", "sistema");
+            fallaSistema(f, "sistema");
         }
     }
 
@@ -367,9 +425,10 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
                 // ya liberada
             }
         }
-        if (sistemaListo && !delSistema.isEmpty()) {
+        TextToSpeech s = sistema;
+        if (sistemaListo && s != null && !delSistema.isEmpty()) {
             try {
-                sistema.stop();
+                s.stop();
             } catch (Throwable e) {
                 // nada que parar
             }
@@ -673,9 +732,23 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
         if (!sistemaListo) return;
         turno.incrementAndGet();
         corta();
+        TextToSpeech s = sistema;
+        if (s == null) return;
         retenFoco(PAUSA);
-        sistema.setSpeechRate(1f);
-        sistema.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "aviso" + System.currentTimeMillis());
+        s.setSpeechRate(1f);
+        s.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "aviso" + System.currentTimeMillis());
+    }
+
+    /* ------------------------ avisos de Cocina ------------------------ */
+
+    /** La lista de avisos ({lista:[{id, cuando, titulo, texto}]}): sustituye a la anterior. */
+    @PluginMethod
+    public void avisos(PluginCall call) {
+        com.getcapacitor.JSArray l = call.getArray("lista");
+        int n = AvisoReceiver.programa(getContext(), l == null ? "[]" : l.toString());
+        JSObject d = new JSObject();
+        d.put("programados", n);
+        call.resolve(d);
     }
 
     /* ------------------------ informe de la salida ------------------------ */
