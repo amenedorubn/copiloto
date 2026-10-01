@@ -13,7 +13,7 @@ import { execFileSync } from "node:child_process";
 const APP = dirname(fileURLToPath(import.meta.url));
 const RAIZ = join(APP, "..");
 const WWW = join(APP, "www");
-const COSAS = ["index.html", "arc.js", "stats.js", "transiciones.js", "nativo.js", "cocina.js", "version.json",
+const COSAS = ["index.html", "arc.js", "stats.js", "transiciones.js", "nativo.js", "receta.js", "despensa.js", "cocina-modo.js", "cocina.js", "version.json",
   "manifest.webmanifest", "manifest-n1.webmanifest", "manifest-b1.webmanifest", "manifest-r1.webmanifest",
   "fonts", "iconos", "rutas"];
 
