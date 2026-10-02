@@ -110,7 +110,7 @@ for (const tema of ["oscuro", "claro"]) {
   if (!/^Comprar/.test(a1) || a2 !== "Tengo" || a3 !== "Semana" || a4 !== "Semana") { errores++; console.log("DESLIZAR MAL"); }
   if (tema === "oscuro") {
     // Tengo: tocar algo -> Se acabó / a la lista; y ver una zona sola
-    await p.click(".cocSeg button:has-text('Tengo')"); await p.waitForTimeout(300);
+    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}tengo-todo.png` });
     await p.click(".cocZonaFila:has-text('Nevera')"); await p.waitForTimeout(300);
     await p.click(".cocPills button:has-text('Yogur')"); await p.waitForTimeout(300);
@@ -159,7 +159,7 @@ for (const tema of ["oscuro", "claro"]) {
     await p.screenshot({ path: `${OUT}esc-nativo-otro.png` });
     await p.click("#cocEsc .eFin"); await p.waitForTimeout(600);
     await p.evaluate(() => { window.Nativo.es = false; });
-    await p.click(".cocSeg button:has-text('Tengo')"); await p.waitForTimeout(300);
+    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}esc-tengo.png` });
     console.log("\nKV:", kv.cambios.length, "cambios,", kv.lista.length, "en la lista");
   }

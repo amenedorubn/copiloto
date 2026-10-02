@@ -6,7 +6,7 @@ con sus tests (`node --test tests/<archivo>.test.mjs`):
 | Archivo | Qué hace |
 |---|---|
 | `receta.js` | Entiende el texto de cada evento de «Comidas»: ingredientes (con cantidad, corte y si ya está en casa), pasos, tiempos y avisos, «Antes de empezar» |
-| `despensa.js` | Lo que hay en casa (Tengo) y lo que comprar (Comprar) |
+| `despensa.js` | Lo que hay en casa (Despensa) y lo que comprar (Comprar) |
 | `cocina-modo.js` | El paso a paso a pantalla completa |
 | `cocina.js` | Las pantallas, HOY, los avisos del tupper y la avena, el escáner y la sincronización |
 
@@ -16,12 +16,12 @@ con sus tests (`node --test tests/<archivo>.test.mjs`):
 |---|---|---|
 | Lo que toca y la semana | Calendario de Google «Comidas» (lo rellena Claude) | `/agenda` del Worker, en `dia` con `fuente: "comida"` |
 | Recetas con temporizador | Copiloto Cocina (`amenedorubn/cocina`, repo público) | `raw.githubusercontent.com/.../recetas/*.json`, con copia en el móvil |
-| El punto de partida de Tengo | Nota de Obsidian «Despensa habitual», bloque «Estado actual», o el último **Recuento** de la app | `/despensa` del Worker (solo lectura) |
+| El punto de partida de la Despensa | Nota de Obsidian «Despensa habitual», bloque «Estado actual», o el último **Recuento** de la app | `/despensa` del Worker (solo lectura) |
 | Lo comprado, gastado, lo que se acaba, la lista | La app | `localStorage` y el Worker (`/cocina`, en KV) |
 
 ## Las subpestañas
 
-Arriba, fijas: **Semana**, **Comprar**, **Tengo** y **Recetas**; se cambian tocándolas o deslizando a los lados.
+Arriba, fijas: **Semana**, **Comprar**, **Despensa** y **Recetas**; se cambian tocándolas o deslizando a los lados.
 
 - **Semana**: arriba, en grande, lo que toca ahora (o lo siguiente), la misma tarjeta que en HOY; si estás
   cocinándolo, «Cocinando · paso 3 de 9» y «Seguir». Debajo, la semana por días: lo hecho y lo pasado en gris,
@@ -31,10 +31,14 @@ Arriba, fijas: **Semana**, **Comprar**, **Tengo** y **Recetas**; se cambian toc�
   que no está en casa. Un alimento por fila, sumado si sale en varias comidas, con «Para: Shakshuka · jue».
   Nunca: sal, aceite, especias, lo que el plan hace antes (los huevos cocidos de anoche, el tarro de avena) ni
   lo que la receta dice que ya está en casa. «¿Te queda?» cuando no se sabe: «Me queda» quita la duda.
-- **Tengo**: la nota (o el recuento) y, por orden de tiempo, lo que ha pasado después: la compra de la nota,
+  Al marcarlo pasa a «En el carro», donde «Cuánto» apunta lo que has comprado («1 kg», «6», «2 paquetes»).
+- **Despensa** (antes Tengo), en seis zonas: Congelador, Nevera, Fruta y verdura, Despensa dulce, Despensa
+  salada y Especias (la «Despensa seca» de la nota se reparte sola entre dulce y salada; «Fresco» es fruta y
+  verdura). Es la nota (o el recuento) y, por orden de tiempo, lo que ha pasado después: la compra de la nota,
   lo apuntado en la app y **cada comida que ya empezó, que gasta lo suyo sola** (una vez: si al acabar el paso a
   paso apuntas lo gastado, cuenta eso). Lo que tiene cantidad se resta; lo que se gasta por piezas sin saber
-  cuántas había (pan, jamón) pasa a «?»; «que quedan», «todas las» lo acaban.
+  cuántas había (pan, jamón) pasa a «?»; «que quedan», «todas las» lo acaban. Tocar algo deja decir **cuánto
+  queda** («3 rebanadas»): lo que dices es lo que hay.
   - **Recuento**: dicta o pega todo lo que hay («Nevera: leche, 6 huevos… Congelador: …») y pasa a ser el
     punto de partida. Lo de antes deja de contar.
   - **Para Claude**: copia lo que hay con el formato del bloque «Estado actual», para pegárselo a la Claude que
@@ -55,7 +59,9 @@ Arriba, fijas: **Semana**, **Comprar**, **Tengo** y **Recetas**; se cambian toc�
 
 ## Un evento de «Comidas»
 
-Cómo escribirlo para que salga bien: [RECETAS-CALENDARIO.md](RECETAS-CALENDARIO.md) (para pegárselo a Claude).
+Cómo escribirlo para que salga bien: [RECETAS-CALENDARIO.md](RECETAS-CALENDARIO.md). Está también en la nota de
+Obsidian «Formato de recetas del calendario», y «Planning de comidas» y «Despensa habitual» piden leerla antes de
+escribir cualquier comida: así la Claude que planea las escribe bien.
 Título `Etiqueta · Plato` o solo el plato. Un evento con 🛒 o que empieza por «Compra» es una compra; uno que
 empieza por «Saca…» o «Descongela…» es un aviso; «Comida fuera» y «Nada que preparar», fuera de casa.
 
@@ -73,7 +79,8 @@ eventos que ya son un aviso, a su hora. El APK los pone como notificación (`Avi
 ## Escanear lo comprado
 
 Comprar o Tengo → «Escanear»: en Chrome, `BarcodeDetector`; en la app Android, el escáner de Google Play
-Services (`Nativo.escanea`). El código se busca en Open Food Facts y entra en Tengo con su zona y su etiqueta.
+Services (`Nativo.escanea`). El código se busca en Open Food Facts y entra en la Despensa con su zona, su
+etiqueta y la cantidad: la del paquete por **cuántos** has comprado (2 × 500 g = 1 kg).
 
 ## Capturas
 
@@ -84,4 +91,4 @@ otros). Chrome va mudo: nada de voz ni pitidos. No subas capturas con datos de v
 
 1. GitHub → Settings → Developer settings → **Fine-grained token**: solo el repo `mivault`, **Contents: Read-only**.
 2. Cloudflare → Workers → `copiloto-api` → Settings → Variables and Secrets → Secret **`VAULT_TOKEN`**.
-3. `/salud` dice `VAULT_TOKEN: true`. Sin él, Tengo funciona con el Recuento.
+3. `/salud` dice `VAULT_TOKEN: true`. Sin él, la Despensa funciona con el Recuento.

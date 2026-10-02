@@ -27,7 +27,7 @@ test("una rutina con horas se hace paso a paso; su reloj sale de lo que dura", (
 
 test("un codigo de barras de Open Food Facts: nombre, marca, cantidad y donde se guarda", () => {
   const p = C.productoOFF({ code: "8431876302196", status: 1, product: { product_name: "CREMA DE CALABAZA", brands: "Carrefour Classic, Carrefour", quantity: "350 ml", categories_tags: ["en:soups"] } });
-  assert.deepEqual(p, { codigo: "8431876302196", nombre: "Crema de calabaza", marca: "Carrefour", cantidad: "350 ml", zona: "Despensa", txt: "Crema de calabaza (Carrefour, 350 ml)" });
+  assert.deepEqual(p, { codigo: "8431876302196", nombre: "Crema de calabaza", marca: "Carrefour", cantidad: "350 ml", zona: "Despensa salada", txt: "Crema de calabaza (Carrefour, 350 ml)" });
   assert.equal(C.productoOFF({ status: 1, product: { product_name: "Yogur griego", categories_tags: ["en:dairies", "en:yogurts"] } }).zona, "Nevera");
   assert.equal(C.productoOFF({ status: 1, product: { product_name_es: "Guisantes", categories_tags: ["en:frozen-foods"] } }).zona, "Congelador");
   assert.equal(C.productoOFF({ status: 0 }), null, "si no lo conoce, se escribe a mano");

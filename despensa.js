@@ -55,12 +55,20 @@ function diaLargo(iso) { var d = new Date(msDe(iso, "12:00")); return DIAS[d.get
      Sartén ..., 500 g solomillos de pollo, ...
    Y tambien un recuento dictado en la app: "Nevera: leche, 6 huevos. Congelador: guiso (440 g)".
    -> {fecha, zonas:[{zona, items:[{txt, nombre, c, tupper}]}], noHay:[txt], compra, notas}      */
-var ZONAS = /^(congelador|nevera|frigo(?:rifico)?|despensa(?: seca)?|fresco|fruta(?: y verdura)?|verdura|especias|armario|cajon)$/;
+// Las seis zonas (desde la v2.24). "Despensa" o "Despensa seca" (la nota vieja) se reparte entre
+// dulce y salada cosa a cosa; "Fresco", a fruta y verdura.
+var ZONAS6 = ["Congelador", "Nevera", "Fruta y verdura", "Despensa dulce", "Despensa salada", "Especias"];
+var RE_ZONA = "congelador|nevera|frigo(?:r[ií]fico)?|despensa(?: seca| dulce| salada)?|dulce|salad[oa]|fresco|frutas?(?: y verduras?)?|verduras?|especias|armario|caj[oó]n(?: de (?:la )?verduras?)?";
+var ZONAS = new RegExp("^(" + RE_ZONA.replace(/í/g, "i").replace(/ó/g, "o") + ")$");
 function zonaNom(n) {
   var z = norm(n);
-  if (/^frigo/.test(z)) return "Nevera";
-  if (/^despensa/.test(z)) return "Despensa seca";
-  return mayus1(z.replace(/^cajon$/, "cajón"));
+  if (/^(frigo|nevera)/.test(z)) return "Nevera";
+  if (/^congelador/.test(z)) return "Congelador";
+  if (/^(fresco|fruta|verdura|cajon)/.test(z)) return "Fruta y verdura";
+  if (/dulce/.test(z)) return "Despensa dulce";
+  if (/salad/.test(z)) return "Despensa salada";
+  if (/^especia/.test(z)) return "Especias";
+  return "Despensa";                         // se reparte luego entre dulce y salada
 }
 function partes(t) {                         // "a, b (c, d), e. Otra" -> ["a", "b (c, d)", "e", "Otra"]
   var r = [], nivel = 0, cur = "";
@@ -96,9 +104,12 @@ function despensa(texto) {
       out.compra = { titulo: nom.replace(/^COMPRA/i, "Compra"), items: [], fecha: fc ? an + "-" + dos(+fc[2]) + "-" + dos(+fc[1]) : null };
       return { tipo: "compra" };
     }
-    var nz = zonaNom(nom), z = out.zonas.filter(function (x) { return x.zona === nz; })[0];
+    return { tipo: "zona", z: laZona(zonaNom(nom)) };
+  }
+  function laZona(nz) {
+    var z = out.zonas.filter(function (x) { return x.zona === nz; })[0];
     if (!z) { z = { zona: nz, items: [] }; out.zonas.push(z); }
-    return { tipo: "zona", z: z };
+    return z;
   }
   function mete(cuerpo) {
     cuerpo = cuerpo.replace(/^[\s\-–—·•*]+/, "").trim(); if (!cuerpo) return;
@@ -110,7 +121,8 @@ function despensa(texto) {
         if (/^(plan de comidas|solo si falta)/i.test(it)) { out.compra.nota = (out.compra.nota ? out.compra.nota + " " : "") + it; return; }
         out.compra.items.push(item(it)); return;
       }
-      zona.z.items.push(item(it));
+      var x = item(it);
+      (zona.z.zona === "Despensa" ? laZona(zonaSeca(x.txt)) : zona.z).items.push(x);
     });
   }
   String(texto || "").split(/\r?\n/).forEach(function (raw) {
@@ -118,7 +130,7 @@ function despensa(texto) {
     var h = l.match(/^\\?#{1,4}\s*(.+)$/);
     if (h) { zona = abre(h[1].trim()); return; }
     // "NEVERA" o "Nevera:" solos en su linea, o "Nevera: leche, huevos. Congelador: guiso" (recuento)
-    var trozos = l.split(/(?:^|\.\s+|;\s*)(?=(?:congelador|nevera|frigo(?:r[ií]fico)?|despensa(?: seca)?|fresco|fruta(?: y verdura)?|verdura|especias|armario|no hay|compra)\s*:)/i);
+    var trozos = l.split(new RegExp("(?:^|\\.\\s+|;\\s*)(?=(?:" + RE_ZONA + "|no hay|compra)\\s*:)", "i"));
     trozos.forEach(function (tr) {
       var m = tr.match(/^([^:]{3,30}):\s*(.*)$/), sola = !m && ZONAS.test(norm(tr.replace(/[:.]\s*$/, "")));
       if (m && (ZONAS.test(norm(m[1])) || /^(no hay|compra)/.test(norm(m[1])))) { zona = abre(m[1].trim()); mete(m[2]); return; }
@@ -128,14 +140,25 @@ function despensa(texto) {
       mete(tr);
     });
   });
+  out.zonas = out.zonas.filter(function (z) { return z.items.length || z.zona !== "Despensa"; });
   return out;
 }
 
 /* ------------------------------ donde va ------------------------------ */
 var RE_NEVERA = /\b(pollo|pavo|carne|ternera|cerdo|lomo|solomillo|hamburgues|salchich|pescado|salmon|merluza|bacalao|gamba|langostino|leche|yogur|kefir|queso|mozzarella|nata|mantequilla|jamon|embutido|chorizo|fiambre|tofu|hummus|lechuga|espinaca|rucula|brocoli|calabacin|zanahoria|pepino|champiñon|seta|fresa|arandano|uva|tomate cherry|masa|gazpacho|zumo|huevo cocido)/;
+var RE_FRUTA = /\b(platano|manzana|pera|naranja|mandarina|limon|lima|kiwi|melon|sandia|uva|fresa|arandano|frambuesa|mango|piña|melocoton|ciruela|cereza|aguacate|tomate|cebolla|ajo|patata|boniato|berenjena|calabacin|calabaza|zanahoria|pimiento|pepino|lechuga|espinaca|rucula|brocoli|coliflor|champiñon|seta|puerro|apio|judia verde|jengibre)(?:s|es)?\b/;
+var RE_PROCESADO = /triturad|frit[oa]|en conserva|\blata|\bbote|cocid|crema de|zumo|mermelada|deshidratad|en polvo|molid|rallad/;
+var RE_ESPECIA = /^(oregano|comino|pimenton|canela|curry|perejil|albahaca|nuez moscada|curcuma|clavo|anis|cilantro|chile|cayena|tomillo|romero|laurel|pimienta|mostaza|jengibre molido|ajo en polvo|cebolla en polvo|especia)/;
+var RE_DULCE = /\b(miel|cacao|cola ?cao|chocolate|galleta|mermelada|azucar|edulcorante|datil|pasa|muesli|cereal|avena|gofio|crema de cacahuete|mantequilla de cacahuete|proteina|vainilla|bizcocho|tortita|nuez|nueces|pistacho|almendra|anacardo|avellana|frutos secos|semilla|chia|lino|sesamo|cacahuete|sirope|turron|bombon|caramelo)/;
+// la despensa de siempre: lo dulce (desayunos, meriendas) o lo salado
+function zonaSeca(nombre) { return RE_DULCE.test(norm(nombre)) ? "Despensa dulce" : "Despensa salada"; }
 function zonaPara(nombre) {
   var n = norm(nombre);
-  return /congelad|helado|\bhielo\b/.test(n) ? "Congelador" : RE_NEVERA.test(n) ? "Nevera" : "Despensa seca";
+  if (/congelad|helado|\bhielo\b/.test(n)) return "Congelador";
+  if (RE_ESPECIA.test(n)) return "Especias";
+  if (RE_FRUTA.test(n) && !RE_PROCESADO.test(n)) return "Fruta y verdura";
+  if (RE_NEVERA.test(n) && !/en polvo|de cacahuete/.test(n)) return "Nevera";
+  return zonaSeca(n);
 }
 // lo que no se come (la sarten de la compra, el film)
 var NO_COMIDA = /\b(sarten|olla|cazo|pota|tupper(?:s)? vacio|film|papel|bolsas? de congelacion|estropajo|lavavajillas|detergente|servilleta)\b/;
@@ -320,9 +343,13 @@ function motor(D, cambios, comidas, opts) {
       if (cb.tipo === "compra") its.forEach(function (x) { entra(x, cb.zona, { nuevo: true, nutri: cb.nutri }, "seguro"); });
       else if (cb.tipo === "acaba") its.forEach(function (x) { var s = busca(RC.ingrediente(x)); if (s) fuera(s); });
       else if (cb.tipo === "hay") its.forEach(function (x) {
-        var s = busca(RC.ingrediente(x), true);
+        // "Me queda" o "Cuánto hay: 3 rebanadas": la cantidad, si la dices, es la que hay ahora
+        var g = RC.ingrediente(x), s = busca(g, true);
         if (!s) entra(x, null, null, "seguro");
-        else { if (s.estado === "no") s.c = null; s.estado = "seguro"; s.usos = 0; s.razon = ""; }
+        else {
+          if (g.c) s.c = { n: g.c.n, ud: g.c.ud }; else if (s.estado === "no") s.c = null;
+          s.estado = "seguro"; s.usos = 0; s.razon = ""; s.porPlan = null;
+        }
       });
       else if (cb.tipo === "gasto" && !deComida[cb.id || cb.t]) its.forEach(function (x) { RC.ings(textoIng(x)).forEach(function (g) { gasta(g, cb.t); }); });
     }
@@ -331,7 +358,7 @@ function motor(D, cambios, comidas, opts) {
 }
 
 // lo que hay, por zonas, sin lo que se acabo ni lo que no es comida
-var ORDEN_Z = ["Congelador", "Nevera", "Despensa seca", "Fresco", "Especias"];
+var ORDEN_Z = ZONAS6;
 function casa(D, cambios, comidas, opts) {
   opts = opts || {}; if (opts.ahoraMs == null) opts.ahoraMs = Date.now();
   var M = motor(D, cambios, comidas, opts), Z = [], todos = [];
@@ -428,7 +455,7 @@ function textoClaude(H, opts) {
   return L.join("\n").replace(/\n+$/, "") + "\n";
 }
 
-return { despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, casa: casa, estadoDe: estadoDe,
+return { ZONAS: ZONAS6, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
   estadoComida: estadoComida, queToca: queToca, faltan: faltan, paraTxt: paraTxt, textoClaude: textoClaude,
   isoDe: isoDe, msDe: msDe, diaLargo: diaLargo, diaCorto: diaCorto };
 });

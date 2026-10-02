@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.24.0] - 2026-10-02
+
+### Añadido
+
+- Cocina: la pestaña Tengo pasa a llamarse Despensa, con seis zonas (Congelador, Nevera, Fruta y verdura, Despensa dulce, Despensa salada y Especias; lo seco de la nota se reparte solo); lo comprado lleva cantidad («Cuánto» en el carro) y el escáner la sabe (la del paquete por cuántos compras); en la despensa, tocar algo deja decir cuánto queda; la Claude que planea las comidas tiene en Obsidian cómo escribir las recetas para que Copiloto las entienda
+
 ## [2.23.0] - 2026-10-02
 
 ### Añadido
@@ -526,6 +532,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.24.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.24.0
 [2.23.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.23.0
 [2.22.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.22.0
 [2.21.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.21.0

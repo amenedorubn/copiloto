@@ -52,7 +52,7 @@ const en = (iso) => { const ms = new Date(iso).getTime(); return { hoy: iso.slic
 
 test("la nota: zonas, lo que no hay y la compra con su fecha", () => {
   assert.equal(D.fecha, "2026-10-05");
-  assert.deepEqual(D.zonas.map((z) => z.zona), ["Congelador", "Nevera", "Despensa seca", "Fresco", "Especias"]);
+  assert.deepEqual(D.zonas.map((z) => z.zona), ["Congelador", "Nevera", "Despensa salada", "Fruta y verdura", "Especias"]);
   assert.ok(D.zonas[0].items[0].tupper);
   assert.deepEqual(D.noHay, ["Pollo", "calabacín"]);
   assert.equal(D.compra.fecha, "2026-10-06");
@@ -64,7 +64,7 @@ test("la nota: zonas, lo que no hay y la compra con su fecha", () => {
 
 test("un recuento dictado se lee igual que la nota", () => {
   const R = Dp.despensa("Nevera: leche semi, 6 huevos, queso canario. Congelador: guiso de carne (440 g), arándanos. Despensa: pan rústico, 2 latas de atún. No hay: pollo");
-  assert.deepEqual(R.zonas.map((z) => z.zona + ":" + z.items.length), ["Nevera:3", "Congelador:2", "Despensa seca:2"]);
+  assert.deepEqual(R.zonas.map((z) => z.zona + ":" + z.items.length), ["Nevera:3", "Congelador:2", "Despensa salada:2"]);
   assert.deepEqual(R.noHay, ["pollo"]);
   const R2 = Dp.despensa("NEVERA\nleche, 2 yogures\nCONGELADOR:\nmango");
   assert.deepEqual(R2.zonas.map((z) => z.zona + ":" + z.items.length), ["Nevera:2", "Congelador:1"]);
@@ -164,5 +164,27 @@ test("para Claude: lo que hay con el formato de la nota, y se vuelve a leer igua
 test("dónde se guarda lo que compras", () => {
   assert.equal(Dp.zonaPara("Pechuga de pollo"), "Nevera");
   assert.equal(Dp.zonaPara("Guisantes congelados"), "Congelador");
-  assert.equal(Dp.zonaPara("Lentejas"), "Despensa seca");
+  assert.equal(Dp.zonaPara("Lentejas"), "Despensa salada");
+  assert.equal(Dp.zonaPara("Miel"), "Despensa dulce");
+  assert.equal(Dp.zonaPara("Plátanos"), "Fruta y verdura");
+  assert.equal(Dp.zonaPara("Tomate triturado"), "Despensa salada");
+  assert.equal(Dp.zonaPara("Comino"), "Especias");
+});
+
+test("seis zonas: la despensa seca de la nota se reparte entre dulce y salada; fresco es fruta y verdura", () => {
+  const X = Dp.despensa("\## DESPENSA SECA\nMiel, avena, 2 latas de atún, rigatoni (500 g)\n\## FRESCO\n4 plátanos");
+  assert.deepEqual(X.zonas.map((z) => z.zona + ":" + z.items.map((i) => i.nombre).join("+")),
+    ["Despensa dulce:Miel+Avena", "Despensa salada:Atún+Rigatoni", "Fruta y verdura:Plátanos"]);
+  const R = Dp.despensa("Fruta y verdura: tomates. Despensa dulce: cacao. Despensa salada: arroz");
+  assert.deepEqual(R.zonas.map((z) => z.zona), ["Fruta y verdura", "Despensa dulce", "Despensa salada"]);
+});
+
+test("decir cuánto hay: la cantidad que dices es la que hay ahora", () => {
+  const o = en("2026-10-06T23:00"), t = new Date("2026-10-06T22:00").getTime();
+  const H = Dp.casa(D, [{ id: "c", t, tipo: "hay", items: ["3 rebanadas de pan de molde integral"] }], COMIDAS, o);
+  const pan = H.todos.find((x) => /pan de molde/i.test(x.nombre));
+  assert.deepEqual(pan.c, { n: 3, ud: "rebanada" });
+  assert.equal(pan.dudoso, false);
+  const H2 = Dp.casa(D, [{ id: "c", t, tipo: "hay", items: ["2 huevos"] }], COMIDAS, o);
+  assert.equal(H2.todos.find((x) => /^huevos/i.test(x.nombre)).c.n, 2, "no se suma: es lo que hay");
 });

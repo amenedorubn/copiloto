@@ -175,7 +175,10 @@ function productoOFF(j) {
   var marca = String(p.brands || "").split(",").pop().trim(), cant = String(p.quantity || "").replace(/\s+/g, " ").trim();
   var cats = (p.categories_tags || []).join(" ");
   var zona = /frozen|congel|ice-cream|helado/.test(cats) ? "Congelador"
-           : /dairies|dairy|yogurt|cheese|meat|poultry|fish|fresh|refrigerat|milk|eggs|cream|sausage|ham/.test(cats) ? "Nevera" : "Despensa";
+           : /dairies|dairy|yogurt|cheese|meat|poultry|fish|refrigerat|milk|eggs|cream|sausage|ham/.test(cats) ? "Nevera"
+           : /en:(fresh-)?(fruits|vegetables)\b|fresh-fruits|fresh-vegetables/.test(cats) && !/canned|juice|dried|jams/.test(cats) ? "Fruta y verdura"
+           : /spices|herbs|condiments/.test(cats) ? "Especias"
+           : /sweet|cocoa|chocolate|honey|breakfast-cereals|biscuit|cookie|jams|sugar|nuts|dried-fruits|confectioner|spreads/.test(cats) ? "Despensa dulce" : "Despensa salada";
   nombre = mayus1(nombre.toLowerCase());
   var out = { codigo: String(j.code || ""), nombre: nombre, marca: marca, cantidad: cant, zona: zona,
               txt: nombre + (marca || cant ? " (" + [marca, cant].filter(Boolean).join(", ") + ")" : "") };
@@ -217,7 +220,7 @@ var API = { comida: comida, comidasDe: comidasDe, recetaDe: recetaDe, queGrande:
 
 /* ================================ pantalla ================================
    Cocina.pinta(contenedor, ctx) con ctx = {dia, hoy, ahora, conf, marca, atrasManual, sel, activa}
-   Subpestañas: Semana · Comprar · Tengo · Recetas (fijas arriba; se pasa deslizando).      */
+   Subpestañas: Semana · Comprar · Despensa · Recetas (fijas arriba; se pasa deslizando).      */
 if (typeof document !== "undefined") (function () {
 var ICO = {
   olla: '<path d="M88,48V16a8,8,0,0,1,16,0V48a8,8,0,0,1-16,0Zm40,8a8,8,0,0,0,8-8V16a8,8,0,0,0-16,0V48A8,8,0,0,0,128,56Zm32,0a8,8,0,0,0,8-8V16a8,8,0,0,0-16,0V48A8,8,0,0,0,160,56Zm92.8,46.4L224,124v60a32,32,0,0,1-32,32H64a32,32,0,0,1-32-32V124L3.2,102.4a8,8,0,0,1,9.6-12.8L32,104V80a8,8,0,0,1,8-8H216a8,8,0,0,1,8,8v24l19.2-14.4a8,8,0,0,1,9.6,12.8ZM208,88H48v96a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16Z"/>',
@@ -355,6 +358,17 @@ var CSS =
   ".cocPrevia{margin:8px 0 0;min-height:21px}" +
   ".cocLink{display:block;background:none!important;color:var(--coc)!important;font-size:14px!important;font-weight:800!important;padding:10px 0!important;min-height:44px}" +
   ".cocGo:disabled{opacity:.45}" +
+  ".cocZonasAn{grid-template-columns:repeat(2,1fr)!important}" +
+  ".cocCompra li.cocCarro{grid-template-columns:1fr auto}.cocCompra li.cocCarro form{grid-column:1/-1}" +
+  ".cocCantF{display:grid;grid-template-columns:1fr auto;gap:8px;margin:8px 0 10px}" +
+  ".cocCantF input{margin:0!important;min-height:44px}" +
+  ".cocCantF button{height:44px;padding:0 16px!important;border-radius:22px!important;background:var(--fg)!important;color:var(--bg)!important;font-size:14px!important;font-weight:800!important}" +
+  ".cocHojaIt .cocCantF{margin:10px 0 0}" +
+  "#cocEsc .eZonas{grid-template-columns:repeat(2,1fr)!important}" +
+  "#cocEsc .eUds{display:flex;align-items:center;gap:12px;margin-top:12px;font-size:15px;font-weight:700}" +
+  "#cocEsc .eUds span{color:#9aa0a8;min-width:64px}#cocEsc .eUds em{font-style:normal;color:#9aa0a8}" +
+  "#cocEsc .eUds button{width:44px;height:44px;border-radius:22px!important;background:rgba(255,255,255,.12);color:#f4f5f7;font-size:22px;font-weight:800}" +
+  "#cocEsc .eUds b{min-width:24px;text-align:center;font-size:20px}" +
   ".cocToast{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:95;background:var(--fg);color:var(--bg);border-radius:16px;padding:14px 16px;font:700 15px/1.4 Manrope,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35)}" +
   "";;
 CSS +=
@@ -536,9 +550,9 @@ function estado(dia) {
 // pestaña, o HOY), para su marca en el historial.
 var CTX = null, MCTX = null, SEL = null, cont = null, RELOJ = null;
 function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CTX.activa || CTX.activa())); }
-var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Tengo"], ["recetas", "Recetas"]];
-var SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
-function subDe(s) { return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
+var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["recetas", "Recetas"]];
+var CANT = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
+function subDe(s) { if (s === "despensa") s = "tengo"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 API.pinta = function (c, ctx) {
   ponCSS(); cont = c; CTX = ctx || {}; MCTX = CTX;
   SUB = subDe(CTX.sub); TOCADO = null; ANADIR = false; ZONA = null; RECUENTO = null; COPIA = null; PASADA = null;
@@ -559,7 +573,7 @@ API.sub = function (s) { if (enTab()) cambiaSub(subDe(s)); else SUB = subDe(s); 
 function cambiaSub(s) {
   if (s === SUB) return;
   var ks = SUBS.map(function (x) { return x[0]; });
-  ENTRA = ks.indexOf(s) > ks.indexOf(SUB) ? 1 : -1; SUB = s; TOCADO = null; ANADIR = false; RECUENTO = null; COPIA = null; PASADA = null;
+  ENTRA = ks.indexOf(s) > ks.indexOf(SUB) ? 1 : -1; SUB = s; TOCADO = null; CANT = null; ANADIR = false; RECUENTO = null; COPIA = null; PASADA = null;
   pinta(); cont.scrollTop = 0;
 }
 function pinta() {
@@ -802,7 +816,7 @@ function compra(E, LC) {
           : !F || !F.n ? "No quedan comidas en el plan. Lo que apuntes, aquí."
           : "Para " + (F.n === 1 ? "la comida que queda" : "las " + F.n + " comidas que quedan") + ", hasta el " + F.hastaTxt;
   s.innerHTML = '<p class="cocLead">' + (n ? n + (n === 1 ? " cosa" : " cosas") + " que comprar" : "Nada que comprar") + '</p><p class="sub">' + esc(sub) + '</p>';
-  if (!n && E.hayBase && F && F.n) s.appendChild(el("p", "cocVacio", "Lo de las comidas ya está en Tengo."));
+  if (!n && E.hayBase && F && F.n) s.appendChild(el("p", "cocVacio", "Lo de las comidas ya está en la despensa."));
   if (n) {
     var ul = el("ul", "cocCompra");
     LC.items.forEach(function (it) {
@@ -833,13 +847,25 @@ function compra(E, LC) {
   }
   s.appendChild(formAnadir("cocAnadeCompra", "Añadir a la lista", function (t) { aLista(t); }));
   if (LC.carro.length) {
-    var c = el("div", "cocZona", '<h4>En el carro<small>ya en Tengo · toca para quitarlo</small></h4>'), uc = el("ul", "cocCompra");
+    var c = el("div", "cocZona", '<h4>En el carro<small>ya en la despensa · toca para quitarlo</small></h4>'), uc = el("ul", "cocCompra");
     LC.carro.forEach(function (cb) {
-      var nom = (cb.items || []).map(function (x) { var g = Rc().ingrediente(x); return mayus1(g.ver || g.base || x); }).join(", ");
-      var b = el("button", "cocMarca", '<i>' + svg("tick") + '</i><span>' + esc(nom) + '</span><em></em>');
+      var g0 = Rc().ingrediente((cb.items || [])[0] || ""), nom = mayus1(g0.ver || g0.base || (cb.items || []).join(", "));
+      var li = uc.appendChild(el("li", "cocCarro"));
+      var b = el("button", "cocMarca", '<i>' + svg("tick") + '</i><span>' + esc(nom) + '</span><em>' + esc(g0.c ? Rc().cantTxt(g0.c) : "") + '</em>');
       b.setAttribute("aria-pressed", "true");
       b.addEventListener("click", function () { desapunta(cb.id); pinta(); });
-      uc.appendChild(el("li")).appendChild(b);
+      li.appendChild(b);
+      if (CANT === cb.id) li.appendChild(formCant("cocCant" + cb.id, "Cuánto (p. ej. 1 kg, 6, 2 paquetes)", function (q) {
+        // se cambia por una compra nueva con su cantidad (asi el movil y Chrome ven lo mismo)
+        desapunta(cb.id);
+        apunta({ tipo: "compra", items: [conCant(q, nom)], zona: cb.zona, lista: cb.lista, nutri: cb.nutri, codigo: cb.codigo });
+        CANT = null;
+      }));
+      else {
+        var q = el("button", "cocQueda", g0.c ? "Cambiar" : "Cuánto");
+        q.addEventListener("click", function () { CANT = cb.id; pinta(); var i = document.getElementById("cocCant" + cb.id); if (i) i.focus(); });
+        li.appendChild(q);
+      }
     });
     c.appendChild(uc); s.appendChild(c);
   }
@@ -849,6 +875,22 @@ function compra(E, LC) {
 function botonEscaner(corto) {               // lo comprado, con el codigo de barras
   var b = el("button", "cocBtn", svg("barras") + (corto ? "Escanear" : "Escanear lo que has comprado"));
   b.addEventListener("click", function () { MCTX = CTX; abreEscaner(); }); return b;
+}
+// "6" + "Huevos" -> "6 huevos"; "1 kg" + "Arroz" -> "1 kg de arroz"
+function conCant(q, nombre) {
+  q = String(q || "").trim(); var n = String(nombre || "").trim();
+  if (!q) return n;
+  var nl = n.charAt(0).toLowerCase() + n.slice(1);
+  return /^[\d½¼¾,.\s]+$/.test(q) ? q + " " + nl : q + " de " + nl;
+}
+function formCant(id, ph, hecho) {
+  var f = el("form", "cocCantF");
+  f.innerHTML = '<input id="' + id + '" type="text" autocomplete="off" enterkeyhint="done" placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '"><button type="submit">Guardar</button>';
+  f.addEventListener("submit", function (e) {
+    e.preventDefault(); var t = f.querySelector("input").value.trim(); if (!t) { f.querySelector("input").focus(); return; }
+    hecho(t); pinta();
+  });
+  return f;
 }
 function formAnadir(id, ph, hecho) {
   var f = el("form", "cocAnade");
@@ -910,8 +952,8 @@ function tengo(E) {
       apunta({ tipo: "compra", items: [t], zona: fz.getAttribute("data-z") || Dp().zonaPara(t) });
     }));
     fz.setAttribute("data-z", ZONA || "");
-    ["Nevera", "Despensa seca", "Congelador"].forEach(function (z) {
-      var b = el("button", "", esc(z.replace(" seca", ""))); b.type = "button"; b.setAttribute("aria-pressed", ZONA === z);
+    Dp().ZONAS.forEach(function (z) {
+      var b = el("button", "", esc(z)); b.type = "button"; b.setAttribute("aria-pressed", ZONA === z);
       b.addEventListener("click", function () { fz.setAttribute("data-z", z); [].forEach.call(fz.children, function (x) { x.setAttribute("aria-pressed", x === b); }); });
       fz.appendChild(b);
     });
@@ -964,6 +1006,10 @@ function hojaItem(x) {
     m.addEventListener("click", function () { apunta({ tipo: "hay", items: [x.nombre] }); TOCADO = null; pinta(); });
     h.appendChild(m);
   }
+  // cuanto queda ahora (lo que digas es lo que hay)
+  h.appendChild(formCant("cocCantIt", x.c ? "Cuánto queda (ahora " + Rc().cantTxt(x.c) + ")" : "Cuánto queda (p. ej. 200 g)", function (q) {
+    apunta({ tipo: "hay", items: [conCant(q, x.nombre)] }); TOCADO = null; aviso("Apuntado: " + conCant(q, x.nombre) + ".");
+  }));
   var fila = el("div", "cocHojaBot");
   var a = el("button", "", "Se acabó"), l = el("button", "", "Se acabó · a la lista"), c = el("button", "cocHojaX", svg("cerrar"));
   c.setAttribute("aria-label", "Cerrar");
@@ -977,7 +1023,7 @@ function hojaItem(x) {
 function recuento(s, E) {
   s.innerHTML = '<p class="cocLead">Recuento</p><p class="sub">Dicta o pega todo lo que hay en casa, por zonas. Lo que no digas, no está.</p>';
   var ta = el("textarea", "cocTexto"); ta.id = "cocRecuento"; ta.rows = 9;
-  ta.placeholder = "Nevera: leche, 6 huevos, queso canario, yogur griego (2)\nCongelador: guiso de carne (440 g), arándanos\nDespensa: pan rústico, avena, 2 latas de atún\nNo hay: pollo";
+  ta.placeholder = "Nevera: leche, 6 huevos, queso canario\nCongelador: guiso de carne (440 g), arándanos\nFruta y verdura: 4 plátanos, 2 tomates\nDespensa dulce: avena, miel\nDespensa salada: pan rústico, 2 latas de atún\nEspecias: comino, orégano\nNo hay: pollo";
   ta.value = RECUENTO.texto || "";
   var pre = el("p", "cocVacio cocPrevia");
   function previa() {
@@ -991,7 +1037,7 @@ function recuento(s, E) {
   ta.addEventListener("input", previa);
   ok.addEventListener("click", function () {
     apunta({ tipo: "inventario", texto: ta.value });
-    RECUENTO = null; ZONA = null; aviso("Guardado: Tengo empieza desde aquí."); pinta();
+    RECUENTO = null; ZONA = null; aviso("Guardado: la despensa empieza desde aquí."); pinta();
   });
   no.addEventListener("click", function () { RECUENTO = null; pinta(); });
   rel.addEventListener("click", function () {
@@ -1081,6 +1127,13 @@ API.atras = function () {                   // el gesto de atras: el escaner, lu
   return !!(M && M.atras && M.atras());
 };
 
+// "500 g", "1 kg", "6 x 125 g", "330ml" -> {n, ud} (en g o ml); si no se entiende, null
+function cantPaquete(t) {
+  var s = String(t || "").toLowerCase().replace(",", "."), m = s.match(/(\d+)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(kg|g|ml|cl|l)\b/);
+  var c = m ? Rc().cantidad(m[2] + " " + m[3]) : Rc().cantidad((s.match(/\d+(?:\.\d+)?\s*(?:kg|g|ml|cl|l)\b/) || [""])[0]);
+  if (!c || !/^(g|ml)$/.test(c.ud)) return null;
+  return { n: c.n * (m ? +m[1] : 1), ud: c.ud };
+}
 /* ------------------------------- el escaner -------------------------------
    La camara de atras y BarcodeDetector (Chrome en Android); si no hay camara o no
    lo sabe leer, el numero se escribe a mano. En la app Android, el escaner de Google.
@@ -1160,19 +1213,33 @@ function buscaCodigo(codigo) {
 function resultado(codigo, p, sinRed) {
   if (!ESC) return;
   var r = ESC.box.querySelector(".eRes");
-  ESC.res = p; ESC.zona = p ? p.zona : "Despensa";
+  ESC.res = p; ESC.zona = p ? p.zona : "Despensa salada"; ESC.uds = 1;
   r.innerHTML = '<small>Código ' + esc(codigo) + '</small>' +
     (p ? '<h3>' + esc(p.nombre) + '</h3><p>' + esc([p.marca, p.cantidad].filter(Boolean).join(" · ") || "Open Food Facts") + '</p>' +
          (p.nutri ? '<p class="eNutri">Por ' + esc(p.nutri.por) + ': <b>' + esc(nutriTxt(p.nutri)) + '</b>' + (p.nutri.nutriscore ? ' · Nutri-Score ' + esc(p.nutri.nutriscore) : "") + '</p>' : "")
        : '<h3>' + (sinRed ? "Sin conexión" : "No está en Open Food Facts") + '</h3><p>Escribe qué es y se apunta igual.</p><input class="eNom" placeholder="p. ej. crema de calabaza" aria-label="Qué es" style="width:100%;margin-top:10px">') +
-    '<div class="eZonas">' + ["Nevera", "Despensa", "Congelador"].map(function (z) { return '<button aria-pressed="' + (z === ESC.zona) + '">' + z + '</button>'; }).join("") + '</div>' +
-    '<button class="eOk">Añadir a Tengo</button><button class="eOtro">Otro producto</button>';
+    '<div class="eUds"><span>Cuántos</span><button class="eMenos" aria-label="Uno menos">−</button><b>1</b><button class="eMasU" aria-label="Uno más">+</button><em></em></div>' +
+    '<div class="eZonas">' + Dp().ZONAS.map(function (z) { return '<button aria-pressed="' + (z === ESC.zona) + '">' + z + '</button>'; }).join("") + '</div>' +
+    '<button class="eOk">A la despensa</button><button class="eOtro">Otro producto</button>';
   Array.prototype.forEach.call(r.querySelectorAll(".eZonas button"), function (b) {
     b.onclick = function () { ESC.zona = b.textContent; Array.prototype.forEach.call(r.querySelectorAll(".eZonas button"), function (x) { x.setAttribute("aria-pressed", x === b); }); };
   });
+  // cuantos has comprado: con la cantidad del paquete, el total ("2 × 500 g" -> 1 kg)
+  function total() {
+    var q = p && cantPaquete(p.cantidad);
+    return q ? { n: Math.round(q.n * ESC.uds * 100) / 100, ud: q.ud } : { n: ESC.uds, ud: "ud" };
+  }
+  function pintaUds() {
+    r.querySelector(".eUds b").textContent = ESC.uds;
+    var t = total(); r.querySelector(".eUds em").textContent = p && cantPaquete(p.cantidad) ? "= " + Rc().cantTxt(t) : "";
+  }
+  r.querySelector(".eMenos").onclick = function () { ESC.uds = Math.max(1, ESC.uds - 1); pintaUds(); };
+  r.querySelector(".eMasU").onclick = function () { ESC.uds = Math.min(24, ESC.uds + 1); pintaUds(); };
+  pintaUds();
   r.querySelector(".eOk").onclick = function () {
-    var txt = p ? p.txt : (r.querySelector(".eNom").value || "").trim();
-    if (!txt) { r.querySelector(".eNom").focus(); return; }
+    var nom = p ? p.nombre : (r.querySelector(".eNom").value || "").trim();
+    if (!nom) { r.querySelector(".eNom").focus(); return; }
+    var t = total(), txt = Rc().cantTxt(t) + (t.ud === "ud" ? " " : " de ") + nom.charAt(0).toLowerCase() + nom.slice(1) + (p && p.marca ? " (" + p.marca + ")" : "");
     var cb = { t: Date.now(), tipo: "compra", items: [txt], zona: ESC.zona, codigo: codigo };
     if (p && p.nutri) cb.nutri = p.nutri;                 // lo de la etiqueta, por 100 g
     apunta(cb);
