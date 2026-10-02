@@ -146,7 +146,7 @@ function despensa(texto) {
 
 /* ------------------------------ donde va ------------------------------ */
 var RE_NEVERA = /\b(pollo|pavo|carne|ternera|cerdo|lomo|solomillo|hamburgues|salchich|pescado|salmon|merluza|bacalao|gamba|langostino|leche|yogur|kefir|queso|mozzarella|nata|mantequilla|jamon|embutido|chorizo|fiambre|tofu|hummus|lechuga|espinaca|rucula|brocoli|calabacin|zanahoria|pepino|champiñon|seta|fresa|arandano|uva|tomate cherry|masa|gazpacho|zumo|huevo cocido)/;
-var RE_FRUTA = /\b(platano|manzana|pera|naranja|mandarina|limon|lima|kiwi|melon|sandia|uva|fresa|arandano|frambuesa|mango|piña|melocoton|ciruela|cereza|aguacate|tomate|cebolla|ajo|patata|boniato|berenjena|calabacin|calabaza|zanahoria|pimiento|pepino|lechuga|espinaca|rucula|brocoli|coliflor|champiñon|seta|puerro|apio|judia verde|jengibre)(?:s|es)?\b/;
+var RE_FRUTA = /\b(platano|banana|manzana|pera|naranja|mandarina|limon|lima|kiwi|melon|sandia|uva|fresa|arandano|frambuesa|mango|piña|melocoton|ciruela|cereza|aguacate|tomate|cebolla|ajo|patata|boniato|berenjena|calabacin|calabaza|zanahoria|pimiento|pepino|lechuga|espinaca|rucula|brocoli|coliflor|champiñon|seta|puerro|apio|judia verde|jengibre)(?:s|es)?\b/;
 var RE_PROCESADO = /triturad|frit[oa]|en conserva|\blata|\bbote|cocid|crema de|zumo|mermelada|deshidratad|en polvo|molid|rallad/;
 var RE_ESPECIA = /^(oregano|comino|pimenton|canela|curry|perejil|albahaca|nuez moscada|curcuma|clavo|anis|cilantro|chile|cayena|tomillo|romero|laurel|pimienta|mostaza|jengibre molido|ajo en polvo|cebolla en polvo|especia)/;
 var RE_DULCE = /\b(miel|cacao|cola ?cao|chocolate|galleta|mermelada|azucar|edulcorante|datil|pasa|muesli|cereal|avena|gofio|crema de cacahuete|mantequilla de cacahuete|proteina|vainilla|bizcocho|tortita|nuez|nueces|pistacho|almendra|anacardo|avellana|frutos secos|semilla|chia|lino|sesamo|cacahuete|sirope|turron|bombon|caramelo)/;
@@ -215,8 +215,11 @@ function motor(D, cambios, comidas, opts) {
     });
     return mejor;
   }
+  var PREF = {};                             // la zona que has elegido para cada cosa ("Mover a")
+  CB.filter(function (cb) { return cb.tipo === "mueve" && cb.zona; }).sort(function (a, b) { return a.t - b.t; })
+    .forEach(function (cb) { (cb.items || []).forEach(function (x) { PREF[RC.ingrediente(x).clave] = cb.zona; }); });
   function nuevo(g, txt, zona, estado, por) {
-    var it = item(txt), s = { g: g, nombre: it.nombre || g.ver, txt: txt, c: g.c ? { n: g.c.n, ud: g.c.ud } : null, zona: zona || zonaPara(txt),
+    var it = item(txt), s = { g: g, nombre: it.nombre || g.ver, txt: txt, c: g.c ? { n: g.c.n, ud: g.c.ud } : null, zona: PREF[g.clave] || zona || zonaPara(txt),
       estado: estado, usos: 0, razon: por || "", tupper: it.tupper };
     S.push(s); return s;
   }
@@ -230,7 +233,8 @@ function motor(D, cambios, comidas, opts) {
       if (s.estado === "no") {                  // vuelve a casa: con su nombre y su sitio
         var it = item(txt);
         s.estado = estado || "seguro"; s.c = g.c ? { n: g.c.n, ud: g.c.ud } : null; s.usos = 0; s.porPlan = null;
-        s.g = g; s.txt = txt; s.nombre = it.nombre || g.ver; s.zona = zona || zonaPara(txt); s.tupper = it.tupper;
+        s.zona = PREF[s.g.clave] || PREF[g.clave] || zona || zonaPara(txt);   // la elegida, aunque venga con otro nombre (banana)
+        s.g = g; s.txt = txt; s.nombre = it.nombre || g.ver; s.tupper = it.tupper;
       }
       else if (s.estado === "dudoso" && !s.c && estado !== "dudoso") {
         // no se sabia cuanto habia: manda lo que entra
@@ -341,6 +345,7 @@ function motor(D, cambios, comidas, opts) {
     else {
       var cb = v.cb, its = cb.items || [];
       if (cb.tipo === "compra") its.forEach(function (x) { entra(x, cb.zona, { nuevo: true, nutri: cb.nutri }, "seguro"); });
+      else if (cb.tipo === "mueve") its.forEach(function (x) { var s = busca(RC.ingrediente(x), true); if (s && cb.zona) { s.zona = cb.zona; PREF[s.g.clave] = cb.zona; } });
       else if (cb.tipo === "acaba") its.forEach(function (x) { var s = busca(RC.ingrediente(x)); if (s) fuera(s); });
       else if (cb.tipo === "hay") its.forEach(function (x) {
         // "Me queda" o "Cuánto hay: 3 rebanadas": la cantidad, si la dices, es la que hay ahora

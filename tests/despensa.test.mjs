@@ -188,3 +188,14 @@ test("decir cuánto hay: la cantidad que dices es la que hay ahora", () => {
   const H2 = Dp.casa(D, [{ id: "c", t, tipo: "hay", items: ["2 huevos"] }], COMIDAS, o);
   assert.equal(H2.todos.find((x) => /^huevos/i.test(x.nombre)).c.n, 2, "no se suma: es lo que hay");
 });
+
+test("mover algo a otra zona: se queda ahí, también si se acaba y vuelve", () => {
+  const o = en("2026-10-06T23:00"), t = (h) => new Date("2026-10-06T" + h).getTime();
+  const CB = [{ id: "m", t: t("22:00"), tipo: "mueve", items: ["Plátanos"], zona: "Despensa dulce" }];
+  let H = Dp.casa(D, CB, COMIDAS, o);
+  assert.equal(H.todos.find((x) => /plátanos/i.test(x.nombre)).zona, "Despensa dulce");
+  H = Dp.casa(D, CB.concat([{ id: "a", t: t("22:10"), tipo: "acaba", items: ["Plátanos"] }, { id: "c", t: t("22:20"), tipo: "compra", items: ["bananas 6"] }]), COMIDAS, o);
+  const pl = H.todos.find((x) => x.clave === "platano" || /banana|plátano/i.test(x.nombre));
+  assert.equal(pl.zona, "Despensa dulce");
+  assert.deepEqual(pl.c, { n: 6, ud: "ud" });
+});

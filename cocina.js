@@ -369,6 +369,13 @@ var CSS =
   "#cocEsc .eUds span{color:#9aa0a8;min-width:64px}#cocEsc .eUds em{font-style:normal;color:#9aa0a8}" +
   "#cocEsc .eUds button{width:44px;height:44px;border-radius:22px!important;background:rgba(255,255,255,.12);color:#f4f5f7;font-size:22px;font-weight:800}" +
   "#cocEsc .eUds b{min-width:24px;text-align:center;font-size:20px}" +
+  ".cocQueCuanto{display:grid;grid-template-columns:1fr 92px 52px;gap:8px;margin-top:12px}" +
+  ".cocQueCuanto input{margin:0!important;min-width:0}" +
+  ".cocQueCuanto button{height:52px;border-radius:26px!important;background:var(--sf2);color:var(--fg);display:flex!important;align-items:center;justify-content:center}.cocQueCuanto button svg{width:20px;height:20px}" +
+  ".cocMover{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}" +
+  ".cocMover span{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);margin-right:2px}" +
+  ".cocMover button{height:34px;padding:0 10px!important;border-radius:17px!important;background:var(--sf);color:var(--fg);font-size:13px!important;font-weight:700!important;box-shadow:inset 0 0 0 1px var(--ln)}" +
+  ".cocMover button[aria-pressed=true]{background:var(--fg);color:var(--bg);box-shadow:none}" +
   ".cocToast{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:95;background:var(--fg);color:var(--bg);border-radius:16px;padding:14px 16px;font:700 15px/1.4 Manrope,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35)}" +
   "";;
 CSS +=
@@ -892,6 +899,21 @@ function formCant(id, ph, hecho) {
   });
   return f;
 }
+// Añadir a la despensa: qué y cuánto (lo segundo, si quieres; "plátanos 4" en el primero también vale)
+function formQueCuanto(hecho) {
+  var f = el("form", "cocQueCuanto");
+  f.innerHTML = '<input id="cocAnadeTengo" type="text" autocomplete="off" enterkeyhint="next" placeholder="Qué (p. ej. plátanos)" aria-label="Qué has traído">' +
+    '<input id="cocAnadeCuanto" type="text" autocomplete="off" enterkeyhint="done" placeholder="Cuánto" aria-label="Cuánto (4, 1 kg, 2 paquetes)">' +
+    '<button type="submit" aria-label="Añadir">' + svg("mas") + '</button>';
+  var q = f.querySelector("#cocAnadeTengo"), n = f.querySelector("#cocAnadeCuanto");
+  q.addEventListener("keydown", function (e) { if (e.key === "Enter" && q.value.trim() && !n.value.trim()) { e.preventDefault(); n.focus(); } });
+  f.addEventListener("submit", function (e) {
+    e.preventDefault(); var t = q.value.trim(); if (!t) { q.focus(); return; }
+    hecho(t, n.value.trim()); q.value = ""; n.value = ""; pinta();
+    var i = document.getElementById("cocAnadeTengo"); if (i) i.focus();
+  });
+  return f;
+}
 function formAnadir(id, ph, hecho) {
   var f = el("form", "cocAnade");
   f.innerHTML = '<input id="' + id + '" type="text" autocomplete="off" enterkeyhint="done" placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '"><button type="submit" aria-label="Añadir">' + svg("mas") + '</button>';
@@ -948,8 +970,10 @@ function tengo(E) {
   s.appendChild(acc);
   if (ANADIR) {
     var fz = el("div", "cocZonasAn");
-    s.appendChild(formAnadir("cocAnadeTengo", "Qué has traído (p. ej. 1 kg de arroz)", function (t) {
-      apunta({ tipo: "compra", items: [t], zona: fz.getAttribute("data-z") || Dp().zonaPara(t) });
+    s.appendChild(formQueCuanto(function (que, cuanto) {
+      var t = cuanto ? conCant(cuanto, que) : que;
+      apunta({ tipo: "compra", items: [t], zona: fz.getAttribute("data-z") || Dp().zonaPara(que) });
+      aviso("Apuntado: " + t + ".");
     }));
     fz.setAttribute("data-z", ZONA || "");
     Dp().ZONAS.forEach(function (z) {
@@ -1010,6 +1034,17 @@ function hojaItem(x) {
   h.appendChild(formCant("cocCantIt", x.c ? "Cuánto queda (ahora " + Rc().cantTxt(x.c) + ")" : "Cuánto queda (p. ej. 200 g)", function (q) {
     apunta({ tipo: "hay", items: [conCant(q, x.nombre)] }); TOCADO = null; aviso("Apuntado: " + conCant(q, x.nombre) + ".");
   }));
+  // mover a otra zona de la despensa (y ahi se queda la proxima vez)
+  var mv = el("div", "cocMover", '<span>Está en</span>');
+  Dp().ZONAS.forEach(function (z) {
+    var b = el("button", "", esc(z)); b.type = "button"; b.setAttribute("aria-pressed", x.zona === z);
+    b.addEventListener("click", function () {
+      if (x.zona === z) return;
+      apunta({ tipo: "mueve", items: [x.nombre], zona: z }); ZONA = ZONA ? z : null; aviso(x.nombre + " → " + z + "."); pinta();
+    });
+    mv.appendChild(b);
+  });
+  h.appendChild(mv);
   var fila = el("div", "cocHojaBot");
   var a = el("button", "", "Se acabó"), l = el("button", "", "Se acabó · a la lista"), c = el("button", "cocHojaX", svg("cerrar"));
   c.setAttribute("aria-label", "Cerrar");

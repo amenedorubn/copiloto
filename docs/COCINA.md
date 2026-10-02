@@ -38,7 +38,9 @@ Arriba, fijas: **Semana**, **Comprar**, **Despensa** y **Recetas**; se cambian t
   lo apuntado en la app y **cada comida que ya empezó, que gasta lo suyo sola** (una vez: si al acabar el paso a
   paso apuntas lo gastado, cuenta eso). Lo que tiene cantidad se resta; lo que se gasta por piezas sin saber
   cuántas había (pan, jamón) pasa a «?»; «que quedan», «todas las» lo acaban. Tocar algo deja decir **cuánto
-  queda** («3 rebanadas»): lo que dices es lo que hay.
+  queda** («3 rebanadas»): lo que dices es lo que hay. Y **moverlo** a otra zona: se queda ahí también cuando se acaba y
+  vuelves a comprarlo.
+  - **Añadir**: qué y cuánto (o todo junto: «plátanos 4», «4 plátanos», «arroz 1 kg»), y su zona.
   - **Recuento**: dicta o pega todo lo que hay («Nevera: leche, 6 huevos… Congelador: …») y pasa a ser el
     punto de partida. Lo de antes deja de contar.
   - **Para Claude**: copia lo que hay con el formato del bloque «Estado actual», para pegárselo a la Claude que

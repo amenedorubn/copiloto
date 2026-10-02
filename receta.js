@@ -201,7 +201,7 @@ var CORTE_PASO = /dados|daditos|cubos|cubitos|rodajas|tiras|trocitos|l[aá]minas
 var BASICO = /^(sal(?: gorda| fina| en escamas)?|pimienta(?: negra| blanca)?|aove|aceite(?: de oliva)?(?: virgen)?(?: extra)?|agua|hielo|especia|or[eé]gano|piment[oó]n(?: dulce| picante| ahumado)?|comino|canela|curry(?: tostado)?|nuez moscada|perejil|albahaca|c[uú]rcuma|tomillo|romero|laurel|cayena|jengibre molido|(?:ajo|cebolla) en polvo|vinagre|edulcorante)$/;
 var BASICO_TXT = /\bal gusto\b|\bpizcas?\b|\bgotas?\b|\bchorrit[oa]\b|\bchorro\b|\bun hilo\b/;
 // sinonimos para la cabeza: AOVE es aceite
-var SINON = { aov: "aceit", aove: "aceit", aceite: "aceit", mix: "semilla" };
+var SINON = { aov: "aceit", aove: "aceit", aceite: "aceit", mix: "semilla", banana: "platano" };
 
 // "pollo (el del domingo) en dados" ya sin cantidad -> {base, cabeza, refina, ver}
 function nucleo(t) {
@@ -271,6 +271,12 @@ function ingrediente(txt, extra) {
     // "Huevos, 1 docena", "Dátiles · 1 paquete", "bote de tomate triturado 800 g"
     var tr = resto.match(/^(.*?)\s*[,·]\s*(~?\d.*|una?\s.*|media docena.*)$/i);
     if (tr && cantidad(tr[2])) { c = cantidad(tr[2]); delete c.resto; resto = tr[1]; nom = resto; }
+    else if ((tr = resto.match(/^(.*\D)\s+(?:x\s*)?(\d+(?:[.,]\d+)?|[½¼¾])\s*(uds?\.?|unidades?|latas?|paquetes?|botes?|bolsas?|bricks?|tarros?|docenas?|rebanadas?|lonchas?)?$/i)) &&
+             !/\b(min|minutos?|cm|s|seg)$/i.test(tr[1])) {
+      // "bananas 4", "plátanos x4", "atún 3 latas": la cantidad detrás del nombre
+      c = cantidad(tr[2] + " " + (tr[3] && !/^(ud|unidad)/i.test(tr[3]) ? tr[3] : "") + " x"); delete c.resto;
+      resto = tr[1]; nom = resto;
+    }
     else if ((tr = resto.match(/^(.*\S)\s+(~?\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|cl))$/i))) {
       c = cantidad(tr[2]); delete c.resto; resto = tr[1];
       var ue = unidadDe(resto); if (ue && ENVASE[ue.ud]) resto = ue.resto;       // "bote de tomate triturado 800 g"

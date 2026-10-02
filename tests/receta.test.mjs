@@ -413,3 +413,12 @@ test("como antes: en la lista solo alimentos, ni apartados ni consejos", () => {
   assert.ok(R.esBasico("Sal al gusto") && R.esBasico("1 cdta pimentón dulce") && !R.esBasico("1 boniato"));
   assert.deepEqual(R.resumenIngs(c).slice(0, 2), ["400 g de contramuslos de pollo", "1 boniato"]);
 });
+
+test("la cantidad también detrás del nombre: «bananas 4», «plátanos x4», «atún 3 latas»", () => {
+  assert.deepEqual(R.ingrediente("bananas 4").c, { n: 4, ud: "ud" });
+  assert.deepEqual(R.ingrediente("plátanos x4").c, { n: 4, ud: "ud" });
+  assert.deepEqual(R.ingrediente("atún 3 latas").c, { n: 3, ud: "lata" });
+  assert.deepEqual(R.ingrediente("arroz 1 kg").c, { n: 1000, ud: "g" });
+  assert.equal(R.ingrediente("Hélices tricolor 3 min (300 g)").c.n, 300, "«3 min» no es una cantidad");
+  assert.equal(R.mismo("bananas", "plátanos"), 1, "banana es plátano");
+});

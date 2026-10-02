@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.25.0] - 2026-10-02
+
+### Añadido
+
+- Despensa: mover cualquier cosa a otra zona (y ahí se queda), y Añadir con su cantidad: un campo Cuánto o todo junto («plátanos 4», «arroz 1 kg»); banana cuenta como plátano
+
 ## [2.24.0] - 2026-10-02
 
 ### Añadido
@@ -532,6 +538,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.25.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.25.0
 [2.24.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.24.0
 [2.23.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.23.0
 [2.22.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.22.0
