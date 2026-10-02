@@ -1,6 +1,6 @@
-// Capturas de la pestaña Cocina a 390x844 (oscuro y claro): una por subpestaña (Ahora, Semana,
-// Comprar, Tengo, Recetas), lo que pasa al tocar en Tengo y en Comprar, el modo paso a paso,
-// HOY y el escaner (el de Chrome y el de la app Android, de mentira). Los datos de prueba viven
+// Capturas de la pestaña Cocina a 390x844 (oscuro y claro): una por subpestaña (Semana, Comprar,
+// Tengo, Recetas), lo que pasa al tocar en Tengo y en Comprar, el modo paso a paso, HOY y el
+// escaner (el de Chrome y el de la app Android, de mentira). Los datos de prueba viven
 // SOLO aquí (o en el FIXTURE que se le pase): calendario y Worker interceptados, localStorage simulado.
 //
 //   npm i --no-save playwright-core                 (una vez; usa el Chrome instalado)
@@ -49,7 +49,7 @@ const EJEMPLO = {
 };
 const F = process.env.FIXTURE ? JSON.parse(readFileSync(process.env.FIXTURE, "utf8")) : EJEMPLO;
 
-const b = await chromium.launch({ executablePath: CHROME, args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
+const b = await chromium.launch({ executablePath: CHROME, args: ["--mute-audio", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
 let errores = 0;
 for (const tema of ["oscuro", "claro"]) {
   const ls = { "copiloto.conf.v1": JSON.stringify({ url: "http://api.test", key: "k" }), "copiloto.tema": tema,
@@ -62,7 +62,10 @@ for (const tema of ["oscuro", "claro"]) {
     Object.defineProperty(window, "localStorage", { configurable: true, value: {
       getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, removeItem: (k) => { delete m[k]; },
       clear() {}, key: (i) => Object.keys(m)[i] || null, get length() { return Object.keys(m).length; } } });
-    window.speechSynthesis && (window.speechSynthesis.speak = () => {});
+    // sin sonido en las pruebas: ni voz, ni pitidos, ni vibración
+    if (window.speechSynthesis) { window.speechSynthesis.speak = () => {}; window.speechSynthesis.cancel = () => {}; }
+    window.AudioContext = window.webkitAudioContext = function () { throw new Error("sin audio en pruebas"); };
+    try { navigator.vibrate = () => true; } catch (e) {}
     // en Windows Chrome no trae BarcodeDetector (en Android si): uno que mira y no encuentra nada
     if (!("BarcodeDetector" in window)) window.BarcodeDetector = class { detect() { return Promise.resolve([]); } };
   }, ls);
@@ -119,16 +122,17 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await p.click(".cocCompra li button >> nth=0"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}comprar-carro.png` });
-    // el modo paso a paso de lo que toca, desde Semana
+    // el modo paso a paso de lo que toca, desde la tarjeta de Semana
     await p.click(".cocSeg button:has-text('Semana')"); await p.waitForTimeout(300);
-    await p.click("#ptCuerpo .cocFila.sel"); await p.waitForTimeout(800);
+    await p.click("#ptCuerpo .tjGo"); await p.waitForTimeout(800);
     await p.screenshot({ path: `${OUT}modo-paso1.png` });
-    await p.click(".mHecho"); await p.waitForTimeout(600);
-    await p.clock.runFor(185000); await p.waitForTimeout(400);
+    const boton = async (re) => { for (const b of await p.$("#cocPaso button")) if (re.test((await b.innerText()).trim())) { await b.click(); await p.waitForTimeout(400); return true; } return false; };
+    await boton(/^Listo|^Hecho/);
+    await boton(/^(▶s*)?Empezar/); await p.clock.runFor(65000); await p.waitForTimeout(400);
     await p.screenshot({ path: `${OUT}modo-paso2.png` });
-    for (let i = 0; i < 6; i++) { if (!(await p.$(".mHecho"))) break; await p.click(".mHecho"); await p.waitForTimeout(300); }
-    await p.screenshot({ path: `${OUT}modo-fin.png` });
-    await p.click("#cocModo .mX"); await p.waitForTimeout(500);
+    await boton(/^Pasos$/); await p.screenshot({ path: `${OUT}modo-pasos.png` });
+    await p.evaluate(() => window.Cocina.atras()); await p.waitForTimeout(300);
+    await p.evaluate(() => window.Cocina.atras()); await p.waitForTimeout(500);
     // en HOY: la comida a su hora va en grande
     await p.click("#ptVolver"); await p.waitForTimeout(700);
     const tj = await p.$("#hCuerpo .tj");

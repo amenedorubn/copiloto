@@ -271,7 +271,11 @@ function ingrediente(txt, extra) {
     // "Huevos, 1 docena", "Dátiles · 1 paquete", "bote de tomate triturado 800 g"
     var tr = resto.match(/^(.*?)\s*[,·]\s*(~?\d.*|una?\s.*|media docena.*)$/i);
     if (tr && cantidad(tr[2])) { c = cantidad(tr[2]); delete c.resto; resto = tr[1]; nom = resto; }
-    else if ((tr = resto.match(/^(.*\S)\s+(~?\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|cl))$/i))) { c = cantidad(tr[2]); delete c.resto; resto = tr[1]; nom = resto; }
+    else if ((tr = resto.match(/^(.*\S)\s+(~?\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|cl))$/i))) {
+      c = cantidad(tr[2]); delete c.resto; resto = tr[1];
+      var ue = unidadDe(resto); if (ue && ENVASE[ue.ud]) resto = ue.resto;       // "bote de tomate triturado 800 g"
+      nom = resto;
+    }
   }
   if (!c) {
     // "tarro 1 de overnight oats" (lo hizo el plan), "lonchas de pavo", "Tupper del guiso"
@@ -295,7 +299,7 @@ function ingrediente(txt, extra) {
   var g = {
     txt: t, c: c, nombre: limpia(nom).replace(/[.;]$/, "") || t, base: nu.base, clave: claveDe(nu.base), ver: nu.ver,
     prep: prep, grupo: extra.grupo || null, cuando: cuando, deCasa: deCasa, hecho: hecho, acaba: acaba, abre: abre,
-    basico: basicoTxt || BASICO.test(nu.base), opcional: opcional, equiv: equiv, nota: notas.join("; ") || null, mult: mult
+    basico: basicoTxt || !!extra.basico || BASICO.test(nu.base), opcional: opcional, equiv: equiv, nota: notas.join("; ") || null, mult: mult
   };
   if (vago || (c && c.aprox)) g.aprox = true;
   return g;
@@ -340,6 +344,9 @@ function trozos(txt) {
 function ings(txt, extra) {
   var t = limpia(sinEmoji(txt)).replace(/\.$/, ""), ex = {}, k;
   for (k in (extra || {})) ex[k] = extra[k];
+  // "Básicos: sal, pimienta, AOVE": lo de siempre, sin comprar ni contar
+  var bas = t.match(/^b[aá]sicos?s*:s*/i);
+  if (bas) { ex.basico = true; t = t.slice(bas[0].length); }
   var lab = t.match(ETIQ);
   if (lab) {
     if (/^opcional/i.test(lab[1])) ex.opcional = true; else ex.cuando = frase(lab[1]);

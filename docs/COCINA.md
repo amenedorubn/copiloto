@@ -1,101 +1,87 @@
 # Cocina
 
-Pestaña de HOY (icono de la olla, junto a Estadísticas). La pinta `cocina.js`; la lógica
-(sin DOM) se prueba con `node --test tests/cocina.test.mjs`.
+Pestaña de HOY (icono de la olla, junto a Estadísticas). Desde la v2.23 son cuatro archivos, cada uno
+con sus tests (`node --test tests/<archivo>.test.mjs`):
+
+| Archivo | Qué hace |
+|---|---|
+| `receta.js` | Entiende el texto de cada evento de «Comidas»: ingredientes (con cantidad, corte y si ya está en casa), pasos, tiempos y avisos, «Antes de empezar» |
+| `despensa.js` | Lo que hay en casa (Tengo) y lo que comprar (Comprar) |
+| `cocina-modo.js` | El paso a paso a pantalla completa |
+| `cocina.js` | Las pantallas, HOY, los avisos del tupper y la avena, el escáner y la sincronización |
 
 ## De dónde sale cada cosa
 
 | Qué | Fuente | Cómo llega |
 |---|---|---|
 | Lo que toca y la semana | Calendario de Google «Comidas» (lo rellena Claude) | `/agenda` del Worker, en `dia` con `fuente: "comida"` |
-| Recetas paso a paso | Copiloto Cocina (`amenedorubn/cocina`, repo público) | `raw.githubusercontent.com/.../recetas/*.json`, con copia en el móvil para sin red |
-| El punto de partida de Tengo | Nota de Obsidian «Despensa habitual», bloque «Estado actual» (repo privado `mivault`) | `/despensa` del Worker, solo lectura |
-| Lo comprado, gastado, lo que se acaba y la lista | La app (Tengo y Comprar) | `localStorage` (`copiloto.cocina.cambios.v1`, `copiloto.cocina.lista.v1`) y el Worker (`/cocina`, en KV) |
+| Recetas con temporizador | Copiloto Cocina (`amenedorubn/cocina`, repo público) | `raw.githubusercontent.com/.../recetas/*.json`, con copia en el móvil |
+| El punto de partida de Tengo | Nota de Obsidian «Despensa habitual», bloque «Estado actual», o el último **Recuento** de la app | `/despensa` del Worker (solo lectura) |
+| Lo comprado, gastado, lo que se acaba, la lista | La app | `localStorage` y el Worker (`/cocina`, en KV) |
 
 ## Las subpestañas
 
-Arriba, fijas al bajar: **Semana**, **Comprar**, **Tengo** y **Recetas**; se pasa de una a otra
-tocándolas o deslizando a los lados (no desde los bordes, que son el «atrás» de Android). Cada una
-cabe en la pantalla o casi. Lo que toca ahora ya va en grande en HOY.
+Arriba, fijas: **Semana**, **Comprar**, **Tengo** y **Recetas**; se cambian tocándolas o deslizando a los lados.
 
-- **Semana** = las comidas por días, con la de ahora marcada. Un toque abre su paso a paso
-  (la receta, sus pasos o, si es un tupper, recalentar).
+- **Semana**: arriba, en grande, lo que toca ahora (o lo siguiente), la misma tarjeta que en HOY; si estás
+  cocinándolo, «Cocinando · paso 3 de 9» y «Seguir». Debajo, la semana por días: lo hecho y lo pasado en gris,
+  los avisos con campana y las compras con carro. Tocar una comida abre su paso a paso; una que ya pasó deja
+  verlo o decir «No la hice» (entonces no gasta nada).
+- **Comprar**: lo que piden las comidas que aún **no han empezado**, hasta el final del plan (máx. 7 días),
+  que no está en casa. Un alimento por fila, sumado si sale en varias comidas, con «Para: Shakshuka · jue».
+  Nunca: sal, aceite, especias, lo que el plan hace antes (los huevos cocidos de anoche, el tarro de avena) ni
+  lo que la receta dice que ya está en casa. «¿Te queda?» cuando no se sabe: «Me queda» quita la duda.
+- **Tengo**: la nota (o el recuento) y, por orden de tiempo, lo que ha pasado después: la compra de la nota,
+  lo apuntado en la app y **cada comida que ya empezó, que gasta lo suyo sola** (una vez: si al acabar el paso a
+  paso apuntas lo gastado, cuenta eso). Lo que tiene cantidad se resta; lo que se gasta por piezas sin saber
+  cuántas había (pan, jamón) pasa a «?»; «que quedan», «todas las» lo acaban.
+  - **Recuento**: dicta o pega todo lo que hay («Nevera: leche, 6 huevos… Congelador: …») y pasa a ser el
+    punto de partida. Lo de antes deja de contar.
+  - **Para Claude**: copia lo que hay con el formato del bloque «Estado actual», para pegárselo a la Claude que
+    planea las comidas.
+- **Recetas**: las de Copiloto Cocina, con «Tienes todo» o «Falta …».
 
-- **Tengo** = la nota + lo que ha pasado después en la app (`Cocina.casa`), por orden: la compra de
-  la nota cuya fecha ya pasó (está en casa), lo comprado (se suma a lo que había), lo gastado al
-  cocinar (se resta si va en lo mismo; sin cantidad se queda) y «Se acabó» (fuera). En «Todo», una
-  fila por zona; al tocarla, lo que hay dentro. Tocar algo: «Se acabó» o «Se acabó · a la lista».
-- **Comprar** = lo que falta para las comidas de los próximos 7 días y lo que apuntas tú: solo el
-  alimento y su cantidad (sumada si sale en dos comidas). Un apartado en MAYÚSCULAS que no es de
-  ingredientes («OJO») no cuenta, «ANTES DE EMPEZAR» son pasos y una frase («El pimentón va…») no es
-  un alimento. Marcarlo lo pasa a Tengo («En el carro», se puede desmarcar 12 h). La lista de
-  compra de la nota no sale: es historia.
+## El paso a paso
 
-La app **no escribe** en la nota (solo se toca con `upsert_knowledge` desde la app de Claude). Lo
-apuntado en la app va al Worker (`/cocina`): se junta por id, y lo desmarcado queda borrado en los
-dos sitios. Los cambios de antes del día de la nota dejan de contar solos (los de ese día, no).
+- Paso 0 **Antes de empezar**: qué sacar, qué cortar y cómo («1 boniato · pélalo, en cubos de 2 cm») y qué
+  tener a mano. Sale solo de los ingredientes: ninguna receta se queda sin decir que hay que cortar algo.
+- Arriba: paso X de N, %, lo que queda y «acabas 21:50»; la barra se toca para mirar un paso.
+- **Pasos** (todos, con su estado, para ir a cualquiera o mirarlo) e **Ingredientes** (todos, para marcar).
+- **Mirar otro paso** sin salir del tuyo: banner azul, sin voz ni relojes; «Volver» o «Seguir desde aquí».
+- Relojes que no se paran al cambiar de paso, varios a la vez, siempre a la vista. Empiezan con «Empezar»;
+  «5 min, agitar, 5 min más» es un reloj de 10 min que avisa a los 5.
+- Retoma donde lo dejaste (menos de 6 h) o «Empezar de 0». Pantalla encendida y voz.
+- Al acabar: lo gastado, para marcar, y «Apuntar lo gastado» o salir sin apuntar.
 
 ## Un evento de «Comidas»
 
-Título `Etiqueta · Plato` (p. ej. `Tupper · Albóndigas`). Descripción con apartados en MAYÚSCULAS:
+Cómo escribirlo para que salga bien: [RECETAS-CALENDARIO.md](RECETAS-CALENDARIO.md) (para pegárselo a Claude).
+Título `Etiqueta · Plato` o solo el plato. Un evento con 🛒 o que empieza por «Compra» es una compra; uno que
+empieza por «Saca…» o «Descongela…» es un aviso; «Comida fuera» y «Nada que preparar», fuera de casa.
 
-```
-3 raciones
-Receta: albondigas-rigatoni          (opcional: el id de Copiloto Cocina)
-INGREDIENTES:
-· 500 g carne picada mixta
-CÓMO SE HACE:
-1. ...
-TUPPER: destapados hasta que enfríen...
-```
+## En HOY
 
-Sin `Receta:`, se busca la receta por el título (todas las palabras del más corto en el otro). Un
-`Tupper`/sobras no abre la receta entera: se recalienta con sus pasos o con los de `reparto.recalentar`.
-Se limpian el HTML que mete Google y los emojis.
-
-## Modo paso a paso
-
-- Receta de Copiloto Cocina: su tiempo por paso, avisos por voz, checklist y «mientras tanto».
-- Comida del calendario: un paso por pantalla; si dice «10 min», su reloj (empieza al tocar Empezar).
-- Rutina del calendario «Claude» con horas (`22:10 · Ducha (10 min)`): desde la línea del día, «Paso a paso».
-- Pantalla encendida (`navigator.wakeLock`) y voz (`speechSynthesis`; en el APK, la nativa).
-- Al terminar una receta: «Apuntar lo gastado» (lo repetido se suma, lo «al gusto» no cuenta).
-
-## Escanear lo comprado
-
-Comprar o Tengo → «Escanear»: en Chrome, cámara de atrás con `BarcodeDetector`; en la app Android
-(2.21 o posterior), el escáner de Google Play Services (`Nativo.escanea`, su propia pantalla, sin
-permiso de cámara; el WebView no trae `BarcodeDetector`). Siempre se puede escribir el número. El
-código se busca en Open Food Facts (gratis, sin cuenta); si no lo conoce, se escribe qué es. Entra
-en Tengo como comprado, con su zona y lo de su etiqueta por 100 g.
-
-## En HOY, lo que toca por la hora
-
-Hoy, la tarjeta grande es lo que toca (`Cocina.queGrande`): el entreno a su hora y, cuando pasa
-(hecho, o 30 min después de su fin), cada comida a la suya hasta su fin (o 1 h después). Tocar un
-entreno en la línea del día manda sobre la hora. La comida en grande es la tarjeta del diseño C.
+La tarjeta grande es lo que toca por la hora (`Cocina.queGrande`): el entreno a su hora y, cuando pasa, cada
+comida a la suya. Es la misma tarjeta que arriba en Semana.
 
 ## Avisos del tupper y de la avena (app Android)
 
-`Cocina.avisosComida` saca de «Comidas» los de 48 h: un tupper que sale del congelador, la noche
-antes a las 21:30 (salvo que el calendario ya traiga su «Descongelar…»); un desayuno de avena en
-tarro, 45 min antes; y los eventos que ya son un aviso, a su hora. El APK los pone como
-notificación con AlarmManager (`AvisoReceiver`), con «Hecho» y «En 30 min», y los vuelve a poner
-al reiniciar el móvil. Necesita el APK 2.20 o posterior.
+`Cocina.avisosComida` saca de «Comidas» los de 48 h: un tupper que sale del congelador, la noche antes a las
+21:30 (salvo que el calendario ya traiga su «Descongelar…»); un desayuno de avena en tarro, 45 min antes; y los
+eventos que ya son un aviso, a su hora. El APK los pone como notificación (`AvisoReceiver`).
 
-## Diseño
+## Escanear lo comprado
 
-Tres diseños de «Ahora toca» (`localStorage` `copiloto.cocina.diseno`): **A** todo a la vista,
-**B** el paso que toca, **C** como las tarjetas de HOY (el elegido el 30/09, por defecto). Acento `--coc` (mandarina, como el calendario)
-con dos usos por pantalla; en el modo paso a paso, el color de la receta (`tema` de Copiloto Cocina).
+Comprar o Tengo → «Escanear»: en Chrome, `BarcodeDetector`; en la app Android, el escáner de Google Play
+Services (`Nativo.escanea`). El código se busca en Open Food Facts y entra en Tengo con su zona y su etiqueta.
 
-Capturas a 390 px: `node scripts/capturas-cocina.mjs [carpeta]` (datos de ejemplo del propio script;
-`FIXTURE=datos.json` para otros). No subas capturas con datos de verdad: el repo es público.
+## Capturas
 
-## Activar Mis alimentos (una vez)
+`node scripts/capturas-cocina.mjs [carpeta]` (datos de ejemplo del propio script; `FIXTURE=datos.json` para
+otros). Chrome va mudo: nada de voz ni pitidos. No subas capturas con datos de verdad: el repo es público.
 
-1. GitHub → Settings → Developer settings → **Fine-grained token**: solo el repo `mivault`,
-   permiso **Contents: Read-only**.
-2. Cloudflare → Workers → `copiloto-api` → Settings → Variables and Secrets → Secret
-   **`VAULT_TOKEN`** con ese token.
-3. `/salud` dice `VAULT_TOKEN: true`. Sin él, Cocina funciona igual y Mis alimentos explica qué falta.
+## Activar la nota de la despensa (una vez)
+
+1. GitHub → Settings → Developer settings → **Fine-grained token**: solo el repo `mivault`, **Contents: Read-only**.
+2. Cloudflare → Workers → `copiloto-api` → Settings → Variables and Secrets → Secret **`VAULT_TOKEN`**.
+3. `/salud` dice `VAULT_TOKEN: true`. Sin él, Tengo funciona con el Recuento.

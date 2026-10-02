@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.23.0] - 2026-10-02
+
+### Añadido
+
+- Cocina: Comprar solo cuenta las comidas que aún no han empezado, junta cada alimento (el pan una vez) y pregunta «¿te queda?» cuando no se sabe (Me queda); Tengo descuenta solo lo que ya has comido, con Recuento para decir todo lo que hay y «Para Claude» para copiárselo; Semana con la tarjeta de lo que toca arriba y la semana debajo (lo pasado en gris, «No la hice»); recetas del calendario bien leídas (nada se pierde, consejos que no son pasos, tiempos como «5 min, agitar, 5 min más»); paso a paso nuevo: «Antes de empezar» con lo que hay que cortar, ir a cualquier paso, mirar otro sin salir, relojes que siguen al cambiar de paso, listas de pasos e ingredientes y cuánto queda; Recetas ya no sale cortado
+
 ## [2.22.0] - 2026-09-30
 
 ### Añadido
@@ -520,6 +526,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.23.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.23.0
 [2.22.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.22.0
 [2.21.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.21.0
 [2.20.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.20.0
