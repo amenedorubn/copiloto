@@ -165,6 +165,22 @@ var NO_COMIDA = /\b(sarten|olla|cazo|pota|tupper(?:s)? vacio|film|papel|bolsas? 
 // lo que siempre hay: no se compra salvo que digas que se acabo
 var SIEMPRE = /^(sal|agua|aceit|aov|pimienta|hielo|especia|caf)\b/;
 
+/* ------------------------------ tuppers y platos hechos ------------------------------
+   "Tupper de albóndigas en salsa con pasta" y "... con arroz" son dos cosas: un plato se
+   conoce por todas sus palabras (sin cantidad, sin "tupper de", sin articulos ni plurales).   */
+function esPlato(x) {
+  if (!x) return false;
+  return /^\s*(?:\d+\s+)?tuppers?\b/i.test(x.txt || x.nombre || "") || !!(x.c && x.c.ud === "tupper");
+}
+var VACIAS_P = { de: 1, del: 1, en: 1, con: 1, la: 1, el: 1, los: 1, las: 1, y: 1, a: 1, al: 1, un: 1, una: 1 };
+function claveLarga(txt) {
+  var t = norm(String(txt || "").replace(/\s*→.*$/, "").replace(/\([^)]*\)/g, " "));
+  t = t.replace(/^\d+(?:[.,]\d+)?\s*/, "").replace(/^tuppers?\s*:?\s*(?:(?:del|de|con)\b)?\s*/, "");
+  var w = t.split(/[^a-z0-9ñ]+/).filter(function (x) { return x && !VACIAS_P[x] && !/^\d/.test(x); })
+    .map(function (x) { return x.length > 4 ? x.replace(/(es|s)$/, "") : x; });
+  return w.filter(function (x, i) { return w.indexOf(x) === i; }).sort().join(" ");
+}
+
 /* ------------------------------ ¿que comida es? ------------------------------ */
 function vivos(cambios) { return (cambios || []).filter(function (cb) { return cb && !cb.borrado; }); }
 function finDe(R) { return R.fin ? msDe(R.fecha, R.fin) : msDe(R.fecha, R.hora) + 60 * 60e3; }
@@ -205,11 +221,19 @@ function textoIng(x) { return typeof x === "string" ? x : (x && (x.txt || x.nomb
 function motor(D, cambios, comidas, opts) {
   var RC = Rc(), S = [], CB = vivos(cambios), now = opts.ahoraMs;
   var especias = {};
-  function busca(g, conNo) {
-    var mejor = null, pm = 0;
+  // entra = algo que llega a casa: un tupper solo se junta con otro igual (todo su nombre). Si no,
+  // es una comida que lo gasta: "Tupper del guiso" vale para "guiso de carne con patatas".
+  function busca(g, conNo, entraAlgo) {
+    var mejor = null, pm = 0, gp = esPlato(g), kg = gp ? claveLarga(g.txt || g.nombre) : null;
     S.forEach(function (s) {
       if (!conNo && s.estado === "no") return;
-      var p = s.g.clave && s.g.clave === g.clave ? 1.01 : RC.mismo(g, s.g);
+      var sp = s.tupper || esPlato(s.g), p;
+      if (gp || sp) {
+        var ks = claveLarga(s.txt), A = (kg || claveLarga(g.txt || g.nombre)).split(" "), B = ks.split(" ");
+        if (A.join(" ") === ks) p = 1.02;
+        else if (!entraAlgo && A.every(function (w) { return B.indexOf(w) >= 0; })) p = 0.6 + 0.3 * A.length / B.length;
+        else p = 0;
+      } else p = s.g.clave && s.g.clave === g.clave ? 1.01 : RC.mismo(g, s.g);
       if (s.estado === "no") p -= 0.001;
       if (p > pm) { pm = p; mejor = s; }
     });
@@ -228,7 +252,7 @@ function motor(D, cambios, comidas, opts) {
     txt = String(txt).replace(/\s*→.*$/, "").trim();
     var g = RC.ingrediente(txt.replace(/^tupper:\s*/i, "")); if (!g.base && !g.c) return null;
     if (NO_COMIDA.test(norm(txt))) return null;
-    var s = busca(g, true);
+    var s = busca(g, true, true);
     if (s) {
       if (s.estado === "no") {                  // vuelve a casa: con su nombre y su sitio
         var it = item(txt);
@@ -255,7 +279,13 @@ function motor(D, cambios, comidas, opts) {
   function basico(g) { return g.basico || especias[g.clave] || SIEMPRE.test(g.clave || ""); }
   // una comida gasta un ingrediente
   function gasta(g, cuando) {
-    if (basico(g) || g.hecho) return;
+    if (basico(g)) return;
+    if (esPlato(g)) {                          // "Tupper del guiso": se come uno
+      var t = busca(g);
+      if (t) { if (t.c && t.c.ud === "tupper" && t.c.n > 1) t.c = { n: t.c.n - 1, ud: "tupper" }; else fuera(t, isoDe(cuando)); }
+      return;
+    }
+    if (g.hecho) return;                       // los huevos cocidos de anoche: los hizo el plan
     var s = busca(g, true);
     if (!s || s.estado === "no") {
       if (g.acaba || g.deCasa) return;
@@ -460,7 +490,7 @@ function textoClaude(H, opts) {
   return L.join("\n").replace(/\n+$/, "") + "\n";
 }
 
-return { ZONAS: ZONAS6, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
+return { ZONAS: ZONAS6, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
   estadoComida: estadoComida, queToca: queToca, faltan: faltan, paraTxt: paraTxt, textoClaude: textoClaude,
   isoDe: isoDe, msDe: msDe, diaLargo: diaLargo, diaCorto: diaCorto };
 });

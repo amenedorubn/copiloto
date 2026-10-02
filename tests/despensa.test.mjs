@@ -199,3 +199,22 @@ test("mover algo a otra zona: se queda ahí, también si se acaba y vuelve", () 
   assert.equal(pl.zona, "Despensa dulce");
   assert.deepEqual(pl.c, { n: 6, ud: "ud" });
 });
+
+test("dos tuppers distintos no se juntan; comerte uno lo saca de casa", () => {
+  const o = en("2026-10-06T23:00"), t = (h) => new Date("2026-10-06T" + h).getTime();
+  const CB = [
+    { id: "1", t: t("10:00"), tipo: "compra", zona: "Congelador", items: ["tupper de albóndigas en salsa con pasta"] },
+    { id: "2", t: t("10:01"), tipo: "compra", zona: "Congelador", items: ["tupper de albóndigas en salsa con arroz"] },
+    { id: "3", t: t("10:02"), tipo: "compra", zona: "Congelador", items: ["tupper de albóndigas en salsa con arroz"] }
+  ];
+  let H = Dp.casa(D, CB, [], o);
+  const tup = (re) => H.todos.find((x) => re.test(x.nombre));
+  assert.deepEqual(tup(/con pasta/).c, { n: 1, ud: "tupper" });
+  assert.deepEqual(tup(/con arroz/).c, { n: 2, ud: "tupper" }, "los dos de arroz, juntos");
+  // el tupper de lentejas de la nota: la comida que se lo lleva lo gasta
+  H = Dp.casa(D, CB, COMIDAS, o);
+  assert.ok(H.todos.some((x) => /lentejas/i.test(x.nombre)), "el tupper de lentejas se come el 7/10: aún está");
+  H = Dp.casa(D, CB, COMIDAS, en("2026-10-07T15:00"));
+  assert.ok(!H.todos.some((x) => /lentejas/i.test(x.nombre)), "comido");
+  assert.ok(H.todos.some((x) => /con pasta/.test(x.nombre)) && H.todos.some((x) => /con arroz/.test(x.nombre)));
+});
