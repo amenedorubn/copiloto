@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.27.0] - 2026-10-03
+
+### Añadido
+
+- Rutas: importar un GPX en el móvil (solo IndexedDB, nunca en el repo) con distancia, desnivel y perfil, y elegirla como ruta activa; Entrenos: paso «punto de decisión» (sin respuesta en 15 s se elige «No», nunca «Sí») que arranca 4 rectas de 20 s por cadencia con techo de ritmo; rodaje por sensación sin avisos por ir más lento; decisión guardada con valor y hora; domingo 04/10: 12 km con la decisión en el km 9,8; arreglo: arrancar con km −1 en rutas de ida y vuelta rompía el canto del km
+
 ## [2.26.1] - 2026-10-03
 
 ### Corregido
@@ -556,6 +562,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.27.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.27.0
 [2.26.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.26.1
 [2.26.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.26.0
 [2.25.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.25.1

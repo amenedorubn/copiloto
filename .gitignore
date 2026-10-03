@@ -1,2 +1,4 @@
 copiloto-salud*.json
 node_modules/
+# GPX sueltos en la raiz: el inicio de una ruta suele estar cerca de casa y este repo es publico
+/*.gpx

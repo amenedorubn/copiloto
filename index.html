@@ -15,6 +15,7 @@
 <link id="lkIcon192" rel="icon" href="iconos/b1/icon-192.png?v=2.1.1" sizes="192x192">
 <link id="lkAppleTouch" rel="apple-touch-icon" href="iconos/b1/apple-touch-icon.png?v=2.1.1">
 <script src="nativo.js"></script>
+<script src="pasos.js"></script>
 <script>
 // tamano elegido en Ajustes (inicio, semana, fichas y hojas; GPS y cinta no): se aplica ya
 (function(){
@@ -640,6 +641,36 @@
   #rBar .rbZ{display:flex;gap:6px;margin-top:6px;font-size:11px;font-weight:700;color:var(--dim)}
   #rBar .rbZ span{flex:1;text-align:center;padding:3px 0;border-radius:6px;background:rgba(255,255,255,.06)}
   #rBar .rbZ span.on{background:#ffd166;color:#241a00}
+  /* v2.26 · punto de decision: dos botones grandes y separados, usables corriendo (un solo acento: el amarillo de las rectas) */
+  #decision{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;justify-content:center;pointer-events:none;
+    padding:0 10px calc(10px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
+  #decision[hidden]{display:none}
+  #decision .dcCaja{pointer-events:auto;width:100%;max-width:560px;background:#1b1f25;border:2px solid #ffd166;border-radius:28px;
+    padding:18px 16px 16px;box-shadow:0 -10px 36px rgba(0,0,0,.55)}
+  #decision .dcT{font-size:22px;font-weight:800;line-height:1.25;color:#eef1f5;text-wrap:balance}
+  #decision .dcS{font-size:15px;font-weight:500;line-height:1.4;color:#c4cad4;margin-top:6px;min-height:21px}
+  #decision .dcS.mal{color:#ffd166;font-weight:700}
+  #decision .dcBarra{height:8px;border-radius:4px;background:rgba(255,255,255,.16);margin:12px 0 18px;overflow:hidden}
+  #decision .dcBarra u{display:block;height:100%;width:100%;background:#ffd166;transition:width .25s linear}
+  #decision .dcBots{display:flex;flex-direction:column;gap:16px}
+  #decision button{flex:none;width:100%;min-height:72px;padding:12px 18px;border-radius:20px;display:flex;align-items:center;
+    justify-content:center;gap:12px;font-size:21px;font-weight:800;line-height:1.1;cursor:pointer;touch-action:manipulation}
+  #decision button svg{width:28px;height:28px;flex:0 0 auto;background:none;border-radius:0}
+  #decision button.si{background:#ffd166;color:#241a00;border:2px solid #ffd166}
+  #decision button.no{background:#2a3039;color:#eef1f5;border:2px solid #4a5361}
+  #decision button:focus-visible{outline:3px solid #eef1f5;outline-offset:3px}
+  #decision button:disabled{opacity:.5}
+  /* v2.26 · rutas importadas (solo en este movil) */
+  .rlNota{font-size:12px;font-weight:500;color:var(--mu);line-height:1.45;margin:2px 2px 0}
+  .rlBox{margin:-4px 0 10px;padding:12px 14px 6px;border-radius:0 0 18px 18px;background:var(--sf2);border:1px solid var(--ln);border-top:0}
+  .rlBox .rlPerfil{display:block;width:100%;height:72px;color:var(--calle)}
+  .rlBox .rlEje{display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--mu);margin-top:2px}
+  .rlBox .rlKm{display:flex;gap:6px;overflow-x:auto;padding:8px 0 4px;margin:0;list-style:none;scrollbar-width:none}
+  .rlBox .rlKm li{flex:0 0 auto;min-width:54px;padding:6px 8px;border-radius:10px;background:#111317;font-size:12px;font-weight:500;color:var(--mu);text-align:center;line-height:1.35}
+  .rlBox .rlKm li b{display:block;font-size:13px;font-weight:700;color:var(--fg)}
+  .rlBox .rlAv{font-size:13px;font-weight:700;color:#ffd2a0;margin:6px 0}
+  .rlBox .rlAcc{display:flex;gap:10px;margin:6px 0 8px}
+  .rlBox .rlAcc button{flex:1;min-height:44px;border-radius:14px;border:1px solid var(--ln);background:#111317;color:var(--fg);font-size:14px;font-weight:700}
   .gEst{display:flex;gap:8px;align-items:baseline;font-size:11px;font-weight:800;letter-spacing:.1em;
     text-transform:uppercase;color:#8e939b;white-space:nowrap;overflow:hidden}
   #appGPS #deltaLbl{font-size:11px;letter-spacing:.1em;color:#8e939b}
@@ -1089,6 +1120,18 @@
   <div id="gps">GPS sin activar</div>
   <button id="gpsbtn">Activar GPS y dar permiso</button>
 </section>
+<!-- v2.26 · punto de decision: pregunta con dos botones grandes y cuenta atras; sin respuesta se elige la opcion segura -->
+<div id="decision" hidden>
+  <div class="dcCaja" role="alertdialog" aria-labelledby="dcT" aria-describedby="dcS">
+    <div class="dcT" id="dcT" aria-live="assertive">–</div>
+    <div class="dcS" id="dcS">–</div>
+    <div class="dcBarra" aria-hidden="true"><u id="dcBar"></u></div>
+    <div class="dcBots">
+      <button type="button" class="si" id="dcSi"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg><span id="dcSiT">Sí</span></button>
+      <button type="button" class="no" id="dcNo"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg><span id="dcNoT">No</span></button>
+    </div>
+  </div>
+</div>
 <audio id="tonoOk" preload="auto"></audio>
 <audio id="tonoMal" preload="auto"></audio>
 </div>
@@ -1105,7 +1148,7 @@
 "use strict";
 // La version de la app. scripts/bump.mjs la cambia junto con version.json y la
 // cache de sw.js; el Action "Versión coherente" falla si no coinciden.
-var APP_VERSION = "2.26.1";
+var APP_VERSION = "2.27.0";
 var APP_FECHA = "2026-10-03";
 var ROUTE=[[40.47277,-3.63276],[40.47315,-3.6332],[40.47321,-3.63329],[40.47375,-3.63394],[40.47429,-3.63463],[40.4748,-3.63538],[40.47532,-3.63612],[40.47585,-3.63687],[40.47625,-3.63742],[40.47632,-3.63767],[40.47638,-3.63795],[40.47641,-3.63815],[40.4764,-3.63828],[40.47636,-3.6384],[40.47628,-3.63849],[40.4762,-3.63859],[40.47612,-3.63871],[40.47607,-3.6388],[40.47612,-3.63888],[40.4763,-3.63879],[40.47644,-3.6387],[40.47655,-3.63871],[40.47665,-3.63882],[40.47684,-3.6391],[40.47706,-3.6394],[40.47727,-3.6397],[40.47748,-3.64],[40.4777,-3.6403],[40.4778,-3.64051],[40.47791,-3.64072],[40.478,-3.641],[40.4781,-3.64131],[40.47819,-3.64162],[40.47822,-3.64194],[40.47828,-3.64229],[40.47845,-3.64267],[40.47864,-3.64305],[40.47884,-3.64343],[40.47903,-3.64381],[40.47922,-3.64419],[40.47927,-3.64439],[40.47932,-3.64463],[40.47932,-3.64484],[40.4794,-3.64508],[40.47954,-3.64537],[40.47984,-3.64593],[40.48002,-3.64635],[40.48017,-3.64671],[40.48031,-3.64707],[40.48042,-3.64738],[40.4805,-3.64771],[40.48058,-3.64805],[40.48061,-3.64821],[40.4806,-3.64836],[40.48055,-3.64852],[40.4805,-3.6486],[40.48049,-3.64871],[40.48052,-3.64885],[40.48057,-3.64895],[40.4806,-3.64914],[40.48059,-3.64925],[40.48054,-3.64932],[40.48049,-3.6494],[40.48042,-3.64945],[40.48034,-3.6496],[40.4804,-3.64973],[40.48046,-3.64981],[40.48043,-3.64993],[40.48044,-3.65002],[40.48056,-3.65012],[40.48064,-3.65009],[40.48071,-3.64997],[40.48071,-3.64983],[40.4809,-3.64975],[40.48107,-3.64965],[40.48123,-3.64957],[40.48139,-3.64956],[40.48154,-3.64953],[40.48165,-3.64953],[40.48178,-3.64958],[40.48192,-3.64949],[40.48207,-3.64939],[40.48222,-3.64928],[40.48236,-3.64917],[40.4825,-3.64906],[40.48265,-3.64894],[40.48279,-3.64883],[40.48294,-3.64872],[40.48308,-3.64861],[40.48323,-3.64847],[40.48338,-3.64833],[40.48357,-3.64816],[40.48379,-3.64798],[40.484,-3.6478],[40.48422,-3.64762],[40.48444,-3.64744],[40.48466,-3.64726],[40.48488,-3.64708],[40.48509,-3.64691],[40.48518,-3.64682],[40.4852,-3.6467],[40.48524,-3.64656],[40.48531,-3.64642],[40.48536,-3.64629],[40.48537,-3.64614],[40.48523,-3.64573],[40.48511,-3.64535],[40.485,-3.64496],[40.48488,-3.64458],[40.48477,-3.64419],[40.48465,-3.64381],[40.48453,-3.64342],[40.48442,-3.64303],[40.48437,-3.64285],[40.48434,-3.6427],[40.48426,-3.64257],[40.48422,-3.64239],[40.48425,-3.64219],[40.48433,-3.64203],[40.48444,-3.64191],[40.48454,-3.6418],[40.48456,-3.64163],[40.48483,-3.64169],[40.48485,-3.64186],[40.48494,-3.64201],[40.48501,-3.64217],[40.4852,-3.64225],[40.48544,-3.64218],[40.48567,-3.64244],[40.48694,-3.64219],[40.48811,-3.64217],[40.48903,-3.64225],[40.48927,-3.64226],[40.48935,-3.64234],[40.48944,-3.64247],[40.48951,-3.64258],[40.48956,-3.64271],[40.48976,-3.64277],[40.4901,-3.64246],[40.49049,-3.64252],[40.49152,-3.64284],[40.49217,-3.64312],[40.4925,-3.64326],[40.49279,-3.64328],[40.49307,-3.64323],[40.49338,-3.64302],[40.49357,-3.64284],[40.4942,-3.64161],[40.49456,-3.64082],[40.49539,-3.63928],[40.49624,-3.63819],[40.49674,-3.63765],[40.4971,-3.63734],[40.4975,-3.63703],[40.49771,-3.63677],[40.49792,-3.63643],[40.49804,-3.63607],[40.49809,-3.63571],[40.49808,-3.63518],[40.49802,-3.63474],[40.49775,-3.63395],[40.49756,-3.63347],[40.49731,-3.63278],[40.49717,-3.63209],[40.4971,-3.6315],[40.49703,-3.6308],[40.49704,-3.63018],[40.49709,-3.62945],[40.49719,-3.62875],[40.49733,-3.62817],[40.49752,-3.62761],[40.49756,-3.62739],[40.49778,-3.62721],[40.498,-3.62705],[40.49817,-3.62708],[40.49823,-3.62685],[40.49799,-3.62672],[40.49787,-3.62639],[40.4978,-3.62625],[40.49784,-3.62567],[40.49791,-3.6251],[40.49794,-3.62436],[40.49799,-3.62421],[40.49811,-3.62402],[40.4981,-3.62381],[40.49805,-3.62364],[40.49794,-3.62348],[40.49786,-3.62329],[40.49786,-3.62263],[40.49784,-3.62203],[40.49785,-3.62133],[40.49791,-3.6201],[40.49806,-3.61873],[40.49844,-3.61677],[40.49903,-3.61471],[40.50067,-3.61024],[40.50093,-3.60963],[40.50096,-3.60882],[40.50103,-3.60855],[40.50098,-3.60833],[40.50139,-3.60761],[40.50143,-3.60742],[40.50142,-3.6072],[40.50099,-3.60558],[40.50092,-3.60505],[40.50076,-3.60462],[40.50071,-3.60446],[40.50055,-3.60436],[40.50042,-3.60433],[40.50029,-3.60447],[40.5002,-3.60454],[40.49906,-3.60432],[40.49841,-3.60428],[40.49745,-3.60444],[40.49654,-3.60476],[40.49557,-3.60507],[40.49522,-3.6051],[40.49511,-3.60495],[40.49498,-3.60487],[40.49488,-3.60489],[40.49476,-3.605],[40.49469,-3.60508],[40.49405,-3.60503],[40.49312,-3.60467],[40.49236,-3.60436],[40.49162,-3.60421],[40.4914,-3.6039],[40.49117,-3.60388],[40.49104,-3.60408],[40.49095,-3.60422],[40.49034,-3.60431],[40.48978,-3.60448],[40.48899,-3.60479],[40.48812,-3.60502],[40.48785,-3.60499],[40.48771,-3.60484],[40.48752,-3.60483],[40.48733,-3.60503],[40.48659,-3.60491],[40.48519,-3.60435],[40.48493,-3.60424],[40.48396,-3.60412],[40.4832,-3.60421],[40.48225,-3.60447],[40.48166,-3.6048],[40.48103,-3.60529],[40.48086,-3.60546],[40.48071,-3.60545],[40.48062,-3.60546],[40.48055,-3.60549],[40.48048,-3.60554],[40.48043,-3.60562],[40.48037,-3.60565],[40.48029,-3.60565],[40.48022,-3.60558],[40.48016,-3.60549],[40.48012,-3.60541],[40.48006,-3.60521],[40.48002,-3.60512],[40.4799,-3.60499],[40.47978,-3.60492],[40.4796,-3.60488],[40.47949,-3.60489],[40.47939,-3.60492],[40.47916,-3.60495],[40.4787,-3.60492],[40.47859,-3.6049],[40.47822,-3.60481],[40.47808,-3.60475],[40.47787,-3.60461],[40.47774,-3.60452],[40.4776,-3.60437],[40.47755,-3.6043],[40.47744,-3.6041],[40.47717,-3.60337],[40.47704,-3.60309],[40.47693,-3.60295],[40.47676,-3.60279],[40.47657,-3.60268],[40.47631,-3.60259],[40.47619,-3.60257],[40.47585,-3.60257],[40.47539,-3.60263],[40.47515,-3.60263],[40.47473,-3.60262],[40.47431,-3.60266],[40.47417,-3.60267],[40.47382,-3.60265],[40.47305,-3.60261],[40.47284,-3.60262],[40.47274,-3.60266],[40.47262,-3.60271],[40.47248,-3.60281],[40.47233,-3.60292],[40.47221,-3.60304],[40.47211,-3.60317],[40.47199,-3.60336],[40.47187,-3.6037],[40.47183,-3.60389],[40.4718,-3.60415],[40.4718,-3.60432],[40.47181,-3.60445],[40.47183,-3.60467],[40.47189,-3.60498],[40.47202,-3.60559],[40.47219,-3.60656],[40.47231,-3.60757],[40.47233,-3.60845],[40.47233,-3.6098],[40.47235,-3.61005],[40.47239,-3.61024],[40.47248,-3.61059],[40.4726,-3.61098],[40.47276,-3.61141],[40.47284,-3.61152],[40.47299,-3.61165],[40.47305,-3.61177],[40.47311,-3.61209],[40.47302,-3.61216],[40.47297,-3.61223],[40.4729,-3.61229],[40.47276,-3.61234],[40.47268,-3.6124],[40.47261,-3.61251],[40.47253,-3.61244],[40.47263,-3.61228],[40.47254,-3.61217],[40.47246,-3.61201],[40.47237,-3.61195],[40.47221,-3.61198],[40.47206,-3.61204],[40.47187,-3.61216],[40.47173,-3.61238],[40.47155,-3.61267],[40.47146,-3.61296],[40.4715,-3.61318],[40.47149,-3.61341],[40.47139,-3.61357],[40.47122,-3.61372],[40.471,-3.61379],[40.4709,-3.61359],[40.47081,-3.61311],[40.47056,-3.61287],[40.47052,-3.61251],[40.46551,-3.61134],[40.46519,-3.61141],[40.46495,-3.61151],[40.46427,-3.61208],[40.46414,-3.6122],[40.46397,-3.61226],[40.46398,-3.61191],[40.46409,-3.61182],[40.46396,-3.61027],[40.46422,-3.60907],[40.46439,-3.60907],[40.46466,-3.6088],[40.46491,-3.60853],[40.46513,-3.60824],[40.4653,-3.60798],[40.46556,-3.60752],[40.46573,-3.60713],[40.46584,-3.60672],[40.46587,-3.60649],[40.46578,-3.60637],[40.46586,-3.606],[40.46596,-3.60549],[40.46601,-3.60513],[40.46602,-3.60481],[40.46602,-3.60447],[40.466,-3.60412],[40.46596,-3.60381],[40.4659,-3.60351],[40.46583,-3.60317],[40.46569,-3.60269],[40.46546,-3.60213],[40.46533,-3.60186],[40.46523,-3.60176],[40.46507,-3.60148],[40.46473,-3.60103],[40.46416,-3.60079],[40.46408,-3.6006],[40.46406,-3.60073],[40.46398,-3.60075],[40.46387,-3.6013],[40.46378,-3.60178],[40.46372,-3.60217],[40.46363,-3.60225],[40.46352,-3.6023],[40.4634,-3.60233],[40.46324,-3.60239],[40.46313,-3.60252],[40.46289,-3.60257],[40.46275,-3.60257],[40.46265,-3.6026],[40.46254,-3.60265],[40.46235,-3.6035],[40.46222,-3.60397],[40.46219,-3.60418],[40.46222,-3.60444],[40.46228,-3.60458],[40.46237,-3.60463],[40.46244,-3.60487],[40.46251,-3.60494],[40.46256,-3.60511],[40.46189,-3.60839],[40.46164,-3.60966],[40.46116,-3.60963],[40.46112,-3.60984],[40.46104,-3.61005],[40.46095,-3.61052],[40.46091,-3.61094],[40.46086,-3.61104],[40.46077,-3.61147],[40.46078,-3.61164],[40.46057,-3.61268],[40.4611,-3.61287],[40.46093,-3.61361],[40.46108,-3.61367],[40.46139,-3.61391],[40.46145,-3.61397],[40.46158,-3.61431],[40.46155,-3.61439],[40.46152,-3.61445],[40.46145,-3.61452],[40.4609,-3.61497],[40.46096,-3.61511],[40.46089,-3.61523],[40.4609,-3.61542],[40.4609,-3.61557],[40.46088,-3.61567],[40.46085,-3.6158],[40.46079,-3.6159],[40.4608,-3.61604],[40.46076,-3.61613],[40.4607,-3.61624],[40.46241,-3.61902],[40.46282,-3.61968],[40.46288,-3.61979],[40.46289,-3.62],[40.46298,-3.62022],[40.46301,-3.62035],[40.46301,-3.62049],[40.46291,-3.62181],[40.46284,-3.62272],[40.46281,-3.62283],[40.46275,-3.62287],[40.46269,-3.62294],[40.4626,-3.62308],[40.46249,-3.62326],[40.46242,-3.62345],[40.46238,-3.6236],[40.46233,-3.62374],[40.46227,-3.62394],[40.46235,-3.62399],[40.46241,-3.62419],[40.46247,-3.62447],[40.46285,-3.62448],[40.46344,-3.62483],[40.4636,-3.62498],[40.46367,-3.62514],[40.46488,-3.62598],[40.46613,-3.62686],[40.46682,-3.62748],[40.46747,-3.6278],[40.46808,-3.62844],[40.46826,-3.62888],[40.46838,-3.62942],[40.46845,-3.62946],[40.46861,-3.6294],[40.46882,-3.62932],[40.46926,-3.6295],[40.46939,-3.62959],[40.4695,-3.62962],[40.46956,-3.62979],[40.46964,-3.63003],[40.46975,-3.63016],[40.47019,-3.63053],[40.47036,-3.63064]], CUM=[0,56,67,148,231,316,402,488,553,577,602,618,630,641,653,665,678,688,697,719,735,747,762,794,829,864,899,934,954,976,1002,1030,1058,1086,1116,1153,1192,1231,1270,1308,1326,1346,1365,1386,1415,1473,1514,1549,1583,1612,1641,1671,1685,1698,1712,1721,1731,1743,1753,1770,1779,1787,1796,1805,1820,1834,1843,1854,1862,1879,1888,1901,1914,1936,1957,1975,1994,2011,2023,2038,2055,2074,2092,2111,2130,2149,2167,2186,2205,2225,2245,2271,2299,2328,2357,2385,2414,2442,2470,2482,2492,2505,2520,2532,2544,2583,2618,2653,2688,2723,2758,2793,2828,2844,2858,2872,2887,2905,2921,2937,2951,2966,2996,3011,3027,3043,3065,3092,3126,3269,3399,3502,3528,3539,3554,3566,3578,3601,3647,3690,3808,3885,3923,3955,3987,4025,4051,4177,4255,4414,4546,4619,4666,4717,4750,4787,4820,4851,4896,4934,5007,5052,5117,5177,5228,5287,5340,5402,5462,5513,5565,5585,5613,5641,5661,5681,5710,5741,5755,5804,5853,5915,5929,5951,5968,5983,6002,6020,6076,6126,6186,6290,6407,6578,6765,7184,7243,7312,7336,7356,7431,7448,7466,7611,7658,7698,7712,7732,7746,7765,7777,7905,7977,8085,8190,8300,8340,8357,8373,8384,8401,8411,8482,8590,8678,8762,8798,8824,8846,8862,8930,8993,9086,9184,9214,9235,9255,9282,9366,9528,9558,9667,9751,9860,9931,10012,10036,10053,10063,10071,10080,10089,10097,10109,10118,10129,10137,10155,10164,10181,10195,10216,10229,10239,10267,10318,10331,10372,10388,10414,10430,10450,10459,10480,10548,10577,10593,10616,10640,10669,10683,10720,10772,10798,10845,10892,10908,10947,11032,11055,11068,11081,11099,11118,11135,11151,11171,11203,11220,11242,11256,11268,11286,11313,11367,11451,11538,11612,11726,11747,11764,11795,11831,11871,11884,11905,11917,11951,11965,11973,11982,11999,12008,12021,12031,12049,12063,12079,12090,12107,12125,12149,12173,12204,12231,12251,12270,12288,12310,12336,12356,12397,12432,12463,13028,13065,13092,13182,13200,13220,13249,13264,13395,13501,13520,13557,13594,13628,13658,13706,13744,13781,13800,13815,13848,13893,13924,13951,13980,14010,14036,14062,14092,14135,14189,14216,14230,14260,14313,14380,14398,14409,14418,14466,14509,14543,14556,14568,14582,14601,14617,14645,14660,14671,14684,14759,14801,14819,14841,14855,14866,14888,14897,14913,15200,15311,15364,15382,15405,15446,15487,15497,15535,15549,15640,15701,15766,15783,15823,15831,15863,15875,15883,15894,15965,15978,15991,16008,16021,16030,16041,16051,16064,16075,16088,16391,16463,16474,16492,16513,16525,16537,16648,16726,16736,16744,16753,16770,16789,16807,16820,16833,16852,16861,16880,16904,16947,17018,17040,17056,17208,17366,17459,17536,17623,17666,17713,17722,17740,17766,17816,17833,17845,17862,17884,17900,17958,17980], TOTAL=17980;
 
@@ -1495,7 +1538,7 @@ var LSDIARIO="copiloto.diario.v1", DIARIO=null;
 var DIARIO_Q={ espera:"…", voz:"🔊 voz", audio:"🔊 audio", muda:"✖ SIN SONIDO",
                pitido:"✖ pitido no suena", fondo:"⏻ pantalla apagada o app en segundo plano",
                vuelve:"↩ vuelve a la app", gps:"✖ GPS", inicio:"▶", retomo:"↻ retomo",
-               cortada:"✂ cortada por otra frase" };
+               cortada:"✂ cortada por otra frase", decision:"decisión", rectas:"rectas" };
 function guardaDiario(){ try{ localStorage.setItem(LSDIARIO,JSON.stringify(DIARIO)); }catch(e){} }
 function empiezaDiario(tipo){
   DIARIO={ tipo:tipo, version:APP_VERSION, t:Date.now(), L:[] };
@@ -1649,6 +1692,12 @@ function terreno(d){
   if(g<-1.2) return " Viene bajada, no frenes.";
   return "";
 }
+// rodaje "por sensacion" (v2.26): ir mas lento que la banda no se avisa nunca; ir demasiado rapido, si
+function sensacionEn(d){ var g=EXTRA ? segEn(d) : null; return !!(g && g.sensacion); }
+function juicioEn(d,r,lo,hi){
+  var j=juicio(r,lo,hi);
+  return sensacionEn(d) && /lento|aprieta/i.test(j) ? "" : j;
+}
 function juicio(r,lo,hi){
   if(!isFinite(r)||r<=0) return "";
   if(r<lo-10) return "Demasiado rápido, frena.";
@@ -1693,7 +1742,7 @@ function cuentaCuesta(L,dif){ return (L>=CUESTA_M && dif>=CUESTA_S) || (L>=CUEST
              el ritmo es el del plan y NUNCA mas rapido ("sin aceleron en la
              bajada"). El km puede salir algo mas lento que el plan: es lo
              correcto en un dia de recuperar.                                  */
-var MODO_TERRENO="reparte";
+var MODO_TERRENO="reparte";   // reparte | esfuerzo | plano (v2.26: rodaje por sensacion, sin tramos de cuesta)
 function factorCuesta(g){
   var f = g>=0 ? 1+0.030*g+0.0005*g*g : 1-0.018*(-g)+0.0009*g*g;
   return Math.max(0.88, Math.min(1.6, f));
@@ -1712,7 +1761,8 @@ function preparaTerreno(llanos){
     g=Math.max(-25,Math.min(25,g));
     GRAD.push(g);
     // en recuperacion solo frenan las subidas de verdad; llano y bajada, al ritmo del plan
-    F.push(MODO_TERRENO==="esfuerzo" ? (g>=UMBRAL_CUESTA ? Math.min(1.15,factorCuesta(g)) : 1)
+    F.push(MODO_TERRENO==="plano" ? 1                     // por sensacion: el mismo objetivo en cuesta y en llano
+         : MODO_TERRENO==="esfuerzo" ? (g>=UMBRAL_CUESTA ? Math.min(1.15,factorCuesta(g)) : 1)
                                      : factorCuesta(g));
   }
   TERRENO=usable;
@@ -1943,6 +1993,10 @@ var resumenVisto=false, tAntes=null;
    fases: espera -> ir (trote hasta la recta) -> cuenta -> recta -> vuelta -> ... -> fin
    Todo por voz: no hay que tocar el movil.                                   */
 var RECT=null, ULTLL=null, RBUF=[];
+/* v2.26 · pasos de entreno (pasos.js): el punto de decision y sus rectas. PASOS es el motor
+   de pasos del entreno cargado (null si el plan no lleva); CAD mide la cadencia con el
+   acelerometro; ultFix es la hora del ultimo fix de GPS bueno (para saber si se ha perdido). */
+var PASOS=null, CAD=null, METRO=null, ultFix=0;
 /* Ritmos dentro de cada recta (progresivas: de suave a rapido, sin esprintar).
    Tres trozos por recta; en progresivos por tiempo, lo mismo en segundos.   */
 var ZR=[ { hasta:0.3, nom:"suave",   voz:"",                         ritmo:330 },   // 5'30"
@@ -2087,6 +2141,7 @@ function reiniciaExtra(){
   }
   hechos={}; opcion=null; opcionEn=null; marcas={}; HIST=[]; VEL=[]; lentoDesde=null;
   resumenVisto=false; tAntes=null; tramoClave=null; tramoIni=null;
+  if(PASOS) PASOS.reinicia();
 }
 // Velocidad media que da el GPS en los ultimos "ms" (s/km). El movil la mide
 // por efecto Doppler: no depende de donde caiga cada punto, asi que no baila
@@ -2196,6 +2251,7 @@ function muestraResumen(){
   EXTRA.resumen.forEach(function(r){
     var t0=r.desde===0?0:marcas[r.desde], t1=marcas[r.hasta];
     var seg=(t0!==undefined && t1!==undefined) ? t1-t0 : null, sub=r.sub||"";
+    if(r.decision && PASOS){ var dr=PASOS.resumenDecision(r.decision); if(dr) sub=dr; }   // lo que elegiste y a que hora
     if(r.opcional) sub = opcion==="suave"
       ? "Pasaste a suave en el km "+(opcionEn/1000).toFixed(2).replace(".",",")
       : (seg===null ? "Sin completar" : "Hecho a ritmo de bloque");
@@ -2228,6 +2284,7 @@ function pintaYo(){                       // mi punto, que sobrevive a redibujar
 // ese es mi km 3,2 (ritmo, pulsaciones, avisos y reloj), no el km 0.
 function arranca(s){
   reiniciaExtra();
+  if(!(s>0)) s=0;                     // en una ruta que acaba donde empieza, un fix con ruido puede dar -2 m: eso rompia el canto del km
   sIni=s; dist=s;
   RASTRO=[]; noCuadra=0;              // lo andado hasta la ruta no cuenta para saber por cual voy
   corrido=0; anclaCorr=null;
@@ -2270,6 +2327,7 @@ function onPos(pos){
   var p=[pos.coords.latitude,pos.coords.longitude];
   var ahora=Date.now();
   var vel=pos.coords.speed;
+  if(acc<=150) ultFix=ahora;
   if(corriendo && !pausado && acc<=40 && vel!==null && vel!==undefined && isFinite(vel) && vel>=0 && vel<12){
     VEL.push([ahora,vel]); while(VEL.length && ahora-VEL[0][0]>60000) VEL.shift();
   }
@@ -2488,6 +2546,7 @@ function pintar(){
     var am=Math.round(Math.abs(mt)/5)*5, col, txt;
     if(am<10){ col="var(--ok)"; txt="Dentro del plan"; }
     else if(mt>0){ col=am<=80?"var(--warn)":"var(--bad)"; txt=am+" m por delante"+(am>80?" · frena":""); }
+    else if(sensacionEn(dist-1)){ col="var(--dim)"; txt="Por sensación"; }   // rodaje suave: ir mas lento no es un fallo
     else { col=am<=80?"var(--warn)":"var(--bad)"; txt=am+" m por detrás"+(am>80?" · aprieta":""); }
     vd.textContent=txt; vd.style.color=col;
     $("barraIn").style.background=col;
@@ -2512,25 +2571,30 @@ function pintar(){
   }
   // avisos
   if(corriendo&&!pausado){
+    if(PASOS) PASOS.tick();                       // punto de decision y rectas (v2.26)
     var kmAct=Math.floor(dist/1000);
     if(kmAct>kmHecho&&kmAct<=PLAN.length){
       var parcial=t-tKm; tKm=t; tMed=t; medHecho=kmAct*2; dKm=0;
       var ult=PLAN.length-1;
-      var ant=PLAN[Math.min(ult,kmAct-1)], sig=kmAct<=ult ? PLAN[kmAct] : null;
-      var dd=dl===null?0:dl, bien=Math.abs(dd)<=20;
+      var ant=PLAN[Math.max(0,Math.min(ult,kmAct-1))], sig=kmAct<=ult ? PLAN[kmAct] : null;
+      var sens=sensacionEn(dist-1);                // rodaje por sensacion: nada de avisos por ir mas lento
+      var dd=dl===null?0:dl, bien=sens ? dd>=-20 : Math.abs(dd)<=20;
       var mk = mt===null ? 0 : Math.round(mt/10)*10;
       var ver = Math.abs(mk)<10 ? "Dentro del plan."
               : (mk>0 ? mk+" metros por delante." : (-mk)+" metros por detrás.");
+      if(sens && mk<0) ver="";
       var bk=bandaTramo((kmAct-1)*1000, kmAct*1000);
       var romaPre = (sig && ant[3]!=="r" && sig[3]==="r")
                   ? (rutaCargada ? "Empieza el bloque. " : "Empieza el ritmo de Roma. ") : "";
       var sigue = !sig ? (RECT ? " Rodaje hecho. "+introRectas() : " Plan completado. Buen trabajo.")
                 : (hayTerreno() ? " "+ordenDesde(dist,true) : " Ahora "+dicePace(sig[2])+"."+terreno(dist));
+      var jz1=juicioEn(dist-1,parcial,bk.lo,bk.hi);
       var frase=romaPre+"Kilómetro "+kmAct+", "+dicePace(parcial)+". "+ver+" "+
-                juicio(parcial,bk.lo,bk.hi)+sigue;
-      if(EXTRA) frase=fraseKmExtra(kmAct,parcial,ver,juicio(parcial,bk.lo,bk.hi),sigue,!sig);
+                jz1+sigue;
+      if(EXTRA) frase=fraseKmExtra(kmAct,parcial,ver,jz1,sigue,!sig);
       kmHecho=kmAct;
-      diferido(function(){ aviso(frase,bien); },6000);  // deja hablar antes a Huawei Health
+      // mientras hay rectas en marcha el km no se canta: la voz es de la cuenta atras
+      diferido(function(){ if(PASOS && PASOS.ocupado() && sig) return; aviso(frase,bien); },6000);  // deja hablar antes a Huawei Health
     }
     // mitad de kilometro: chequeo corto
     var mitad=Math.floor(dist/500);
@@ -2538,13 +2602,13 @@ function pintar(){
       var p500=(t-tMed)*2; tMed=t; medHecho=mitad;
       // se juzga contra lo que tocaba en ESOS 500 m (con sus cuestas), no contra el km entero
       var b5=bandaTramo(mitad*500-500,mitad*500);
-      var jz=juicio(p500,b5.lo,b5.hi);
-      var ok2=jz.indexOf("Perfecto")===0;
+      var sens5=sensacionEn(dist-1), jz=juicioEn(dist-1,p500,b5.lo,b5.hi);
+      var ok2=sens5 ? !/rápido|frena/i.test(jz) : jz.indexOf("Perfecto")===0;
       var f2="Medio kilómetro a "+dicePace(p500)+". "+jz+
              (hayTerreno() ? (proximoCambio(dist,250) ? " "+ordenDesde(dist,false) : "") : terreno(dist));
-      diferido(function(){ aviso(f2,ok2); },1500);
+      diferido(function(){ if(PASOS && PASOS.ocupado()) return; aviso(f2,ok2); },1500);
     }
-    avisoTerreno(dist);
+    if(!(PASOS && PASOS.ocupado())) avisoTerreno(dist);
     miraRectas(t);
     miraAvisos();
     miraOpcional();
@@ -2554,6 +2618,7 @@ function pintar(){
     }
   }
   pintaRectas(t);
+  pintaPasos(t);
   // al completar el plan, el resumen sale solo (sin tocar nada)
   if(EXTRA && !resumenVisto && marcas[EXTRA.fin]!==undefined){ resumenVisto=true; guardaCalle(); muestraResumen(); }
   $("verRes").style.display = (EXTRA && marcas[EXTRA.resumen[0].desde]!==undefined &&
@@ -2759,10 +2824,13 @@ $("ajustar").addEventListener("click",function(){
   else if(tNow>banda.hi) ajusteSeg+=tNow-banda.hi;
   pintar();
 });
+var pausaIni=0;
 bPau.addEventListener("click",function(){
   if(!corriendo)return;
-  if(pausado){ t0=Date.now()-pausaEn; pausado=false; ponPausa(false); pantalla(); HIST=[]; VEL=[]; }
-  else { pausaEn=Date.now()-t0; pausado=true; ponPausa(true);
+  if(pausado){ t0=Date.now()-pausaEn; pausado=false; ponPausa(false); pantalla(); HIST=[]; VEL=[];
+               if(PASOS){ PASOS.desplaza(Date.now()-pausaIni);                 // la pausa no gasta ni la pregunta ni las rectas
+                          var vp=PASOS.vista(); if(vp && vp.fase==="trabajo") metronomo(true,173); } }
+  else { pausaEn=Date.now()-t0; pausado=true; ponPausa(true); pausaIni=Date.now(); metronomo(false);
          try{if(wakeLock)wakeLock.release();}catch(e){} }
   candado();
 });
@@ -2860,11 +2928,156 @@ function cargaRuta(pts, plan, fc, ele){
   dibujaMapa(0); escalar(); pintar();
   return true;
 }
+/* ============== v2.26 · pasos de entreno: punto de decision y rectas ==============
+   La logica vive en pasos.js (probada aparte). Aqui solo se le da al motor lo que
+   necesita (reloj, km, voz, ritmo, cadencia) y se pinta lo que devuelve. */
+var LSDEC="copiloto.decisiones.v1";
+function ritmoHist(ms){                    // s/km de los ultimos ms con la distancia de la ruta (movil sin velocidad Doppler)
+  if(HIST.length<2) return NaN;
+  var ahora=Date.now(), i=HIST.length-1;
+  while(i>0 && ahora-HIST[i-1][0]<=ms) i--;
+  var a=HIST[i], dt=(ahora-a[0])/1000, dd=dist-a[1];
+  if(dt<5) return NaN;
+  return dd<3 ? Infinity : dt/(dd/1000);
+}
+function guardaDecision(r){
+  if(DIARIO){ DIARIO.decisiones=(DIARIO.decisiones||[]).concat([r]); guardaDiario(); }
+  if(window.SIM) return;                   // una simulacion no deja rastro fuera del diario
+  try{
+    var l=JSON.parse(localStorage.getItem(LSDEC)||"[]"); if(!Array.isArray(l)) l=[];
+    l.push({ id:r.id, valor:r.valor, etiqueta:r.etiqueta, origen:r.origen, hora:r.hora, km:r.km, entreno:tituloCalle });
+    localStorage.setItem(LSDEC, JSON.stringify(l.slice(-60)));
+  }catch(e){}
+}
+function ioPasos(){
+  return {
+    ahora:function(){ return Date.now(); },
+    dist:function(){ return dist; },
+    aviso:function(x){ aviso(x,true); },
+    habla:function(x){ habla(x); },
+    registra:function(q,x){ apunta(q==="rectas"?"rectas":"decision",x); },
+    decision:guardaDecision,
+    ritmoRapido:function(){ var r=ritmoVel(6000,4); return isNaN(r) ? ritmoHist(8000) : r; },
+    cadencia:function(){ return CAD ? CAD.ciclos(Date.now()) : NaN; },
+    gpsOk:function(){ return Date.now()-ultFix<6000; },
+    metronomo:metronomo
+  };
+}
+function creaPasos(previo){
+  paraCadencia(); metronomo(false);
+  PASOS=null; pintaDecision(null);
+  var ps=EXTRA && EXTRA.pasos;
+  if(!ps || !ps.length || !window.Pasos) return;
+  try{ PASOS=Pasos.crea(ps, ioPasos(), previo); }
+  catch(e){ PASOS=null; apunta("decision","pasos mal definidos: "+(e&&e.message||e)); return; }
+  if(ps.some(function(x){ return x.tipo==="intervalos"; })) arrancaCadencia();
+}
+// cadencia: acelerometro del movil (sin permiso en Android). Solo mientras haya rectas en el plan.
+function arrancaCadencia(){
+  if(CAD || !window.Pasos || !window.addEventListener) return;
+  CAD=Pasos.Cadencia();
+  window.addEventListener("devicemotion",ladoMovimiento);
+}
+function paraCadencia(){
+  if(!CAD) return;
+  try{ window.removeEventListener("devicemotion",ladoMovimiento); }catch(e){}
+  CAD=null;
+}
+function ladoMovimiento(ev){
+  var a=ev && ev.accelerationIncludingGravity;
+  if(CAD && a && corriendo && !pausado) CAD.alimenta(Date.now(),a.x,a.y,a.z);
+}
+// metronomo: un clic corto por paso mientras dura cada recta (WebAudio; si no hay, no pasa nada)
+var AUDIO_CTX=null;
+function metronomo(on,pasosMin){
+  if(METRO){ clearInterval(METRO); METRO=null; }
+  if(!on) return;
+  var ms=Math.round(60000/Math.max(60,pasosMin||172));
+  function clic(){
+    try{
+      if(!AUDIO_CTX){ var C=window.AudioContext||window.webkitAudioContext; if(!C) return; AUDIO_CTX=new C(); }
+      if(AUDIO_CTX.state==="suspended") AUDIO_CTX.resume();
+      var o=AUDIO_CTX.createOscillator(), g=AUDIO_CTX.createGain(), t=AUDIO_CTX.currentTime;
+      o.frequency.value=1200; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.05); o.connect(g); g.connect(AUDIO_CTX.destination); o.start(t); o.stop(t+0.06);
+    }catch(e){}
+  }
+  clic(); METRO=setInterval(clic,ms);
+  apunta("rectas","metrónomo a "+pasosMin+" pasos por minuto");
+}
+// la tarjeta de la pregunta
+var dcVisto=false;
+function pintaDecision(v){
+  var c=$("decision"); if(!c) return;
+  if(!v){ if(!c.hidden){ c.hidden=true; } dcVisto=false; return; }
+  var si=null, no=null;
+  v.opciones.forEach(function(o){ if(o.seguro) no=o; else si=o; });
+  $("dcT").textContent=v.texto;
+  $("dcSiT").textContent=si.etiqueta; $("dcNoT").textContent=no.etiqueta;
+  $("dcSi").dataset.op=si.id; $("dcNo").dataset.op=no.id; $("dcSi").dataset.did=v.id; $("dcNo").dataset.did=v.id;
+  var s=$("dcS");
+  s.textContent=(v.sinGps ? "Sin GPS ahora mismo. " : "")+"Sin respuesta en "+v.restan_s+" s se elige «"+no.etiqueta+"».";
+  s.className="dcS"+(v.sinGps?" mal":"");
+  $("dcBar").style.width=(v.frac*100).toFixed(0)+"%";
+  if(!dcVisto){ dcVisto=true; try{ if(navigator.vibrate) navigator.vibrate([180,90,180]); }catch(e){} }
+  c.hidden=false;
+}
+function respondeDecision(ev){
+  var b=ev.currentTarget;
+  if(PASOS && PASOS.responde(b.dataset.did,b.dataset.op)) pintaDecision(null);
+}
+["dcSi","dcNo"].forEach(function(id){ var b=$(id); if(b) b.addEventListener("click",respondeDecision); });
+
+// lo que se ve durante las rectas: se reutiliza la tarjeta del km y la barra de segmentos
+function pintaPasos(t){
+  var v=(PASOS && corriendo) ? PASOS.vista() : null;
+  pintaDecision(v && v.fase==="pregunta" ? v : null);
+  var gk=document.querySelector(".gKm i");
+  var rb=$("rBar");
+  if(!v || !/^(cuenta|trabajo|trote)$/.test(v.fase)){
+    if(gk && gk.textContent!=="Ritmo del km") gk.textContent="Ritmo del km";
+    return;
+  }
+  var nm="Recta "+(v.i+1)+" de "+v.n, lab, big, tp, pr=0;
+  var I=EXTRA.pasos.filter(function(x){ return x.id===v.id; })[0];
+  var rit=ritmoVel(5000,3); if(isNaN(rit)) rit=ritmoHist(8000);
+  if(v.fase==="cuenta"){ lab="Prepárate"; big=v.resta_s>3 ? "…" : String(Math.max(1,v.resta_s)); tp="rápido pero controlado, no sprint"; }
+  else if(v.fase==="trabajo"){ lab="Cadencia por pie"; big=I.cadencia.min+"–"+I.cadencia.max; pr=v.frac;
+    tp="quedan "+v.resta_s+" s · techo "+pace(I.techo); }
+  else { lab="Trote suave"; big=v.resta_s+" s"; tp="luego: recta "+(v.i+1)+" de "+v.n; pr=0; }
+  $("kmNum").textContent=nm; $("kmTipo").textContent=tp;
+  $("kmObj").previousElementSibling.textContent=lab; $("kmObj").textContent=big;
+  $("kmFcCell").style.visibility="hidden";
+  $("terCard").hidden=true; $("perfil").hidden=true; $("barra").hidden=false; perfilClave="";
+  $("kmCard").style.borderLeftColor="#ffd166";
+  $("barraIn").style.width=(pr*100).toFixed(1)+"%"; $("barraIn").style.background="#ffd166";
+  // abajo: el ritmo de ahora (solo se mira contra el techo) y la cadencia medida
+  $("rAct").textContent=v.fase==="trabajo" ? pace(rit) : pace(ritmoSuave());
+  $("rAct").style.color = v.fase==="trabajo" && isFinite(rit) && rit<I.techo ? "var(--warn)" : "var(--dim)";
+  var cm=CAD ? CAD.ciclos(Date.now()) : NaN;
+  if(gk) gk.textContent = isFinite(cm) ? "Cadencia medida" : "Cadencia · sin sensor";
+  $("medio").textContent = isFinite(cm) ? String(Math.round(cm)) : "--";
+  var vd=$("veredicto");
+  vd.textContent = v.fase==="trabajo" ? "Rápido pero controlado" : (v.fase==="cuenta" ? "Ya casi" : "Respira, trote suave");
+  vd.style.color="var(--ok)";
+  if(rb){
+    rb.hidden=false;
+    var h=""; for(var i=0;i<v.n;i++){
+      var w = i<v.i ? 100 : (i===v.i && v.fase==="trabajo" ? pr*100 : 0);
+      h+='<i class="'+(i===v.i?'act':'')+'"><u style="width:'+w.toFixed(0)+'%"></u></i>'; }
+    $("rbSeg").innerHTML=h;
+    $("rbTit").textContent="Rectas · "+(v.i+1)+" de "+v.n;
+    $("rbSig").textContent = v.fase==="trote" ? "trote "+v.resta_s+" s" : "";
+    $("rbZ").innerHTML='<span class="on">'+I.trabajo_s+' s a '+pace(I.objetivo)+'</span><span>techo '+pace(I.techo)+'</span>';
+  }
+}
+
 window.cargaRutaGPS = function(pts, plan, fc, ele, titulo, modo, id, extra){
-  MODO_TERRENO = modo==="esfuerzo" ? "esfuerzo" : "reparte";
+  MODO_TERRENO = (modo==="esfuerzo"||modo==="plano") ? modo : "reparte";
   EXTRA = extra || null;
   if(EXTRA){ EXTRA.P0=copia(plan); EXTRA.F0=copia(fc); }
   opcion=null; reiniciaExtra(); $("resumen").hidden=true;
+  creaPasos();
   rutaId = id || null; RASTRO=[];
   if(!cargaRuta(pts, plan, fc, ele)) return false;
   RECT = window.RECTAS_SIG ? copia(window.RECTAS_SIG) : null; window.RECTAS_SIG=null;
@@ -2897,6 +3110,7 @@ function E2(id){ return document.getElementById(id); }
    La distancia no salta: el cambio solo se acepta si en la ruta nueva estas
    mas o menos en el mismo punto kilometrico (150 m de margen), y entre
    varias que encajen gana la que menos te mueve.                          */
+function esLocal(id){ return String(id||"").indexOf("loc-")===0; }   // ruta importada de un GPX (IndexedDB)
 var CANDS=[], RASTRO=[], rutaId=null, ultMira=0, noCuadra=0, LSCANDS="copiloto.cands.v1";
 var corrido=0, anclaCorr=null;   // metros de verdad desde que arranque (GPS, a saltos de 25 m)
 var O_LAT=0, O_LON=0, O_MX=1;
@@ -2919,7 +3133,7 @@ window.candidatasGPS=function(lista, idActual){
     var l=lista[i]; if(!l.pts || l.pts.length<2) continue;
     var c={ id:l.id, nombre:l.nombre, pts:l.pts, ele:l.ele||[] }; preparaCand(c); CANDS.push(c);
   }
-  try{ localStorage.setItem(LSCANDS, JSON.stringify({ guardado:Date.now(), lista:lista })); }catch(e){}
+  try{ localStorage.setItem(LSCANDS, JSON.stringify({ guardado:Date.now(), lista:lista.filter(function(l){ return !esLocal(l.id); }) })); }catch(e){}
 };
 function apuntaRastro(p){
   if(sIni!==null){
@@ -3030,7 +3244,8 @@ function guardaCalle(){
   try{
     localStorage.setItem(LSCALLE, JSON.stringify({
       guardado:Date.now(), titulo:tituloCalle,
-      ruta:ROUTE, ele:ELE, plan:PLAN, fc:FC,
+      ruta:esLocal(rutaId) ? null : ROUTE, rutaLocal:esLocal(rutaId) ? rutaId : null,   // las rutas importadas no se copian a localStorage
+      ele:ELE, plan:PLAN, fc:FC, pasos:PASOS ? PASOS.estado() : null,
       corriendo:corriendo, pausado:pausado, t0:t0, pausaEn:pausaEn,
       dist:dist, sAbs:sAbs, sIni:sIni, tPlanIni:tPlanIni,
       kmHecho:kmHecho, tKm:tKm, dKm:dKm, medHecho:medHecho, tMed:tMed,
@@ -3049,15 +3264,27 @@ window.retomaCalle=function(){
   try{ raw=localStorage.getItem(LSCALLE); }catch(e){ return false; }
   if(!raw) return false;
   try{ st=JSON.parse(raw); }catch(e){ olvidaCalle(); return false; }
+  if(st && st.rutaLocal && !st.ruta){        // ruta importada: las coordenadas estan solo en IndexedDB
+    if(!window.RutaLocal || !st.plan || !st.plan.length || Date.now()-(st.guardado||0) > MAXCALLE){ olvidaCalle(); return false; }
+    RutaLocal.almacen.lee(st.rutaLocal).then(function(j){
+      if(!j){ olvidaCalle(); return; }
+      st.ruta=polilinea(j.linea); retomaCon(st);
+    }).catch(function(){ olvidaCalle(); });
+    return true;
+  }
+  return retomaCon(st);
+};
+function retomaCon(st){
   if(!st || !st.ruta || st.ruta.length<2 || !st.plan || !st.plan.length){ olvidaCalle(); return false; }
   if(Date.now()-(st.guardado||0) > MAXCALLE){ olvidaCalle(); return false; }
-  MODO_TERRENO = st.modo==="esfuerzo" ? "esfuerzo" : "reparte";
+  MODO_TERRENO = (st.modo==="esfuerzo"||st.modo==="plano") ? st.modo : "reparte";
   rutaId = st.rutaId || null;
   EXTRA = st.extra || null;           // el plan por tramos y lo que ya se habia cantado
   hechos = st.hechos || {}; opcion = st.opcion || null; opcionEn = st.opcionEn || null;
   marcas = st.marcas || {}; resumenVisto = !!st.resumenVisto;
   tramoClave = st.tramoClave || null; tramoIni = st.tramoIni || null;
   RECT = st.rect || null;
+  creaPasos(st.pasos||null);
   HIST=[]; VEL=[]; lentoDesde=null; tAntes=null;
   if(!cargaRuta(st.ruta, st.plan, st.fc||[], st.ele||[])) return false;
   try{                                  // las candidatas, para seguir cambiando de ruta sola
@@ -3091,7 +3318,7 @@ window.retomaCalle=function(){
   clearInterval(tick); tick=setInterval(pintar,250);
   dibujaMapa(0); escalar(); pintar(); candado();
   return true;
-};
+}
 
 document.addEventListener("visibilitychange",function(){
   if(document.visibilityState==="hidden") guardaCalle();
@@ -3632,6 +3859,7 @@ window.retomaCinta=retoma;
 <script src="despensa.js"></script>
 <script src="cocina-modo.js"></script>
 <script src="cocina.js"></script>
+<script src="rutalocal.js"></script>
 <script src="arc.js" async onload="window.arcListo&&window.arcListo()" onerror="window.arcFallo=true"></script>
 <script>
 /* ===========================================================================
@@ -3699,13 +3927,34 @@ var PLANES_FIJOS = [{
     { nombre:"Extra · km 17–19", desde:17000, hasta:19000, cls:"extra", opcional:true },
     { nombre:"Total · 20 km", desde:0, hasta:20000 }
   ]
+},{
+  /* Rodaje suave con punto de decision (domingo 04/10/2026). No lleva ruta fija: vale la que elijas.
+     "sensacion": ir mas lento que la banda no avisa nunca, y "plano": el mismo objetivo en cuesta y
+     en llano (el primer km sube ~30 m y no tiene que saltar nada).
+     Los pasos (decision + rectas) salen de la plantilla de pasos.js: objetivo 4'20" y techo 4'05"
+     son parametros ("objetivo" y "techo", en s/km), no numeros escondidos en el motor. */
+  id: "rodaje-2026-10-04", fecha: "2026-10-04", ruta: null, plano: true,
+  plan: { tipo:"fuera", subtipo:"facil", nombre:"Rodaje suave · 12 km", distancia:12000, fijo:true,
+    km:[
+      { desde:0, hasta:12, ritmo:392, banda:[380,405], fc:[0,0], nota:"Rodaje suave", letra:"c", sensacion:true,
+        voz:"Rodaje suave de 12 kilómetros, de 6 20 a 6 45, por sensación. En el kilómetro 9 coma 8 te pregunto si haces 4 rectas." }
+    ] },
+  geles: [],
+  avisos: [],
+  pasos: !window.Pasos ? [] : Pasos.plantillaRectas({ id:"rectas", n:4, trabajo_s:20, trote_s:60, en:10000, antes:200, espera_s:15,
+                                 objetivo:260, techo:245, cadencia:{ min:85, max:88 } }),
+  marcas: [10000,12000],
+  resumen: [
+    { nombre:"Punto de decisión · km 10–12", desde:10000, hasta:12000, cls:"extra", decision:"rectas" },
+    { nombre:"Total · 12 km", desde:0, hasta:12000 }
+  ]
 }];
 function fijoDe(ev){
   if(!ev) return null;
   for(var i=0;i<PLANES_FIJOS.length;i++){
     var pf=PLANES_FIJOS[i];
     if(ev.fecha!==pf.fecha) continue;
-    var nombra=(" "+sinAcentos((ev.lugar||"")+" "+(ev.titulo||"")+" "+(ev.texto||""))+" ")
+    var nombra=!!pf.ruta && (" "+sinAcentos((ev.lugar||"")+" "+(ev.titulo||"")+" "+(ev.texto||""))+" ")
                  .indexOf(" "+sinAcentos(pf.ruta)+" ")>=0;
     var deCalle=(ev.plan && ev.plan.tipo==="fuera") || (ev.planTexto && ev.planTexto.tipo==="fuera");
     if(nombra || deCalle) return pf;
@@ -3756,11 +4005,11 @@ function motorFijo(pf, rutaNombre, ev){
   }
   pf.plan.km.forEach(function(t){
     segs.push({ desde:t.desde*1000, hasta:t.hasta*1000, nombre:t.nota, voz:t.voz,
-                opcional:!!t.opcional, callaSiSuave:!!t.callaSiSuave });
+                opcional:!!t.opcional, callaSiSuave:!!t.callaSiSuave, sensacion:!!t.sensacion });
   });
   var avisos=avisosGel(pf, ev).concat(pf.avisos.filter(function(a){ return !a.ruta || sinAcentos(a.ruta)===sinAcentos(rutaNombre); }));
   return { P:P, F:F, extra: JSON.parse(JSON.stringify({ id:pf.id, segs:segs, avisos:avisos,
-           opcional:pf.opcional, marcas:pf.marcas, resumen:pf.resumen, fin:pf.plan.distancia })) };
+           opcional:pf.opcional, marcas:pf.marcas, resumen:pf.resumen, pasos:pf.pasos||[], fin:pf.plan.distancia })) };
 }
 
 var conf = leeConf(), datos = aplicaFijos(leeCache()), vista = "hoy", bajando = false;
@@ -4597,6 +4846,77 @@ var RUTAS_APP = [{ id:"app-20k-zapatoca", nombre:"20K ZAPATOCA", fichero:"rutas/
                  { id:"app-6k-zapatoca", nombre:"6K ZAPATOCA", fichero:"rutas/6K_ZAPATOCA.gpx" },
                  { id:"app-6k1-zapatoca-rectas", nombre:"6.1K ZAPATOCA (RECTAS)", fichero:"rutas/6K1_ZAPATOCA_RECTAS.gpx", rectas:"ultimos" }];
 var LSAPP = "copiloto.rutasapp.v1", RTMEM = {}, cargandoApp = null;
+/* ---------------------- v2.26 · rutas importadas de un GPX ----------------------
+   Se leen en el movil (rutalocal.js) y se guardan SOLO en IndexedDB de este movil:
+   no suben al Worker ni van al repo (que es publico y la salida esta cerca de casa).
+   locales = las fichas (nombre, distancia, desnivel, perfil, minimapa) sin los puntos. */
+var locales = [], localesEstado = "vacio", localesError = "";   // vacio | cargando | listo | error
+function cargaLocales(){
+  if(!window.RutaLocal) return Promise.resolve();
+  localesEstado="cargando"; localesError="";
+  return RutaLocal.almacen.lista().then(function(l){
+    locales=l.map(function(f){ f.linea=f.mini; return f; }); localesEstado=locales.length?"listo":"vacio";
+  }).catch(function(e){
+    locales=locales.filter(function(f){ return f.soloMemoria; });
+    localesEstado="error"; localesError=(e&&e.message)||"no se pueden leer las rutas guardadas";
+  }).then(function(){ pintaRutas(); });
+}
+function importaLocal(fichero){
+  if(!fichero) return;
+  if(!window.RutaLocal){ estadoRt("Falta un archivo de la app: actualízala.",true); return; }
+  estadoRt("Leyendo "+fichero.name+"…"); pintaRutas();
+  var ficha=null, gl=null, ele100=null, linea=null;
+  fichero.text().then(function(txt){
+    var g=RutaLocal.leeGpx(txt);
+    if(!g.ok) throw new Error(g.error);
+    gl=RutaLocal.aligera(g);
+    var a=RutaLocal.analiza(g);                    // los numeros salen del GPX entero, no de los puntos aligerados
+    if(a.distancia<RutaLocal.MIN_METROS) throw new Error("La ruta mide menos de "+RutaLocal.MIN_METROS+" m: ¿es el GPX correcto?");
+    ficha=RutaLocal.ficha(g,a,fichero.name);
+    linea=RutaLocal.codifica(gl.pts); ele100=a.tieneEle ? cada100(gl.pts,gl.ele) : [];
+    return RutaLocal.almacen.guarda(ficha,linea,ele100).then(function(){ return true; },function(e){ ficha.soloMemoria=true; ficha.errGuardar=(e&&e.message)||"no se pudo guardar"; return false; });
+  }).then(function(guardada){
+    ficha.linea=ficha.mini; RTMEM[ficha.id]={ linea:linea, ele:ele100 };
+    locales=[ficha].concat(locales.filter(function(f){ return f.id!==ficha.id; }));
+    localesEstado="listo";
+    if(evRuta){                        // se elige sola: para eso se importa
+      if(Math.abs(ficha.distancia-evRuta.plan.distancia)>MARGEN_RT) todasDist=true;
+      rutaElegida=ficha.id; rutaManual=true; rutaGuardada[evRuta.uid+evRuta.fecha]=ficha.id;
+    }
+    estadoRt(guardada ? "«"+ficha.nombre+"» importada y guardada solo en este móvil · "+RutaLocal.resumenTxt(ficha)
+                      : "«"+ficha.nombre+"» importada, pero NO se ha podido guardar ("+ficha.errGuardar+"): vale para hoy, no para otro día.", !guardada);
+    pintaRutas();
+  }).catch(function(e){ estadoRt("No se ha importado: "+((e&&e.message)||"GPX no válido"),true); pintaRutas(); });
+}
+var borrarPendiente=null;
+function borraLocal(id){
+  RutaLocal.almacen.borra(id).catch(function(){}).then(function(){
+    locales=locales.filter(function(f){ return f.id!==id; }); delete RTMEM[id];
+    if(rutaElegida===id){ rutaElegida=null; rutaManual=false; if(evRuta) delete rutaGuardada[evRuta.uid+evRuta.fecha]; }
+    estadoRt("Ruta borrada de este móvil."); pintaRutas();
+  });
+}
+// lo que se ve de una ruta importada: perfil, desnivel por km y avisos de lo que falta
+function cajaLocal(f){
+  var d=el("div","rlBox"), h="";
+  h+='<div class="rlNota" style="margin-bottom:6px"><b style="font-weight:700;color:var(--fg)">'+esc(f.nombre)+'</b> · '+esc(RutaLocal.resumenTxt(f))+'</div>';
+  if(f.tieneEle){
+    h+=RutaLocal.perfilSvg(f);
+    h+='<div class="rlEje"><span>0 km</span><span>de '+f.eleMin+' a '+f.eleMax+' m</span><span>'+esc(coma(f.distancia/1000,2))+' km</span></div>';
+    h+='<ul class="rlKm">'+f.kms.map(function(k){ return '<li><b>km '+k.km+'</b>+'+k.asc+' / −'+k.desc+'</li>'; }).join("")+'</ul>';
+    if(f.eleParcial) h+='<div class="rlNota">Algún punto del GPX no trae altura: el perfil usa solo los que sí.</div>';
+  }else h+='<div class="rlAv">Sin altimetría en el GPX: no hay perfil ni desnivel (no me los invento). El copiloto no cantará cuestas.</div>';
+  if(!f.tieneHora) h+='<div class="rlNota">El GPX no trae hora de los puntos: no hace falta, solo cuenta el trazado.</div>';
+  if(f.soloMemoria) h+='<div class="rlAv">No se ha podido guardar en este móvil ('+esc(f.errGuardar||"sin espacio")+'): se pierde al cerrar la app.</div>';
+  d.innerHTML=h+'<div class="rlAcc"><button type="button" class="rlBorra">Borrar de este móvil</button></div>';
+  var b=d.querySelector(".rlBorra");
+  b.addEventListener("click",function(){
+    if(borrarPendiente===f.id){ borrarPendiente=null; borraLocal(f.id); return; }
+    borrarPendiente=f.id; b.textContent="Toca otra vez para borrarla";
+    setTimeout(function(){ if(borrarPendiente===f.id){ borrarPendiente=null; if(b.isConnected) b.textContent="Borrar de este móvil"; } },4000);
+  });
+  return d;
+}
 var fijas = (function(){ try{ var l=JSON.parse(localStorage.getItem(LSAPP)||"[]"); return Array.isArray(l)?l:[]; }
                          catch(e){ return []; } })();
 function guardaFijas(){ try{ localStorage.setItem(LSAPP,JSON.stringify(fijas)); }catch(e){} }
@@ -4622,6 +4942,7 @@ function cargaRutasApp(){
 function todas(){
   var ya={}, out=[];
   fijas.forEach(function(f){ ya[sinAcentos(f.nombre)]=1; out.push(f); });
+  locales.forEach(function(f){ if(!ya[sinAcentos(f.nombre)]){ ya[sinAcentos(f.nombre)]=1; out.push(f); } });
   biblio.forEach(function(r){ if(!ya[sinAcentos(r.nombre)]) out.push(r); });
   return out;
 }
@@ -4741,7 +5062,7 @@ function preparaRuta(ev){
   var g=rutaGuardada[ev.uid+ev.fecha]; rutaElegida=g||null; rutaManual=!!g;
   if(!biblio.length) biblio=leeBiblio();
   recalcRutas();
-  if(!rutasPedidas){ rutasPedidas=true; buscaRutas(); cargaRutasApp().then(pintaRutas); }
+  if(!rutasPedidas){ rutasPedidas=true; buscaRutas(); cargaRutasApp().then(pintaRutas); cargaLocales(); }
 }
 function recalcRutas(){
   if(!evRuta) return;
@@ -4942,6 +5263,7 @@ function empiezaRuta(sim){
   rutaEntera(g.id)
    .then(function(j){
       if(!j){ estadoRt(g.origen==="app" ? "no se ha podido leer el GPX de la app"
+                                         : g.origen==="local" ? "no se ha podido leer la ruta guardada en este móvil: impórtala otra vez"
                                          : "sin conexión con el Worker",true); return; }
       var pts=polilinea(j.linea);
       if(pts.length<2){ estadoRt("esa ruta no trae trazado",true); return; }
@@ -4950,7 +5272,7 @@ function empiezaRuta(sim){
       if(pf){ var mf=motorFijo(pf, g.nombre, ev); m={ P:mf.P, F:mf.F }; extra=mf.extra; }
       else m=planAMotor(ev.plan);
       var tit=(ev.plan.nombre||ev.titulo)+" · "+g.nombre;
-      var Rx=rectasDe(ev);
+      var Rx=(pf && pf.pasos) ? null : rectasDe(ev);   // si el plan ya trae sus pasos, no se duplican las rectas del texto
       if(Rx){
         var P0=ev.plan.distancia, L0=g.distancia||0;
         var sp0 = g.rectas==="ultimos" ? rectaUltimos(pts,j.ele,Rx.m)
@@ -4960,7 +5282,7 @@ function empiezaRuta(sim){
       }else window.RECTAS_SIG=null;
       window.SIM = sim || null;
       if(!window.cargaRutaGPS(pts, m.P, m.F, j.ele||[], tit,
-                              (!pf && esRecuperacion(ev))?"esfuerzo":"reparte", g.id, extra)){
+                              pf && pf.plano ? "plano" : ((!pf && esRecuperacion(ev))?"esfuerzo":"reparte"), g.id, extra)){
         window.SIM=null; estadoRt("no se ha podido cargar la ruta",true); return;
       }
       traeCandidatas(g, pts, j.ele||[]);
@@ -4978,6 +5300,8 @@ function guardaRutaEntera(id,j){
 }
 function rutaEntera(id){
   if(RTMEM[id]) return Promise.resolve(RTMEM[id]);
+  if(esLocal(id) && window.RutaLocal)             // importada: solo esta en IndexedDB, nunca en localStorage ni en el Worker
+    return RutaLocal.almacen.lee(id).then(function(j){ if(j) RTMEM[id]=j; return j; }).catch(function(){ return null; });
   try{ var c=JSON.parse(localStorage.getItem(LSRT+id)||"null"); if(c && c.linea) return Promise.resolve(c); }catch(e){}
   if(String(id).indexOf("app-")===0)
     return cargaRutasApp().then(function(){ return RTMEM[id]||null; });
@@ -5069,13 +5393,21 @@ function pintaHojaRutas(){
   inp.type="file"; inp.accept=".gpx,application/gpx+xml,text/xml"; inp.hidden=true;
   inp.addEventListener("change",function(){ subeGpx(this.files&&this.files[0]); this.value=""; });
   lb.appendChild(inp); barra.appendChild(lb);
+  // v2.26: importar un GPX SOLO en este movil (IndexedDB); "+ GPX" de arriba lo sube al Worker
+  var lb2=el("label","chip","Importar en este móvil"), inp2=document.createElement("input");
+  inp2.type="file"; inp2.accept=".gpx,application/gpx+xml,text/xml"; inp2.hidden=true;
+  inp2.addEventListener("change",function(){ importaLocal(this.files&&this.files[0]); this.value=""; });
+  lb2.appendChild(inp2); barra.appendChild(lb2);
   cu.appendChild(barra);
+  cu.appendChild(el("div","rlNota", localesEstado==="cargando" ? "Leyendo las rutas guardadas en este móvil…"
+    : localesEstado==="error" ? "Rutas importadas no disponibles: "+localesError
+    : "«Importar» guarda el GPX solo en este móvil: no se sube a ningún sitio."));
   if(!miPos) cu.appendChild(el("div","ayuda","Sin ubicación todavía: no puedo decir a cuánto queda cada salida."));
   var G=rutasDatos.grupos;
   if(buscando && !todas().length){ cu.appendChild(el("div","vacio2","Cargando tus rutas…")); return; }
   if(!G.length){
     cu.appendChild(el("div","vacio2", !todas().length
-      ? "Todavía no tienes rutas.\nToca «+ GPX» para subir una de plotaroute."
+      ? "Todavía no tienes rutas.\nToca «Importar en este móvil» (se queda aquí) o «+ GPX» (la sube al Worker)."
       : (todasDist ? "No hay ninguna ruta guardada."
          : "Ninguna de tus "+plural(todas().length,"ruta")+" mide "+kmTxt(evRuta.plan.distancia)+
            " (±"+MARGEN_RT+" m).\nToca «Cerca de…» para verlas todas.")));
@@ -5087,7 +5419,7 @@ function pintaHojaRutas(){
       '<span class="tjMini">'+miniSvg(g.linea,"#6fb0ff",4)+'</span><span><b>'+esc(kmTxt(g.distancia))+
       (dif?'<em class="'+dif.c+'">'+esc(dif.t)+'</em>':'')+'</b>'+
       '<small>'+esc(g.nombre)+'</small>'+
-      '<small>'+esc([lejos, g.origen==="app" ? "precargada en la app" : plural(g.veces,"vez").replace("vezs","veces"),
+      '<small>'+esc([lejos, g.origen==="app" ? "precargada en la app" : g.origen==="local" ? "importada en este móvil" : plural(g.veces,"vez").replace("vezs","veces"),
                      String(g.metrosPorKm).replace(".",",")+" m/km"].filter(Boolean).join(" · "))+'</small>'+
       (rutaElegida===g.id && porQue && !rutaManual ? '<small class="porque">★ '+esc(porQue)+'</small>' : '')+
       (rectasDe(evRuta) ? '<small class="recta">'+esc(rectaTxt(rectaEnRuta(evRuta,g)))+'</small>' : '')+'</span>');
@@ -5096,6 +5428,7 @@ function pintaHojaRutas(){
       cierraHoja(); pinta();
     });
     cu.appendChild(b);
+    if(g.origen==="local"){ var lf=locales.filter(function(x){ return x.id===g.id; })[0]; if(lf) cu.appendChild(cajaLocal(lf)); }
   });
 }
 function botonesGo(v){
@@ -6018,7 +6351,7 @@ function pintaDiario(){
   if(!D || !D.L || !D.L.length){ t.textContent="Todavía no hay nada: se apunta en cada entreno y en cada simulación."; b.hidden=true; return; }
   var Q={ espera:"… no llegó a sonar", voz:"🔊 voz", audio:"🔊 audio", muda:"✖ SIN SONIDO", pitido:"✖ pitido no suena",
           fondo:"⏻ pantalla apagada o app en segundo plano: sin GPS ni avisos", vuelve:"↩ vuelve a la app",
-          gps:"✖ GPS", inicio:"▶", retomo:"↻ retomo", cortada:"✂ cortada por otra frase" };
+          gps:"✖ GPS", inicio:"▶", retomo:"↻ retomo", cortada:"✂ cortada por otra frase", decision:"decisión", rectas:"rectas" };
   function mala(x){ return /muda|pitido|gps|fondo|espera/.test(x.q); }
   var malas=D.L.filter(mala).length, d=new Date(D.t);
   t.textContent=(D.tipo||"Entreno")+" del "+dos(d.getDate())+"/"+dos(d.getMonth()+1)+
