@@ -1,0 +1,65 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:transparent">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import {render} from "/scripts/iconos3d/harness.js";
+import {THREE,beamGeo,boxGeo,merge,mat,mesh,ground,interpLog} from "/scripts/iconos3d/lib.js";
+await render(({scene,cam})=>{
+  const W=y=>interpLog([[0,62],[57,40],[115,17],[180,8],[276,3.6],[300,1.6]],Math.max(y,0)+0.0001);
+  const Tt=y=>interpLog([[0,27],[57,16],[115,7.5],[276,2.8],[300,1.4]],Math.max(y,0)+0.0001);
+  const G=[]; const Hs=[]; // girders
+  const post=(y)=>Math.max(.35,Tt(y)*.06);
+  function ring(pts,r){ for(let i=0;i<4;i++) G.push(beamGeo(pts[i],pts[(i+1)%4],r)); }
+  const levels=[]; for(let y=0;y<=300;y+= y<57?5.2: y<115?6.4: y<276?10:6) levels.push(Math.min(y,300)); levels.push(300);
+  // patas (4) hasta la 2a plataforma, torre unica por encima
+  const sections=(lv)=>{ // devuelve lista de secciones (cada una: 4 esquinas)
+    const out=[]; const t=Tt(lv), w=W(lv);
+    if(lv<=115){ for(const sx of [-1,1]) for(const sz of [-1,1]){ const cx=sx*w, cz=sz*w; out.push([[cx-t/2,lv,cz-t/2],[cx+t/2,lv,cz-t/2],[cx+t/2,lv,cz+t/2],[cx-t/2,lv,cz+t/2]]); } }
+    else { const H=w+t/2; out.push([[-H,lv,-H],[H,lv,-H],[H,lv,H],[-H,lv,H]]); }
+    return out; };
+  for(let i=0;i<levels.length-1;i++){
+    const a=levels[i], b=levels[i+1];
+    // al cruzar los 115 m se unen: la seccion unica nace de la union de las patas
+    const A=sections(a), B=sections(b);
+    const r=post(a);
+    if(a<115 && b>115){ continue; }
+    const n=Math.min(A.length,B.length);
+    for(let s=0;s<n;s++){
+      const sa=A[s], sb=B[s];
+      for(let k=0;k<4;k++){ G.push(beamGeo(sa[k],sb[k],r*1.25)); }
+      for(let k=0;k<4;k++){ const k2=(k+1)%4; G.push(beamGeo(sa[k],sb[k2],r*.55)); G.push(beamGeo(sa[k2],sb[k],r*.55)); }
+      ring(sb,r*.8);
+    }
+  }
+  // empalme de las cuatro patas con la torre unica en la 2a plataforma
+  { const y=115; const A=sections(115); const H=W(116)+Tt(116)/2; const base=sections(116)[0];
+    A.forEach((sa,s)=>{ const sx=Math.sign(sa[0][0]+sa[2][0]),sz=Math.sign(sa[0][2]+sa[2][2]); const k0=[(sx<0?0:1)]; }); }
+  // arcos entre patas (4 caras): del suelo a ~46 m, en el plano de cada cara
+  const arch=[];
+  for(let face=0;face<4;face++){
+    const ang=face*Math.PI/2; const pts=[];
+    for(let i=0;i<=28;i++){ const a=Math.PI*(i/28); const yy=2+46*Math.pow(Math.sin(a),0.8);
+      const x=-(W(yy)-Tt(yy)*.5)*Math.cos(a)*0.97; const z=-W(yy);
+      pts.push(new THREE.Vector3(x,yy,z).applyAxisAngle(new THREE.Vector3(0,1,0),ang)); }
+    arch.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),56,2.4,6,false));
+    const pts2=pts.map(v=>new THREE.Vector3(v.x*0.94,Math.max(v.y-7,0.6),v.z*0.94));
+    arch.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2),56,1.0,5,false));
+  }
+  const iron=mat(.42,.55,.45);
+  scene.add(mesh(merge(G),iron)); scene.add(mesh(merge(arch),iron));
+  // plataformas
+  const P=[];
+  for(const [y,ex,th,rail] of [[57,3,6,1],[115,2.5,4.4,1],[276,2,3,1]]){
+    const h=W(y)+Tt(y)/2+ex; P.push(boxGeo(0,y,0,2*h,th,2*h));
+    P.push(boxGeo(0,y+th/2+2,h-.5,2*h,4,1)); P.push(boxGeo(0,y+th/2+2,-h+.5,2*h,4,1));
+    P.push(boxGeo(h-.5,y+th/2+2,0,1,4,2*h)); P.push(boxGeo(-h+.5,y+th/2+2,0,1,4,2*h));
+  }
+  const plat=mat(.62,.7,.1);
+  scene.add(mesh(merge(P),plat));
+  // cabina y antena
+  const top=[boxGeo(0,286,0,8,8,8),boxGeo(0,293,0,5,6,5)]; scene.add(mesh(merge(top),mat(.55,.6,.2)));
+  scene.add(mesh(beamGeo([0,296,0],[0,332,0],.7),mat(.5,.5,.4)));
+  ground(scene,900,.38);
+  cam.position.set(300,110,690); cam.lookAt(0,170,0);
+},{shadowBox:260,sunPos:[-260,520,260],hemi:1.0,sun:2.5,fov:30});
+window.__done=true;
+</script>

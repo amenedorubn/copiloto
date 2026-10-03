@@ -1,0 +1,90 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:transparent">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import {render} from "/scripts/iconos3d/harness.js";
+import {THREE,boxGeo,merge,mat,mesh,ground} from "/scripts/iconos3d/lib.js";
+await render(({scene,cam})=>{
+  // textura de ladrillo en grises
+  const cv=document.createElement("canvas"); cv.width=cv.height=512; const x=cv.getContext("2d");
+  x.fillStyle="#9a9a9a"; x.fillRect(0,0,512,512);
+  for(let r=0;r<32;r++){ const off=(r%2)*16; for(let c=-1;c<17;c++){ const v=130+Math.floor(Math.random()*60); x.fillStyle="rgb("+v+","+v+","+v+")"; x.fillRect(c*32+off+1.5,r*16+1.5,29,13); } }
+  const tex=new THREE.CanvasTexture(cv); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(1/5.5,1/5.5); tex.anisotropy=8; tex.colorSpace=THREE.SRGBColorSpace;
+  const brick=new THREE.MeshStandardMaterial({map:tex,color:0x9b9b9b,roughness:.95});
+  const white=mat(.93,.7), glass=new THREE.MeshStandardMaterial({color:0x141414,roughness:.08,metalness:.7}), roof=mat(.33,.85), stone=mat(.62,.9);
+  // gablete: devuelve Shape en (x,y) con y=0 en lo alto de la fachada (linea de cornisa)
+  function gableShape(w,type,h){
+    const s=new THREE.Shape(); const hw=w/2;
+    s.moveTo(-hw,0);
+    if(type==='escalera'){ const n=4; const st=h/n, sw=(hw-.6)/n; let X=-hw,Y=0; for(let i=0;i<n;i++){ s.lineTo(X,Y+st*(i+1)*0+st); X+=0; } }
+    return s;
+  }
+  function gable(w,type,h){
+    const pts=[]; const hw=w/2;
+    if(type==='escalera'){ const n=4, st=h/n, sw=(hw-.7)/n; let X=-hw,Y=0; pts.push([X,Y]); for(let i=0;i<n;i++){ Y+=st; pts.push([X,Y]); X+=sw; pts.push([X,Y]); } pts.push([0,Y]); // simetrico
+      const left=pts.slice(); const right=left.slice(0,-1).reverse().map(p=>[-p[0],p[1]]); return left.concat(right); }
+    if(type==='cuello'){ const nw=w*.34; return [[-hw,0],[-hw,.3],[-hw+.5,.8],[-hw+1.1,1.2],[-nw/2-1.2,1.9],[-nw/2-.6,2.8],[-nw/2-.15,4.0],[-nw/2,h-1.0],[-nw/2-.35,h-.6],[-nw/2-.35,h],[nw/2+.35,h],[nw/2+.35,h-.6],[nw/2,h-1.0],[nw/2+.15,4.0],[nw/2+.6,2.8],[nw/2+1.2,1.9],[hw-1.1,1.2],[hw-.5,.8],[hw,.3],[hw,0]]; }
+    if(type==='campana'){ const P=[[-hw,0]]; for(let i=1;i<=14;i++){ const t=i/14; const y=h*t; const x=-hw+ (hw-1.0)*Math.pow(Math.sin(t*Math.PI/2),0.62); P.push([x,y]); } P.push([-.8,h+.25],[.8,h+.25]); for(let i=14;i>=1;i--){ const t=i/14; const y=h*t; const xx=hw-(hw-1.0)*Math.pow(Math.sin(t*Math.PI/2),0.62); P.push([xx,y]); } P.push([hw,0]); return P; }
+    if(type==='tuit'){ return [[-hw,0],[-hw+.25,.5],[-.55,h-.4],[0,h],[.55,h-.4],[hw-.25,.5],[hw,0]]; }
+    return [[-hw,0],[hw,0]];
+  }
+  // una casa
+  const houses=[
+    {w:5.0,type:'escalera',gh:3.4,floors:4,lean:-.012,tilt:.004,fh:3.2,depth:14},
+    {w:5.6,type:'cuello',gh:6.0,floors:4,lean:.01,tilt:-.006,fh:3.4,depth:14},
+    {w:5.2,type:'campana',gh:4.6,floors:4,lean:-.006,tilt:.007,fh:3.2,depth:14},
+    {w:5.8,type:'tuit',gh:4.5,floors:4,lean:.014,tilt:-.004,fh:3.3,depth:14},
+    {w:5.0,type:'escalera',gh:3.0,floors:3,lean:-.01,tilt:.005,fh:3.6,depth:14}
+  ];
+  const root=new THREE.Group(); scene.add(root); const refl=new THREE.Group(); scene.add(refl);
+  let X=-houses.reduce((a,h)=>a+h.w,0)/2;
+  const gH=[];
+  houses.forEach((h,i)=>{
+    const g=new THREE.Group(); const Hh=h.floors*h.fh+0.4;
+    // fachada con huecos: ventanas altas (2 por piso) y puerta
+    const sh=new THREE.Shape(); sh.moveTo(-h.w/2,0); sh.lineTo(h.w/2,0); sh.lineTo(h.w/2,Hh); sh.lineTo(-h.w/2,Hh); sh.lineTo(-h.w/2,0);
+    const wins=[];
+    for(let f=0;f<h.floors;f++){ const y0=f*h.fh+ (f===0?1.35:0.55); const hh=(f===0?h.fh-2.0:h.fh-1.2)+(f===1?.2:0); const ww=1.05;
+      for(const cx of [-h.w*.22,h.w*.22]){ if(f===0 && cx>0) continue;  // planta baja: ventana + puerta
+        const p=new THREE.Path(); p.moveTo(cx-ww/2,y0); p.lineTo(cx+ww/2,y0); p.lineTo(cx+ww/2,y0+hh); p.lineTo(cx-ww/2,y0+hh); p.lineTo(cx-ww/2,y0); sh.holes.push(p); wins.push([cx,y0,ww,hh]); } }
+    // puerta
+    { const cx=h.w*.22, pw=1.15, ph=2.3; const p=new THREE.Path(); p.moveTo(cx-pw/2,0.0); p.lineTo(cx+pw/2,0); p.lineTo(cx+pw/2,ph); p.lineTo(cx-pw/2,ph); p.lineTo(cx-pw/2,0); sh.holes.push(p); wins.push([cx,0,pw,ph,'door']); }
+    const fg=new THREE.ExtrudeGeometry(sh,{depth:.7,bevelEnabled:false}); fg.translate(0,0,-.7+0.0);
+    const fm=mesh(fg,brick); g.add(fm);
+    // gablete sobre la cornisa
+    const gp=gable(h.w,h.type,h.gh); const gs=new THREE.Shape(gp.map(p=>new THREE.Vector2(p[0],p[1]))); 
+    const gg=new THREE.ExtrudeGeometry(gs,{depth:.7,bevelEnabled:false}); gg.translate(0,Hh,-.7); g.add(mesh(gg,brick));
+    // cornisa, polea y viga
+    g.add(mesh(boxGeo(0,Hh+.08,.1,h.w+.15,.25,.35),stone));
+    g.add(mesh(boxGeo(0,Hh+h.gh+.55,.3,.18,1.1,.18),white)); g.add(mesh(boxGeo(0,Hh+h.gh+1.0,.9,.18,.18,1.5),white));
+    g.add(mesh(boxGeo(0,Hh+h.gh+.55,1.5,.07,.7,.07),roof));
+    // cuerpo trasero y tejado
+    g.add(mesh(boxGeo(0,Hh/2,-h.depth/2-0.7,h.w-.02,Hh,h.depth),stone,true,true));
+    // marcos, vidrio y contraventanas
+    wins.forEach(([cx,y0,ww,hh,kind])=>{
+      const t=.11, zf=-.30;
+      g.add(mesh(boxGeo(cx,y0+hh+t/2,zf,ww+2*t+.1,t,.2),white)); g.add(mesh(boxGeo(cx,y0-t/2,zf,ww+2*t+.1,t,.2),white));
+      g.add(mesh(boxGeo(cx-ww/2-t/2,y0+hh/2,zf,t,hh,.2),white)); g.add(mesh(boxGeo(cx+ww/2+t/2,y0+hh/2,zf,t,hh,.2),white));
+      if(kind!=='door'){ g.add(mesh(boxGeo(cx,y0+hh/2,-.52,ww,hh,.06),glass)); g.add(mesh(boxGeo(cx,y0+hh/2,zf+.02,.07,hh,.08),white)); g.add(mesh(boxGeo(cx,y0+hh*.64,zf+.02,ww,.07,.08),white)); g.add(mesh(boxGeo(cx,y0-.22,-.05,ww+.5,.14,.4),stone)); }
+      else g.add(mesh(boxGeo(cx,hh/2,-.5,ww,hh,.08),mat(.2,.7)));
+    });
+    // escalon de entrada
+    g.add(mesh(boxGeo(h.w*.22,.1,.5,1.7,.22,.8),stone));
+    // posicion + inclinacion
+    g.position.set(X+h.w/2, 0, 0); X+=h.w; g.rotation.x=-h.lean*0-0; g.rotation.z=h.tilt; g.rotation.x=h.lean*-1*0+0.0; 
+    g.rotation.x=-0.02*(i%2?1:.5); // se asoman hacia delante
+    root.add(g);
+  });
+  // muelle (piedra) y canal con reflejo
+  const ql=houses.reduce((a,h)=>a+h.w,0)+30;
+  scene.add(mesh(boxGeo(0,-.5,5.2,ql*.72,1.0,5),stone));
+  scene.add(mesh(boxGeo(0,.25,7.4,ql*.72,.5,.45),mat(.72,.8)));
+  // reflejo: copia espejada bajo el agua
+  const clone=root.clone(true); clone.scale.y=-1; clone.position.y=-1.0; clone.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } });
+  scene.add(clone);
+  const ac=document.createElement('canvas'); ac.width=ac.height=256; const ax=ac.getContext('2d'); const gr=ax.createRadialGradient(128,128,20,128,128,128); gr.addColorStop(0,'#fff'); gr.addColorStop(.55,'#fff'); gr.addColorStop(1,'#000'); ax.fillStyle=gr; ax.fillRect(0,0,256,256);
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(ql*.9,26),new THREE.MeshStandardMaterial({color:0x2b2b2b,roughness:.18,metalness:.1,transparent:true,opacity:.9,alphaMap:new THREE.CanvasTexture(ac)}));
+  water.rotation.x=-Math.PI/2; water.position.set(0,-.95,17); water.receiveShadow=true; scene.add(water);
+  cam.position.set(22,16,84); cam.lookAt(0,7,0);
+},{env:.5,shadowBox:50,sunPos:[-60,50,80],hemi:.7,sun:2.2,fill:.35,fov:26});
+window.__done=true;
+</script>

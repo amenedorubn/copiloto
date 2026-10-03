@@ -1,0 +1,48 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:transparent">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import {render} from "/scripts/iconos3d/harness.js";
+import {THREE,boxGeo,merge,mat,mesh,ground} from "/scripts/iconos3d/lib.js";
+await render(({scene,cam})=>{
+  const n=9, H=2.67, hb=27.65, ht=9.9; const lim=mat(.50,.98);
+  const dark=mat(.58,.95);
+  const B=[]; // terrazas
+  for(let i=0;i<n;i++){ const h=hb-(hb-ht)*i/(n-1)*(1); const half=hb-(hb-ht)*(i/n); B.push(boxGeo(0,i*H+H/2,0,2*half,H,2*half));
+    // friso: banda ligeramente saliente en lo alto de cada terraza
+    B.push(boxGeo(0,i*H+H-.45,0,2*half+2.0,.9,2*half+2.0)); }
+  scene.add(mesh(merge(B),lim));
+  const topY=n*H, topHalf=hb-(hb-ht)*(n-1)/n;
+  // plataforma superior
+  scene.add(mesh(new THREE.BoxGeometry(2*topHalf+.6,.6,2*topHalf+.6).translate(0,topY,0),lim));
+  // escaleras (4 caras): perfil escalonado extruido a lo ancho + balaustradas inclinadas
+  function stair(ang){
+    const z0=hb+0.2, z1=topHalf+0.4; const steps=46; const sh=new THREE.Shape(); sh.moveTo(z0,0);
+    for(let i=0;i<steps;i++){ const t0=i/steps,t1=(i+1)/steps; const zz=z0+(z1-z0)*t0, yy=topY*t1; sh.lineTo(zz,yy); sh.lineTo(z0+(z1-z0)*t1,yy); }
+    sh.lineTo(z1,0); sh.lineTo(z0,0);
+    const g=new THREE.ExtrudeGeometry(sh,{depth:9.4,bevelEnabled:false,steps:1}); g.translate(0,0,-4.7);
+    // balaustradas: cuña inclinada a cada lado
+    const out=[g];
+    for(const sx of [-1,1]){
+      const w=new THREE.Shape(); w.moveTo(z0+.3,0); w.lineTo(z0+(z1-z0)+.2,topY+1.5); w.lineTo(z1-.6,topY+1.5); w.lineTo(z1-.6,topY); w.lineTo(z0-1.3,0); w.lineTo(z0-1.3,2.0); w.lineTo(z0+.3,2.2); 
+      const wg=new THREE.ExtrudeGeometry(w,{depth:1.8,bevelEnabled:false}); wg.translate(0,0,sx*5.6-0.9); out.push(wg); }
+    // cabeza de serpiente al pie de cada balaustrada
+    for(const sx of [-1,1]){ const s=new THREE.SphereGeometry(1.5,16,12); s.scale(1.3,.9,1.1); s.translate(z0+1.2,1.6,sx*5.6); out.push(s); }
+    const m=merge(out); m.rotateY(0); // perfil en (x=z, y) -> extruido en z: hay que orientar
+    // el shape usa x como "z" (hacia fuera) y la extrusion como "ancho"
+    const group=new THREE.Group(); const me=mesh(m,lim); me.rotation.y=-Math.PI/2; group.add(me); group.rotation.y=ang; return group; }
+  // el shape esta en (x=hacia fuera, extrusion=ancho): con rotation.y=-PI/2, +x del shape pasa a ser +z; luego giramos por cara
+  for(let k=0;k<4;k++){ const g=stair(k*Math.PI/2); scene.add(g); }
+  // templo
+  const T=[]; const tw=6.2, th=6.2, tq=7.2; 
+  { const sh=new THREE.Shape(); sh.moveTo(-tw,0); sh.lineTo(tw,0); sh.lineTo(tw,th); sh.lineTo(-tw,th); sh.lineTo(-tw,0);
+    const hole=new THREE.Path(); hole.moveTo(-1.5,0); hole.lineTo(1.5,0); hole.lineTo(1.5,3.2); hole.absarc(0,3.2,1.5,0,Math.PI,false); hole.lineTo(-1.5,0); sh.holes.push(hole);
+    const g=new THREE.ExtrudeGeometry(sh,{depth:2*tq,bevelEnabled:false}); g.translate(0,topY+.3,-tq); T.push(g); }
+  T.push(boxGeo(0,topY+.3+th+.35,0,2*tw+1.6,.7,2*tq+1.6)); T.push(boxGeo(0,topY+.3+th+1.1,0,2*tw+.4,.8,2*tq+.4));
+  // sombra interior de la puerta
+  const tm=mesh(merge(T),lim); scene.add(tm);
+  const lawn=new THREE.Mesh(new THREE.CircleGeometry(40,96),new THREE.MeshStandardMaterial({color:new THREE.Color(.36,.36,.36),roughness:1})); lawn.rotation.x=-Math.PI/2; lawn.position.y=-.05; lawn.receiveShadow=true; scene.add(lawn);
+  ground(scene,300,.4);
+  cam.position.set(-95,52,150); cam.lookAt(0,9,0);
+},{env:.2,shadowBox:130,sunPos:[-170,110,95],hemi:.35,sun:3.6,fill:.14,fov:30});
+window.__done=true;
+</script>

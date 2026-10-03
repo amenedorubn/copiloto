@@ -1,0 +1,31 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:transparent">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import {render} from "/scripts/iconos3d/harness.js";
+import {drawEscudo} from "/scripts/iconos3d/escudo.js";
+import {THREE,boxGeo,merge,mat,mesh,ground} from "/scripts/iconos3d/lib.js";
+await render(({scene,cam})=>{
+  // textura: tres franjas en grises + escudo en la central
+  const W=1400,Hc=800; const cv=document.createElement("canvas"); cv.width=W; cv.height=Hc; const x=cv.getContext("2d");
+  x.fillStyle="#5a5a5a"; x.fillRect(0,0,W/3,Hc); x.fillStyle="#f4f4f4"; x.fillRect(W/3,0,W/3,Hc); x.fillStyle="#8a8a8a"; x.fillRect(2*W/3,0,W/3,Hc);
+  drawEscudo(x,W/2,Hc/2+6,Hc*0.0059);
+  // trama de tela
+  x.globalAlpha=.06; for(let i=0;i<Hc;i+=3){ x.fillStyle=i%6?"#000":"#fff"; x.fillRect(0,i,W,1); } x.globalAlpha=1;
+  const tex=new THREE.CanvasTexture(cv); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=8;
+  const fw=14, fh=8; const geo=new THREE.PlaneGeometry(fw,fh,160,80); const pos=geo.attributes.position;
+  for(let i=0;i<pos.count;i++){ const u=(pos.getX(i)+fw/2)/fw; const v=(pos.getY(i)+fh/2)/fh;
+    const amp=2.2*u;   // la tela cuelga del asta: sin ondulacion junto a ella
+    const z=amp*Math.sin(u*Math.PI*2.2 - 0.3)+0.35*u*Math.sin(v*5+u*3.5);
+    pos.setZ(i,z); pos.setY(i,pos.getY(i)-0.35*u*u*Math.sin(u*4)); }
+  geo.computeVertexNormals();
+  const cloth=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:tex,roughness:.85,metalness:0,side:THREE.DoubleSide})); cloth.castShadow=true; cloth.receiveShadow=true; cloth.position.set(fw/2+0.2,11.4,0); scene.add(cloth);
+  // asta con remate
+  const metal=new THREE.MeshStandardMaterial({color:0xc8c8c8,roughness:.3,metalness:1});
+  scene.add(mesh(new THREE.CylinderGeometry(.18,.22,16,24).translate(0,8,0),metal));
+  scene.add(mesh(new THREE.SphereGeometry(.55,32,24).translate(0,16.4,0),metal));
+  scene.add(mesh(new THREE.CylinderGeometry(.9,1.1,.5,32).translate(0,.25,0),mat(.5,.6,.3)));
+  
+  cam.position.set(-9,11.5,30); cam.lookAt(7.5,10.4,0);
+},{env:.5,shadowBox:30,sunPos:[-20,26,36],hemi:.8,sun:2.0,fill:.3,fov:30});
+window.__done=true;
+</script>
