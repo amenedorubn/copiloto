@@ -130,8 +130,9 @@ function presetViajes(){
     { id:"v6", fecha:"2026-11-12", de:"Ciudad de México", a:"Cancún" },
     { id:"v7", fecha:"2026-11-17", de:"Cancún", a:"Madrid", via:"Ciudad de México", llega:"2026-11-18" },
     { id:"v8", fecha:"2026-11-19", de:"Madrid", a:"A Coruña", posible:true },          // en tren: jueves 19 o viernes 20
-    { id:"v9", fecha:"2026-11-23", de:"A Coruña", a:"Madrid" },                        // 21:10 → 22:20; el 24 a las 7:00 sale el de Ámsterdam
+    { id:"v9", fecha:"2026-11-23", de:"A Coruña", a:"Madrid" },                        // 21:10 → 22:20; duerme en casa y cambia de maletas; el 24 a las 7:00 sale el de Ámsterdam
     { id:"v11", fecha:"2026-11-24", de:"Madrid", a:"Ámsterdam" },
+    { id:"v15", fecha:"2026-11-25", de:"Ámsterdam", a:"Bruselas" },                    // tren por la tarde, de los últimos
     { id:"v12", fecha:"2026-11-26", de:"Bruselas", a:"París" },                        // Eurostar de ida y vuelta el mismo día
     { id:"v13", fecha:"2026-11-26", de:"París", a:"Bruselas" },
     { id:"v14", fecha:"2026-11-30", de:"Bruselas", a:"Madrid" },
@@ -967,6 +968,7 @@ var CSS=
   ".arcGrid .futuro{border-color:transparent;color:var(--mu)}"+
   ".arcGrid .hoy{border:2px solid var(--fg)}"+
   ".arcGrid .sel{outline:2px solid var(--fg);outline-offset:1px}"+
+  ".arcGrid .viaje em{position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;background:currentColor}"+
   ".arcTabla{display:grid;grid-template-columns:32px repeat(7,1fr);row-gap:4px;margin-top:8px;align-items:center}"+
   ".arcTabla i{font-style:normal;font-size:12px;font-weight:700;color:var(--mu);text-align:center;letter-spacing:.06em}"+
   ".arcTabla b{font-size:12px;font-weight:700;color:var(--mu)}"+
@@ -1571,9 +1573,9 @@ function pintaRecorrido(w,h,F){
     li.appendChild(b);
     if(abierto){
       var dent=el("div","arcTramoDentro");
-      if(st.estado==="actual") rejillaEtapa(dent,e,h);
-      else if(st.estado==="pasada") acta(dent,e,i+1,h,F);
-      else futura(dent,e);
+      if(st.estado==="pasada") acta(dent,e,i+1,h,F);
+      else if(st.estado==="futura") futura(dent,e);
+      rejillaEtapa(dent,e,h);                                 // el calendario de cada fase, no solo el de la actual
       li.appendChild(dent);
     }
     ol.appendChild(li);
@@ -1583,14 +1585,16 @@ function pintaRecorrido(w,h,F){
 // la rejilla de la etapa en curso: tocar un dia abre su detalle
 function rejillaEtapa(w,e,h){
   var k=ctx(), g=el("div","arcGrid"), Lt=["L","M","X","J","V","S","D"], i;
-  if(!selDia || selDia<e.desde || selDia>e.hasta) selDia = h;
+  if(!selDia || selDia<e.desde || selDia>e.hasta) selDia = (h>=e.desde && h<=e.hasta) ? h : e.desde;   // en otra fase, su primer día
+  function deViaje(d){ return viajesDe(S.D).filter(function(v){ return v.fecha===d || v.llega===d; }); }
   for(i=0;i<7;i++) g.appendChild(el("i","",Lt[i]));
   var d=mas(e.desde,-diaSem(e.desde)), fin=mas(e.hasta,6-diaSem(e.hasta));
   for(;d<=fin;d=mas(d,1)){
     if(d<e.desde || d>e.hasta){ g.appendChild(el("span","fuera","")); continue; }
     var st=estadoDia(S.D,d,h,k), cls = d>h ? "futuro" : st.estado==="cumplido" ? "cumplido" : st.hechas>0 ? "medio" : "nada";
-    var b=el("button",cls+(d===h?" hoy":"")+(d===selDia?" sel":""),'<span>'+(+d.split("-")[2])+'</span>'+(cls==="medio" ? '<i style="width:'+(100*st.pct).toFixed(0)+'%"></i>' : ''));
-    b.setAttribute("aria-label",larga(d)+": "+textoDia(st));
+    var vj=deViaje(d);
+    var b=el("button",cls+(d===h?" hoy":"")+(d===selDia?" sel":"")+(vj.length?" viaje":""),'<span>'+(+d.split("-")[2])+'</span>'+(cls==="medio" ? '<i style="width:'+(100*st.pct).toFixed(0)+'%"></i>' : '')+(vj.length ? '<em></em>' : ''));
+    b.setAttribute("aria-label",larga(d)+": "+textoDia(st)+vj.map(function(v){ return ". "+(v.posible ? "Posible: " : "Viaje: ")+textoViaje(v); }).join(""));
     (function(dd){ b.addEventListener("click",function(){ selDia=dd; pinta(document.getElementById("ptCuerpo")); }); })(d);
     g.appendChild(b);
   }
@@ -1599,6 +1603,10 @@ function rejillaEtapa(w,e,h){
     var e2=estadoDia(S.D,selDia,h,k), dj=el("div","arcCaja"); dj.style.marginTop="12px";
     dj.appendChild(el("p","arcT",esc(mayus(larga(selDia)))));
     dj.appendChild(el("p","arcS",esc(cabDia(e2)+" · "+(selDia>h ? "todavía no ha llegado" : textoDia(e2)))));
+    deViaje(selDia).forEach(function(v){
+      dj.appendChild(el("div","arcViaje"+(v.posible?" posible":""),ico(v.a==="Madrid" ? "house-line" : /Coruña/.test(v.a) ? "torre-hercules" : "airplane-tilt")+
+        '<span class="arcT">'+esc(textoViaje(v))+'</span><span class="arcS">'+(v.posible ? '<span class="arcL">Posible</span> ' : '')+esc(v.llega===selDia && v.fecha!==selDia ? "llega hoy" : "sale hoy")+'</span>'));
+    });
     dj.appendChild(anillos(e2,selDia,h,function(){ pinta(document.getElementById("ptCuerpo")); },true,true));
     if(selDia<=h && e2.reglas.some(function(x){ return puedeForzar(x,selDia,h); }))
       dj.appendChild(el("p","arcS","¿Lo hiciste y no se grabó? Toca lo automático para marcarlo «hecho sin registrar»."));
