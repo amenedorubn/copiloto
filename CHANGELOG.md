@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.27.1] - 2026-10-03
+
+### Corregido
+
+- Winter Arc: viaje a Europa (23–30/11): vuelos Coruña–Madrid–Ámsterdam, Eurostar Bruselas–París–Bruselas el 26/11 y vuelo Bruselas–Madrid el 30/11; subir a Coruña en tren el 19 o 20/11 como viaje posible; la Travesía llega hasta el 29/11 (5 semanas) y la Vuelta empieza el 30/11 (3 semanas); el miliario cuenta a Ámsterdam (24/11) y a la Vuelta (30/11)
+
 ## [2.27.0] - 2026-10-03
 
 ### Añadido
@@ -562,6 +568,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.27.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.27.1
 [2.27.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.27.0
 [2.26.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.26.1
 [2.26.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.26.0

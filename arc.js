@@ -114,8 +114,8 @@ function presetEtapas(){
   return [
     { id:"e1", nombre:"Calzada", sub:"Subir la intensidad hasta el test de 20 km", desde:"2026-09-01", hasta:"2026-09-27", icono:"path" },
     { id:"e2", nombre:"Foro", sub:"Cuatro semanas para Roma: afinar, correr y recuperar", desde:"2026-09-28", hasta:"2026-10-25", icono:"flag-checkered" },
-    { id:"e3", nombre:"Travesía", sub:"Preparar México y el viaje: nunca falles dos veces", desde:"2026-10-26", hasta:"2026-11-22", icono:"globe-hemisphere-west" },
-    { id:"e4", nombre:"Vuelta", sub:"De vuelta en casa: recuperar el ritmo antes de Navidad", desde:"2026-11-23", hasta:"2026-12-20", icono:"house-line" },
+    { id:"e3", nombre:"Travesía", sub:"México y Europa: nunca falles dos veces", desde:"2026-10-26", hasta:"2026-11-29", icono:"globe-hemisphere-west" },
+    { id:"e4", nombre:"Vuelta", sub:"De vuelta en casa: recuperar el ritmo antes de Navidad", desde:"2026-11-30", hasta:"2026-12-20", icono:"house-line" },
     { id:"e5", nombre:"Faro", sub:"Navidad en A Coruña: cerrar el año", desde:"2026-12-21", hasta:"2026-12-31", icono:"torre-hercules" }
   ];
 }
@@ -129,6 +129,12 @@ function presetViajes(){
     { id:"v5", fecha:"2026-11-03", de:"Madrid", a:"Ciudad de México" },
     { id:"v6", fecha:"2026-11-12", de:"Ciudad de México", a:"Cancún" },
     { id:"v7", fecha:"2026-11-17", de:"Cancún", a:"Madrid", via:"Ciudad de México", llega:"2026-11-18" },
+    { id:"v8", fecha:"2026-11-19", de:"Madrid", a:"A Coruña", posible:true },          // en tren: jueves 19 o viernes 20
+    { id:"v9", fecha:"2026-11-23", de:"A Coruña", a:"Madrid" },                        // 21:10 → 22:20; el 24 a las 7:00 sale el de Ámsterdam
+    { id:"v11", fecha:"2026-11-24", de:"Madrid", a:"Ámsterdam" },
+    { id:"v12", fecha:"2026-11-26", de:"Bruselas", a:"París" },                        // Eurostar de ida y vuelta el mismo día
+    { id:"v13", fecha:"2026-11-26", de:"París", a:"Bruselas" },
+    { id:"v14", fecha:"2026-11-30", de:"Bruselas", a:"Madrid" },
     { id:"v10", fecha:"2026-12-19", de:"Madrid", a:"A Coruña" }
   ];
 }
@@ -495,7 +501,8 @@ var DESTINOS={
       { fecha:"2026-10-26", arriba:"DÍAS PARA", abajo:"TRAVESÍA", cero:["HOY","TRAVESÍA"], icono:"globe-hemisphere-west", plur:"días de recuperar", sing:"día de recuperar", hoyTxt:"empieza la Travesía" }],
   e3:[{ fecha:"2026-11-03", arriba:"DÍAS A", abajo:"MÉXICO", cero:["HOY","MÉXICO"], icono:"airplane-tilt", plur:"días a México", sing:"día a México", hoyTxt:"hoy vuelas a México" },
       { fecha:"2026-11-18", arriba:"DÍAS PARA", abajo:"VOLVER", cero:["HOY","MADRID"], icono:"airplane-tilt", plur:"días para volver", sing:"día para volver", hoyTxt:"hoy vuelves a Madrid" },
-      { fecha:"2026-11-23", arriba:"DÍAS PARA", abajo:"LA VUELTA", cero:["HOY","VUELTA"], icono:"house-line", plur:"días para la Vuelta", sing:"día para la Vuelta", hoyTxt:"empieza la Vuelta" }],
+      { fecha:"2026-11-24", arriba:"DÍAS A", abajo:"ÁMSTERDAM", cero:["HOY","ÁMSTERDAM"], icono:"airplane-tilt", plur:"días a Ámsterdam", sing:"día a Ámsterdam", hoyTxt:"hoy vuelas a Ámsterdam" },
+      { fecha:"2026-11-30", arriba:"DÍAS PARA", abajo:"LA VUELTA", cero:["HOY","VUELTA"], icono:"house-line", plur:"días para la Vuelta", sing:"día para la Vuelta", hoyTxt:"empieza la Vuelta" }],
   e4:[{ fecha:"2026-12-19", arriba:"DÍAS A", abajo:"CORUÑA", cero:["HOY","CORUÑA"], icono:"torre-hercules", plur:"días a Coruña", sing:"día a Coruña", hoyTxt:"hoy vuelas a Coruña" },
       { fecha:"2026-12-21", arriba:"DÍAS PARA", abajo:"EL FARO", cero:["HOY","FARO"], icono:"torre-hercules", plur:"días para el Faro", sing:"día para el Faro", hoyTxt:"empieza el Faro" }],
   e5:[{ fecha:"2026-12-31", arriba:"DÍAS PARA", abajo:"SELLAR", cero:["HOY SE","SELLA"], icono:"seal-check", plur:"días para sellar el Arc", sing:"día para sellar el Arc", hoyTxt:"hoy se sella el Arc" }]

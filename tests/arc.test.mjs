@@ -222,13 +222,15 @@ test("totales: km, horas y kg solo de lo que traen Strava y Hevy", () => {
 });
 
 /* ------------------------------- etapas ------------------------------- */
-test("fases de partida: cinco bloques de 4 semanas del 1/9 al 31/12, sin huecos", () => {
+test("fases de partida: cinco bloques del 1/9 al 31/12, sin huecos, en semanas enteras (lunes a domingo)", () => {
   const D = Arc.vacio(HOY);
   assert.deepEqual(D.etapas.map((e) => e.nombre), ["Calzada", "Foro", "Travesía", "Vuelta", "Faro"]);
   assert.equal(D.etapas[0].desde, "2026-09-01");
   assert.equal(D.etapas[4].hasta, "2026-12-31");
   for (let i = 1; i < 5; i++) assert.equal(D.etapas[i].desde, Arc.mas(D.etapas[i - 1].hasta, 1));
-  assert.deepEqual(D.etapas.slice(1, 4).map((e) => Arc.mas(e.hasta, 1) === Arc.mas(e.desde, 28)), [true, true, true]);   // 28 días
+  assert.deepEqual(D.etapas.slice(1, 4).map((e) => [28, 35, 21].find((n) => Arc.mas(e.hasta, 1) === Arc.mas(e.desde, n))), [28, 35, 21]);    // la Travesía llega hasta la vuelta de Bruselas (30/11)
+  assert.equal(Arc.etapaDe(D, "2026-11-29").n, 3);     // Europa, aún de viaje
+  assert.equal(Arc.etapaDe(D, "2026-11-30").n, 4);     // vuelves a Madrid: empieza la Vuelta
   assert.equal(Arc.etapaDe(D, "2026-09-27").n, 1);     // el test de 20 km cierra la Calzada
   assert.equal(Arc.etapaDe(D, HOY).n, 2);              // hoy empieza el Foro
   assert.equal(Arc.etapaDe(D, "2026-10-18").n, 2);     // Roma
@@ -241,7 +243,7 @@ test("fases, reglas y viajes vienen del código: al cargar siempre son los de es
   assert.deepEqual(D.etapas.map((e) => e.nombre), ["Calzada", "Foro", "Travesía", "Vuelta", "Faro"]);
   assert.deepEqual(D.reglas.map((r) => r.id), ["plan", "dormir", "estudio"]);
   assert.equal(D.reglas[2].alta, "2026-09-28");                  // el estudio empieza con el Foro
-  assert.equal(D.viajes.length, 8);
+  assert.equal(D.viajes.length, 14);
   assert.deepEqual(D.checks, v.checks);                          // lo marcado no se pierde
 });
 test("etapas: numeros de la fase en curso", () => {
@@ -297,6 +299,10 @@ test("miliario: la cuenta atras de cada fase a su destino real", () => {
   assert.equal(Arc.destinoDe(D, e2, "2026-10-20").abajo, "TRAVESÍA");
   assert.equal(Arc.destinoDe(D, e3, "2026-10-27").abajo, "MÉXICO");
   assert.equal(Arc.destinoDe(D, e3, "2026-11-10").abajo, "VOLVER");
+  assert.equal(Arc.destinoDe(D, e3, "2026-11-20").abajo, "ÁMSTERDAM");
+  assert.equal(Arc.destinoDe(D, e3, "2026-11-24").frase, "hoy vuelas a Ámsterdam");
+  assert.equal(Arc.destinoDe(D, e3, "2026-11-25").abajo, "LA VUELTA");
+  assert.equal(Arc.destinoDe(D, e3, "2026-11-25").n, 5);
   assert.equal(Arc.destinoDe(D, e4, "2026-12-10").abajo, "CORUÑA");
   assert.equal(Arc.destinoDe(D, e5, "2026-12-25").abajo, "SELLAR");
   const nueva = { id: "u9", nombre: "Enero", desde: "2026-12-20", hasta: "2026-12-31" };
@@ -312,10 +318,13 @@ test("la linea de HOY: numeral, nombre y lo que viene; viajes y primer dia", () 
   assert.equal(Arc.lineaEtapa(D, "2027-01-02"), null);
   assert.equal(Arc.lineaEtapa(D, "2026-10-01", HOY), "II Foro · día 4 de 28");  // otro día: sin "hoy"
 });
-test("viajes: los reales, seguros, con ciudades y sin codigos; el 3/11 a Ciudad de México", () => {
+test("viajes: los reales, con ciudades y sin codigos; el único posible es subir a Coruña en tren el 19/11; el 3/11 a Ciudad de México", () => {
   const D = Arc.vacio(HOY);
-  assert.equal(D.viajes.length, 8);
-  D.viajes.forEach((v) => { assert.ok(!/[A-Z]{3}/.test(v.de + v.a)); assert.ok(!v.posible); assert.ok(v.fecha); });
+  assert.equal(D.viajes.length, 14);
+  D.viajes.forEach((v) => { assert.ok(!/[A-Z]{3}/.test(v.de + v.a)); assert.ok(v.fecha); });
+  assert.deepEqual(D.viajes.filter((v) => v.posible).map((v) => v.fecha + " " + v.de + " → " + v.a), ["2026-11-19 Madrid → A Coruña"]);
+  assert.deepEqual(D.viajes.filter((v) => v.fecha >= "2026-11-23" && v.fecha <= "2026-11-30").map((v) => v.de + " → " + v.a),
+    ["A Coruña → Madrid", "Madrid → Ámsterdam", "Bruselas → París", "París → Bruselas", "Bruselas → Madrid"]);
   assert.deepEqual(D.viajes.filter((v) => v.fecha === "2026-11-03").map((v) => v.a), ["Ciudad de México"]);
   assert.deepEqual(D.viajes.filter((v) => v.fecha === "2026-11-12").map((v) => v.de + " → " + v.a), ["Ciudad de México → Cancún"]);
 });
