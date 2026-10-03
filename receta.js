@@ -60,6 +60,10 @@ function trocea(t, sep) {
   return r.map(function (x) { return x.trim(); }).filter(Boolean);
 }
 
+// la coma decimal ("1,5 kg", "150,5 ml", "1,5 cm") no separa nada: se esconde mientras se parte por comas y se devuelve
+function sinDec(s) { return String(s).replace(/(\d),(?=\d)/g, "$1\u0002"); }
+function conDec(s) { return String(s).replace(/\u0002/g, ","); }
+
 /* ------------------------------ cantidades ------------------------------
    "250 g solomillos de pollo" -> {n:250, ud:"g", resto:"solomillos de pollo"}
    "3-4 lonchas de pavo" -> {n:4, min:3, ud:"loncha", resto:"pavo"}
@@ -276,7 +280,8 @@ function ingrediente(txt, extra) {
   else if ((q = cantidad(s))) { resto = q.resto; delete q.resto; c = q; var qn = cantidad(nom); if (qn) nom = qn.resto; }
   if (!c && !vago) {
     // "Huevos, 1 docena", "Dátiles · 1 paquete", "bote de tomate triturado 800 g"
-    var tr = resto.match(/^(.*?)\s*[,·]\s*(~?\d.*|una?\s.*|media docena.*)$/i);
+    var tr = sinDec(resto).match(/^(.*?)\s*[,·]\s*(~?\d.*|una?\s.*|media docena.*)$/i);
+    if (tr) { tr[1] = conDec(tr[1]); tr[2] = conDec(tr[2]); }
     if (tr && cantidad(tr[2])) { c = cantidad(tr[2]); delete c.resto; resto = tr[1]; nom = resto; }
     else if ((tr = resto.match(/^(.*\D)\s+(?:x\s*)?(\d+(?:[.,]\d+)?|[½¼¾])\s*(uds?\.?|unidades?|latas?|paquetes?|botes?|bolsas?|bricks?|tarros?|docenas?|rebanadas?|lonchas?)?$/i)) &&
              !/\b(min|minutos?|cm|s|seg)$/i.test(tr[1])) {
@@ -306,7 +311,7 @@ function ingrediente(txt, extra) {
   // la preparacion, sin romper los compuestos ("pan rallado", "huevo cocido")
   var pr = resto.match(PROT), off = pr ? pr[1].length : 0, cola = resto.slice(off), prep = null, mp = cola.match(PREP);
   if (mp) { prep = mp[1].replace(/[.;,]+$/, "").trim(); cola = cola.slice(0, mp.index); }
-  var coma = cola.indexOf(",");
+  var coma = sinDec(cola).indexOf(",");
   if (coma >= 0) { if (cola.slice(coma + 1).trim()) notas.push(cola.slice(coma + 1).trim()); cola = cola.slice(0, coma); }
   var nu = nucleo(resto.slice(0, off) + cola);
   if (!nu.base) nu = nucleo(resto);
@@ -333,7 +338,7 @@ function trozos(txt) {
   var out = [];
   conPar(limpia(txt), function (s) { return s.split(/\s*\+\s*/); }).forEach(function (p) {
     var sub = [];
-    conPar(p, function (s) { return s.split(/\s*,\s*/); }).forEach(function (x) {
+    conPar(p, function (s) { return sinDec(s).split(/\s*,\s*/).map(conDec); }).forEach(function (x) {
       sub = sub.concat(conPar(x, function (s) {
         return s.split(/\s+y\s+(?=(?:una?\s|unas?\s|\d|[½¼¾~]|sal\b|pimienta\b|aove\b|or[eé]gano\b))/i);
       }));

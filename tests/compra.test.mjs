@@ -109,8 +109,8 @@ test("contables: las fracciones de eventos distintos se suman antes de redondear
 });
 test("contables: latas, bricks y bolsas también suben al entero; gramos y mililitros nunca", () => {
   const F = comprar(NOTA(), [
-    ev("2026-10-05", "A", "INGREDIENTES\n· ½ lata de atún\n· 125 g de queso\n· 150.5 ml de nata\n\nPROCESO\n1. Atún, queso y nata."),
-    ev("2026-10-06", "B", "INGREDIENTES\n· ½ lata de atún\n· 100 g de queso\n· 300 ml de nata\n\nPROCESO\n1. Atún, queso y nata."),
+    ev("2026-10-05", "A", "INGREDIENTES\n· ½ lata de atún\n· 125 g de queso\n· 150,5 ml de nata\n\nPROCESO\n1. Atún, queso y nata."),
+    ev("2026-10-06", "B", "INGREDIENTES\n· ½ lata de atún\n· 100 g de queso\n· 0,3 l de nata\n\nPROCESO\n1. Atún, queso y nata."),
     ev("2026-10-07", "C", "INGREDIENTES\n· ½ lata de atún\n\nPROCESO\n1. Atún.")
   ]);
   assert.deepEqual(por(F, "atun").c, { n: 2, ud: "lata" });

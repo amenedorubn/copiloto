@@ -72,9 +72,10 @@ function zonaNom(n) {
 }
 function partes(t) {                         // "a, b (c, d), e. Otra" -> ["a", "b (c, d)", "e", "Otra"]
   var r = [], nivel = 0, cur = "";
-  String(t).replace(/\.\s+(?=\p{Lu})/gu, ";").split("").forEach(function (ch) {
+  String(t).replace(/\.\s+(?=\p{Lu})/gu, ";").split("").forEach(function (ch, i, cs) {
     if (ch === "(") nivel++; if (ch === ")") nivel = Math.max(0, nivel - 1);
-    if ((ch === "," || ch === ";") && !nivel) { if (cur.trim()) r.push(cur.trim()); cur = ""; return; }
+    var dec = ch === "," && /\d/.test(cs[i - 1] || "") && /\d/.test(cs[i + 1] || "");      // "1,1 kg": coma decimal
+    if ((ch === "," || ch === ";") && !nivel && !dec) { if (cur.trim()) r.push(cur.trim()); cur = ""; return; }
     cur += ch;
   });
   if (cur.trim()) r.push(cur.trim());

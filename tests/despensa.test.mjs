@@ -218,3 +218,10 @@ test("dos tuppers distintos no se juntan; comerte uno lo saca de casa", () => {
   assert.ok(!H.todos.some((x) => /lentejas/i.test(x.nombre)), "comido");
   assert.ok(H.todos.some((x) => /con pasta/.test(x.nombre)) && H.todos.some((x) => /con arroz/.test(x.nombre)));
 });
+
+test("coma decimal en la nota de la despensa: «1,1 kg de rigatoni» es un solo alimento", () => {
+  assert.deepEqual(Dp.partes("2 huevos, 1,1 kg de rigatoni Alberto Poiatti, 300 g de hélices"), ["2 huevos", "1,1 kg de rigatoni Alberto Poiatti", "300 g de hélices"]);
+  const R = Dp.despensa("DESPENSA EN VIVO — última actualización: 03/10/2026\n\n## DESPENSA SALADA\n2 huevos, 1,1 kg de rigatoni Alberto Poiatti, 0,5 l de caldo\n");
+  const it = R.zonas[0].items;
+  assert.deepEqual(it.map((x) => [x.nombre, x.c]), [["Huevos", { n: 2, ud: "ud" }], ["Rigatoni Alberto Poiatti", { n: 1100, ud: "g" }], ["Caldo", { n: 500, ud: "ml" }]]);
+});

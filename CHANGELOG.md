@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.26.1] - 2026-10-03
+
+### Corregido
+
+- Cocina: la coma decimal ya no parte los ingredientes (150,5 ml, 1,5 kg y 1,5 l son una cantidad; 1,5 cm es una medida de corte, no 5 unidades), tanto en las recetas del calendario como en la nota de la despensa (1,1 kg de rigatoni)
+
 ## [2.26.0] - 2026-10-03
 
 ### Añadido
@@ -550,6 +556,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.26.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.26.1
 [2.26.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.26.0
 [2.25.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.25.1
 [2.25.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.25.0

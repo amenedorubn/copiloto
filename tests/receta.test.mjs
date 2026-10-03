@@ -453,3 +453,27 @@ test("(×N) y POR TARRO: el multiplicador llega a cada línea del grupo", () => 
   const s = R.leer({ uid: "s", fecha: "2026-10-05", hora: "21:30", titulo: "Prepara 3 tarros", texto: "3 TARROS · 8 min\n\nPOR TARRO\n· 125 g de yogur griego\n\nPROCESO\n1. Mezcla." });
   assert.equal(s.ingredientes[0].c.n, 375);
 });
+
+/* ------------------------------ la coma decimal no separa ------------------------------ */
+test("coma decimal: 150,5 ml, 1,5 kg y 1,5 l son una sola cantidad", () => {
+  const una = (t) => { const L = R.ings(t); assert.equal(L.length, 1, t); return L[0]; };
+  assert.deepEqual(una("150,5 ml de nata").c, { n: 150.5, ud: "ml" });
+  assert.deepEqual(una("1,5 kg de patatas").c, { n: 1500, ud: "g" });
+  assert.deepEqual(una("1,5 l de leche").c, { n: 1500, ud: "ml" });
+  assert.deepEqual(una("Patatas, 1,5 kg").c, { n: 1500, ud: "g" }, "la forma «Nombre, cantidad» también");
+  assert.equal(una("1,5 kg de patatas").base, "patata");
+});
+test("coma decimal: 1,5 cm es una medida de corte, no una cantidad", () => {
+  const a = R.ings("pollo en dados de 1,5 cm")[0];
+  assert.equal(a.c, null); assert.equal(a.prep, "en dados de 1,5 cm");
+  const b = R.ings("1 boniato, pelado en cubos de 1,5 cm")[0];
+  assert.deepEqual(b.c, { n: 1, ud: "ud" }); assert.equal(b.prep, "pelado en cubos de 1,5 cm"); assert.equal(b.base, "boniato");
+  const c = R.leer({ uid: "z", titulo: "Boniato", texto: "INGREDIENTES\n· 1 boniato (~300 g), pelado en cubos de 1,5 cm\n· 100 g de pimiento, en dados de 0,5 cm\n\nPROCESO\n1. Corta el boniato en cubos de 1,5 cm y el pimiento en dados." });
+  assert.deepEqual(c.ingredientes.map((g) => [g.base, g.c.n, g.c.ud]), [["boniato", 1, "ud"], ["pimiento", 100, "g"]]);
+});
+test("coma decimal: una lista con comas de verdad sigue partiéndose", () => {
+  assert.deepEqual(R.ings("150,5 ml de nata, 1,5 kg de patatas").map((g) => [g.base, g.c.n, g.c.ud]), [["nata", 150.5, "ml"], ["patata", 1500, "g"]]);
+  assert.deepEqual(R.ings("AOVE, sal, pimienta").map((g) => g.base), ["aove", "sal", "pimienta"]);
+  assert.deepEqual(R.ings("Huevos, 1 docena")[0].c, { n: 12, ud: "ud" });
+  assert.deepEqual(R.ings("2 cdas de maíz, 1,5 kg de patatas").map((g) => g.c), [{ n: 2, ud: "cda" }, { n: 1500, ud: "g" }]);
+});
