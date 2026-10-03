@@ -428,6 +428,44 @@ function estadoDe(ing, H) {
 
 /* ------------------------------ lo que comprar ------------------------------ */
 function sumaDias(iso, n) { var d = new Date(msDe(iso, "12:00")); d.setDate(d.getDate() + n); return isoDe(d.getTime()); }
+function dos2(n) { return Math.round(n * 100) / 100; }
+// lo que se compra por piezas (no se compra ½ aguacate ni 1,5 latas): se redondea hacia arriba. g y ml, nunca.
+function contable(ud) { return !!(DISCRETO[ud] || ENVASE[ud]); }
+// 1 yogur = 125 g: lo que dice una linea con las dos medidas ("1 yogur griego (125 g)"), por alimento
+function aprende(eq, c, equiv) {
+  if (!c || !equiv || !(c.n > 0) || c.ud === equiv.ud) return;
+  if (eq[c.ud + ">" + equiv.ud] == null) eq[c.ud + ">" + equiv.ud] = equiv.n / c.n;
+}
+function convierte(n, de, a, eq) {
+  if (de === a) return n;
+  if (eq[de + ">" + a] != null) return dos2(n * eq[de + ">" + a]);
+  if (eq[a + ">" + de] != null) return dos2(n / eq[a + ">" + de]);
+  return null;
+}
+// las cantidades de un alimento, juntas por unidad y, si se sabe la equivalencia, en una sola (la contable, si hay)
+function juntaPartes(partes, eq) {
+  var P = partes.map(function (x) { return { n: x.n, ud: x.ud }; }), meta = P.filter(function (x) { return contable(x.ud); })[0] || P[0], out = [];
+  if (!meta) return out;
+  P.forEach(function (x) {
+    var v = convierte(x.n, x.ud, meta.ud, eq);
+    if (v != null) { var o = out.filter(function (y) { return y.ud === meta.ud; })[0]; if (o) o.n = dos2(o.n + v); else out.push({ n: v, ud: meta.ud }); return; }
+    var q = out.filter(function (y) { return y.ud === x.ud; })[0];
+    if (q) q.n = dos2(q.n + x.n); else out.push({ n: x.n, ud: x.ud });
+  });
+  return out;
+}
+var PAL_ENV = /^(vasito|vaso|tarro|bote|tupper|lata|bolsa|brick|paquete|de|del)$/;
+// ¿otra comida del plan lo hace o lo pide? ("overnight oats" en "Prepara 2 tarros de overnight oats"; el aguacate de ayer)
+function loProduce(g, R, C) {
+  var w = norm(g.base || g.nombre || "").split(" ").filter(function (x) { return x && !PAL_ENV.test(x); }).map(function (x) { return x.length > 3 ? x.replace(/(es|s)$/, "") : x; });
+  if (!w.length) return null;
+  return C.filter(function (o) {
+    if (o.uid === R.uid) return false;
+    var t = norm(o.titulo + " " + o.sub);
+    return w.every(function (x) { return t.indexOf(x) >= 0; }) ||
+      (o.ingredientes || []).some(function (x) { return x.clave === g.clave && !x.deCasa && !x.hecho; });   // la otra mitad del que se compra en otra comida
+  })[0] || null;
+}
 function faltan(D, cambios, comidas, opts) {
   opts = opts || {}; if (opts.ahoraMs == null) opts.ahoraMs = Date.now();
   var hoy = opts.hoy || isoDe(opts.ahoraMs), RC = Rc();
@@ -436,34 +474,67 @@ function faltan(D, cambios, comidas, opts) {
   var fin = C.reduce(function (m, R) { return R.fecha > m ? R.fecha : m; }, hoy), tope = sumaDias(hoy, 7);
   var hasta = fin < tope ? fin : tope;
   var prox = C.filter(function (R) { return R.fecha <= hasta && estadoComida(R, cambios, opts) === "proxima"; }).sort(porHora);
-  var need = {}, orden = [];
+  var need = {}, orden = [], descartadas = [];
   prox.forEach(function (R) {
     R.ingredientes.forEach(function (g) {
-      if (M.basico(g) || g.hecho || g.deCasa || g.opcional || !g.clave) return;
+      if (M.basico(g) || g.hecho || g.opcional || !g.clave) return;
+      var lin = { uid: R.uid, titulo: R.titulo, fecha: R.fecha, hora: R.hora, txt: g.txt, c: g.c ? { n: g.c.n, ud: g.c.ud } : null };
+      if (g.deCasa) {                                  // "de casa": nunca se compra; si otra comida del plan lo hace, se dice cual
+        var pr = loProduce(g, R, C);
+        descartadas.push({ clave: g.clave, ver: mayus1(g.base || g.nombre), txt: g.txt, uid: R.uid, titulo: R.titulo, fecha: R.fecha, hora: R.hora,
+          motivo: pr ? "De casa: sale de «" + pr.titulo + "» (" + diaCorto(pr.fecha) + ")" : "De casa", de: pr ? { uid: pr.uid, titulo: pr.titulo, fecha: pr.fecha } : null });
+        return;
+      }
       var n = need[g.clave];
-      if (!n) { n = need[g.clave] = { g: g, c: g.c ? { n: g.c.n, ud: g.c.ud } : null, sinC: !g.c, para: [] }; orden.push(n); }
-      else if (n.c && g.c) n.c = sumaC(n.c, g.c) || n.c;
-      else if (!g.c) n.sinC = true;
-      if (!n.para.some(function (p) { return p.uid === R.uid; }))
+      if (!n) { n = need[g.clave] = { g: g, partes: [], eq: {}, sinC: false, para: [], lineas: [] }; orden.push(n); }
+      if (g.c) {
+        var p = n.partes.filter(function (x) { return x.ud === g.c.ud; })[0];
+        if (p) p.n = dos2(p.n + g.c.n); else n.partes.push({ n: g.c.n, ud: g.c.ud });
+        aprende(n.eq, g.c, g.equiv);
+      } else n.sinC = true;
+      n.lineas.push(lin);
+      if (!n.para.some(function (x) { return x.uid === R.uid; }))
         n.para.push({ uid: R.uid, titulo: R.titulo, fecha: R.fecha, hora: R.hora });
     });
   });
   var items = [];
   orden.forEach(function (n) {
-    var s = M.busca(n.g, true), falta = n.c, dudoso = false, razon = "";
+    var s = M.busca(n.g, true), dudoso = false, razon = "", total = juntaPartes(n.partes, n.eq), falta = total.map(function (x) { return { n: x.n, ud: x.ud }; });
     if (s && s.estado === "no" && s.porPlan) { dudoso = true; razon = "Según el plan se acabó el " + corta(s.porPlan); }
-    else if (!s || s.estado === "no") falta = n.c;
+    else if (!s || s.estado === "no") { /* se compra todo */ }
     else if (s.estado === "dudoso") { dudoso = true; razon = s.razon || "No se sabe si queda"; }
-    else if (s.c && n.c && s.c.ud === n.c.ud) {
-      if (s.c.n >= n.c.n) return;
-      falta = { n: Math.round((n.c.n - s.c.n) * 100) / 100, ud: n.c.ud };
-    } else return;                                            // hay (sin cantidad o en otra medida)
+    else if (s.c && total.length) {
+      // lo que hay, en la medida de lo que se pide (o con la equivalencia que dicen las recetas)
+      var k = -1, hay = null;
+      total.forEach(function (x, i) { if (k < 0) { var v = convierte(s.c.n, s.c.ud, x.ud, n.eq); if (v != null) { k = i; hay = v; } } });
+      if (k < 0) return;                                      // hay, pero en otra medida sin equivalencia: no se sabe, se da por cubierto
+      falta[k].n = dos2(total[k].n - hay);
+      falta = falta.filter(function (x) { return x.n > 0; });
+    } else return;                                            // hay (sin cantidad)
+    falta = falta.map(function (x) { return contable(x.ud) ? { n: Math.ceil(x.n - 1e-9), ud: x.ud } : x; }).filter(function (x) { return x.n > 0; });
+    if (!falta.length && total.length) return;
     // "Macarrones", "Plátanos": el nombre como venía en la receta (en plural si venía así)
     var ver = mayus1(RC.corto({ ver: n.g.ver || n.g.base, base: n.g.base, nombre: n.g.nombre, c: null }));
-    items.push({ k: "f:" + n.g.clave, clave: n.g.clave, ver: ver, c: falta,
-                 cant: falta ? RC.cantTxt(falta) : "", para: n.para, dudoso: dudoso, razon: razon, g: n.g });
+    var cant = falta.map(function (x) { return RC.cantTxt(x); }).join(" + ");
+    items.push({ k: "f:" + n.g.clave, clave: n.g.clave, ver: ver, c: falta[0] || null, cants: falta, cant: cant, para: n.para, dudoso: dudoso, razon: razon, g: n.g,
+                 lineas: n.lineas, total: total, enCasa: s && s.estado !== "no" ? { txt: s.txt, c: s.c ? { n: s.c.n, ud: s.c.ud } : null, estado: s.estado } : null });
   });
-  return { items: items, hasta: hasta, hastaTxt: diaLargo(hasta), n: prox.length, comidas: prox };
+  return { items: items, hasta: hasta, hastaTxt: diaLargo(hasta), n: prox.length, comidas: prox, descartadas: descartadas };
+}
+// de donde sale la cantidad de una linea de Comprar: una frase por linea del plan y la cuenta
+function origenDe(it, hoy) {
+  var RC = Rc(), L = (it.lineas || []).map(function (l) {
+    return (l.fecha === hoy ? "hoy" : diaCorto(l.fecha)) + " " + l.fecha.slice(8) + "/" + l.fecha.slice(5, 7) + " · " + l.titulo + " — «" + l.txt + "»" + (l.c ? " → " + RC.cantTxt(l.c) : " (sin cantidad)");
+  });
+  var tot = (it.total || []).map(function (x) { return RC.cantTxt(x); }).join(" + ");
+  if (tot) {
+    var cuenta = "Suman " + tot;
+    if (it.enCasa && it.enCasa.c) cuenta += " − en casa " + RC.cantTxt(it.enCasa.c);
+    else if (it.enCasa) cuenta += " · en casa: " + it.enCasa.txt + (it.enCasa.estado === "dudoso" ? " (¿queda?)" : "");
+    if (it.cant) cuenta += " = " + it.cant;
+    L.push(cuenta);
+  }
+  return L;
 }
 // "Para: Shakshuka · jue"
 function paraTxt(it, hoy) {
@@ -491,6 +562,6 @@ function textoClaude(H, opts) {
 }
 
 return { ZONAS: ZONAS6, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
-  estadoComida: estadoComida, queToca: queToca, faltan: faltan, paraTxt: paraTxt, textoClaude: textoClaude,
+  estadoComida: estadoComida, queToca: queToca, faltan: faltan, origenDe: origenDe, paraTxt: paraTxt, textoClaude: textoClaude,
   isoDe: isoDe, msDe: msDe, diaLargo: diaLargo, diaCorto: diaCorto };
 });

@@ -132,10 +132,11 @@ function cantidad(txt) {
   return c;
 }
 // "rigatoni (1,2 kg)", "1 scoop (30 g)": la cantidad que va entre parentesis
+// "(125 g cada uno)" va con cada: es lo de una unidad, no el total
 function cantidadEntre(txt) {
-  var m = String(txt || "").match(/\(\s*(~?\s*\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|cl))\s*\)/i);
+  var m = String(txt || "").match(/\(\s*(~?\s*\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|cl))\s*(cada\s+(?:uno|una|un))?\s*\)/i);
   if (!m) return null;
-  var c = cantidad(m[1]); if (c) delete c.resto;
+  var c = cantidad(m[1]); if (c) { delete c.resto; if (m[2]) c.cada = true; }
   return c;
 }
 var PLURAL_UD = /^(cda|cdta|bolsa|lata|bote|brick|diente|loncha|rebanada|rodaja|tarro|sobre|scoop|paquete|bola|tarrina|pizca|vaso|tupper|blister|puñado)$/;
@@ -238,6 +239,10 @@ var VAGO = /^(unas?\s+(?:pocas\s+)?gotas|un\s+chorrit[oa]|un\s+chorro|un\s+hilo|
 var DECASA = /\b(del? (?:domingo|lunes|martes|miercoles|jueves|viernes|sabado|mediodia)|de (?:ayer|anoche|hoy)|de la nevera|del congelador|de casa|de la bolsa|del bote|del tarro|del tomate entero|descongelad[oa]s? desde|de los comprados|que quedan?|que sobran?|la otra|el otro|tupper del|del tupper)\b/;
 var HECHO = /^(tupper|tarro \d|bote \d)\b|\btarro \d+ de\b|\bhuevos? cocidos? (?:de la |del? )?(?:mediodia|anoche|ayer|manana|domingo|lunes|martes|miercoles|jueves|viernes|sabado)\b|^(?:el|la|los|las) (?:\d+ )?huevos? cocidos?\b/;
 var ACABA = /\b(que quedan?|que sobran?|todas? las|todos los|la otra (?:media|mitad)|lo que queda|se acaban?)\b/;
+// Una nota entre parentesis solo dice "de casa" si EMPIEZA por eso ("(de casa: ...)", "(el del lunes ...)",
+// "(descongelado desde anoche)", "(lo que queda del bote)"). "(usas la mitad hoy; la otra es para mañana)" o
+// "(el que cuecen, de hoy)" hablan de otra cosa: sus palabras sueltas no cuentan.
+var NOTA_CASA = /^(?:(?:el|la|lo|los|las)\s+)?(?:de casa|de la nevera|del congelador|de la bolsa|del bote|del tarro|del tomate entero|de los comprados|del? (?:ayer|anoche|domingo|lunes|martes|miercoles|jueves|viernes|sabado|mediodia)|descongelad[oa]s? desde|que (?:ya )?(?:quedan?|sobran?|tienes)|(?:queda|sobra)n?\b)/;
 
 function ingrediente(txt, extra) {
   extra = extra || {};
@@ -255,9 +260,11 @@ function ingrediente(txt, extra) {
     return " ";
   }).replace(/\s+/g, " ").trim();
   var todo = norm(t), cuerpo = norm(sinPar);
+  // el cuerpo y las notas que empiezan por "de casa": lo demas de los parentesis no decide
+  var activo = cuerpo + " " + notas.map(norm).filter(function (x) { return NOTA_CASA.test(x); }).join(" ");
   var ref = /^(el|la|los|las)\s/i.test(sinPar);
-  var deCasa = ref || DECASA.test(todo), hecho = HECHO.test(cuerpo);
-  var acaba = ACABA.test(todo);
+  var deCasa = ref || DECASA.test(activo), hecho = HECHO.test(cuerpo);
+  var acaba = ACABA.test(activo);
   var abre = /\babre[sn]?\b/.test(todo);
   if (/\bopcional\b|\bsin \w+ y ya\b/.test(todo)) opcional = true;
   var basicoTxt = BASICO_TXT.test(cuerpo);
@@ -289,6 +296,7 @@ function ingrediente(txt, extra) {
     if (tn) { c = { n: 1, ud: UDS[tn[1].toLowerCase()] }; resto = resto.slice(tn[0].length); hecho = true; }
     else if ((u = unidadDe(resto))) { if (ENVASE[u.ud] || u.ud === "scoop") c = { n: 1, ud: u.ud }; resto = u.resto; }
   }
+  if (equiv && equiv.cada) { delete equiv.cada; if (c && c.ud !== "vaso") equiv.n = redondea(equiv.n * c.n); }
   if (equiv && (!c || c.ud === "vaso")) { c = equiv; equiv = null; }
   var mult = extra.mult > 0 ? extra.mult : 1;
   if (mult !== 1) [c, equiv].forEach(function (x) {

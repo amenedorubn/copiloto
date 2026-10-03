@@ -31,6 +31,10 @@ Arriba, fijas: **Semana**, **Comprar**, **Despensa** y **Recetas**; se cambian t
   que no está en casa. Un alimento por fila, sumado si sale en varias comidas, con «Para: Shakshuka · jue».
   Nunca: sal, aceite, especias, lo que el plan hace antes (los huevos cocidos de anoche, el tarro de avena) ni
   lo que la receta dice que ya está en casa. «¿Te queda?» cuando no se sabe: «Me queda» quita la duda.
+  Tocar el nombre enseña de qué comidas y líneas sale la cantidad (y la cuenta con lo que hay en casa); la casilla
+  de la izquierda lo marca. Las cantidades se suman con la equivalencia unidad/gramos que den las recetas
+  (`1 yogur (125 g)`) y lo que se compra por piezas sube al entero; gramos y ml no (ver
+  `docs/RECETAS-CALENDARIO.md`).
   Al marcarlo pasa a «En el carro», donde «Cuánto» apunta lo que has comprado («1 kg», «6», «2 paquetes»).
 - **Despensa** (antes Tengo), en seis zonas: Congelador, Nevera, Fruta y verdura, Despensa dulce, Despensa
   salada y Especias (la «Despensa seca» de la nota se reparte sola entre dulce y salada; «Fresco» es fruta y

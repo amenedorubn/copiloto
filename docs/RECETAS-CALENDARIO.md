@@ -12,8 +12,9 @@ despensa y paso a paso. Si el texto sigue estas reglas, no se pierde nada (como 
    Ej.: `· 1 boniato (~250 g), pelado en cubos de 2 cm`. Nada de «A + B» en la misma línea.
 5. Los **básicos** juntos: `· Básicos: sal, pimienta, AOVE`.
 6. Rangos con guion (`3-4 lonchas`), aproximado con `~`. Lo que ya está en casa: `(de casa: el del domingo)`.
-   Lo que se termina: `(se acaba)`.
-7. Multiplicadores explícitos: `POR TARRO (×2)`.
+   Lo que se termina: `(se acaba)`. Ver «De casa» abajo: solo vale si la nota **empieza** así.
+7. Multiplicadores explícitos: `POR TARRO (×2)`. Sin `(×N)`, «POR TARRO» usa los tarros de la primera línea
+   (`3 TARROS` → ×3). El multiplicador vale para toda la cantidad de la línea, también para la que va entre paréntesis.
 8. Ingredientes **en el orden en que se usan**. Lo de `EN PARALELO` (huevos a cocer) también va en la lista.
 9. `ANTES DE EMPEZAR`: todo lo que se pela, corta, pica, sala, descongela o se abre, una cosa por línea.
    Primero lo que espera (la berenjena en sal).
@@ -23,6 +24,38 @@ despensa y paso a paso. Si el texto sigue estas reglas, no se pierde nada (como 
 13. Los **consejos** van en `NOTAS`, nunca sueltos detrás de los pasos.
 14. Antes de guardar, comprueba: cada ingrediente sale en algún paso, cada alimento de un paso está en la lista
     y los tiempos suman lo que dice la primera línea.
+
+## Cómo sale la lista de la compra (pestaña Comprar)
+
+Copiloto suma cada ingrediente de las comidas que aún no han empezado, resta lo que hay en la despensa y
+enseña lo que falta. Estas reglas no cambian el texto de los eventos: son cómo se lee.
+
+**De casa.** Una nota entre paréntesis solo dice «de casa» si **empieza** por eso: `(de casa: …)`, `(de la nevera)`,
+`(del domingo …)`, `(descongelado desde anoche)`, `(lo que queda del bote)`. Palabras sueltas a mitad de una nota
+(«de hoy», «la otra», «la otra mitad») no lo activan:
+
+| Línea | Se compra |
+|---|---|
+| `· 1 huevo (el que cuecen en paralelo, de hoy)` | sí: 1 huevo |
+| `· 1 aguacate maduro (usas la mitad hoy; la otra mitad es para mañana)` | sí: 1 aguacate entero |
+| `· ½ aguacate (de casa: la otra mitad de ayer, de la nevera)` | no: es de casa |
+
+Lo marcado «de casa» **no se compra nunca**, tampoco si lo hace otra receta del plan (el tarro de overnight oats
+del lunes, el huevo cocido del mediodía). En la lista de Comprar no aparece; Copiloto apunta de qué comida sale.
+
+**Unidades y gramos.** Si una línea trae las dos medidas, Copiloto aprende la equivalencia y suma todo en la unidad
+contable: `· 1 yogur griego (125 g)` y `· 125 g de yogur griego` son 2 yogures. `(125 g)` es el total de la línea;
+`(125 g cada uno)` es por unidad (`2 yogures griegos (125 g cada uno)` = 250 g). Lo que hay en casa en gramos
+se resta con la misma equivalencia. Sin equivalencia no se pierde nada: sale `1 + 125 g`. Conviene escribir
+la equivalencia en la primera aparición del alimento.
+
+**Redondeo.** Se suma todo, de todas las comidas, y solo al final se redondea **hacia arriba** lo que se compra por
+piezas: `ud`, rebanadas, lonchas, rodajas, latas, botes, bolsas, bricks, tarros, paquetes… (3 × ½ tomate = 1,5 → 2;
+con 1 en casa → 1). Los gramos y los mililitros no se redondean nunca.
+
+**Origen.** En Comprar, tocar el nombre despliega de qué comidas y líneas sale la cantidad
+(`lun 05/10 · Curry … — «1 huevo» → 1`) y la cuenta (`Suman 12 − en casa 2 = 10`). La casilla de la izquierda es
+la que marca «comprado».
 
 ## Ejemplo
 

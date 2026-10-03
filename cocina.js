@@ -413,6 +413,11 @@ CSS +=
   ".cocHojaBot button+button{background:var(--sf);color:var(--fg);box-shadow:inset 0 0 0 1px var(--ln)}" +
   ".cocBtn{display:flex!important;align-items:center;justify-content:center;gap:8px}.cocBtn svg{margin:0!important;flex:none}" +
   ".cocCompra li.conQuita>button{border-top:0!important}" +
+  ".cocCompra li.cocItem{grid-template-columns:44px 1fr auto;gap:0 6px}" +
+  ".cocCompra .cocTick{width:44px!important;min-height:48px;display:flex!important;align-items:center;justify-content:center;grid-template-columns:none!important;padding:0!important;border-top:0!important}" +
+  ".cocCompra button.cocNom{grid-template-columns:1fr auto!important;gap:6px!important;border-top:0!important;min-width:0}" +
+  ".cocOrigen{grid-column:1/-1;padding:0 0 12px 50px}.cocOrigen p{margin:0 0 4px;font-size:12px;font-weight:600;line-height:1.45;color:var(--mu)}" +
+  ".cocOrigen p.suma{margin-top:6px;color:var(--fg);font-weight:800}" +
   ".cocCompra button{grid-template-columns:28px 1fr auto!important}" +
   ".cocCompra button em{font-style:normal;font-size:14px;font-weight:700;color:var(--mu);white-space:nowrap;padding-left:8px}" +
   ".cocDia{margin:14px 0 2px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}.cocDia:first-child{margin-top:0}" +
@@ -558,7 +563,7 @@ function estado(dia) {
 var CTX = null, MCTX = null, SEL = null, cont = null, RELOJ = null;
 function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CTX.activa || CTX.activa())); }
 var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["recetas", "Recetas"]];
-var CANT = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
+var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
 function subDe(s) { if (s === "despensa") s = "tengo"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 API.pinta = function (c, ctx) {
   ponCSS(); cont = c; CTX = ctx || {}; MCTX = CTX;
@@ -580,7 +585,7 @@ API.sub = function (s) { if (enTab()) cambiaSub(subDe(s)); else SUB = subDe(s); 
 function cambiaSub(s) {
   if (s === SUB) return;
   var ks = SUBS.map(function (x) { return x[0]; });
-  ENTRA = ks.indexOf(s) > ks.indexOf(SUB) ? 1 : -1; SUB = s; TOCADO = null; CANT = null; ANADIR = false; RECUENTO = null; COPIA = null; PASADA = null;
+  ENTRA = ks.indexOf(s) > ks.indexOf(SUB) ? 1 : -1; SUB = s; TOCADO = null; CANT = null; ORIGEN = null; ANADIR = false; RECUENTO = null; COPIA = null; PASADA = null;
   pinta(); cont.scrollTop = 0;
 }
 function pinta() {
@@ -827,17 +832,22 @@ function compra(E, LC) {
   if (n) {
     var ul = el("ul", "cocCompra");
     LC.items.forEach(function (it) {
-      var li = el("li", it.dudoso ? "duda" : "");
-      // con duda, la cantidad va con el nombre: a la derecha esta "Me queda"
-      var b = el("button", "cocMarca", '<i></i><span>' + esc(it.ver + (it.dudoso && it.cant ? " · " + it.cant : "")) +
-        (it.dudoso ? '<small>¿Te queda? ' + esc(it.razon || "") + '</small>' : it.para ? '<small>Para: ' + esc(Dp().paraTxt(it, o.hoy)) + '</small>' : "") +
-        '</span><em>' + esc(it.dudoso ? "" : it.cant || "") + '</em>');
-      b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", "Comprado: " + it.ver);
-      b.addEventListener("click", function () {       // al carro: ya esta en Tengo
+      var li = el("li", "cocItem" + (it.dudoso ? " duda" : ""));
+      // la casilla compra; el nombre enseña de que recetas y lineas sale la cantidad
+      var tk = el("button", "cocTick", '<i></i>');
+      tk.setAttribute("aria-pressed", "false"); tk.setAttribute("aria-label", "Comprado: " + it.ver);
+      tk.addEventListener("click", function () {       // al carro: ya esta en Tengo
         apunta({ tipo: "compra", items: [it.ver], zona: Dp().zonaPara(it.ver), lista: it.k });
         if (it.mio) deLista(it.id);
         pinta();
       });
+      li.appendChild(tk);
+      // con duda, la cantidad va con el nombre: a la derecha esta "Me queda"
+      var b = el("button", "cocMarca cocNom", '<span>' + esc(it.ver + (it.dudoso && it.cant ? " · " + it.cant : "")) +
+        (it.dudoso ? '<small>¿Te queda? ' + esc(it.razon || "") + '</small>' : it.para ? '<small>Para: ' + esc(Dp().paraTxt(it, o.hoy)) + '</small>' : "") +
+        '</span><em>' + esc(it.dudoso ? "" : it.cant || "") + '</em>');
+      b.setAttribute("aria-expanded", ORIGEN === it.k ? "true" : "false"); b.setAttribute("aria-label", "De dónde sale: " + it.ver);
+      b.addEventListener("click", function () { ORIGEN = ORIGEN === it.k ? null : it.k; pinta(); });
       li.appendChild(b);
       if (it.dudoso) {
         var mq = el("button", "cocQueda", "Me queda");
@@ -847,6 +857,10 @@ function compra(E, LC) {
         var q = el("button", "cocQuita", svg("cerrar")); q.setAttribute("aria-label", "Quitar de la lista");
         q.addEventListener("click", function () { deLista(it.id); pinta(); });
         li.appendChild(q);
+      }
+      if (ORIGEN === it.k) {
+        var lineas = it.mio ? ["Lo apuntaste tú."] : Dp().origenDe(it, o.hoy);
+        li.appendChild(el("div", "cocOrigen", lineas.map(function (t, i) { return "<p" + (i === lineas.length - 1 && !it.mio ? ' class="suma"' : "") + ">" + esc(t) + "</p>"; }).join("")));
       }
       ul.appendChild(li);
     });

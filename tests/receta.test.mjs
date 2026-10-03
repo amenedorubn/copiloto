@@ -422,3 +422,34 @@ test("la cantidad también detrás del nombre: «bananas 4», «plátanos x4», 
   assert.equal(R.ingrediente("Hélices tricolor 3 min (300 g)").c.n, 300, "«3 min» no es una cantidad");
   assert.equal(R.mismo("bananas", "plátanos"), 1, "banana es plátano");
 });
+
+/* ------------------------------ «de casa»: solo al principio de la nota ------------------------------ */
+test("de casa: una nota entre paréntesis solo lo activa si EMPIEZA por eso", () => {
+  // «de hoy», «la otra mitad»... a mitad de una nota no cuentan
+  const noCasa = ["1 huevo (el que cuecen en paralelo, de hoy)", "2 huevos (de hoy)", "2 huevos (para el plato de hoy)",
+    "1 aguacate maduro (usas la mitad hoy; la otra mitad es para mañana)", "1 pimiento (el rojo, de la nevera del vecino)"];
+  noCasa.forEach((t) => { const g = R.ingrediente(t); assert.ok(!g.deCasa && !g.acaba, t); });
+  // al principio de la nota, o como «(de casa: …)», sí
+  const casa = ["½ aguacate (de casa: la otra mitad de ayer, de la nevera)", "250 g de pollo (el del lunes, descongelado desde anoche)",
+    "200 g de tomate triturado (lo que queda del bote)", "1 tarro de overnight oats (de casa: el primero de los 2 que montaste el lunes)",
+    "1 huevo (de la nevera)", "1 tupper de lentejas (descongelado desde anoche)"];
+  casa.forEach((t) => assert.ok(R.ingrediente(t).deCasa, t));
+  // «de casa:» con «la otra mitad» dentro: se acaba (la nota ya es de casa)
+  assert.ok(R.ingrediente("½ aguacate (de casa: la otra mitad de ayer, de la nevera)").acaba);
+});
+
+test("cantidad entre paréntesis: «(125 g)» es el total y «(125 g cada uno)» es por unidad", () => {
+  assert.deepEqual(R.ingrediente("1 yogur griego (125 g)").equiv, { n: 125, ud: "g" });
+  const dos = R.ingrediente("2 yogures griegos (125 g cada uno)");
+  assert.deepEqual(dos.c, { n: 2, ud: "ud" }); assert.deepEqual(dos.equiv, { n: 250, ud: "g" });
+  // con (×2) las dos medidas se multiplican igual
+  const x = R.ingrediente("1 yogur griego (125 g)", { mult: 2 });
+  assert.deepEqual(x.c, { n: 2, ud: "ud" }); assert.deepEqual(x.equiv, { n: 250, ud: "g" });
+});
+
+test("(×N) y POR TARRO: el multiplicador llega a cada línea del grupo", () => {
+  const r = R.leer({ uid: "t", fecha: "2026-10-05", hora: "21:30", titulo: "Prepara 2 tarros", texto: "2 TARROS · 8 min\n\nINGREDIENTES\n· 80 g de avena\n\nPOR TARRO (×2)\n· 125 g de yogur griego\n\nPROCESO\n1. Mezcla." });
+  assert.deepEqual(r.ingredientes.map((g) => [g.base, g.c.n, g.mult]), [["avena", 80, 1], ["yogur griego", 250, 2]]);
+  const s = R.leer({ uid: "s", fecha: "2026-10-05", hora: "21:30", titulo: "Prepara 3 tarros", texto: "3 TARROS · 8 min\n\nPOR TARRO\n· 125 g de yogur griego\n\nPROCESO\n1. Mezcla." });
+  assert.equal(s.ingredientes[0].c.n, 375);
+});
