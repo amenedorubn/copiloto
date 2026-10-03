@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.29.0] - 2026-10-03
+
+### Añadido
+
+- Winter Arc: cada viaje con el icono de su destino (Torre de Hércules, Eiffel, Ángel de la Independencia, pirámide de Chichén Itzá, casa de canal de Ámsterdam, Atomium y Coliseo) en la tira de la fase, la próxima parada, las listas y el detalle del día
+
 ## [2.28.0] - 2026-10-03
 
 ### Añadido
@@ -574,6 +580,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.29.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.29.0
 [2.28.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.28.0
 [2.27.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.27.1
 [2.27.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.27.0

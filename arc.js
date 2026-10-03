@@ -500,9 +500,9 @@ var DESTINOS={
   e1:[{ fecha:"2026-09-27", arriba:"DÍAS AL", abajo:"TEST 20K", cero:["HOY","20K"], icono:"sneaker-move", plur:"días al test de 20 km", sing:"día al test de 20 km", hoyTxt:"hoy es el test de 20 km" }],
   e2:[{ fecha:"2026-10-18", arriba:"DÍAS A", abajo:"ROMA", cero:["HOY","ROMA"], icono:"flag-checkered", plur:"días a Roma", sing:"día a Roma", hoyTxt:"hoy corres en Roma" },
       { fecha:"2026-10-26", arriba:"DÍAS PARA", abajo:"TRAVESÍA", cero:["HOY","TRAVESÍA"], icono:"globe-hemisphere-west", plur:"días de recuperar", sing:"día de recuperar", hoyTxt:"empieza la Travesía" }],
-  e3:[{ fecha:"2026-11-03", arriba:"DÍAS A", abajo:"MÉXICO", cero:["HOY","MÉXICO"], icono:"airplane-tilt", plur:"días a México", sing:"día a México", hoyTxt:"hoy vuelas a México" },
+  e3:[{ fecha:"2026-11-03", arriba:"DÍAS A", abajo:"MÉXICO", cero:["HOY","MÉXICO"], icono:"angel", plur:"días a México", sing:"día a México", hoyTxt:"hoy vuelas a México" },
       { fecha:"2026-11-18", arriba:"DÍAS PARA", abajo:"VOLVER", cero:["HOY","MADRID"], icono:"airplane-tilt", plur:"días para volver", sing:"día para volver", hoyTxt:"hoy vuelves a Madrid" },
-      { fecha:"2026-11-24", arriba:"DÍAS A", abajo:"ÁMSTERDAM", cero:["HOY","ÁMSTERDAM"], icono:"airplane-tilt", plur:"días a Ámsterdam", sing:"día a Ámsterdam", hoyTxt:"hoy vuelas a Ámsterdam" },
+      { fecha:"2026-11-24", arriba:"DÍAS A", abajo:"ÁMSTERDAM", cero:["HOY","ÁMSTERDAM"], icono:"casa-canal", plur:"días a Ámsterdam", sing:"día a Ámsterdam", hoyTxt:"hoy vuelas a Ámsterdam" },
       { fecha:"2026-11-30", arriba:"DÍAS PARA", abajo:"LA VUELTA", cero:["HOY","VUELTA"], icono:"house-line", plur:"días para la Vuelta", sing:"día para la Vuelta", hoyTxt:"empieza la Vuelta" }],
   e4:[{ fecha:"2026-12-19", arriba:"DÍAS A", abajo:"CORUÑA", cero:["HOY","CORUÑA"], icono:"torre-hercules", plur:"días a Coruña", sing:"día a Coruña", hoyTxt:"hoy vuelas a Coruña" },
       { fecha:"2026-12-21", arriba:"DÍAS PARA", abajo:"EL FARO", cero:["HOY","FARO"], icono:"torre-hercules", plur:"días para el Faro", sing:"día para el Faro", hoyTxt:"empieza el Faro" }],
@@ -739,7 +739,16 @@ var PH={
   "warning-circle":"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"
 };
 // iconos propios (mismo trazo que Phosphor regular) para lo que Phosphor no tiene
-var PROPIOS={ "torre-hercules":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M32 242h192"/><path d="M52 242v-14h152v14"/><path d="M98 228V100h60v128"/><path d="M88 100h80"/><path d="M98 206l60-8M98 170l60-8M98 134l60-8"/><path d="M104 100l10-28h28l10 28"/><path d="M108 72h40"/><path d="M116 72V54h24v18"/><path d="M110 54h36"/><path d="M121 54c0-11 3-17 7-17s7 6 7 17"/><path d="M128 37V26"/><path d="M108 54V34"/></g>' };
+var PROPIOS={ "torre-hercules":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M32 242h192"/><path d="M52 242v-14h152v14"/><path d="M98 228V100h60v128"/><path d="M88 100h80"/><path d="M98 206l60-8M98 170l60-8M98 134l60-8"/><path d="M104 100l10-28h28l10 28"/><path d="M108 72h40"/><path d="M116 72V54h24v18"/><path d="M110 54h36"/><path d="M121 54c0-11 3-17 7-17s7 6 7 17"/><path d="M128 37V26"/><path d="M108 54V34"/></g>',
+  "eiffel":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M62 238L106 102L121 44L128 24L135 44L150 102L194 238"/><path d="M96 238c0-34 14-54 32-54s32 20 32 54"/><path d="M106 102h44"/><path d="M84 172h88"/><path d="M121 44h14"/><path d="M106 102l44 70M150 102l-44 70"/></g>',
+  "angel":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M52 238h152"/><path d="M68 238v-16h120v16"/><path d="M84 222v-14h88v14"/><path d="M112 208V96M144 208V96"/><path d="M102 96h52"/><path d="M128 96V70"/><circle cx="128" cy="54" r="10"/><path d="M122 70C98 72 78 60 68 36M134 70c24 2 44-10 54-34"/></g>',
+  "piramide":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M28 238h200"/><path d="M40 238v-28h176v28"/><path d="M64 210v-28h128v28"/><path d="M88 182v-28h80v28"/><path d="M110 154v-28h36v28"/><path d="M116 126V94h24v32"/><path d="M108 94h40"/><path d="M128 238V154"/></g>',
+  "casa-canal":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M40 238h176"/><path d="M80 238V132h16v-24h16V84h32v24h16v24h16v106"/><path d="M128 84V56"/><path d="M116 56h24"/><path d="M104 160h16v26h-16zM136 160h16v26h-16z"/><path d="M114 238v-30h28v30"/></g>',
+  "atomium":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M128 110L128 66"/><path d="M107 126L73 118"/><path d="M149 126L183 118"/><path d="M118 151L98 189"/><path d="M138 151L158 189"/><path d="M60 133L80 187"/><path d="M196 133L176 187"/><path d="M68 97L112 59"/><path d="M188 97L144 59"/><path d="M110 208L146 208"/><circle cx="128" cy="132" r="22"/><circle cx="128" cy="44" r="22"/><circle cx="52" cy="112" r="22"/><circle cx="204" cy="112" r="22"/><circle cx="88" cy="208" r="22"/><circle cx="168" cy="208" r="22"/></g>',
+  "coliseo":'<g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M28 108c0-22 44-38 100-38s100 16 100 38v68c0 22-44 38-100 38S28 198 28 176z"/><path d="M28 108c0 22 44 38 100 38s100-16 100-38"/><path d="M60 176v-14a12 12 0 0 1 24 0v32M116 190v-30a12 12 0 0 1 24 0v30M172 194v-32a12 12 0 0 1 24 0v14"/></g>' };
+// el icono de cada viaje, por ciudad de destino (volver a Madrid es la casa; lo que no tiene, el avion)
+var ICONO_CIUDAD=[ [/Coru/,"torre-hercules"], [/xico/,"angel"], [/Canc/,"piramide"], [/Par/,"eiffel"], [/msterdam/,"casa-canal"], [/Bruselas/,"atomium"], [/Roma/,"coliseo"], [/^Madrid$/,"house-line"] ];
+function iconoViaje(v){ for(var i=0;i<ICONO_CIUDAD.length;i++) if(ICONO_CIUDAD[i][0].test(v.a)) return ICONO_CIUDAD[i][1]; return "airplane-tilt"; }
 function ico(n){ return PROPIOS[n] ? '<svg viewBox="0 0 256 256" aria-hidden="true">'+PROPIOS[n]+'</svg>'
                                    : '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="'+(PH[n]||PH.circle)+'"/></svg>'; }
 function esc(t){ return String(t==null?"":t).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -1379,12 +1388,14 @@ function diaCorto(iso){ return DIAS_C[diaSem(iso)]+" "+corta(iso); }
 function icoSvg(n,x,y,t,cls){ if(PROPIOS[n]) return '<svg class="'+(cls||"")+'" x="'+x.toFixed(1)+'" y="'+y+'" width="'+t+'" height="'+t+'" viewBox="0 0 256 256">'+PROPIOS[n]+'</svg>';
   return '<svg class="'+(cls||"")+'" x="'+x.toFixed(1)+'" y="'+y+'" width="'+t+'" height="'+t+'" viewBox="0 0 256 256"><path fill="currentColor" d="'+(PH[n]||PH.circle)+'"/></svg>'; }
 var tramoAbierto=null, actaDe=null;
-// los iconos de viaje de una etapa: ida (avion o faro si es A Coruña), carrera y sello
+// los iconos de viaje de una etapa: uno por destino (su monumento), carrera y sello
 function marcasViaje(e){
-  var M=[], V=viajesEntre(S.D,e.desde,e.hasta);
-  V.forEach(function(v){
-    if(v.a==="Madrid" || (v.de && v.de!=="Madrid")) return;             // vuelta a casa o vuelo dentro del destino
-    M.push({ d:v.fecha, icono: /Coruña/.test(v.a) ? "torre-hercules" : "airplane-tilt", pri:1, posible:!!v.posible, v:v });
+  var M=[], T=viajesDe(S.D).filter(function(v){ return v.fecha; });
+  T.forEach(function(v,i){
+    if(v.fecha<e.desde || v.fecha>e.hasta) return;
+    var ant=T[i-1];
+    if(v.a==="Madrid" || (ant && ant.de===v.a && ant.fecha===v.fecha)) return;   // vuelta a casa o la vuelta del mismo dia
+    M.push({ d:v.fecha, icono:iconoViaje(v), pri:1, posible:!!v.posible, v:v });
   });
   if(CARRERA.fecha>=e.desde && CARRERA.fecha<=e.hasta) M.push({ d:CARRERA.fecha, icono:"flag-checkered", pri:3, tinta:true });
   if(e.hasta===FIN) M.push({ d:FIN, icono:"seal-check", pri:2, tinta:true });
@@ -1497,7 +1508,7 @@ function proxima(e,h){
   if(V.length){
     var v=V[0], vuelta=viajesDe(S.D).filter(function(u){ return u.fecha && u.fecha>v.fecha && u.a==="Madrid"; })[0];
     var fin = vuelta ? (vuelta.llega||vuelta.fecha) : null;
-    return { nombre:v.a+(v.posible?" · posible":""), fecha:v.fecha, n:entre(h,v.fecha), icono:/Coruña/.test(v.a)?"torre-hercules":"airplane-tilt",
+    return { nombre:v.a+(v.posible?" · posible":""), fecha:v.fecha, n:entre(h,v.fecha), icono:iconoViaje(v),
              fechas: fin ? diaCorto(v.fecha).replace(/ \w+$/,"")+" – "+diaCorto(fin) : diaCorto(v.fecha) };
   }
   if(CARRERA.fecha>=h && CARRERA.fecha>=e.desde && CARRERA.fecha<=e.hasta)
@@ -1604,7 +1615,7 @@ function rejillaEtapa(w,e,h){
     dj.appendChild(el("p","arcT",esc(mayus(larga(selDia)))));
     dj.appendChild(el("p","arcS",esc(cabDia(e2)+" · "+(selDia>h ? "todavía no ha llegado" : textoDia(e2)))));
     deViaje(selDia).forEach(function(v){
-      dj.appendChild(el("div","arcViaje"+(v.posible?" posible":""),ico(v.a==="Madrid" ? "house-line" : /Coruña/.test(v.a) ? "torre-hercules" : "airplane-tilt")+
+      dj.appendChild(el("div","arcViaje"+(v.posible?" posible":""),ico(iconoViaje(v))+
         '<span class="arcT">'+esc(textoViaje(v))+'</span><span class="arcS">'+(v.posible ? '<span class="arcL">Posible</span> ' : '')+esc(v.llega===selDia && v.fecha!==selDia ? "llega hoy" : "sale hoy")+'</span>'));
     });
     dj.appendChild(anillos(e2,selDia,h,function(){ pinta(document.getElementById("ptCuerpo")); },true,true));
@@ -1618,7 +1629,7 @@ function futura(w,e){
   if(CONSIGNAS[e.id]) w.appendChild(el("p","arcT",esc(CONSIGNAS[e.id])));
   var V=viajesDe(S.D).filter(function(v){ return (v.fecha && v.fecha>=e.desde && v.fecha<=e.hasta) || (!v.fecha && e.id==="e3"); });
   V.forEach(function(v){
-    var f=el("div","arcViaje"+(v.posible?" posible":""),ico(v.a==="Madrid" ? "house-line" : /Coruña/.test(v.a) ? "torre-hercules" : "airplane-tilt")+
+    var f=el("div","arcViaje"+(v.posible?" posible":""),ico(iconoViaje(v))+
       '<span class="arcT">'+esc(textoViaje(v))+'</span>'+
       '<span class="arcS">'+(v.posible ? '<span class="arcL">Posible</span> ' : '')+esc(v.fecha ? (v.llega ? "llega "+diaCorto(v.llega) : diaCorto(v.fecha)) : "sin fecha")+'</span>');
     w.appendChild(f);
@@ -1936,7 +1947,7 @@ return {
   anadeRegla:anadeRegla, editaRegla:editaRegla, borraRegla:borraRegla, marcaCheck:marcaCheck, ponNota:ponNota,
   ponAncla:ponAncla, ponObjetivo:ponObjetivo, objetivoEditable:objetivoEditable,
   presetViajes:presetViajes, CARRERA:CARRERA, romano:romano, destinoDe:destinoDe, lineaEtapa:lineaEtapa, volviste:volviste, kmSemana:kmSemana,
-  viajesDe:viajesDe, anadeViaje:anadeViaje, ponViaje:ponViaje, borraViaje:borraViaje,
+  viajesDe:viajesDe, iconoViaje:iconoViaje, anadeViaje:anadeViaje, ponViaje:ponViaje, borraViaje:borraViaje,
   // lo que usa la agenda
   conecta:conecta, registra:registra, vista:vista, pinta:pinta, pintaAjustes:pintaAjustes, subtitulo:subtitulo, diseno:diseno
 };
