@@ -331,7 +331,7 @@ test("viajes: los reales, con ciudades y sin codigos; el único posible es subir
 test("cada viaje tiene el icono de su destino (los viajes de vuelta a Madrid, la casa)", () => {
   const D = Arc.vacio(HOY), ic = (a) => Arc.iconoViaje({ a });
   assert.deepEqual(["A Coruña", "Ciudad de México", "Cancún", "París", "Ámsterdam", "Bruselas", "Roma", "Madrid", "Lisboa"].map(ic),
-    ["torre-hercules", "angel", "piramide", "eiffel", "casa-canal", "atomium", "coliseo", "house-line", "airplane-tilt"]);
+    ["torre-hercules", "bandera-mexico", "piramide", "eiffel", "casa-canal", "atomium", "coliseo", "house-line", "airplane-tilt"]);
   D.viajes.forEach((v) => assert.ok(ic(v.a)));
 });
 test("nunca dos veces: de los dias a medias, cuantos siguio uno cumplido", () => {
