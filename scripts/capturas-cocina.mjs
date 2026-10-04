@@ -255,55 +255,46 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click("#ptVolver").catch(() => {}); await p.waitForTimeout(600);
     const antesLS = await huella(), antesKV = posts;
     const aAjustes = async () => { await p.click("#hConf"); await p.waitForTimeout(600); };
-    const elige = async (r) => {
-      await p.click("#cfCocPrueba"); await p.waitForTimeout(700);
-      await p.click(`#cprRec [data-r="${r}"]`); await p.waitForTimeout(150);
-    };
+    // v2.43: una sola "Cocina de prueba": la pestaña Cocina entera con datos de ejemplo, en una caja
     await aAjustes();
     await p.$eval("#cfCocPrueba", (e) => e.scrollIntoView({ block: "center" })); await p.waitForTimeout(300);
     await foto("prueba-ajustes");
-    await elige("pasta"); await foto("prueba-elegir");
-    await p.click("#cprGo"); await p.waitForTimeout(500); await foto("prueba-plan");
-    await toca("hCocina"); await toca("cocMenos\"][data-k=\"fuegos"); await toca("cocMenos\"][data-k=\"fuegos"); await toca("cocMenos\"][data-k=\"fuegos");
-    await foto("prueba-micocina"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300);
-    await foto("prueba-plan-1fuego");
-    await toca("hCocina"); await toca("cocDefecto"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300);
-    await toca("cEmpieza"); await toca("cHecho"); await p.clock.runFor(4000); await p.waitForTimeout(300);
-    await foto("prueba-ahora");                                               // x10: 4 s son 40 s de cocina
-    await toca("simVel\"][data-v=\"30"); await p.clock.runFor(4000); await p.waitForTimeout(300);
-    await foto("prueba-x30");
-    await toca("simTarde"); await p.clock.runFor(1200); await p.waitForTimeout(300);
-    await foto("prueba-tarde");
-    for (let i = 0; i < 600 && await p.$("#cocPaso [data-a=cHecho]"); i++) {
-      if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); }
-      if (i === 40) await foto("prueba-mientras");
-    }
-    await p.waitForTimeout(300); await foto("prueba-fin");
-    await toca("sinApuntar"); await p.waitForTimeout(800); await foto("prueba-vuelta");   // Terminar: de vuelta a Ajustes
-    await elige("albondigas"); await p.click("#cprGo"); await p.waitForTimeout(500);
-    await toca("cEmpieza"); await toca("cHecho"); await toca("simVel\"][data-v=\"30");
-    for (let i = 0; i < 80; i++) { if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); } }
-    await foto("prueba-albondigas");
-    await toca("simFin"); await p.waitForTimeout(800);
-    await elige("errores"); await p.click("#cprGo"); await p.waitForTimeout(500); await foto("prueba-errores");
-    await toca("simFin"); await p.waitForTimeout(800);
-    // v2.41: la Casa de prueba (la pestaña Cocina con datos de ejemplo, en una caja)
-    await p.$eval("#cfCasaPrueba", (e) => e.scrollIntoView({ block: "center" })); await p.waitForTimeout(200);
-    await foto("casaprueba-ajustes");
-    await p.click("#cfCasaPrueba"); await p.waitForTimeout(900);
+    await p.click("#cfCocPrueba"); await p.waitForTimeout(900);
+    await foto("prueba-semana");
+    const abreDeSemana = async (re) => {
+      await p.click(".cocSeg button:has-text('Semana')"); await p.waitForTimeout(300);
+      const f = (await p.$$("#ptCuerpo .cocFila")).filter(Boolean);
+      for (const x of f) if (re.test(await x.innerText())) { await x.click(); await p.waitForTimeout(600); return true; }
+      return false;
+    };
+    // el paso a paso con carriles: reloj simulado, retrasarse y Mi cocina
+    if (await abreDeSemana(/Pasta con tomate/)) {
+      await foto("prueba-plan");
+      await toca("hCocina"); await toca("cocMenos\"][data-k=\"fuegos"); await toca("cocMenos\"][data-k=\"fuegos"); await toca("cocMenos\"][data-k=\"fuegos");
+      await foto("prueba-micocina"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300);
+      await toca("hCocina"); await toca("cocDefecto"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300);
+      await toca("cEmpieza"); await toca("cHecho"); await p.clock.runFor(4000); await p.waitForTimeout(300);
+      await toca("simVel\"][data-v=\"30"); await p.clock.runFor(4000); await p.waitForTimeout(300);
+      await toca("simTarde"); await p.clock.runFor(1200); await p.waitForTimeout(300);
+      await foto("prueba-tarde");
+      for (let i = 0; i < 600 && await p.$("#cocPaso [data-a=cHecho]"); i++) {
+        if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); }
+      }
+      await p.waitForTimeout(300); await foto("prueba-fin");
+      await toca("sinApuntar"); await p.waitForTimeout(600);
+    } else { errores++; console.log("NO SALE LA PASTA EN LA COCINA DE PRUEBA"); }
+    if (await abreDeSemana(/con errores/)) { await foto("prueba-errores"); await toca("simFin"); await p.waitForTimeout(500); }
+    else { errores++; console.log("NO SALE LA RECETA CON ERRORES"); }
+    // la Despensa y Comprar de ejemplo
+    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await foto("casaprueba-todo");
     await p.click(".cocPcB button:has-text('Así fue') >> nth=0"); await p.waitForTimeout(400);
-    await foto("casaprueba-asifue");
     await p.click(".cocZonaFila:has-text('Congelador')"); await p.waitForTimeout(300);
     await foto("casaprueba-congelador");
-    await p.click(".cocChips button:has-text('Despensa salada')"); await p.waitForTimeout(300);
-    await foto("casaprueba-cantidades");
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await foto("casaprueba-comprar");
-    await p.evaluate(() => document.querySelector(".cocPasillo:last-of-type") && document.querySelectorAll(".cocPasillo")[document.querySelectorAll(".cocPasillo").length - 1].scrollIntoView({ block: "center" }));
-    await p.waitForTimeout(200); await foto("casaprueba-comprar-otros");
     await p.click(".cocSim button"); await p.waitForTimeout(800);
-    await foto("casaprueba-vuelta");                                               // Terminar: de vuelta a Ajustes
+    await foto("prueba-vuelta");                                                     // Terminar: de vuelta a Ajustes
     await p.click("#hojaX").catch(() => {}); await p.waitForTimeout(400);
     const despuesLS = await huella(antesLS);
     if (despuesLS !== antesLS || posts !== antesKV) {

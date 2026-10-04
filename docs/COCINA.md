@@ -112,7 +112,12 @@ no van en fila, sino por carriles:
 Capturas: `node scripts/capturas-cocina.mjs` saca `carril-plan`, `carril-agua`, `carril-manos`, `carril-tarde`,
 `carril-espera`, `carril-pasta`, `carril-fin`, `carril-error` y `carril-micocina` con la pasta de ejemplo.
 
-## Cocina de prueba (v2.38)
+## Cocina de prueba (v2.38; una sola desde la v2.43)
+
+**Desde la v2.43 hay una sola fila en Ajustes, «Cocina de prueba»**. Abre la pestaña Cocina entera con datos de ejemplo
+(lo de «Casa de prueba», abajo). Desde Semana se abren la pasta, las albóndigas y la receta con errores en el paso a paso
+con carriles, con el reloj simulado y Mi cocina. El elegir receta de antes desaparece. Lo que sigue explica el paso a paso
+de prueba.
 
 Ajustes → **Cocina de prueba · Ver el paso a paso con carriles**, junto a Simulación. Abre el paso a paso con
 carriles **de verdad** (`receta.js`, `carriles.js` y `cocina-modo.js`) con una receta de ejemplo de
@@ -130,7 +135,7 @@ carriles **de verdad** (`receta.js`, `carriles.js` y `cocina-modo.js`) con una r
 - `scripts/capturas-cocina.mjs` lo recorre entero (`prueba-*`) y falla si el `localStorage` o el `/cocina` del Worker
   cambian.
 
-## Casa de prueba (v2.41)
+## Casa de prueba (v2.41; dentro de «Cocina de prueba» desde la v2.43)
 
 Ajustes → **Casa de prueba**, debajo de Cocina de prueba. Es la pestaña Cocina **entera y de verdad** (Semana,
 Comprar, Despensa y Recetas) con los datos de ejemplo de `cocina-prueba.js` (`CocinaPrueba.casa`), con fechas

@@ -1,12 +1,11 @@
 /* ===========================================================================
-   COCINA DE PRUEBA · el paso a paso con carriles desde Ajustes (v2.38)
+   COCINA DE PRUEBA · los datos de ejemplo de la «Cocina de prueba» de Ajustes
    ---------------------------------------------------------------------------
-   Como la Simulacion del GPS: eliges una receta de ejemplo y se abre el paso a
-   paso DE VERDAD (receta.js lee el texto, carriles.js planifica y
-   cocina-modo.js lo pinta), con el reloj simulado (x1, x10, x30, "Retrasarme
-   2 min") y "SIMULACION · no cuenta". No deja rastro: no lee ni escribe el
-   calendario, Comprar, la Despensa, lo gastado, Mi cocina ni el estado del
-   paso a paso; al terminar todo queda como estaba.
+   Una sola desde la v2.43: la pestaña Cocina entera (cocina.js, pintaPrueba) con
+   esta despensa, este plan y lo apuntado de ejemplo, en una caja que no toca nada.
+   Desde Semana se abre el paso a paso con carriles DE VERDAD (receta.js,
+   carriles.js, cocina-modo.js) con el reloj simulado (x1, x10, x30, "Retrasarme
+   2 min"): la pasta, las albóndigas y una receta escrita mal a propósito.
    Las recetas son de ejemplo y genericas (el repo es publico).
    =========================================================================== */
 (function (raiz, fabrica) {
@@ -73,6 +72,8 @@ function casa(hoy, ahoraMs) {
     { uid: "prueba-c2", fuente: "comida", fecha: ayer, hora: "21:00", fin: "21:30", titulo: "Cena · Tortilla francesa",
       texto: "INGREDIENTES\n· 2 huevos\n· 1 tomate\n· Básicos: sal, AOVE\nPROCESO\n1. Bate los huevos y cuaja la tortilla, 4 min." },
     { uid: "prueba-c3", fuente: "comida", fecha: hoy, hora: "21:00", fin: "21:40", titulo: "Cena · Pasta con tomate y atún", texto: RECETAS[0].texto.join("\n") },
+    { uid: "prueba-c7", fuente: "comida", fecha: dias(hoy, 2), hora: "14:00", fin: "15:00", titulo: "Albóndigas con rigatoni", texto: RECETAS[1].texto.join("\n") },
+    { uid: "prueba-c8", fuente: "comida", fecha: dias(hoy, 2), hora: "21:00", fin: "21:40", titulo: "Pollo con verduras (con errores)", texto: RECETAS[2].texto.join("\n") },
     { uid: "prueba-c5", fuente: "comida", fecha: man, hora: "21:00", fin: "21:30", titulo: "Cena · Hummus con crudités",
       texto: "INGREDIENTES\n· 1 bote de garbanzos cocidos\n· 1 cda de tahini\n· 2 zanahorias\n· 1 limón\n· Básicos: sal, AOVE, comino\nPROCESO\n" +
         "1. Tritura los garbanzos con el tahini y el limón, 3 min.\n2. Corta las zanahorias en bastones." },
@@ -90,46 +91,7 @@ function casa(hoy, ahoraMs) {
   return { dia: dia, nota: nota, cambios: cambios, lista: lista, alimentos: alimentos };
 }
 
-var API = { RECETAS: RECETAS, VELOCIDADES: VELOCIDADES, evento: evento, casa: casa, pinta: function () {} };
-
-if (typeof document !== "undefined") (function () {
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  var ELEGIDA = "pasta", VEL = 10;
-  // c: el cuerpo de la pantalla propia; op = {marca, atrasManual, alTerminar}
-  API.pinta = function (c, op) {
-    op = op || {};
-    if (!window.Receta || !window.Carriles || !window.CocinaModo) { c.innerHTML = '<div class="ayuda">Falta un archivo de la app. Actualízala.</div>'; return; }
-    c.innerHTML = '<div class="ayuda">Abre el paso a paso con carriles de verdad con una receta de ejemplo. El reloj va más rápido si quieres. ' +
-      'No toca el calendario, ni Comprar, ni la Despensa, ni lo gastado: al terminar, todo queda como estaba.</div>' +
-      '<label>Receta</label><div id="cprRec"></div>' +
-      '<label>Velocidad del reloj</label><div class="simMoms" id="cprVel"></div>' +
-      '<div class="ayuda">Dentro también puedes cambiarla, retrasarte 2 min y abrir Mi cocina.</div>' +
-      '<button class="bPri" id="cprGo">Empezar la prueba</button>';
-    var rec = c.querySelector("#cprRec"), vel = c.querySelector("#cprVel");
-    function marca() {
-      Array.prototype.forEach.call(rec.querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-r") === ELEGIDA)); });
-      Array.prototype.forEach.call(vel.querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-v") === VEL)); });
-    }
-    RECETAS.forEach(function (r) {
-      var b = document.createElement("button");
-      b.className = "opc pFila cprOpc"; b.setAttribute("data-r", r.id);
-      b.innerHTML = '<span>' + esc(r.titulo) + '<small>' + esc(r.sub) + '</small></span><i class="cprMarca" aria-hidden="true"></i>';
-      b.addEventListener("click", function () { ELEGIDA = r.id; marca(); });
-      rec.appendChild(b);
-    });
-    VELOCIDADES.forEach(function (v) {
-      var b = document.createElement("button");
-      b.className = "chip"; b.setAttribute("data-v", v); b.textContent = "×" + v;
-      b.addEventListener("click", function () { VEL = v; marca(); });
-      vel.appendChild(b);
-    });
-    marca();
-    c.querySelector("#cprGo").addEventListener("click", function () {
-      var R = window.Receta.leer(evento(ELEGIDA));
-      window.CocinaModo.abre({ comida: R }, { prueba: { vel: VEL }, marca: op.marca, atrasManual: op.atrasManual, alCerrar: op.alTerminar });
-    });
-  };
-})();
+var API = { RECETAS: RECETAS, VELOCIDADES: VELOCIDADES, evento: evento, casa: casa };
 
 return API;
 });
