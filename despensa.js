@@ -587,6 +587,69 @@ function paraTxt(it, hoy) {
     ((it.para || []).length > 2 ? " y " + (it.para.length - 2) + " más" : "");
 }
 
+/* ------------------------------ Comprar por pasillo (v2.42) ------------------------------
+   Cada cosa que falta va a su pasillo del súper (6 genéricos, y "Otros" si no se sabe), con los
+   días en que se usa ("lun · mar") en lugar del plato, ordenada por el primer día y con su prisa:
+   "Hace falta hoy / mañana" o "Puede esperar N días". Con una próxima ida al súper, lo que hace
+   falta antes de ese día es "Comprar ya" y lo demás "Puede esperar".                          */
+var PASILLOS = ["Fruta y verdura", "Carne y pescado", "Lácteos y huevos", "Panadería", "Despensa", "Congelados"];
+var RE_CONSERVA = /\b(lata|latas|conserva|bote|en aceite|en escabeche|al natural|triturad|frito|rallad|en polvo|seco|secos|deshidratad)\b/;
+var RE_CARNE = /\b(pollo|pavo|carne|ternera|cerdo|lomo|solomillo|contramuslo|pechuga|muslo|hamburgues|salchich|chorizo|jamon|bacon|panceta|pescado|salmon|merluza|bacalao|atun|gamba|langostino|calamar|sepia|mejillon|dorada|lubina|sardina|boqueron|fiambre|embutido|picada)/;
+var RE_LACTEO = /\b(leche|yogur|kefir|queso|mozzarella|nata|mantequilla|huevo|requeson|cuajada|batido)/;
+var RE_PAN = /\b(pan|baguette|barra|tostada|biscote|croissant|magdalena|tortilla de trigo|wrap|pita|bolleria)\b/;
+var RE_SECO = /\b(arroz|pasta|macarron|espagueti|rigatoni|fideo|lenteja|garbanzo|alubia|legumbre|aceite|aov|vinagre|harina|avena|cereal|muesli|cacao|azucar|miel|mermelada|galleta|chocolate|cafe|infusion|caldo|crema de|salsa|frutos secos|nuez|nueces|almendra|cacahuete|pistacho|semilla|chia|quinoa|cuscus|tomate triturado|pimienta)|\bsal\b/;
+var ZONA_PASILLO = { "Congelador": "Congelados", "Fruta y verdura": "Fruta y verdura", "Despensa dulce": "Despensa", "Despensa salada": "Despensa", "Especias": "Despensa" };
+// zona (opcional): la de tus alimentos, por si el nombre no basta
+function pasilloDe(nombre, zona) {
+  var n = norm(nombre);
+  if (/congelad|helado/.test(n)) return "Congelados";
+  if (RE_CONSERVA.test(n) || RE_ESPECIA.test(n)) return "Despensa";
+  if (/pan rallado/.test(n)) return "Despensa";
+  if (RE_LACTEO.test(n)) return "Lácteos y huevos";
+  if (RE_CARNE.test(n)) return "Carne y pescado";
+  if (RE_PAN.test(n)) return "Panadería";
+  if (RE_FRUTA.test(n) && !RE_PROCESADO.test(n)) return "Fruta y verdura";
+  if (RE_SECO.test(n) || RE_DULCE.test(n)) return "Despensa";
+  return ZONA_PASILLO[zona] || "Otros";
+}
+function diasEntre(a, b) { return Math.round((msDe(b, "12:00") - msDe(a, "12:00")) / 864e5); }
+function diaTxtC(iso, hoy) { var d = diasEntre(hoy, iso); return d === 0 ? "hoy" : d === 1 ? "mañana" : diaCorto(iso); }
+/* items: los de faltan() y lo que apuntaste tú ({mio: true}); op = {hoy, proxima (AAAA-MM-DD o null), zonaDe(nombre)}
+   -> {grupos: [{titulo: "Comprar ya" | "Puede esperar" | null, n, pasillos: [{pasillo, items}]}], proxima}
+   it añade: pasillo, dias (AAAA-MM-DD), diasTxt ("lun · mar"), primer, urge (bool), urgTxt               */
+function porPasillo(items, op) {
+  op = op || {}; var hoy = op.hoy, prox = op.proxima && op.proxima >= hoy ? op.proxima : null;
+  var L = (items || []).map(function (it) {
+    var fechas = [];
+    (it.lineas || it.para || []).forEach(function (l) { if (l.fecha && fechas.indexOf(l.fecha) < 0 && l.fecha >= hoy) fechas.push(l.fecha); });
+    fechas.sort();
+    var x = {}; for (var k in it) x[k] = it[k];
+    x.pasillo = pasilloDe(it.ver || it.txt || "", op.zonaDe ? op.zonaDe(it.ver || "") : null);
+    x.dias = fechas; x.primer = fechas[0] || null;
+    x.diasTxt = fechas.map(function (f) { return diaTxtC(f, hoy); }).join(" · ");
+    var d = x.primer ? diasEntre(hoy, x.primer) : null;
+    if (d == null) { x.urge = false; x.urgTxt = "Sin día"; }
+    else if (prox) { x.urge = x.primer < prox; x.urgTxt = x.urge ? "Hace falta " + (d <= 1 ? diaTxtC(x.primer, hoy) : "el " + diaCorto(x.primer)) : "Puede esperar a la compra " + (diasEntre(hoy, prox) <= 1 ? "de " + diaTxtC(prox, hoy) : "del " + diaCorto(prox)); }
+    else { x.urge = d <= 1; x.urgTxt = d <= 1 ? "Hace falta " + diaTxtC(x.primer, hoy) : "Puede esperar " + d + " días"; }
+    return x;
+  });
+  function agrupa(lista) {
+    var P = {};
+    lista.forEach(function (x) { (P[x.pasillo] = P[x.pasillo] || []).push(x); });
+    return PASILLOS.concat(["Otros"]).filter(function (p) { return P[p]; }).map(function (p) {
+      return { pasillo: p, items: P[p].sort(function (a, b) {
+        return (a.primer || "9999") < (b.primer || "9999") ? -1 : (a.primer || "9999") > (b.primer || "9999") ? 1 : String(a.ver).localeCompare(String(b.ver), "es"); }) };
+    });
+  }
+  var grupos;
+  if (prox) {
+    var ya = L.filter(function (x) { return x.urge; }), luego = L.filter(function (x) { return !x.urge; });
+    grupos = [{ titulo: "Comprar ya", n: ya.length, pasillos: agrupa(ya) }, { titulo: "Puede esperar", n: luego.length, pasillos: agrupa(luego) }]
+      .filter(function (g) { return g.n; });
+  } else grupos = [{ titulo: null, n: L.length, pasillos: agrupa(L) }];
+  return { grupos: grupos, proxima: prox, n: L.length };
+}
+
 /* ------------------------------ para Claude ------------------------------
    Lo que hay ahora, con el formato del bloque "Estado actual" de la nota, para pegarselo
    a la Claude que planea las comidas.                                                    */
@@ -606,7 +669,7 @@ function textoClaude(H, opts) {
   return L.join("\n").replace(/\n+$/, "") + "\n";
 }
 
-return { ZONAS: ZONAS6, porConfirmar: porConfirmar, tuppers: tuppers, MAX_TUPPERS: MAX_TUPPERS, fracciones: fracciones, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
+return { ZONAS: ZONAS6, PASILLOS: PASILLOS, pasilloDe: pasilloDe, porPasillo: porPasillo, porConfirmar: porConfirmar, tuppers: tuppers, MAX_TUPPERS: MAX_TUPPERS, fracciones: fracciones, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
   estadoComida: estadoComida, queToca: queToca, faltan: faltan, origenDe: origenDe, paraTxt: paraTxt, textoClaude: textoClaude,
   isoDe: isoDe, msDe: msDe, diaLargo: diaLargo, diaCorto: diaCorto };
 });

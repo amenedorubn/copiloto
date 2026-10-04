@@ -30,15 +30,33 @@ Arriba, fijas: **Semana**, **Comprar**, **Despensa** y **Recetas**; se cambian t
   cocinándolo, «Cocinando · paso 3 de 9» y «Seguir». Debajo, la semana por días: lo hecho y lo pasado en gris,
   los avisos con campana y las compras con carro. Tocar una comida abre su paso a paso; una que ya pasó deja
   verlo o decir «No la hice» (entonces no gasta nada).
-- **Comprar**: lo que piden las comidas que aún **no han empezado**, hasta el final del plan (máx. 7 días),
-  que no está en casa. Un alimento por fila, sumado si sale en varias comidas, con «Para: Shakshuka · jue».
-  Nunca: sal, aceite, especias, lo que el plan hace antes (los huevos cocidos de anoche, el tarro de avena) ni
-  lo que la receta dice que ya está en casa. «¿Te queda?» cuando no se sabe: «Me queda» quita la duda.
-  Tocar el nombre enseña de qué comidas y líneas sale la cantidad (y la cuenta con lo que hay en casa); la casilla
-  de la izquierda lo marca. Las cantidades se suman con la equivalencia unidad/gramos que den las recetas
-  (`1 yogur (125 g)`) y lo que se compra por piezas sube al entero; gramos y ml no (ver
-  `docs/RECETAS-CALENDARIO.md`).
-  Al marcarlo pasa a «En el carro», donde «Cuánto» apunta lo que has comprado («1 kg», «6», «2 paquetes»).
+- **Comprar** (v2.42, opción A de la propuesta). Sale lo que piden las comidas que **aún no han empezado**, hasta el
+  final del plan (máximo 7 días), y que no está en casa.
+  - **Por pasillo del súper** (`Despensa.porPasillo`):
+    - Fruta y verdura · Carne y pescado · Lácteos y huevos · Panadería · Despensa · Congelados.
+    - «**Otros** · sin pasillo conocido» si el nombre no basta. La zona de tus alimentos ayuda.
+  - **Cada alimento dice los días en que se usa, no el plato:** «mañana · mié · jue».
+    - Dentro del pasillo va ordenado por el primer día.
+    - Su prisa: «**Hace falta hoy / mañana**» (en negrita) o «Puede esperar 3 días». Lo que apuntas tú dice
+      «Lo apuntaste tú · Sin día».
+  - **Próxima ida al súper** (opcional: Sin fecha, Hoy, Mañana y los 3 días siguientes; se guarda en el móvil):
+    - lo que hace falta **antes** de ese día va en «**Comprar ya**»;
+    - lo demás, en «**Puede esperar**» («Puede esperar a la compra del sáb»).
+  - **Un toque en el nombre** dice de qué platos y líneas sale la cantidad y la cuenta
+    («Suman 12 − en casa 2 = 10»).
+  - Nunca entran: sal, aceite, especias, lo que el plan hace antes, lo marcado «de casa» ni lo que ya hay. Las
+    unidades y los gramos se juntan con su equivalencia, y lo que se compra por piezas sube al entero (ver
+    `docs/RECETAS-CALENDARIO.md`). «¿Te queda?» cuando no se sabe; «Me queda» quita la duda.
+  - **La casilla** mete la cosa en el **carro**, que ya cuenta como en casa (con la cantidad de la receta). En el
+    carro se saca tocándola.
+  - **Terminar compra** pide cuánto has comprado de cada cosa del carro («Meter en casa») y eso pasa al
+    **Por confirmar** de la Despensa: «Compraste: Calabacín · 1 kg · lo que pusiste al terminar la compra».
+  - **Estados:**
+    - Leyendo lo que tienes.
+    - Error: no se puede leer, o sin conexión. Lo que apuntes sigue saliendo.
+    - Vacío: «Lo de las comidas ya está en casa».
+    - Lleno.
+    - Extremos: «Otros», sin día, dudas.
 - **Despensa** (antes Tengo), en seis zonas: Congelador, Nevera, Fruta y verdura, Despensa dulce, Despensa
   salada y Especias (la «Despensa seca» de la nota se reparte sola entre dulce y salada; «Fresco» es fruta y
   verdura). Es la nota (o el recuento) y, por orden de tiempo, lo que ha pasado después: la compra de la nota,
@@ -120,7 +138,8 @@ alrededor de hoy:
 - una despensa con el congelador lleno (3 de 3 tuppers), huevos sin confirmar y atún con su equivalencia (240 g · 3 ud);
 - dos comidas que ya pasaron, para «Así fue» o «Corregir»;
 - una compra marcada en Comprar, para «Bien» u «Otra cantidad»;
-- la pasta con carriles para la cena.
+- la pasta con carriles para la cena;
+- y en Comprar: tahini (sin pasillo conocido), bolsas de basura (sin día) y cosas para varios días.
 
 - «SIMULACIÓN · no cuenta» y **Terminar** vuelven a Ajustes, igual que «atrás».
 - **Sin rastro.** Mientras está abierta, todo se lee y se guarda en una caja en memoria (`Cocina.pintaPrueba`):

@@ -34,7 +34,8 @@ function Al() { return usa("Alimentos", "./alimentos.js"); }
 
 var RECETAS_URL = "https://raw.githubusercontent.com/amenedorubn/cocina/main/recetas/";
 var K_RECETAS = "copiloto.cocina.recetas.v1", K_CAMBIOS = "copiloto.cocina.cambios.v1",
-    K_NOTA = "copiloto.cocina.nota.v1", K_LISTA = "copiloto.cocina.lista.v1", K_ALIM = "copiloto.cocina.alimentos.v1";
+    K_NOTA = "copiloto.cocina.nota.v1", K_LISTA = "copiloto.cocina.lista.v1", K_ALIM = "copiloto.cocina.alimentos.v1",
+    K_SUPER = "copiloto.cocina.super.v1";
 
 function dos(n) { return n < 10 ? "0" + n : "" + n; }
 function mayus1(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
@@ -524,6 +525,21 @@ CSS +=
   ".cocSim{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;background:var(--sf2);border-radius:16px;padding:10px 10px 10px 14px;margin-bottom:10px}" +
   ".cocSim b{font-size:12px;font-weight:800;letter-spacing:.08em}.cocSim span{grid-column:1;font-size:13px;font-weight:600;color:var(--mu);line-height:1.4}" +
   ".cocSim button{grid-column:2;grid-row:1/3;height:44px;padding:0 16px!important;border-radius:14px!important;background:var(--fg);color:var(--bg);font-size:15px;font-weight:800}" +
+  /* ---- v2.42 Comprar por pasillo ---- */
+  ".cocSuper{margin-top:12px}.cocSuper>span{display:block;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:6px}" +
+  ".cocSuperB{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}.cocSuperB::-webkit-scrollbar{display:none}" +
+  ".cocSuperB button{flex:none;min-height:44px;padding:0 14px!important;border-radius:14px!important;background:var(--sf2);color:var(--fg);font-size:14px;font-weight:700}" +
+  ".cocSuperB button[aria-pressed=true]{background:var(--fg);color:var(--bg)}" +
+  ".cocGrupoC{margin:24px 0 0;font-size:15px;font-weight:800;display:flex;gap:8px;align-items:baseline}.cocGrupoC b{font-size:13px;color:var(--mu)}" +
+  ".cocGrupoC.luego{color:var(--mu)}" +
+  ".cocPasillo{margin:16px 0 2px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);display:flex;gap:6px;align-items:baseline}" +
+  ".cocPasillo b{font-weight:800}.cocPasillo small{letter-spacing:0;text-transform:none;font-weight:600}" +
+  ".cocNom small b{font-weight:600}.cocNom small b.urge{font-weight:800;color:var(--fg)}" +
+  ".cocTermina{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px}.cocTermina svg{width:20px;height:20px}" +
+  ".cocTerm{list-style:none;margin:8px 0 0;padding:0;max-height:46vh;overflow-y:auto}" +
+  ".cocTerm li{display:grid;grid-template-columns:1fr 112px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--ln)}" +
+  ".cocTerm li span b{display:block;font-size:15px;font-weight:700}.cocTerm li span small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
+  ".cocTerm input{min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);padding:0 10px;font:700 15px Manrope,sans-serif;width:100%}" +
   "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
@@ -624,7 +640,7 @@ var CTX = null, MCTX = null, SEL = null, cont = null, RELOJ = null;
 function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CTX.activa || CTX.activa())); }
 var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["recetas", "Recetas"]];
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
-var CORRIGE = null, PCANT = null, ABIERTA = null;   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
+var CORRIGE = null, PCANT = null, ABIERTA = null, TERMINA = false;   // TERMINA: la hoja "Terminar compra" (v2.42)   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
 function subDe(s) { if (s === "despensa") s = "tengo"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 /* La Casa de prueba (Ajustes): la pestaña Cocina entera con los datos de ejemplo de
    cocina-prueba.js, en la CAJA, con "SIMULACIÓN · no cuenta". op = {marca, atrasManual, activa, alTerminar} */
@@ -897,12 +913,15 @@ function hojaPasada(uid, E) {
   return h;
 }
 
-/* ------------------------------ Comprar ------------------------------
-   Lo que piden las comidas que quedan (despensa.js) y lo que apuntas tú. Marcarlo = comprado
-   (entra en Tengo; "En el carro" 12 h para deshacerlo). "Me queda" quita la duda.           */
+/* ------------------------------ Comprar (v2.42) ------------------------------
+   Lo que piden las comidas que quedan (despensa.js) y lo que apuntas tú, por PASILLO del súper.
+   Cada cosa dice los DÍAS en que se usa ("lun · mar") y su prisa; con una próxima ida al súper,
+   "Comprar ya" y "Puede esperar". Tocar el nombre: de qué platos sale y la cuenta. La casilla la
+   mete en el carro (y en casa); "Terminar compra" pone cuánto has comprado de verdad, y eso pasa
+   al "Por confirmar" de la Despensa.                                                          */
 function listaCompra(E) {
   var vivos = vigentes(E.CB), F = E.hayBase ? Dp().faltan(E.D, E.CB, E.Rs, E.o) : null, items = [];
-  var carro = vivos.filter(function (cb) { return cb.tipo === "compra" && cb.lista && Date.now() - cb.t < 12 * 3600e3; });
+  var carro = vivos.filter(function (cb) { return cb.tipo === "compra" && cb.lista && !cb.fin && Date.now() - cb.t < 12 * 3600e3; });
   var enCarro = {}; carro.forEach(function (cb) { enCarro[cb.lista] = 1; });
   if (F) F.items.forEach(function (it) { if (!enCarro[it.k]) items.push(it); });
   lista().forEach(function (x) {
@@ -913,53 +932,76 @@ function listaCompra(E) {
   });
   return { items: items, carro: carro, F: F, n: items.length };
 }
+// la proxima ida al super (opcional; la de un dia que ya paso no cuenta)
+function proxima(hoy) { var p = lee(K_SUPER, null); return p && p >= hoy ? p : null; }
+function sumaDia(iso, n) { var p = iso.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2] + n, 12); return isoDe(d.getTime()); }
+function filaSuper(o) {
+  var p = proxima(o.hoy), d = el("div", "cocSuper", '<span>Próxima ida al súper</span>'), w = d.appendChild(el("div", "cocSuperB"));
+  [[null, "Sin fecha"]].concat([0, 1, 2, 3, 4].map(function (i) { var f = sumaDia(o.hoy, i); return [f, i === 0 ? "Hoy" : i === 1 ? "Mañana" : mayus1(Dp().diaCorto(f))]; }))
+    .forEach(function (x) {
+      var b = el("button", "", esc(x[1])); b.setAttribute("aria-pressed", String(p === x[0]));
+      b.addEventListener("click", function () { guarda(K_SUPER, x[0]); pinta(); });
+      w.appendChild(b);
+    });
+  return d;
+}
+// "1 cebolla", "400 g de contramuslos": lo que se mete en el carro (si la cantidad es sencilla)
+function conSuCant(it) { return it.cant && !it.dudoso && /^[\d½¼¾,.]+(\s+[a-zñ]+)?$/i.test(it.cant) ? conCant(it.cant, it.ver) : it.ver; }
+function filaCompra(it, o) {
+  var li = el("li", "cocItem" + (it.dudoso ? " duda" : ""));
+  var tk = el("button", "cocTick", '<i></i>');
+  tk.setAttribute("aria-pressed", "false"); tk.setAttribute("aria-label", "Al carro: " + it.ver);
+  tk.addEventListener("click", function () {       // al carro: ya esta en casa (con la cantidad de la receta, hasta Terminar compra)
+    apunta({ tipo: "compra", items: [conSuCant(it)], zona: Dp().zonaPara(it.ver), lista: it.k, pide: it.cant || "" });
+    if (it.mio) deLista(it.id);
+    pinta();
+  });
+  li.appendChild(tk);
+  var bajo = it.dudoso ? '<small>¿Te queda? ' + esc(it.razon || "") + '</small>'
+    : '<small>' + (it.diasTxt ? esc(it.diasTxt) + ' · ' : it.mio ? "Lo apuntaste tú · " : "") + '<b class="' + (it.urge ? "urge" : "") + '">' + esc(it.urgTxt || "") + '</b></small>';
+  var b = el("button", "cocMarca cocNom", '<span>' + esc(it.ver + (it.dudoso && it.cant ? " · " + it.cant : "")) + bajo + '</span><em>' + esc(it.dudoso ? "" : it.cant || "") + '</em>');
+  b.setAttribute("aria-expanded", ORIGEN === it.k ? "true" : "false"); b.setAttribute("aria-label", "De dónde sale: " + it.ver);
+  b.addEventListener("click", function () { ORIGEN = ORIGEN === it.k ? null : it.k; pinta(); });
+  li.appendChild(b);
+  if (it.dudoso) {
+    var mq = el("button", "cocQueda", "Me queda");
+    mq.addEventListener("click", function () { apunta({ tipo: "hay", items: [it.ver] }); aviso("Apuntado: te queda " + it.ver.toLowerCase() + "."); pinta(); });
+    li.appendChild(mq);
+  } else if (it.mio) {
+    var q = el("button", "cocQuita", svg("cerrar")); q.setAttribute("aria-label", "Quitar de la lista");
+    q.addEventListener("click", function () { deLista(it.id); pinta(); });
+    li.appendChild(q);
+  }
+  if (ORIGEN === it.k) {                            // un toque mas adentro: de que platos sale y la cuenta
+    var lineas = it.mio ? ["Lo apuntaste tú: no sale de ninguna comida."] : Dp().origenDe(it, o.hoy);
+    li.appendChild(el("div", "cocOrigen", lineas.map(function (t, i) { return "<p" + (i === lineas.length - 1 && !it.mio ? ' class="suma"' : "") + ">" + esc(t) + "</p>"; }).join("")));
+  }
+  return li;
+}
 function compra(E, LC) {
   var s = el("section", "cocSec cocComprar"), n = LC.items.length, F = LC.F, o = E.o;
-  var sub = !E.hayBase ? (NOTA && NOTA.error ? "Lo de las comidas sale cuando se pueda leer lo que tienes." : "Leyendo lo que tienes…")
+  var sub = !E.hayBase ? (NOTA && NOTA.error ? "No se puede leer lo que tienes en casa: lo de las comidas sale cuando se pueda. Lo que apuntes, aquí."
+                                             : NOTA && NOTA.sinRed ? "Sin conexión: lo de las comidas sale cuando vuelva la red." : "Leyendo lo que tienes…")
           : !F || !F.n ? "No quedan comidas en el plan. Lo que apuntes, aquí."
           : "Para " + (F.n === 1 ? "la comida que queda" : "las " + F.n + " comidas que quedan") + ", hasta el " + F.hastaTxt;
   s.innerHTML = '<p class="cocLead">' + (n ? n + (n === 1 ? " cosa" : " cosas") + " que comprar" : "Nada que comprar") + '</p><p class="sub">' + esc(sub) + '</p>';
-  if (!n && E.hayBase && F && F.n) s.appendChild(el("p", "cocVacio", "Lo de las comidas ya está en la despensa."));
+  if (n || LC.carro.length) s.appendChild(filaSuper(o));
+  if (!n && E.hayBase && F && F.n) s.appendChild(el("p", "cocVacio", "Lo de las comidas ya está en casa. Si quieres algo más, apúntalo."));
   if (n) {
-    var ul = el("ul", "cocCompra");
-    LC.items.forEach(function (it) {
-      var li = el("li", "cocItem" + (it.dudoso ? " duda" : ""));
-      // la casilla compra; el nombre enseña de que recetas y lineas sale la cantidad
-      var tk = el("button", "cocTick", '<i></i>');
-      tk.setAttribute("aria-pressed", "false"); tk.setAttribute("aria-label", "Comprado: " + it.ver);
-      tk.addEventListener("click", function () {       // al carro: ya esta en Tengo
-        apunta({ tipo: "compra", items: [it.ver], zona: Dp().zonaPara(it.ver), lista: it.k });
-        if (it.mio) deLista(it.id);
-        pinta();
+    var PP = Dp().porPasillo(LC.items, { hoy: o.hoy, proxima: proxima(o.hoy), zonaDe: function (nom) { var A = aliDe(nom); return A && A.zona; } });
+    PP.grupos.forEach(function (g) {
+      if (g.titulo) s.appendChild(el("h3", "cocGrupoC" + (g.titulo === "Puede esperar" ? " luego" : ""), esc(g.titulo) + ' <b>' + g.n + '</b>'));
+      g.pasillos.forEach(function (pz) {
+        s.appendChild(el("h4", "cocPasillo", esc(pz.pasillo) + ' <b>' + pz.items.length + '</b>' + (pz.pasillo === "Otros" ? '<small>sin pasillo conocido</small>' : "")));
+        var ul = el("ul", "cocCompra");
+        pz.items.forEach(function (it) { ul.appendChild(filaCompra(it, o)); });
+        s.appendChild(ul);
       });
-      li.appendChild(tk);
-      // con duda, la cantidad va con el nombre: a la derecha esta "Me queda"
-      var b = el("button", "cocMarca cocNom", '<span>' + esc(it.ver + (it.dudoso && it.cant ? " · " + it.cant : "")) +
-        (it.dudoso ? '<small>¿Te queda? ' + esc(it.razon || "") + '</small>' : it.para ? '<small>Para: ' + esc(Dp().paraTxt(it, o.hoy)) + '</small>' : "") +
-        '</span><em>' + esc(it.dudoso ? "" : it.cant || "") + '</em>');
-      b.setAttribute("aria-expanded", ORIGEN === it.k ? "true" : "false"); b.setAttribute("aria-label", "De dónde sale: " + it.ver);
-      b.addEventListener("click", function () { ORIGEN = ORIGEN === it.k ? null : it.k; pinta(); });
-      li.appendChild(b);
-      if (it.dudoso) {
-        var mq = el("button", "cocQueda", "Me queda");
-        mq.addEventListener("click", function () { apunta({ tipo: "hay", items: [it.ver] }); aviso("Apuntado: te queda " + it.ver.toLowerCase() + "."); pinta(); });
-        li.appendChild(mq);
-      } else if (it.mio) {
-        var q = el("button", "cocQuita", svg("cerrar")); q.setAttribute("aria-label", "Quitar de la lista");
-        q.addEventListener("click", function () { deLista(it.id); pinta(); });
-        li.appendChild(q);
-      }
-      if (ORIGEN === it.k) {
-        var lineas = it.mio ? ["Lo apuntaste tú."] : Dp().origenDe(it, o.hoy);
-        li.appendChild(el("div", "cocOrigen", lineas.map(function (t, i) { return "<p" + (i === lineas.length - 1 && !it.mio ? ' class="suma"' : "") + ">" + esc(t) + "</p>"; }).join("")));
-      }
-      ul.appendChild(li);
     });
-    s.appendChild(ul);
   }
   s.appendChild(formAnadir("cocAnadeCompra", "Añadir a la lista", function (t) { aLista(t); }));
   if (LC.carro.length) {
-    var c = el("div", "cocZona", '<h4>En el carro<small>ya en la despensa · toca para quitarlo</small></h4>'), uc = el("ul", "cocCompra");
+    var c = el("div", "cocZona", '<h4>En el carro<small>ya en casa · toca para sacarlo</small></h4>'), uc = el("ul", "cocCompra");
     LC.carro.forEach(function (cb) {
       var g0 = Rc().ingrediente((cb.items || [])[0] || ""), nom = mayus1(g0.ver || g0.base || (cb.items || []).join(", "));
       var li = uc.appendChild(el("li", "cocCarro"));
@@ -967,22 +1009,42 @@ function compra(E, LC) {
       b.setAttribute("aria-pressed", "true");
       b.addEventListener("click", function () { desapunta(cb.id); pinta(); });
       li.appendChild(b);
-      if (CANT === cb.id) li.appendChild(formCant("cocCant" + cb.id, "Cuánto (p. ej. 1 kg, 6, 2 paquetes)", function (q) {
-        // se cambia por una compra nueva con su cantidad (asi el movil y Chrome ven lo mismo)
-        desapunta(cb.id);
-        apunta({ tipo: "compra", items: [conCant(q, nom)], zona: cb.zona, lista: cb.lista, nutri: cb.nutri, codigo: cb.codigo });
-        CANT = null;
-      }));
-      else {
-        var q = el("button", "cocQueda", g0.c ? "Cambiar" : "Cuánto");
-        q.addEventListener("click", function () { CANT = cb.id; pinta(); var i = document.getElementById("cocCant" + cb.id); if (i) i.focus(); });
-        li.appendChild(q);
-      }
     });
     c.appendChild(uc); s.appendChild(c);
+    var tb = el("button", "cocGo cocTermina", svg("carro") + "Terminar compra · " + LC.carro.length + (LC.carro.length === 1 ? " en el carro" : " en el carro"));
+    tb.addEventListener("click", function () { TERMINA = true; pinta(); });
+    s.appendChild(tb);
   }
   s.appendChild(botonEscaner());
+  if (TERMINA && LC.carro.length) s.appendChild(hojaTermina(LC.carro));
+  else TERMINA = false;
   return s;
+}
+// Terminar compra: cuánto has comprado de verdad de cada cosa del carro; pasa a "Por confirmar"
+function hojaTermina(carro) {
+  var h = el("div", "cocHojaIt cocHojaTermina");
+  h.appendChild(el("div", "", '<b>Terminar compra · ' + carro.length + '</b><small>Pon cuánto has comprado. Entra en casa y lo confirmas en Despensa → Por confirmar.</small>'));
+  var ul = h.appendChild(el("ul", "cocTerm")), filas = [];
+  carro.forEach(function (cb) {
+    var g0 = Rc().ingrediente((cb.items || [])[0] || ""), nom = mayus1(g0.ver || g0.base || (cb.items || []).join(", "));
+    var li = ul.appendChild(el("li", "", '<span><b>' + esc(nom) + '</b><small>' + esc((cb.zona || "") + (cb.pide ? " · pedía " + cb.pide : "")) + '</small></span>'));
+    var inp = el("input"); inp.type = "text"; inp.autocomplete = "off"; inp.value = g0.c ? Rc().cantTxt(g0.c) : ""; inp.placeholder = "Cuánto";
+    inp.setAttribute("aria-label", "Cuánto has comprado de " + nom);
+    li.appendChild(inp);
+    filas.push({ cb: cb, nom: nom, inp: inp });
+  });
+  var bot = el("div", "cocHojaBot"), ok = el("button", "cocHojaSi", "Meter en casa"), no = el("button", "", "Cancelar");
+  ok.addEventListener("click", function () {
+    filas.forEach(function (f) {
+      var q = f.inp.value.trim();
+      desapunta(f.cb.id);
+      apunta({ tipo: "compra", items: [q ? conCant(q, f.nom) : f.nom], zona: f.cb.zona, lista: f.cb.lista, nutri: f.cb.nutri, ali: f.cb.ali, pide: f.cb.pide, fin: 1 });
+    });
+    TERMINA = false; aviso("En casa. Confírmalo en Despensa → Por confirmar."); pinta();
+  });
+  no.addEventListener("click", function () { TERMINA = false; pinta(); });
+  bot.appendChild(ok); bot.appendChild(no); h.appendChild(bot);
+  return h;
 }
 function botonEscaner(corto) {               // lo comprado, con el codigo de barras
   var b = el("button", "cocBtn", svg("barras") + (corto ? "Escanear" : "Escanear lo que has comprado"));
@@ -1184,12 +1246,12 @@ function porConfirmarHtml(PC, E) {
     } else if (x.tipo === "compra") {
       var cb = x.cb, g0 = Rc().ingrediente((cb.items || [])[0] || ""), nom = mayus1(g0.ver || g0.base || (cb.items || [])[0] || "");
       it.innerHTML = '<p><b>Compraste: ' + esc(nom) + (g0.c ? " · " + esc(Rc().cantTxt(g0.c)) : "") + '</b><small>' + esc(cb.zona || "") +
-        (g0.c ? " · la cantidad de la receta: ¿fue esa?" : " · ¿cuánto?") + '</small></p>';
+        (cb.fin ? " · lo que pusiste al terminar la compra" : g0.c ? " · la cantidad de la receta: ¿fue esa?" : " · ¿cuánto?") + '</small></p>';
       boton(svg("tick") + "Bien", "si", function () { apunta({ tipo: "confirma", ref: x.k }); pinta(); });
       boton(g0.c ? "Otra cantidad" : "Cuánto", "", function () { PCANT = cb.id; pinta(); var i = document.getElementById("cocPcCant"); if (i) i.focus(); });
       if (PCANT === cb.id) it.appendChild(formCant("cocPcCant", "Cuánto has comprado (p. ej. 1 kg, 6)", function (q) {
         desapunta(cb.id);
-        apunta({ tipo: "compra", items: [conCant(q, nom)], zona: cb.zona, lista: cb.lista, nutri: cb.nutri, ali: cb.ali });
+        apunta({ tipo: "compra", items: [conCant(q, nom)], zona: cb.zona, lista: cb.lista, nutri: cb.nutri, ali: cb.ali, fin: cb.fin, pide: cb.pide });
         var n2 = cambios().slice(-1)[0]; if (n2) apunta({ tipo: "confirma", ref: "compra:" + n2.id });
         PCANT = null; aviso("Apuntado: " + conCant(q, nom) + ".");
       }));

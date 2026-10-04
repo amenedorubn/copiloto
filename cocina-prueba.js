@@ -73,6 +73,11 @@ function casa(hoy, ahoraMs) {
     { uid: "prueba-c2", fuente: "comida", fecha: ayer, hora: "21:00", fin: "21:30", titulo: "Cena · Tortilla francesa",
       texto: "INGREDIENTES\n· 2 huevos\n· 1 tomate\n· Básicos: sal, AOVE\nPROCESO\n1. Bate los huevos y cuaja la tortilla, 4 min." },
     { uid: "prueba-c3", fuente: "comida", fecha: hoy, hora: "21:00", fin: "21:40", titulo: "Cena · Pasta con tomate y atún", texto: RECETAS[0].texto.join("\n") },
+    { uid: "prueba-c5", fuente: "comida", fecha: man, hora: "21:00", fin: "21:30", titulo: "Cena · Hummus con crudités",
+      texto: "INGREDIENTES\n· 1 bote de garbanzos cocidos\n· 1 cda de tahini\n· 2 zanahorias\n· 1 limón\n· Básicos: sal, AOVE, comino\nPROCESO\n" +
+        "1. Tritura los garbanzos con el tahini y el limón, 3 min.\n2. Corta las zanahorias en bastones." },
+    { uid: "prueba-c6", fuente: "comida", fecha: dias(hoy, 3), hora: "14:00", fin: "14:40", titulo: "Salmón con patata",
+      texto: "INGREDIENTES\n· 2 lomos de salmón\n· 3 patatas\n· 1 yogur griego (125 g)\nPROCESO\n1. Patatas al horno 20 min.\n2. El salmón encima, 12 min." },
     { uid: "prueba-c4", fuente: "comida", fecha: man, hora: "14:00", fin: "14:40", titulo: "Pollo al curry con arroz",
       texto: "2 RACIONES · 30 min\nINGREDIENTES\n· 400 g de contramuslos de pollo\n· 1 pimiento rojo\n· 1 bolsa de arroz de microondas\n· Básicos: sal, AOVE, curry\nPROCESO\n1. El pollo a la sartén 8 min.\n2. El pimiento, 5 min.\n3. El arroz, 3 min al micro." }
   ];
@@ -81,7 +86,8 @@ function casa(hoy, ahoraMs) {
   var alimentos = [{ id: "prueba-a1", t: t, nombre: "Atún en lata", alias: ["Atún claro al natural"], zona: "Despensa salada",
     codigos: [{ ean: "0000000000017", marca: "Marca de ejemplo", formato: "240 g (3 x 80 g)" }], eq: { n: 80, ud: "g" },
     nutri: { kcal: 116, prot: 26, hc: 0, grasa: 1, por: "100 g", fuente: "OFF" } }];
-  return { dia: dia, nota: nota, cambios: cambios, lista: [], alimentos: alimentos };
+  var lista = [{ id: "prueba-m1", t: t, txt: "Bolsas de basura" }];   // sin pasillo conocido y sin día de uso
+  return { dia: dia, nota: nota, cambios: cambios, lista: lista, alimentos: alimentos };
 }
 
 var API = { RECETAS: RECETAS, VELOCIDADES: VELOCIDADES, evento: evento, casa: casa, pinta: function () {} };

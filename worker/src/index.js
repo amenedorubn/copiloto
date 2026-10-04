@@ -272,7 +272,8 @@ function limpiaCambio(x) {
   if (x.borrado) { y.borrado = true; if (isFinite(x.tb)) y.tb = +x.tb; }
   if (TIPOS.indexOf(x.tipo) >= 0) y.tipo = x.tipo;
   if (Array.isArray(x.items)) y.items = x.items.filter((i) => typeof i === "string").slice(0, 40).map((i) => i.slice(0, 200));
-  for (const k of ["de", "zona", "codigo", "lista", "txt", "uid", "ali", "ref"]) { const v = texto(x[k], 200); if (v) y[k] = v; }
+  for (const k of ["de", "zona", "codigo", "lista", "txt", "uid", "ali", "ref", "pide"]) { const v = texto(x[k], 200); if (v) y[k] = v; }
+  if (x.fin) y.fin = 1;                                             // v2.42: cantidad puesta en "Terminar compra"
   { const v = texto(x.texto, 6000); if (v) y.texto = v; }           // el recuento entero
   if (x.nutri && typeof x.nutri === "object") {
     const n = {};

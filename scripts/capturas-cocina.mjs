@@ -61,7 +61,8 @@ const b = await chromium.launch({ executablePath: CHROME, args: ["--mute-audio",
 let errores = 0;
 for (const tema of ["oscuro", "claro"]) {
   const ls = { "copiloto.conf.v1": JSON.stringify({ url: "http://api.test", key: "k" }), "copiloto.tema": tema,
-               "copiloto.cocina.lista.v1": JSON.stringify([{ id: "m1", t: Date.parse(F.hoy + "T09:00:00"), txt: "Café molido" }]) };
+               "copiloto.cocina.lista.v1": JSON.stringify([{ id: "m1", t: Date.parse(F.hoy + "T09:00:00"), txt: "Café molido" },
+                                                           { id: "m2", t: Date.parse(F.hoy + "T09:00:00"), txt: "Bolsas de basura" }]) };
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, colorScheme: tema === "claro" ? "light" : "dark" });
   p.on("pageerror", (e) => { errores++; console.log("PAGEERROR", tema, e.message); });
   await p.clock.install({ time: new Date(F.hoy + "T" + (F.hora || "13:50") + ":00") });
@@ -144,6 +145,15 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await p.click(".cocCompra li button >> nth=0"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}comprar-carro.png` });
+    // v2.42: la próxima ida al súper (mañana): "Comprar ya" y "Puede esperar"; de dónde sale; Terminar compra
+    await p.click(".cocSuperB button:has-text('Mañana')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}comprar-super.png` });
+    await p.click(".cocNom >> nth=0"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}comprar-origen.png` });
+    await p.click(".cocSuperB button:has-text('Sin fecha')"); await p.waitForTimeout(300);
+    await p.click(".cocTermina"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}comprar-terminar.png` });
+    await p.fill(".cocTerm input >> nth=0", "1 kg"); await p.click(".cocHojaTermina .cocHojaSi"); await p.waitForTimeout(400);
     // v2.40: "Por confirmar" en la Despensa (el desayuno que ya pasó y lo marcado en Comprar)
     await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.click(".cocChips button:has-text('Todo')"); await p.waitForTimeout(300);
@@ -288,6 +298,10 @@ for (const tema of ["oscuro", "claro"]) {
     await foto("casaprueba-congelador");
     await p.click(".cocChips button:has-text('Despensa salada')"); await p.waitForTimeout(300);
     await foto("casaprueba-cantidades");
+    await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
+    await foto("casaprueba-comprar");
+    await p.evaluate(() => document.querySelector(".cocPasillo:last-of-type") && document.querySelectorAll(".cocPasillo")[document.querySelectorAll(".cocPasillo").length - 1].scrollIntoView({ block: "center" }));
+    await p.waitForTimeout(200); await foto("casaprueba-comprar-otros");
     await p.click(".cocSim button"); await p.waitForTimeout(800);
     await foto("casaprueba-vuelta");                                               // Terminar: de vuelta a Ajustes
     await p.click("#hojaX").catch(() => {}); await p.waitForTimeout(400);
