@@ -1,1 +1,1 @@
-{"version":"2.49.0","fecha":"2026-10-04","notas":"Nutrición: subpestañas Hoy · Semana · Tendencias · Fases · Entreno · Micros, gráficas en SVG a mano (nutri-graficas.js) y los datos por día, semana, tendencia, fase, tipo de día, cobertura y huecos (nutricion.js); las vistas llegan una a una"}
+{"version":"2.50.0","fecha":"2026-10-04","notas":"Nutrición · Hoy: la energía en grande (estimado si no hay basal) con los tres macros y, debajo, todos los nutrientes en tiras de rango, con lo que viene de suplementos marcado"}

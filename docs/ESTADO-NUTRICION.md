@@ -9,7 +9,7 @@ Orden: subpestañas → N1 → N2 → N3 → N4 → N5 → N7 → N6. Cada panta
 | Paso | Estado | Versión |
 |---|---|---|
 | Subpestañas + gráficas (nutri-graficas.js) + datos por día/semana (nutricion.js) | hecho | 2.49.0 |
-| N1 · Hoy | pendiente | |
+| N1 · Hoy | hecho: energía en grande + macros, y todos los nutrientes en tiras (con lo de suplementos) | 2.50.0 |
 | N2 · Semana | pendiente | |
 | N3 · Tendencias | pendiente | |
 | N4 · Fases | pendiente | |
@@ -17,7 +17,7 @@ Orden: subpestañas → N1 → N2 → N3 → N4 → N5 → N7 → N6. Cada panta
 | N7 · Micros | pendiente | |
 | N6 · Huecos (Casa/Comprar) | pendiente | |
 
-Siguiente paso: N1 (Hoy).
+Siguiente paso: N2 (Semana).
 
 Cómo comprobar: `node --test tests/*.test.mjs` y `node scripts/capturas-nutricion.mjs <carpeta> [Subpestaña]`, con
 `python -m http.server 8777` corriendo. Hace capturas de la Cocina de prueba en oscuro y en claro y falla si hay

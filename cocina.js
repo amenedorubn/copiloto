@@ -591,6 +591,11 @@ CSS +=
   ".ntSubs{margin-top:12px}.ntSubs button[aria-pressed=true]{background:var(--fg);color:var(--bg)}" +
   ".ntVista{margin-top:16px}.ntCaja{background:var(--sf2);border-radius:18px;padding:12px 14px;margin-top:12px}" +
   ".ntCap{margin:24px 0 6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}" +
+  ".ntEnergia{padding:14px}.ntBig{display:flex;align-items:baseline;gap:8px;margin-top:4px}.ntBig b{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1}" +
+  ".ntBig span{font-size:13px;font-weight:600;color:var(--mu)}.ntBarra{height:10px;margin-top:10px}" +
+  ".ntMacros{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.ntMacros div{background:var(--sf);border-radius:12px;padding:8px 10px}" +
+  ".ntMacros small{display:block;font-size:12px;font-weight:600;color:var(--mu)}.ntMacros b{display:block;font-size:17px;font-weight:800}" +
+  ".ntTiras{padding-top:2px}.ntCaja .ngTiraB,.ntCaja .ngCobB{background:var(--sf)}" +
   /* ---- v2.48 suplementos ---- */
   ".ntTabla.conSupl .ntFila{grid-template-columns:1.4fr .7fr .7fr .7fr 1fr .6fr;font-size:13px}" +
   ".ntSupl{font-weight:800}" +
@@ -1622,6 +1627,7 @@ function nutri(E, LC) {
   var D = N.dia(comidas, regs, function (n) { return aliDe(n); }, SPd);
   s.appendChild(el("p", "ntQue", '<b>Planificado</b> sale del calendario (' + comidas.length + (comidas.length === 1 ? " comida" : " comidas") + '). <b>Registrado</b> es lo que apuntas tú (' + regs.length +
     '). No es lo que has comido de verdad: el calendario no lo recoge todo.'));
+  s.appendChild(hoyN1(D, obj, comidas.length + regs.length > 0));
   if (obj) {
     var falta = N.teFalta(D.total, obj, E.H ? E.H.todos.map(function (x) { return x.nombre; }) : [], LC.items.map(function (x) { return x.ver; }));
     if (falta.length) {
@@ -1659,6 +1665,30 @@ function fuentesNu(E) {
     supl: function (f, tipo) { return suplementos().map(function (sp) { return N.deSuplemento(sp, aliDe(sp.nombre), tipo || "gimnasio"); }).filter(function (x) { return x.tomas > 0 || x.sinFicha; }); },
     aliDe: function (n) { return aliDe(n); }, perfil: lee(K_PERFIL, null), semanas: lee(K_SEMANAS, {}), tipo: CTX.tipoDia || null
   };
+}
+/* N1 · Hoy (opción C): la energía en grande con los macros y, debajo, TODOS los nutrientes en tiras de rango
+   (como la A). Lo de suplementos va marcado dentro de cada tira. Sin datos del día: lo dice.               */
+function hoyN1(D, obj, hay) {
+  var N = Nu(), G = raiz.NutriGraficas, w = el("div", "ntN1");
+  if (!hay && !(D.supl && D.supl.hay)) return w;
+  var t = D.total, ok = obj && obj.kcal, pct = ok ? Math.round(t.kcal / obj.kcal.min * 100) : null;
+  var c = el("div", "ntCaja ntEnergia", '<p class="ntCap" style="margin:0">Energía' + (ok && obj.kcal.estimado ? " · estimado" : "") + '</p>' +
+    '<div class="ntBig"><b>' + fmtN(t.kcal, "kcal") + '</b><span>' + (ok ? "de " + rangoTxt(obj.kcal) + " kcal · " + pct + " %" : "kcal · sin objetivo") + '</span></div>' +
+    (ok ? '<div class="barra ntBarra"><i style="width:' + Math.min(100, pct) + '%"></i></div>' : "") +
+    '<div class="ntMacros">' + [["prot", "Proteína"], ["hc", "Carbohidratos"], ["grasa", "Grasa"]].map(function (m) {
+      var o = obj && obj[m[0]];
+      return '<div><small>' + m[1] + '</small><b>' + fmtN(t[m[0]]) + ' g</b><small>' + (o ? rangoTxt(o) + " g" : "—") + '</small></div>';
+    }).join("") + '</div>');
+  w.appendChild(c);
+  if (!G) return w;
+  var ks = N.PRIORIDAD.concat(["prot", "grasa", "hierro", "magnesio", "potasio", "calcio", "b12", "vitD", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"]);
+  var h = ks.map(function (k) {
+    var o = obj && obj[k];
+    return G.tira({ nombre: N.NOMBRE[k], v: t[k], min: o ? o.min : null, max: o ? o.max : null, u: N.UNIDAD[k], supl: D.supl && D.supl.n[k] ? D.supl.n[k] : 0 });
+  }).join("");
+  w.appendChild(el("p", "ntCap", "Todos los nutrientes"));
+  w.appendChild(el("div", "ntCaja ntTiras", h));
+  return w;
 }
 function vistaNutri(sub, E, LC, fecha, perfil, semanas) {
   var w = el("div", "ntVista");
