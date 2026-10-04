@@ -242,6 +242,16 @@ function normaliza(q) {
   M0.pasos.forEach(function (P, k) { P.k = k; });
   M0.pasos.forEach(function (P) { P.reloj = nombreReloj(P, M0.ings); });
   M0.auto0 = !!(M0.pasos[0] && M0.pasos[0].auto);
+  // una comida con carriles (y solo las del calendario: las JSON de Copiloto Cocina van como siempre)
+  if (R && !J && !q.pasos && R.carriles && Ca()) {
+    M0.carr = Ca().modelo(R);
+    if (M0.carr && M0.carr.tareas.length) {
+      M0.nomCarril = {};
+      M0.carr.carriles.forEach(function (c) { M0.nomCarril[c.id] = c.nombre; });
+      M0.recCarril = {};
+      M0.carr.tareas.forEach(function (x) { if (!M0.recCarril[x.carril]) M0.recCarril[x.carril] = x.aparato || x.rec || (x.fuego ? "fuego" : null); });
+    } else M0.carr = null;
+  }
   return M0;
 }
 // numero de paso para pantalla: con "Antes de empezar" delante, ese es el 0
@@ -460,8 +470,76 @@ function avisosDe(S, titulo) {
   });
 }
 
+/* ------------------------------- carriles (v2.36) -------------------------------
+   Una comida con "CARRIL ..." se cocina por tareas, no por pasos en fila: cada tarea empieza con
+   una accion de tus manos ("Hecho") y, si luego espera (hervir, sofreir), lleva su reloj.
+   S.carr = {ini (ms al empezar), hechas: {tid: ms}, empezo: {tid: ms}}. El plan (carriles.js) se
+   rehace siempre desde ahora con lo que ya ha pasado.                                       */
+var CA = null;
+function Ca() {
+  if (!CA) CA = typeof window !== "undefined" && window.Carriles ? window.Carriles
+    : (typeof module === "object" && typeof require === "function" ? require("./carriles.js") : null);
+  return CA;
+}
+var MI_COCINA = "copiloto.cocina.micocina.v1";
+function miCocina(guardada) {
+  var base = Ca() ? Ca().COCINA : {}, c = {}, k;
+  for (k in base) c[k] = base[k];
+  for (k in (guardada || {})) if (typeof guardada[k] === "number" && guardada[k] >= 0) c[k] = guardada[k];
+  return c;
+}
+function tareaDe(M0, tid) { var L = M0.carr ? M0.carr.tareas : []; for (var i = 0; i < L.length; i++) if (L[i].id === tid) return L[i]; return null; }
+// lo que ya ha pasado, en s desde que empezaste
+function fijosDe(M0, S, ahora) {
+  var C = S.carr, f = {}; if (!C || !C.ini) return f;
+  var s = function (ms) { return Math.max(0, Math.round((ms - C.ini) / 1000)); };
+  M0.carr.tareas.forEach(function (x) {
+    var h = C.hechas[x.id], e = C.empezo[x.id];
+    if (h) {
+      if (x.dur > x.manos) {
+        var T = relojDe(S, x.k), finMs = T ? (T.pausa != null ? ahora + T.pausa * 1000 : T.fin) : (C.fin && C.fin[x.id]) || h + (x.dur - x.manos) * 1000;
+        f[x.id] = { ini: s(h) - x.manos, fin: s(finMs) };   // sus manos acaban al tocar Hecho
+      } else f[x.id] = { ini: e ? s(e) : Math.max(0, s(h) - x.dur), fin: s(h) };
+    } else if (e && x.manos >= x.dur) f[x.id] = { ini: s(e), fin: Math.max(s(ahora), s(e) + x.dur) };
+  });
+  return f;
+}
+/* -> {P, m, desde, base (ms del segundo 0), total (s), mesa (ms)}. Sin empezar: el plan si empiezas ahora */
+function planCarril(M0, S, ahora, cocina) {
+  var C = S.carr && S.carr.ini ? S.carr : null, base = C ? C.ini : ahora, desde = C ? Math.round((ahora - base) / 1000) : 0;
+  var P = Ca().planifica(M0.carr, cocina, C ? fijosDe(M0, S, ahora) : {}, desde);
+  var hechas = C ? C.hechas : {};
+  return { P: P, m: Ca().momento(M0.carr, P, hechas, desde), desde: desde, base: base, total: P.total, mesa: base + P.total * 1000 };
+}
+// "Hecho" en una tarea: sus manos acaban ahora; si luego espera, empieza su reloj
+function hechaCarril(S, M0, tid, ahora) {
+  var x = tareaDe(M0, tid); if (!x || !S.carr) return null;
+  S.carr.hechas[tid] = ahora;
+  if (x.manos >= x.dur && !S.carr.empezo[tid]) S.carr.empezo[tid] = ahora - x.dur * 1000;
+  var T = null;
+  if (x.dur > x.manos) {
+    var P = M0.pasos[x.k], d = x.dur - x.manos, nom = (M0.nomCarril[x.carril] || "") ;
+    T = { id: "c" + x.k + "-" + Math.round(ahora).toString(36), paso: x.k, nombre: nom, pasoTxt: x.txt, dur: d, fin: ahora + d * 1000, pausa: null,
+          avisos: copia((P && P.avisos) || []).filter(function (a) { return a.a_los_s < d; }), avisados: [], finAvisado: false, callado: false, vozFin: "", carril: true };
+    S.timers = S.timers.filter(function (Q) { return Q.paso !== x.k; });
+    S.timers.push(T);
+    S.carr.fin = S.carr.fin || {}; S.carr.fin[tid] = T.fin;
+  }
+  // la espera de lo anterior de su carril ya no hace falta: el carril sigue
+  var antes = M0.carr.tareas.filter(function (y) { return y.carril === x.carril && y.n < x.n; }).map(function (y) { return y.k; });
+  S.timers = S.timers.filter(function (Q) { return !(Q.carril && antes.indexOf(Q.paso) >= 0 && restante(Q, ahora) <= 0); });
+  S.hechos[x.k] = 1; S.t = ahora;
+  return T;
+}
+function todoHecho(M0, S, ahora) {
+  if (!S.carr) return false;
+  return M0.carr.tareas.every(function (x) { return S.carr.hechas[x.id]; }) &&
+    !S.timers.some(function (T) { return T.carril && T.pausa == null && restante(T, ahora) > 0; });
+}
+
 var API = {
   // puras
+  miCocina: miCocina, fijosDe: fijosDe, planCarril: planCarril, hechaCarril: hechaCarril, todoHecho: todoHecho,
   idDe: idDe, normaliza: normaliza, numDe: numDe, totalNum: totalNum, nomPaso: nomPaso, nombreReloj: nombreReloj,
   nuevoEstado: nuevoEstado, restante: restante, relojDe: relojDe, empieza: empieza, pausa: pausa, masUno: masUno, para: para,
   sonando: sonando, revisa: revisa, siguiente: siguiente, hecho: hecho, anterior: anterior, seguirDesde: seguirDesde,
@@ -511,6 +589,21 @@ var ICO = {
   izq: '<path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/>',
   ojo: '<path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/>'
 };
+// v2.36, para los carriles (Phosphor Regular)
+var ICO_C = {
+  "drop": "<path d=\"M174,47.75a254.19,254.19,0,0,0-41.45-38.3,8,8,0,0,0-9.18,0A254.19,254.19,0,0,0,82,47.75C54.51,79.32,40,112.6,40,144a88,88,0,0,0,176,0C216,112.6,201.49,79.32,174,47.75ZM128,216a72.08,72.08,0,0,1-72-72c0-57.23,55.47-105,72-118,16.53,13,72,60.75,72,118A72.08,72.08,0,0,1,128,216Zm55.89-62.66a57.6,57.6,0,0,1-46.56,46.55A8.75,8.75,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68Z\"/>",
+  "flame": "<path d=\"M173.79,51.48a221.25,221.25,0,0,0-41.67-34.34,8,8,0,0,0-8.24,0A221.25,221.25,0,0,0,82.21,51.48C54.59,80.48,40,112.47,40,144a88,88,0,0,0,176,0C216,112.47,201.41,80.48,173.79,51.48ZM96,184c0-27.67,22.53-47.28,32-54.3,9.48,7,32,26.63,32,54.3a32,32,0,0,1-64,0Zm77.27,15.93A47.8,47.8,0,0,0,176,184c0-44-42.09-69.79-43.88-70.86a8,8,0,0,0-8.24,0C122.09,114.21,80,140,80,184a47.8,47.8,0,0,0,2.73,15.93A71.88,71.88,0,0,1,56,144c0-34.41,20.4-63.15,37.52-81.19A216.21,216.21,0,0,1,128,33.54a215.77,215.77,0,0,1,34.48,29.27C193.49,95.5,200,125,200,144A71.88,71.88,0,0,1,173.27,199.93Z\"/>",
+  "fan": "<path d=\"M233,135a60,60,0,0,0-89.62-35.45l16.39-65.44a8,8,0,0,0-3.45-8.68A60,60,0,1,0,95.69,128.91L30.82,147.44a8,8,0,0,0-5.8,7.32,60,60,0,0,0,44.42,60.66,60.52,60.52,0,0,0,15.62,2.07,60.07,60.07,0,0,0,59.88-62l48.48,46.92a8,8,0,0,0,9.25,1.35A60,60,0,0,0,233,135Zm-121-7a16,16,0,1,1,16,16A16,16,0,0,1,112,128ZM80,76a44,44,0,0,1,62.75-39.82L127.77,96A32,32,0,0,0,99.85,112.8,43.85,43.85,0,0,1,80,76Zm27,119.57a44,44,0,0,1-65.86-34.43l59.31-16.94A32,32,0,0,0,128,160l.91,0A43.82,43.82,0,0,1,107,195.57Zm106.17-23a43.92,43.92,0,0,1-13,14.14l-44.32-42.89a31.91,31.91,0,0,0-.59-32.57,44,44,0,0,1,57.91,61.32Z\"/>",
+  "television-simple": "<path d=\"M216,64H147.31l34.35-34.34a8,8,0,1,0-11.32-11.32L128,60.69,85.66,18.34A8,8,0,0,0,74.34,29.66L108.69,64H40A16,16,0,0,0,24,80V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V80A16,16,0,0,0,216,64Zm0,136H40V80H216V200Z\"/>",
+  "oven": "<path d=\"M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm0,176H48V48H208V208ZM72,76A12,12,0,1,1,84,88,12,12,0,0,1,72,76Zm44,0a12,12,0,1,1,12,12A12,12,0,0,1,116,76Zm44,0a12,12,0,1,1,12,12A12,12,0,0,1,160,76Zm24,28H72a8,8,0,0,0-8,8v72a8,8,0,0,0,8,8H184a8,8,0,0,0,8-8V112A8,8,0,0,0,184,104Zm-8,72H80V120h96Z\"/>",
+  "hand": "<path d=\"M188,48a27.75,27.75,0,0,0-12,2.71V44a28,28,0,0,0-54.65-8.6A28,28,0,0,0,80,60v64l-3.82-6.13a28,28,0,0,0-48.6,27.82c16,33.77,28.93,57.72,43.72,72.69C86.24,233.54,103.2,240,128,240a88.1,88.1,0,0,0,88-88V76A28,28,0,0,0,188,48Zm12,104a72.08,72.08,0,0,1-72,72c-20.38,0-33.51-4.88-45.33-16.85C69.44,193.74,57.26,171,41.9,138.58a6.36,6.36,0,0,0-.3-.58,12,12,0,0,1,20.79-12,1.76,1.76,0,0,0,.14.23l18.67,30A8,8,0,0,0,96,152V60a12,12,0,0,1,24,0v60a8,8,0,0,0,16,0V44a12,12,0,0,1,24,0v76a8,8,0,0,0,16,0V76a12,12,0,0,1,24,0Z\"/>",
+  "cooking-pot": "<path d=\"M88,48V16a8,8,0,0,1,16,0V48a8,8,0,0,1-16,0Zm40,8a8,8,0,0,0,8-8V16a8,8,0,0,0-16,0V48A8,8,0,0,0,128,56Zm32,0a8,8,0,0,0,8-8V16a8,8,0,0,0-16,0V48A8,8,0,0,0,160,56Zm92.8,46.4L224,124v60a32,32,0,0,1-32,32H64a32,32,0,0,1-32-32V124L3.2,102.4a8,8,0,0,1,9.6-12.8L32,104V80a8,8,0,0,1,8-8H216a8,8,0,0,1,8,8v24l19.2-14.4a8,8,0,0,1,9.6,12.8ZM208,88H48v96a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16Z\"/>",
+  "fork-knife": "<path d=\"M72,88V40a8,8,0,0,1,16,0V88a8,8,0,0,1-16,0ZM216,40V224a8,8,0,0,1-16,0V176H152a8,8,0,0,1-8-8,268.75,268.75,0,0,1,7.22-56.88c9.78-40.49,28.32-67.63,53.63-78.47A8,8,0,0,1,216,40ZM200,53.9c-32.17,24.57-38.47,84.42-39.7,106.1H200ZM119.89,38.69a8,8,0,1,0-15.78,2.63L112,88.63a32,32,0,0,1-64,0l7.88-47.31a8,8,0,1,0-15.78-2.63l-8,48A8.17,8.17,0,0,0,32,88a48.07,48.07,0,0,0,40,47.32V224a8,8,0,0,0,16,0V135.32A48.07,48.07,0,0,0,128,88a8.17,8.17,0,0,0-.11-1.31Z\"/>",
+  "warning-circle": "<path d=\"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z\"/>",
+  "arrows-clockwise": "<path d=\"M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z\"/>",
+  "knife": "<path d=\"M231.87,32.13a27.84,27.84,0,0,0-39.32,0L18.34,206.4a8,8,0,0,0,3.86,13.45A160.67,160.67,0,0,0,58.4,224c32.95,0,65.92-10.2,96.95-30.23,31.76-20.5,50.19-43.82,51-44.81a8,8,0,0,0-.64-10.59L185.32,118l46.55-46.56A27.85,27.85,0,0,0,231.87,32.13ZM189.1,144.44a220.41,220.41,0,0,1-42.86,36.16c-34.43,22.1-69.94,30.92-105.77,26.3L146,101.33Zm31.46-84.3L174,106.7,157.32,90l46.55-46.56a11.8,11.8,0,0,1,16.69,16.69Z\"/>"
+};
+Object.keys(ICO_C).forEach(function (k) { ICO[k] = ICO_C[k]; });
 function svg(k) { return '<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">' + ICO[k] + '</svg>'; }
 function negritas(t) { return esc(t).replace(/(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+)?\s*(?:min|minutos|s|seg|segundos|h|g|ml|cm|°C|ºC)(?![a-záéíóúñ]))/g, "<b>$1</b>"); }
 
@@ -702,6 +795,34 @@ var CSS =
   R0 + ".cpFin .cpDet{font-size:18px}" +
   R0 + ".cpFin h3.cpFinTit{font-size:20px;font-weight:800;margin-top:22px}" +
   R0 + ".cpFin p.cpFinSub{font-size:15px;font-weight:600;color:var(--mu);margin-top:2px}" +
+  /* carriles (v2.36) */
+  R0 + ".ccCaja{background:var(--sf);border-radius:18px;padding:12px 14px}" +
+  R0 + ".ccR{display:flex;align-items:center;gap:8px;height:28px}" +
+  R0 + ".ccEt{width:68px;display:flex;gap:4px;align-items:center;font-size:12px;font-weight:700;color:var(--mu);overflow:hidden;white-space:nowrap}" +
+  R0 + ".ccEt svg{width:14px;height:14px}" +
+  R0 + ".ccPista{flex:1;position:relative;height:16px}" +
+  R0 + ".ccBl{position:absolute;top:0;height:16px;border-radius:4px;background:rgba(244,245,247,.22)}" +
+  R0 + ".ccBl.m{background:#f4f5f7}" + R0 + ".ccBl.ya{opacity:.4}" +
+  R0 + ".ccYa{position:absolute;top:-4px;bottom:-4px;width:2px;border-radius:1px;background:var(--ca)}" +
+  R0 + ".ccUn{position:absolute;top:-2px;bottom:-2px;width:0;border-left:2px dotted var(--mu)}" +
+  R0 + ".ccLey{display:flex;gap:14px;font-size:12px;font-weight:600;color:var(--mu);margin-top:6px;align-items:center}" +
+  R0 + ".ccLey i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}" +
+  R0 + ".ccCap{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:28px 0 6px}" +
+  R0 + ".ccCap.ac{color:var(--ca)}" +
+  R0 + ".ccSub{font-size:17px;line-height:1.5;font-weight:600;color:#dfe2e6;margin-top:2px}" +
+  R0 + ".ccProg{display:flex;align-items:center;gap:12px;margin-top:12px}" + R0 + ".ccProg .cpBarra{flex:1;margin:0}" + R0 + ".ccProg .cpBarra i{background:#f4f5f7}" +
+  R0 + ".ccProg b{font-size:30px;font-weight:800;letter-spacing:-.02em}" +
+  R0 + ".ccLista{background:var(--sf);border-radius:18px;padding:2px 14px}" +
+  R0 + ".ccFila{width:100%;display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 0;border-top:1px solid var(--ln);text-align:left}" +
+  R0 + ".ccLista>:first-child{border-top:0}" +
+  R0 + ".ccFila .t{flex:1;min-width:0}" + R0 + ".ccFila .t b{display:block;font-size:16px;font-weight:700;line-height:1.3}" +
+  R0 + ".ccFila .t small{display:block;font-size:14px;font-weight:600;color:var(--mu);line-height:1.4}" +
+  R0 + ".ccFila .r{font-size:22px;font-weight:800;white-space:nowrap}" + R0 + ".ccFila .h{width:52px;font-size:15px;font-weight:800;flex:none}" +
+  R0 + ".ccAviso{display:flex;gap:10px;align-items:flex-start;background:var(--sf);border-radius:16px;padding:12px 14px;margin-top:12px;font-size:15px;line-height:1.45;font-weight:600}" +
+  R0 + ".ccAviso svg{margin-top:2px}" + R0 + ".ccAviso p+p{margin-top:6px}" +
+  R0 + ".ccTxt{font-size:17px;line-height:1.5;font-weight:600;margin-top:12px}" + R0 + ".ccTxt.mu{color:var(--mu);font-size:15px;margin-top:6px}" +
+  R0 + ".ccMesa{font-size:13px;font-weight:700;color:var(--mu);white-space:nowrap;padding:0 4px}" + R0 + ".ccMesa b{color:#f4f5f7}" +
+  R0 + ".cpHecho.blanco{background:#f4f5f7;color:#101113}" +
   /* aviso con el modo cerrado */
   "#cocPasoAviso{position:fixed;z-index:95;font-family:Manrope,-apple-system,'Segoe UI',Roboto,sans-serif;--ca:#f08a4b}" +
   "#cocPasoAviso[hidden]{display:none}" +
@@ -792,15 +913,17 @@ API.abre = function (q, ctx) {
   var box = document.getElementById("cocPaso") || document.body.appendChild(document.createElement("div"));
   box.id = "cocPaso"; box.hidden = false; box.innerHTML = "";
   box.style.setProperty("--ca", M0.acento || "#f08a4b");
-  V = { id: M0.id, q: q, M0: M0, S: S, ctx: ctx || {}, box: box, pant: d === "retoma" ? "retoma" : "paso", visto: null, hoja: null,
-        toast: null, ultToque: ahora, gasto: null };
+  var pant = d === "retoma" ? "retoma" : "paso";
+  if (M0.carr) { if (d === "nuevo" || !S.carr || !S.carr.ini) { S.carr = null; pant = "plan"; } else pant = "carril"; }
+  V = { id: M0.id, q: q, M0: M0, S: S, ctx: ctx || {}, box: box, pant: pant, visto: null, hoja: null,
+        toast: null, ultToque: ahora, gasto: null, cocina: miCocina(lee(MI_COCINA)) };
   VIVOS[M0.id] = { S: S, M0: M0, q: q, ctx: V.ctx, titulo: M0.titulo, acento: M0.acento };
   guarda(M0.id, S);
   if (!box.cpListo) { escucha(box); box.cpListo = true; }
   if (V.ctx.marca) V.ctx.marca("cocina");
   pideCerrojo();
   quitaAvisoFuera();
-  pinta(d !== "retoma");
+  pinta(d !== "retoma" && V.pant !== "plan");
   ajustaTick();
   return true;
 };
@@ -861,6 +984,16 @@ function late() {
   if (V) {
     if (V.visto != null && !V.hoja && ahora - V.ultToque > MIRA_MAX) { V.visto = null; cambio = true; }
     if (V.toast && ahora > V.toast.hasta) { V.toast = null; cambio = true; }
+    if (V.pant === "carril" && !V.hoja && ahora - (V.ultPlan || 0) >= 1000) {
+      V.ultPlan = ahora;
+      var antes = V.firma, viejo = V.pl && V.pl.m.ahora && V.pl.m.cuando <= V.pl.desde + 15 ? V.pl.m.ahora.id : null;
+      V.pl = planCarril(V.M0, V.S, ahora, V.cocina);
+      var nuevo = V.pl.m.ahora && V.pl.m.cuando <= V.pl.desde + 15 ? V.pl.m.ahora.id : null;
+      if (firmaCarril() !== antes) {
+        cambio = true;
+        if (nuevo && nuevo !== viejo) { pita(2); setTimeout(function () { if (V) di(vozCarril()); }, 400); }
+      }
+    }
     if (cambio) pinta(false); else refresca(ahora);
   }
   pintaAvisoFuera(ahora);
@@ -868,6 +1001,9 @@ function late() {
 }
 function avisa(id, X, e) {
   var T = e.T, varios = X.S.timers.length > 1;
+  if (e.tipo === "fin" && T.carril) {          // un carril que acaba su espera: un pitido y lo dice; el siguiente paso avisa solo
+    T.callado = true; pita(1); di(T.nombre + ": listo."); return;
+  }
   if (e.tipo === "fin") {
     ALARMA[T.id] = Date.now();
     pita(3);
@@ -892,6 +1028,8 @@ function refresca(ahora) {
     if (p) { var sig = false; Array.prototype.forEach.call(p.children, function (li) { var ya = T.avisados.indexOf(+li.getAttribute("data-a")) >= 0; li.className = ya ? "ya" : !sig ? "sig" : ""; if (!ya) sig = true; }); }
   });
   var q = box.querySelector(".cpQueda"); if (q) q.innerHTML = quedaHtml(ahora);
+  Array.prototype.forEach.call(box.querySelectorAll("[data-hasta]"), function (e) { var t = fmt(Math.max(0, (+e.getAttribute("data-hasta") - ahora) / 1000)); if (e.textContent !== t) e.textContent = t; });
+  Array.prototype.forEach.call(box.querySelectorAll("[data-desde]"), function (e) { e.style.width = Math.min(100, Math.max(0, (ahora - +e.getAttribute("data-desde")) / +e.getAttribute("data-dur") * 100)) + "%"; });
 }
 function quedaHtml(ahora) {
   var pr = progresoDe(V.S, V.M0.pasos, ahora), m = Math.ceil(pr.quedan_s / 60);
@@ -908,8 +1046,12 @@ function pinta(habla) {
   V.ultVista = vista;
   var hc = box.querySelector(".cpHojaCuerpo"), yh = hc && V.hoja && V.ultHoja === V.hoja ? hc.scrollTop : 0;
   V.ultHoja = V.hoja;
-  var h = arriba() + (V.pant === "paso" ? cabecera(ahora) : "") + tira(ahora);
-  if (V.pant === "retoma") h += retoma(ahora);
+  var cc = V.M0.carr && (V.pant === "plan" || V.pant === "carril");
+  if (cc) { V.pl = planCarril(V.M0, V.S, ahora, V.cocina); marcaEmpezo(ahora); }
+  var h = arriba() + (V.pant === "paso" ? cabecera(ahora) : "") + (cc ? "" : tira(ahora));
+  if (V.pant === "plan") h += planHtml(ahora);
+  else if (V.pant === "carril") h += carrilHtml(ahora);
+  else if (V.pant === "retoma") h += retoma(ahora);
   else if (V.pant === "fin") h += final(ahora);
   else h += paso(ahora);
   h += alarma(ahora) + hoja(ahora);
@@ -917,9 +1059,24 @@ function pinta(habla) {
   cu = box.querySelector(".cpCuerpo"); if (cu && y) cu.scrollTop = y;
   hc = box.querySelector(".cpHojaCuerpo"); if (hc && yh) hc.scrollTop = yh;
   if (habla && V.pant === "paso" && V.visto == null) di(vozPaso(V.M0, V.S.actual));
+  if (V.pant === "carril") { V.firma = firmaCarril(); if (habla) di(vozCarril()); }
+}
+// la tarea de manos que ya toca: desde cuando (para su barra y lo que queda)
+function marcaEmpezo(ahora) {
+  var m = V.pl.m, x = m.ahora;
+  if (V.pant !== "carril" || !x || !V.S.carr || x.manos < x.dur || V.S.carr.empezo[x.id] || m.cuando > V.pl.desde + 15) return;
+  V.S.carr.empezo[x.id] = ahora; guarda(V.id, V.S);
+}
+// lo que, si cambia, hay que repintar (y avisar si es que ya toca otra cosa)
+function firmaCarril() {
+  var m = V.pl.m, x = m.ahora, due = x && m.cuando <= V.pl.desde + 15;
+  return (x ? x.id : "-") + "|" + (due ? 1 : 0) + "|" + Math.round(V.pl.total / 30) + "|" + V.S.timers.filter(function (T) { return T.carril && restante(T, Date.now()) > 0; }).length;
 }
 function arriba() {
   var M0 = V.M0;
+  if (M0.carr && (V.pant === "plan" || V.pant === "carril"))
+    return '<div class="cpTop"><button class="cpX" data-a="x" aria-label="Salir">' + svg("cerrar") + '</button><span class="cpTit">' + esc(M0.titulo) + '</span>' +
+      (V.pl ? '<span class="ccMesa">a la mesa <b>' + hhmm(V.pl.mesa) + '</b></span>' : "") + '</div>';
   return '<div class="cpTop"><button class="cpX" data-a="x" aria-label="Salir">' + svg("cerrar") + '</button><span class="cpTit">' + esc(M0.titulo) + '</span>' +
     (M0.ings.length && V.pant === "paso" ? '<button class="cpBtn" data-a="hIngs"><span>Ingredientes</span></button>' : "") +
     (V.pant === "paso" && M0.pasos.length > 1 ? '<button class="cpBtn" data-a="hPasos"><span>Pasos</span></button>' : "") + '</div>';
@@ -1092,12 +1249,12 @@ function hoja(ahora) {
     var tot = M0.ings.length, on = M0.ings.filter(function (I) { return S.checks["i" + I.i]; }).length;
     h += '<div class="cpHoja" role="dialog" aria-label="Ingredientes"><div class="cpHojaCab"><div><h3>Ingredientes</h3><small>' + on + ' de ' + tot + ' marcados</small></div>' + x + '</div><div class="cpHojaCuerpo">' +
       gruposIngs(M0).map(function (g) {
-        return (g.k != null ? '<button class="cpGrupo ir" data-a="fila" data-k="' + g.k + '"><span>' + esc(g.titulo) + ' · ' + esc(M0.pasos[g.k].titulo) + '</span>' + svg("der") + '</button>'
+        return (g.k != null && !M0.carr ? '<button class="cpGrupo ir" data-a="fila" data-k="' + g.k + '"><span>' + esc(g.titulo) + ' · ' + esc(M0.pasos[g.k].titulo) + '</span>' + svg("der") + '</button>'
                             : '<h4 class="cpGrupo">' + esc(g.titulo) + '</h4>') + g.items.map(function (i) {
           var I = M0.ings[i], marc = !!S.checks["i" + i], k = g.k != null ? -1 : primerUso(M0, i);
           return '<div class="cpFilaI"><button class="cpIngF" data-a="ing" data-i="' + i + '" aria-pressed="' + marc + '">' + caja(marc) +
             '<span class="cpTx">' + esc(I.nombre) + (I.opcional ? " (opcional)" : "") + (I.prep ? '<small>' + esc(I.prep) + '</small>' : "") + '</span><b>' + esc(I.cant) + '</b></button>' +
-            (k >= 0 ? '<button class="cpBadge" data-a="fila" data-k="' + k + '"><span>' + (M0.pasos[k].auto ? "Antes" : "Paso " + numDe(M0, k)) + '</span></button>' : "") + '</div>';
+            (k >= 0 && !M0.carr ? '<button class="cpBadge" data-a="fila" data-k="' + k + '"><span>' + (M0.pasos[k].auto ? "Antes" : "Paso " + numDe(M0, k)) + '</span></button>' : "") + '</div>';
         }).join("");
       }).join("") + '</div></div>';
   } else if (/^reloj:/.test(V.hoja)) {
@@ -1112,6 +1269,113 @@ function hoja(ahora) {
       (T.paso !== (V.visto != null ? V.visto : S.actual) || V.pant !== "paso" ? '<button class="ver" data-a="aVer" data-t="' + T.id + '" data-v="' + esc(V.id) + '">' + svg("ojo") + 'Ver ' + esc(minus1(T.pasoTxt)) + '</button>' : "") +
       '</div></div></div>';
   }
+  return h;
+}
+
+/* ------------------------------- carriles: pantalla ------------------------------- */
+var ICO_REC = { olla: "cooking-pot", sarten: "flame", fuego: "flame", airfryer: "fan", micro: "television-simple", horno: "oven", union: "fork-knife" };
+function icoCarril(c) { return ICO_REC[c === "union" ? "union" : V.M0.recCarril[c]] || "hand"; }
+function hm(ms) { return hhmm(ms); }
+// el mini-Gantt: manos (lleno), espera (suave), la union (puntos) y ahora (la raya)
+function gantt(pl, conAhora) {
+  var M = V.M0.carr, P = pl.P, tot = Math.max(pl.total, 60), S = V.S, h = "";
+  var un = M.tareas.filter(function (x) { return x.carril === "union"; }).map(function (x) { return P.ini[x.id]; });
+  var ini = un.length ? Math.min.apply(null, un) : null;
+  M.carriles.forEach(function (c) {
+    if (c.id === "union") return;
+    var L = M.tareas.filter(function (x) { return x.carril === c.id; }); if (!L.length) return;
+    h += '<div class="ccR"><span class="ccEt">' + svg(icoCarril(c.id)) + esc(c.nombre) + '</span><div class="ccPista">';
+    L.forEach(function (x) {
+      var ya = S.carr && S.carr.hechas[x.id] && P.fin[x.id] <= pl.desde ? " ya" : "";
+      var i0 = Math.max(0, P.ini[x.id]), a = i0 / tot * 100, w = (P.fin[x.id] - i0) / tot * 100, wm = Math.max(0, Math.min(x.manos, P.fin[x.id] - i0)) / tot * 100;
+      h += '<i class="ccBl' + ya + '" style="left:' + a + '%;width:calc(' + w + '% - 2px)"></i><i class="ccBl m' + ya + '" style="left:' + a + '%;width:max(3px,calc(' + wm + '% - 2px))"></i>';
+    });
+    if (ini != null) h += '<i class="ccUn" style="left:' + (ini / tot * 100) + '%"></i>';
+    if (conAhora) h += '<i class="ccYa" style="left:' + Math.min(100, pl.desde / tot * 100) + '%"></i>';
+    h += '</div></div>';
+  });
+  return '<div class="ccCaja" aria-hidden="true">' + h + '<div class="ccLey"><span><i style="background:#f4f5f7"></i>Tus manos</span><span><i style="background:rgba(244,245,247,.22)"></i>Espera</span>' +
+    (ini != null ? '<span><i style="border-left:2px dotted var(--mu);width:2px;border-radius:0"></i>Juntar</span>' : "") + '</div></div>';
+}
+// "Pica la cebolla y el ajo, 3 min" -> "Pica la cebolla y el ajo": el tiempo ya sale en el reloj
+function sinMin(t) {
+  var r = String(t || "").replace(/,?\s*\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+)?\s*(?:min|minutos|s|seg|segundos|h|horas)\b\.?/i, "").replace(/\s{2,}/g, " ").replace(/[,\s]+$/, "").trim();
+  return r || String(t || "");
+}
+function minTxt(s) { var m = Math.round(s / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + dos(m % 60); }
+function ingsDe(x) {
+  var P = V.M0.pasos[x.k];
+  return (P && P.usa || []).map(function (i) { return V.M0.ings[i]; }).filter(function (I) { return I && !I.basico; })
+    .map(function (I) { return I.num ? I.cant + " " + minus1(I.nombre) : I.nombre; });
+}
+function vozCarril() {
+  var m = V.pl && V.pl.m, x = m && m.ahora;
+  if (!x || m.cuando > V.pl.desde + 15) return "";
+  var ii = ingsDe(x);
+  return limpiaVoz(x.txt + (ii.length ? ". " + ii.join(", ") : "")) + ".";
+}
+function planHtml(ahora) {
+  var M0 = V.M0, pl = V.pl, P = pl.P, ex = Ca().explica(M0.carr, P), h = '<div class="cpCuerpo cc">';
+  h += '<p class="ccCap" style="margin-top:4px">Así va a ir · ' + minTxt(pl.total) + '</p>' + gantt(pl, false);
+  var fr = ex.map(function (e) {
+    if (e.tipo === "empieza") return "Empieza por " + esc(e.carril.toLowerCase()) + ": " + esc(minus1(sinMin(e.T.txt))) + ".";
+    return esc(mayus1(sinMin(e.T.txt))) + " entra a las " + hm(pl.base + e.ini * 1000) + " para acabar justo cuando se junta todo.";
+  });
+  h += '<p class="ccTxt">' + fr.join(" ") + '</p>';
+  if (pl.P.lineal > pl.total + 60) h += '<p class="ccTxt mu">En una sola línea serían ' + minTxt(pl.P.lineal) + '.</p>';
+  var pr = M0.carr.problemas;
+  if (pr.length) h += '<div class="ccAviso" role="alert">' + svg("warning-circle") + '<div>' + pr.map(function (p) { return '<p>' + esc(p.texto) + '</p>'; }).join("") + '</div></div>';
+  var P0 = M0.pasos[0];
+  if (P0 && P0.auto && P0.secciones) h += P0.secciones.map(function (s, si) {
+    var items = s.items || [], hechos = items.filter(function (it, ii) { return V.S.checks["s0-" + si + "-" + ii]; }).length;
+    return '<div class="cpSec"><h3>' + esc(s.titulo) + '<small>' + hechos + ' de ' + items.length + '</small></h3><ul class="cpChecks">' +
+      items.map(function (it, ii) { return fila("s0-" + si + "-" + ii, itemHtml(it.txt)); }).join("") + '</ul></div>';
+  }).join("");
+  h += '</div><div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="cEmpieza">' + svg("play") + 'Empezar · a la mesa ' + hm(pl.mesa) + '</button></div>';
+  return h;
+}
+function carrilHtml(ahora) {
+  var M0 = V.M0, S = V.S, pl = V.pl, P = pl.P, m = pl.m, x = m.ahora, h = '<div class="cpCuerpo cc">' + gantt(pl, true);
+  var due = x && m.cuando <= pl.desde + 15, abs = function (s) { return pl.base + s * 1000; };
+  var tarde = S.carr.mesa0 ? Math.round((pl.mesa - S.carr.mesa0) / 60e3) : 0;
+  if (tarde >= 1) h += '<div class="ccAviso" role="status">' + svg("arrows-clockwise") + '<div><p>Plan rehecho: a la mesa a las ' + hm(pl.mesa) +
+    ' (antes ' + hm(S.carr.mesa0) + '). Lo que no espera sigue sin esperar.</p></div></div>';
+  if (x) {
+    var ii = ingsDe(x), Px = M0.pasos[x.k];
+    h += '<p class="ccCap' + (due ? " ac" : "") + '">' + (due ? "Ahora · tus manos" : 'A las ' + hm(abs(m.cuando)) + ' · en <b data-hasta="' + abs(m.cuando) + '">' + fmt(m.cuando - pl.desde) + '</b>') + '</p>';
+    h += '<h2' + (x.txt.length > 60 ? ' class="largo"' : "") + '>' + esc(sinMin(x.txt)) + '</h2>';
+    h += '<p class="ccSub">' + esc(M0.nomCarril[x.carril]) + (ii.length ? " · " + esc(ii.join(" · ")) : "") + '</p>';
+    if (!due) h += '<p class="ccTxt mu">Hasta entonces, tus manos están libres. Te aviso.</p>';
+    if (due && x.manos >= x.dur) {
+      var e = S.carr.empezo[x.id] || ahora, fin = e + x.dur * 1000;
+      h += '<div class="ccProg"><div class="cpBarra"><i data-desde="' + e + '" data-dur="' + x.dur * 1000 + '" style="width:' + Math.min(100, (ahora - e) / (x.dur * 10)) + '%"></i></div><b data-hasta="' + fin + '">' + fmt(Math.max(0, (fin - ahora) / 1000)) + '</b></div>';
+    }
+    if (x.aguanta != null && due) h += '<p class="ccTxt mu">No espera: así acaba justo cuando se junta todo.</p>';
+    if (Px && Px.pista) h += '<p class="cpPista">' + svg("ojo") + '<span>' + esc(mayus1(Px.pista)) + '</span></p>';
+  } else {
+    h += '<p class="ccCap">Ahora</p><h2>Nada que hacer</h2><p class="ccSub">Te aviso cuando toque.</p>';
+  }
+  // lo que espera: relojes de los carriles, y lo que ya esta y espera a su siguiente paso
+  var filas = S.timers.filter(function (T) { return T.carril; }).map(function (T) {
+    var t = M0.carr.tareas.filter(function (y) { return y.k === T.paso; })[0]; if (!t) return "";
+    var r = restante(T, ahora);
+    if (r <= 0) {
+      var sigue = M0.carr.tareas.some(function (y) { return y.carril === t.carril && y.n > t.n && !S.carr.hechas[y.id]; });
+      if (!sigue) return "";
+      return '<button class="ccFila" data-a="chip" data-t="' + T.id + '">' + svg(icoCarril(t.carril)) + '<span class="t"><b>' + esc(M0.nomCarril[t.carril]) + '</b><small>' + esc(sinMin(t.txt)) + ': listo' + (t.fuego ? ", a fuego bajo hasta que toque" : "") + '</small></span><span class="r">—</span></button>';
+    }
+    return '<button class="ccFila" data-a="chip" data-t="' + T.id + '">' + svg(icoCarril(t.carril)) + '<span class="t"><b>' + esc(M0.nomCarril[t.carril]) + '</b><small>' + esc(sinMin(t.txt)) + '</small></span><span class="r" data-r="' + T.id + '">' + fmt(r) + '</span></button>';
+  }).filter(Boolean);
+  if (filas.length) h += '<p class="ccCap">Mientras</p><div class="ccLista">' + filas.join("") + '</div>';
+  var luego = due ? m.luego : (x ? m.luego : []);
+  if (luego.length) h += '<p class="ccCap">Luego</p><div class="ccLista">' + luego.slice(0, 3).map(function (y) {
+    return '<div class="ccFila"><span class="h">' + hm(abs(P.ini[y.id])) + '</span><span class="t"><b>' + esc(sinMin(y.txt)) + (y.dur > y.manos ? " · " + minTxt(y.dur) : "") + '</b><small>' + esc(M0.nomCarril[y.carril]) +
+      (y.aguanta != null ? " · no espera: a esta hora acaba justo al juntar" : "") + '</small></span></div>';
+  }).join("") + '</div>';
+  h += '</div>';
+  var etq = !x ? "Esperando" : due ? (x.manos < x.dur ? "Hecho · " + minTxt(x.dur - x.manos) : "Hecho") : "Hacerlo ya";
+  h += '<div class="cpDock">' + toast() + '<button class="cpAnt" data-a="hIngs">Ingredientes</button>' +
+    '<button class="cpHecho ' + (due ? "blanco" : "tenue") + '" data-a="cHecho"' + (x ? ' data-t="' + x.id + '"' : " disabled") + '>' + (x ? svg("tick") : "") + esc(etq) + '</button></div>';
   return h;
 }
 
@@ -1205,13 +1469,25 @@ function accion(a, b) {
       if (r.saltados.length) ponToast("Saltados " + lista(r.saltados.map(function (j) { return M0.pasos[j].auto ? "Antes" : numDe(M0, j); })),
         function () { deshacer(S, r.antes, Date.now()); });
       cambia(true); return;
+    case "cEmpieza":
+      S.carr = { ini: ahora, hechas: {}, empezo: {}, fin: {}, mesa0: ahora + (V.pl ? V.pl.total : 0) * 1000 }; S.t = ahora; V.pant = "carril"; V.hoja = null;
+      cambia(true); return;
+    case "cHecho":
+      id = b.getAttribute("data-t"); T = tareaDe(M0, id); if (!T || !S.carr) return;
+      var antesC = copia(S);
+      hechaCarril(S, M0, id, ahora);
+      // el aviso de "plan rehecho" ya se ha visto: cuenta desde aqui
+      var pl2 = planCarril(M0, S, ahora, V.cocina); S.carr.mesa0 = pl2.mesa;
+      ponToast("Hecho: " + T.txt, function () { Object.keys(antesC).forEach(function (x) { S[x] = antesC[x]; }); S.t = Date.now(); });
+      if (todoHecho(M0, S, ahora)) { aFin(ahora); return; }
+      cambia(true); return;
     case "cero":
       var antes = reinicia(S, ahora);
       Object.keys(ALARMA).forEach(function (x) { delete ALARMA[x]; });
-      V.hoja = null; V.visto = null; V.pant = "paso";
+      V.hoja = null; V.visto = null; V.pant = M0.carr ? "plan" : "paso";
       ponToast("Empezado de 0", function () { deshacer(S, antes, Date.now()); });
       cambia(true); return;
-    case "sigue": V.pant = "paso"; S.t = ahora; cambia(true); return;
+    case "sigue": V.pant = M0.carr && S.carr && S.carr.ini ? "carril" : "paso"; S.t = ahora; cambia(true); return;
     case "deshacer": if (V.toast && V.toast.fn) V.toast.fn(); V.toast = null; cambia(false); return;
     case "gasto": k = +b.getAttribute("data-g"); if (V.gasto[k]) V.gasto[k].on = !V.gasto[k].on; pinta(false); return;
     case "apunta": termina(V.gasto.filter(function (g) { return g.on; }).map(function (g) { return g.txt; })); return;
@@ -1221,6 +1497,7 @@ function accion(a, b) {
 function guardaOtro(id) { if (id && VIVOS[id] && (!V || id !== V.id)) guarda(id, VIVOS[id].S); }
 function aFin(ahora) {
   V.pant = "fin"; V.hoja = null; V.visto = null;
+  if (V.M0.carr) V.S.timers = V.S.timers.filter(function (T) { return !T.carril || restante(T, ahora) > 0; });
   V.gasto = gastadoDe(V.M0); V.toast = null;          // los relojes que siguen ya salen en su tarjeta
   guarda(V.id, V.S);
   di(V.M0.G ? (/noche/i.test(V.M0.titulo) ? "Hecho. Buenas noches." : "Hecho.") : "Hecho. Buen provecho.");

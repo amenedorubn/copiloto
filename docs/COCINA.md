@@ -52,6 +52,31 @@ Arriba, fijas: **Semana**, **Comprar**, **Despensa** y **Recetas**; se cambian t
     planea las comidas.
 - **Recetas**: las de Copiloto Cocina, con «Tienes todo» o «Falta …».
 
+## El paso a paso con carriles (v2.36)
+
+Las comidas escritas con `CARRIL …` y `AL JUNTAR` ([formato](RECETAS-CALENDARIO.md#recetas-con-carriles-varias-cosas-a-la-vez))
+no van en fila, sino por carriles:
+
+- **Antes de empezar**: el plan entero en un mini-Gantt (manos en blanco, espera en gris, la unión en puntos),
+  por dónde empiezas, a qué hora entra lo que no espera («La pasta entra a las 13:59 para acabar justo cuando se
+  junta todo»), cuánto sería en una sola línea, lo que el evento no deja claro (carril y paso) y Saca / Corta.
+  «Empezar · a la mesa 14:10».
+- **Ahora · tus manos**: lo único que haces ahora, con sus ingredientes y, si es solo de manos (picar), lo que
+  queda. Si aún no toca: «A las 14:00 · en 5:03» y «Hasta entonces, tus manos están libres». **Hecho** acaba sus
+  manos y, si luego espera (hervir, sofreír), pone su reloj; «Hacerlo ya» lo adelanta. Deshacer, 5 s.
+- **Mientras**: los carriles que esperan, con su reloj, o «listo, a fuego bajo hasta que toque».
+- **Luego**: lo siguiente, con su hora y si no espera.
+- El plan se rehace cada segundo con lo que ya ha pasado: si picas 2 min más, la pasta entra 2 min más tarde
+  («Plan rehecho: a la mesa a las 14:11 (antes 14:10)»). Al acabar su espera, un carril pita una vez y dice
+  «Agua: listo»; cuando toca la siguiente acción, pita y la dice.
+- Cuenta con lo que hay en la cocina (`Carriles.COCINA`, se guarda en `copiloto.cocina.micocina.v1`): 4 fuegos,
+  1 sartén, 2 ollas, horno, micro, air fryer, picadora y batidora. Un carril tiene su fuego y su recipiente desde su
+  primer paso con ellos hasta el último.
+- Las recetas JSON de Copiloto Cocina y las comidas sin carriles siguen con el paso a paso de siempre.
+
+Capturas: `node scripts/capturas-cocina.mjs` saca `carril-plan`, `carril-agua`, `carril-manos`, `carril-tarde`,
+`carril-espera`, `carril-pasta`, `carril-fin` y `carril-error` con la pasta de ejemplo.
+
 ## El paso a paso
 
 - Paso 0 **Antes de empezar**: qué sacar, qué cortar y cómo («1 boniato · pélalo, en cubos de 2 cm») y qué

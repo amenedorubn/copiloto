@@ -38,6 +38,14 @@ const EJEMPLO = {
     { uid: "c7", fuente: "comida", fecha: "2026-10-05", hora: "14:30", titulo: "Pollo al pimentón con boniato",
       texto: "INGREDIENTES:\n· 400 g contramuslos de pollo\n· 1 boniato grande\nEl pimentón va solo en el adobo, no en el boniato desde el principio, se quemaría\n" +
         "ADOBO:\n· 1 cdta pimentón dulce\nANTES DE EMPEZAR:\n· Saca el pollo de la nevera 15 min antes\nCÓMO SE HACE:\n1. Adoba el pollo.\n2. Al horno 200 °C, 25 min." },
+    { uid: "c8", fuente: "comida", fecha: "2026-10-02", hora: "21:00", titulo: "Cena · Pasta con tomate y atún",
+      texto: "1 RACIÓN · 20 min\n\nINGREDIENTES\n· 100 g de pasta\n· 1 lata de atún\n· 200 g de tomate triturado\n· ½ cebolla\n· 1 diente de ajo\n· Básicos: sal, AOVE\n\n" +
+        "CARRIL AGUA (olla)\n1. Olla con agua y sal al fuego, 8 min hasta que hierva\n2. La pasta, 9 min (no espera)\n3. Escúrrela\n\n" +
+        "CARRIL SALSA (sartén)\n1. Pica la cebolla y el ajo, 3 min (manos)\n2. Sofríelos con AOVE, 6 min\n3. El tomate, 8 min\n4. El atún, 1 min\n\n" +
+        "AL JUNTAR\n1. Mezcla la pasta con la salsa y sirve" },
+    { uid: "c9", fuente: "comida", fecha: "2026-10-03", hora: "21:00", titulo: "Cena · Pollo con calabacín",
+      texto: "INGREDIENTES\n· 200 g de pollo\n· 1 calabacín\n\nCARRIL POLLO (sartén)\n1. Dora el pollo hasta que esté hecho\n2. El calabacín, 5 min (tras VERDURAS)\n\n" +
+        "CARRIL ARROZ\n1. El arroz al micro, 3 min (no espera)\n\nAL JUNTAR\n1. Sirve" },
     { uid: "r1", fuente: "rutina", fecha: "2026-10-01", hora: "21:40", fin: "22:20", titulo: "Rutina de noche · cama 22:20",
       texto: "21:40 · Prepara la comida de mañana (10 min)\n22:00 · Ducha (10 min)\n22:10 · Leer (10 min)\n22:20 · Cama, móvil fuera" }
   ],
@@ -122,6 +130,35 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await p.click(".cocCompra li button >> nth=0"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}comprar-carro.png` });
+    // v2.36: el paso a paso con carriles (la pasta con tomate y atún): plan, manos, espera, tarde, la pasta y el final
+    const abreUid = (uid) => p.evaluate((uid) => {
+      const ev = window.__dia.find((e) => e.uid === uid);
+      return window.CocinaModo.abre({ comida: window.Receta.leer(ev) }, {});
+    }, uid);
+    await p.evaluate((dia) => { window.__dia = dia; }, F.dia);
+    const toca = async (a) => { await p.click(`#cocPaso [data-a="${a}"]`); await p.waitForTimeout(300); };
+    const pasa = async (s) => { await p.clock.runFor(s * 1000); await p.waitForTimeout(350); };
+    const foto = (n) => p.screenshot({ path: `${OUT}${n}.png` });
+    if (await abreUid("c8")) {
+      await p.waitForTimeout(400); await foto("carril-plan");
+      await toca("cEmpieza"); await foto("carril-agua");
+      await toca("cHecho"); await pasa(100); await foto("carril-manos");        // 1:40: picas mientras el agua se calienta
+      await pasa(200); await foto("carril-tarde");                              // 5:00: picar lleva 2 min más: se rehace el plan
+      await toca("cHecho"); await toca("cHecho"); await foto("carril-espera");  // sofrito al fuego: manos libres hasta la pasta
+      for (let i = 0; i < 60; i++) {                                           // hasta que toca la pasta
+        const t = await p.$eval("#cocPaso .cpCuerpo h2", (e) => e.textContent).catch(() => "");
+        const due = await p.$("#cocPaso .ccCap.ac");
+        if (/pasta/i.test(t) && due) break;
+        await pasa(15);
+      }
+      await foto("carril-pasta");
+      for (let i = 0; i < 400 && await p.$("#cocPaso [data-a=cHecho]"); i++) {  // y el resto, a su hora
+        if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else await pasa(15);
+      }
+      await p.waitForTimeout(300); await foto("carril-fin");
+      await p.click("#cocPaso [data-a=sinApuntar]").catch(() => {}); await p.waitForTimeout(400);
+    } else { errores++; console.log("NO ABRE LA PASTA CON CARRILES"); }
+    if (await abreUid("c9")) { await p.waitForTimeout(400); await foto("carril-error"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300); }
     // el modo paso a paso de lo que toca, desde la tarjeta de Semana
     await p.click(".cocSeg button:has-text('Semana')"); await p.waitForTimeout(300);
     await p.click("#ptCuerpo .tjGo"); await p.waitForTimeout(800);

@@ -184,7 +184,13 @@ function explica(M, P) {
   var nom = {}; M.carriles.forEach(function (c) { nom[c.id] = c.nombre; });
   var out = [];
   if (orden[0]) out.push({ tipo: "empieza", T: orden[0], carril: nom[orden[0].carril] });
-  M.tareas.forEach(function (x) { if (x.aguanta != null) out.push({ tipo: "justo", T: x, carril: nom[x.carril], ini: P.ini[x.id] }); });
+  // lo que no espera, sin lo que va detras en su carril (escurrir la pasta)
+  M.tareas.forEach(function (x) {
+    if (x.aguanta == null) return;
+    var antes = M.tareas.filter(function (y) { return y.carril === x.carril && y.n === x.n - 1; })[0];
+    if (antes && antes.aguanta != null) return;
+    out.push({ tipo: "justo", T: x, carril: nom[x.carril], ini: P.ini[x.id] });
+  });
   return out;
 }
 

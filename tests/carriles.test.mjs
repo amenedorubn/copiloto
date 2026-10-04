@@ -167,3 +167,34 @@ test("momento: lo que haces ahora, lo que espera y lo que viene", () => {
   assert.equal(e[0].T.id, T("agua", 1).id);
   assert.ok(e.some((x) => x.tipo === "justo" && x.T.id === T("agua", 2).id));
 });
+
+/* ------------------------------ el modo paso a paso (cocina-modo.js) ------------------------------ */
+test("modo: Hecho en el agua pone su reloj, picas y, si tardas, la pasta se mueve; al acabar todo, fin", () => {
+  const Modo = req("../cocina-modo.js");
+  const M0 = Modo.normaliza({ comida: R.leer(PASTA) });
+  assert.ok(M0.carr && M0.carr.tareas.length === 8);
+  const t0 = Date.parse("2026-10-05T13:40:00"), S = Modo.nuevoEstado(t0);
+  S.carr = { ini: t0, hechas: {}, empezo: {}, fin: {} };
+  const tid = (c, n) => M0.carr.tareas.find((x) => x.carril === c && x.n === n).id;
+  let pl = Modo.planCarril(M0, S, t0);
+  assert.equal(pl.m.ahora.id, tid("agua", 1));
+  const T = Modo.hechaCarril(S, M0, tid("agua", 1), t0);
+  assert.equal(T.dur, 480 - 30);                                            // lo que espera tras sus 30 s de manos
+  pl = Modo.planCarril(M0, S, t0 + 100e3);
+  assert.equal(pl.m.ahora.id, tid("salsa", 1));                            // picar ya
+  assert.equal(pl.m.mientras[0].id, tid("agua", 1));
+  const pasta0 = pl.P.ini[tid("agua", 2)];
+  S.carr.empezo[tid("salsa", 1)] = t0;
+  Modo.hechaCarril(S, M0, tid("salsa", 1), t0 + 300e3);                    // picar: 5 min
+  pl = Modo.planCarril(M0, S, t0 + 300e3);
+  assert.ok(pl.P.ini[tid("agua", 2)] > pasta0, "la pasta entra más tarde");
+  assert.ok(!Modo.todoHecho(M0, S, t0 + 300e3));
+  let ahora = t0 + 300e3;
+  for (let i = 0; i < 20; i++) {                                           // el resto, cada cosa a su hora
+    pl = Modo.planCarril(M0, S, ahora);
+    if (!pl.m.ahora) break;
+    ahora = Math.max(ahora, pl.base + pl.m.cuando * 1000);
+    Modo.hechaCarril(S, M0, pl.m.ahora.id, ahora);
+  }
+  assert.ok(Modo.todoHecho(M0, S, ahora + 3600e3));
+});
