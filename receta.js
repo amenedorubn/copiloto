@@ -486,6 +486,8 @@ function pistaDe(txt) {
    "MAYUSCULAS: resto", "Ingredientes:" / "Si no te convence: ..." o
    "NINJA CRISPI · todo en AIR FRY" seguida de un paso numerado.          */
 var CABS = [
+  ["carril", /^carril\b/],
+  ["juntar", /^al juntar\b/],
   ["prep", /^(antes de empezar|antes de nada|mise en place|preparativos|prepara antes)/],
   ["paralelo", /^(en paralelo|mientras)\b/],
   ["despues", /^(al terminar|despues|al acabar|al llegar a casa|luego)\b/],
@@ -550,6 +552,81 @@ function paso(txt, tipo, grupo) {
   if (/congelador\s*(?:→|->|a la)\s*(?:la\s+)?nevera/i.test(t)) p.descongela = true;
   return p;
 }
+/* ------------------------------ carriles ------------------------------
+   Un paso de un carril puede llevar marcas al final, entre parentesis:
+     (manos)       ocupa las manos todo el tiempo (picar, formar bolas)
+     (espera)      solo las manos al empezar; luego se espera (hervir, hornear)
+     (no espera)   lo que sale no puede esperar: acaba justo cuando se usa (la pasta)
+     (tras SALSA)  empieza cuando acaba el carril SALSA
+   Sin marca, se deduce del verbo. -> {t: texto sin marcas, m: {manos, espera, noEspera, tras: [nombre]}} */
+function marcas(l) {
+  var m = { manos: false, espera: false, noEspera: false, tras: [] };
+  var t = String(l || "").replace(/\(\s*(manos|espera|no espera|tras\s+[^)]+)\s*\)/gi, function (x, a) {
+    var n = norm(a);
+    if (n === "manos") m.manos = true;
+    else if (n === "espera") m.espera = true;
+    else if (n === "no espera") m.noEspera = true;
+    else m.tras.push(n.replace(/^tras\s+/, "").replace(/^(el |la )?carril\s+/, ""));
+    return "";
+  }).replace(/\s+([,.;])/g, "$1").replace(/[,;]\s*$/, "").replace(/\s{2,}/g, " ").trim();
+  return { t: t, m: m };
+}
+var VERBO_MANOS = /\b(pica|picar|picalos|picala|corta|cortar|pela|pelar|ralla|rallar|bate|batir|mezcla|mezclar|mezclalo|mezclala|amasa|amasar|forma|haz|monta|lava|escurre|escurrela|escurrelo|escurrir|tritura|machaca|lamina|trocea|filetea|unta|reparte|sirve|emplata|alina|adoba|sala|reboza|enharina|rellena|enrolla|aplasta)\b/;
+var VERBO_ESPERA = /\b(hierva|hierve|hervir|hirviendo|cuece|cocer|cuecela|cuecelo|sofrie|sofrielos|sofrielas|sofreir|dora|dorar|rehoga|saltea|frie|freir|calienta|hornea|gratina|tuesta|reduce|reposa|reposar|deja|marina|enfria|templa|descongela|al fuego|a fuego|al horno|al micro|al microondas|air fry)\b/;
+var APARATOS = [["micro", /\bmicro(ondas)?\b/], ["airfryer", /\b(air ?fryer|airfryer|air fry|ninja|freidora de aire)\b/], ["horno", /\bhorno\b/],
+  ["picadora", /\bpicadora\b/], ["batidora", /\bbatidora\b/]];
+var RECIPIENTES = [["sarten", /\bsarten\b/], ["olla", /\b(olla|pota|cazo|cacerola|cazuela)\b/]];
+function recDe(n) { for (var i = 0; i < RECIPIENTES.length; i++) if (RECIPIENTES[i][1].test(n)) return RECIPIENTES[i][0]; return null; }
+function aparatoDe(n) { for (var i = 0; i < APARATOS.length; i++) if (APARATOS[i][1].test(n)) return APARATOS[i][0]; return null; }
+/* Cada paso de un carril queda con: dur_s, manos_s, aguanta_s (null = puede esperar lo que haga
+   falta), fuego, rec ("sarten" | "olla"), aparato, tras: [carril]. Lo que no se entiende va a
+   R.problemas con {tipo: "carril", carril, n, texto}: la app lo dice y sigue con un valor razonable. */
+var SIN_TIEMPO_S = 300, MANOS_SIN_TIEMPO_S = 60;
+function clasifica(R, pasos) {
+  var C = {}, ids = R.carriles.map(function (c) { C[c.id] = c; return c.id; });
+  function prob(p, txt) { R.problemas.push({ tipo: "carril", carril: p.carril, n: p.nCarril, texto: txt }); }
+  function donde(p) { return (p.carril === "union" ? "AL JUNTAR" : "CARRIL " + C[p.carril].nombre.toUpperCase()) + ", paso " + p.nCarril; }
+  var enFuego = {}, sinRec = {};
+  pasos.forEach(function (p) {
+    if (!p.carril) {
+      if (!p.auto && (p.tipo === "paso" || p.tipo === "paralelo"))
+        R.problemas.push({ tipo: "carril", carril: null, n: null, texto: "«" + p.titulo + "» está fuera de los carriles: va al final, antes de juntar." });
+      return;
+    }
+    var mk = p.marcas || { tras: [] }, n = norm(p.detalle), cl = C[p.carril];
+    var aparato = aparatoDe(n), rec = recDe(n) || (cl.rec ? recDe(cl.rec) : null) || (typeof enFuego[p.carril] === "string" ? enFuego[p.carril] : null);
+    var iM = n.search(VERBO_MANOS), iE = n.search(VERBO_ESPERA);
+    var espera = mk.espera || (!mk.manos && (aparato && aparato !== "picadora" && aparato !== "batidora" || (iE >= 0 && (iM < 0 || iE < iM))));
+    var manosV = mk.manos || (!espera && iM >= 0);
+    // en un carril que ya esta al fuego, "Tomate, 8 min" sigue al fuego
+    if (!espera && !manosV && p.duracion_s && enFuego[p.carril]) espera = true;
+    var fuego = !aparato && espera && (!!rec || !!enFuego[p.carril] || /\b(fuego|hierv|herv|sofri|sofre|dora|rehoga|saltea|frie|frei)/.test(n));
+    if (fuego) {
+      if (!rec && !sinRec[p.carril]) { sinRec[p.carril] = 1; prob(p, (p.carril === "union" ? "AL JUNTAR" : "CARRIL " + cl.nombre.toUpperCase()) + ": no dice si va en la sartén o en una olla. Escríbelo en el apartado: «CARRIL " + cl.nombre.toUpperCase() + " (sartén)»."); }
+      enFuego[p.carril] = rec || true;
+    }
+    var dur = p.duracion_s;
+    if (!dur) {
+      if (espera) { dur = SIN_TIEMPO_S; p.tiempoSupuesto = true; prob(p, donde(p) + " («" + (p.origen || p.titulo) + "»): no dice cuántos minutos. Uso 5 min."); }
+      else dur = MANOS_SIN_TIEMPO_S;
+    }
+    p.dur_s = dur;
+    p.manos_s = espera ? Math.min(dur, recDe(n) || aparato ? 30 : 15) : dur;
+    p.aguanta_s = mk.noEspera ? 30 : null;
+    p.fuego = !!fuego; p.rec = fuego || (espera && cl.rec) || /\b(sarten|olla|pota|cazo|cacerola|cazuela)\b/.test(n) ? rec : null; p.aparato = aparato;
+    p.tras = [];
+    mk.tras.forEach(function (t) {
+      var id = t.replace(/\s+/g, "-");
+      if (ids.indexOf(id) >= 0 && id !== p.carril) p.tras.push(id);
+      else prob(p, donde(p) + ": «(tras " + t.toUpperCase() + ")» no es ningún carril. Los carriles son: " + R.carriles.filter(function (c) { return c.id !== "union"; }).map(function (c) { return c.nombre.toUpperCase(); }).join(", ") + ".");
+    });
+  });
+  R.carriles.forEach(function (c) {
+    if (!pasos.some(function (p) { return p.carril === c.id; }))
+      R.problemas.push({ tipo: "carril", carril: c.id, n: null, texto: (c.id === "union" ? "AL JUNTAR" : "CARRIL " + c.nombre.toUpperCase()) + " no tiene pasos numerados." });
+  });
+}
+
 // "Las nueces NO van dentro", "Si queda muy espeso...": un consejo, no un paso
 function esConsejo(t) {
   t = limpia(t).replace(/^\d{1,2}[.)]\s+/, "");
@@ -653,11 +730,33 @@ function leer(ev) {
       R.ingredientes.push(g);
     });
   }
-  function mete(p, r) { p._r = r; p._i = pasos.length; pasos.push(p); vistos = true; return p; }
+  function mete(p, r) {
+    p._r = r; p._i = pasos.length; pasos.push(p); vistos = true;
+    if (sec.carril) { p.carril = sec.carril; p.nCarril = ++sec.n; }
+    return p;
+  }
+  // un paso de un carril: primero se quitan las marcas "(manos)", "(no espera)", "(tras SALSA)"
+  function pasoL(l, tipo) {
+    if (!sec.carril) return paso(l, tipo, sec.grupoPaso);
+    var mk = marcas(l), p = paso(mk.t, "paso", sec.grupoPaso);
+    p.marcas = mk.m; p.origen = limpia(l).replace(/^\d{1,2}[.)]\s+/, "");
+    return p;
+  }
   function tip(t) { tips.push({ txt: mayus1(limpia(t).replace(/^\d{1,2}[.)]\s+/, "")), tras: pasos[pasos.length - 1] || null }); }
   function abreSec(h) {
     var t = h.t, nom = nombreCab(h.nombre), nn = norm(nom);
     hayNum = false;
+    if (sec.C) sec.C.n = sec.n;
+    if (t === "carril" || t === "juntar") {
+      // "CARRIL AGUA (olla)" -> carril "agua" con su recipiente; "AL JUNTAR" -> "union"
+      var cn = t === "juntar" ? "Al juntar" : mayus1(nom.replace(/^carril\s*[:·-]?\s*/i, "")) || "Carril";
+      var cid = t === "juntar" ? "union" : norm(cn).replace(/\s+/g, "-");
+      R.carriles = R.carriles || [];
+      var C = R.carriles.filter(function (x) { return x.id === cid; })[0];
+      if (!C) { C = { id: cid, nombre: cn, rec: h.par ? norm(h.par) : null, n: 0 }; R.carriles.push(C); }
+      sec = { t: "pasos", nombre: cn, grupo: null, grupoPaso: cn, linea: false, carril: cid, n: C.n, C: C };
+      return;
+    }
     sec = { t: t, nombre: nom, grupo: null, grupoPaso: null, linea: !!h.resto };
     if (t === "pasos") sec.grupoPaso = h.grupo ? h.nombre : GENERICO_PASOS.test(nn) ? null : nom;
     if (t === "prep") sec.grupoPaso = "Antes de empezar";
@@ -715,7 +814,7 @@ function leer(ev) {
     if (num) {
       if (vistos && esConsejo(l)) return tip(l);
       hayNum = true;
-      return mete(paso(l, tipoPaso, sec.grupoPaso), ORDEN[tipoPaso === "paso" && /^mientras\b/i.test(cuerpo) ? "paso" : tipoPaso]);
+      return mete(pasoL(l, tipoPaso), ORDEN[tipoPaso === "paso" && /^mientras\b/i.test(cuerpo) ? "paso" : tipoPaso]);
     }
     if (st === "reparto") { if (vin) { reparto = reparto || []; reparto.push(mayus1(cuerpo)); } else (reparto = reparto || []).nota = ((reparto.nota || "") + " " + cuerpo).trim(); return; }
     if (st === "nota") return R.notas.push(cuerpo);
@@ -723,7 +822,7 @@ function leer(ev) {
     if (vin) {
       if (st === "prep" || st === "paralelo" || st === "despues" || st === "pasos") {
         if (vistos && esConsejo(l)) return tip(l);
-        return mete(paso(l, tipoPaso, sec.grupoPaso), ORDEN[tipoPaso]);
+        return mete(pasoL(l, tipoPaso), ORDEN[tipoPaso]);
       }
       if (st !== "ing" && vistos) return tip(l);
       if (esFrase(cuerpo)) return R.notas.push(cuerpo);
@@ -732,7 +831,7 @@ function leer(ev) {
     // linea normal, sin viñeta ni numero
     if (st === "prep" || st === "paralelo" || st === "despues" || st === "pasos") {
       if (sec.linea || hayNum || esConsejo(l)) return vistos && st !== "despues" ? tip(l) : R.notas.push(cuerpo);
-      return mete(paso(l, tipoPaso, sec.grupoPaso), ORDEN[tipoPaso]);
+      return mete(pasoL(l, tipoPaso), ORDEN[tipoPaso]);
     }
     if (st === "ing" && !esFrase(cuerpo)) return meteIngs(ings(cuerpo, { mult: sec.grupo ? sec.grupo.mult : 1 }));
     if (vistos) return tip(l);
@@ -797,6 +896,10 @@ function leer(ev) {
     mejor = mejor || x.tras || pasos[pasos.length - 1];
     mejor.consejo = mejor.consejo ? mejor.consejo + " " + x.txt : x.txt;
   });
+
+  // los carriles: cuanto dura cada paso, cuanto ocupa las manos, fuego, recipiente y lo que falla
+  if (R.carriles && R.tipo === "comida") clasifica(R, pasos);
+  else delete R.carriles;
 
   // lo que se acaba hoy: "Se acaban el pavo y las espinacas."
   var sa = (primera + " " + R.notas.join(" ")).match(/se acaban?\s+([^.:;]+)/i);
@@ -864,14 +967,14 @@ function leer(ev) {
     // el tiempo: lo que suman los pasos (sin lo que va en paralelo) mas 1 min por cosa que cortar
     var seg = reales.reduce(function (a, p) { return a + (p.tipo === "prep" || p.tipo === "paso" ? p.duracion_s : 0); }, 0) + 60 * corta.length;
     R.minutos_calc = Math.round(seg / 60);
-    if (R.minutos && seg > R.minutos * 60 * 1.2 + 60)
+    if (R.minutos && !R.carriles && seg > R.minutos * 60 * 1.2 + 60)
       R.problemas.push({ tipo: "tiempo", texto: "Los pasos suman ~" + R.minutos_calc + " min y el plan dice " + R.minutos + "." });
   }
   // voz de los avisos: "Boniato solo: agita."
   pasos.forEach(function (p) {
     var corta = p.titulo.split(/[,:]/)[0].split(" ").slice(0, 4).join(" ");
     p.avisos.forEach(function (a) { a.voz = corta + ": " + a.texto.charAt(0).toLowerCase() + a.texto.slice(1) + "."; });
-    delete p._r; delete p._i; delete p.linea;
+    delete p._r; delete p._i; delete p.linea; delete p.marcas;
   });
   R.pasos = pasos;
   return R;

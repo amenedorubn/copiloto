@@ -25,6 +25,70 @@ despensa y paso a paso. Si el texto sigue estas reglas, no se pierde nada (como 
 14. Antes de guardar, comprueba: cada ingrediente sale en algún paso, cada alimento de un paso está en la lista
     y los tiempos suman lo que dice la primera línea.
 
+## Recetas con carriles (varias cosas a la vez)
+
+Cuando una receta tiene cosas que van **a la vez** (la pasta cociendo mientras se hace la salsa), en lugar
+de `PROCESO` se escribe **un apartado por carril**. Copiloto calcula el orden y las horas: empiezas por lo
+que más tarda, haces con las manos lo que toca mientras lo demás espera, y lo que no puede esperar (la pasta)
+acaba justo cuando se junta todo. Las recetas sin carriles siguen con `PROCESO`, como siempre.
+
+1. **Un apartado por carril**, en MAYÚSCULAS y solo en su línea: `CARRIL <NOMBRE> (<recipiente>)`.
+   El nombre es corto y sin repetir (`AGUA`, `SALSA`, `BOLAS`, `ARROZ`). El recipiente, entre paréntesis:
+   `(sartén)`, `(olla)`, `(air fryer)`, `(micro)` o `(horno)`. **Todo carril que va al fuego dice si va en la
+   sartén o en una olla**.
+2. Dentro de cada carril, **pasos numerados desde 1**, en su orden, uno por acción, con sus minutos:
+   `1. Olla con agua y sal al fuego, 8 min hasta que hierva`.
+3. Todo lo que **espera** (hervir, cocer, sofreír, hornear, micro, air fryer, reposar) lleva su tiempo con
+   número y unidad. Lo que es solo de manos y dura poco (escurrir, servir) puede ir sin tiempo: cuenta 1 min.
+4. **Marcas** al final del paso, entre paréntesis, cuando el verbo no lo deja claro:
+   - `(manos)`: ocupa las manos todo el rato (`Pica la cebolla y el ajo, 3 min (manos)`);
+   - `(espera)`: solo las manos al empezar y luego se espera;
+   - `(no espera)`: lo que sale no puede esperar, tiene que acabar justo cuando se junta
+     (`La pasta, 9 min (no espera)`). Lo que va detrás en su carril (escurrirla) tampoco espera;
+   - `(tras BOLAS)`: este paso empieza cuando acaba el carril BOLAS (`Las albóndigas a la salsa, 12 min (tras BOLAS)`).
+5. **`AL JUNTAR`**: lo que se hace cuando acaban todos los carriles (mezclar, servir, repartir en tuppers).
+6. Los ingredientes, `ANTES DE EMPEZAR` y `NOTAS`, como siempre. **No se mezcla `PROCESO` con carriles**.
+7. La primera línea dice el tiempo **real** con los carriles a la vez (`1 RACIÓN · 20 min`), no la suma.
+8. Lo que tiene la cocina lo sabe Copiloto («Mi cocina»: 4 fuegos, 1 sartén, 2 ollas, horno, micro, air fryer):
+   no hace falta decir en qué fuego va cada cosa.
+
+Si algo no se entiende, Copiloto lo dice antes de empezar con el carril y el paso:
+«CARRIL POLLO, paso 1 («Dora el pollo hasta que esté hecho»): no dice cuántos minutos. Uso 5 min.»,
+«CARRIL SALSA: no dice si va en la sartén o en una olla», «CARRIL POLLO, paso 2: «(tras VERDURAS)» no es ningún carril».
+
+### Ejemplo con carriles
+
+```
+Pasta con tomate y atún
+1 RACIÓN · 20 min
+
+INGREDIENTES
+· 100 g de pasta
+· 1 lata de atún
+· 200 g de tomate triturado
+· ½ cebolla
+· 1 diente de ajo
+· Básicos: sal, AOVE
+
+CARRIL AGUA (olla)
+1. Olla con agua y sal al fuego, 8 min hasta que hierva
+2. La pasta, 9 min (no espera)
+3. Escúrrela
+
+CARRIL SALSA (sartén)
+1. Pica la cebolla y el ajo, 3 min (manos)
+2. Sofríelos con AOVE, 6 min
+3. El tomate, 8 min
+4. El atún, 1 min
+
+AL JUNTAR
+1. Mezcla la pasta con la salsa y sirve
+```
+
+Copiloto lo cocina así: agua al fuego (0:00), picar mientras se calienta (0:30), sofreír (3:30), la pasta al
+agua a las 9:00 para escurrirla a las 18:00, el atún a las 17:30 y a la mesa a los 20 min. En una sola línea
+serían 37 min y la pasta se enfriaría esperando a la salsa.
+
 ## Cómo sale la lista de la compra (pestaña Comprar)
 
 Copiloto suma cada ingrediente de las comidas que aún no han empezado, resta lo que hay en la despensa y

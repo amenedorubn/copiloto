@@ -1,12 +1,13 @@
 # Cocina
 
-Pestaña de HOY (icono de la olla, junto a Estadísticas). Desde la v2.23 son cuatro archivos, cada uno
+Pestaña de HOY (icono de la olla, junto a Estadísticas). Desde la v2.35 son cinco archivos, cada uno
 con sus tests (`node --test tests/<archivo>.test.mjs`):
 
 | Archivo | Qué hace |
 |---|---|
 | `receta.js` | Entiende el texto de cada evento de «Comidas»: ingredientes (con cantidad, corte y si ya está en casa), pasos, tiempos y avisos, «Antes de empezar» |
 | `despensa.js` | Lo que hay en casa (Despensa) y lo que comprar (Comprar) |
+| `carriles.js` | Las recetas con carriles: cuándo va cada paso (manos de una en una, fuegos, sartén, ollas, micro, air fryer) y el replan si vas tarde |
 | `cocina-modo.js` | El paso a paso a pantalla completa |
 | `cocina.js` | Las pantallas, HOY, los avisos del tupper y la avena, el escáner y la sincronización |
 
