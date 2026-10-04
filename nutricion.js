@@ -1,0 +1,230 @@
+/* ===========================================================================
+   NUTRICION · lo planificado y lo registrado contra los objetivos de la semana (v2.44)
+   ---------------------------------------------------------------------------
+   - Los nutrientes de cada alimento salen de nutri-tabla.js (USDA FoodData
+     Central, SR Legacy, CC0) o de tus alimentos (Open Food Facts, o lo tuyo).
+     Lo que no se encuentra NO se inventa: queda "sin datos".
+   - PLANIFICADO = las comidas del calendario «Comidas» (por ración).
+     REGISTRADO = lo que apuntas tú y no está en el calendario (batidos,
+     meriendas, comer fuera). La app nunca dice que es lo que has comido de
+     verdad: el calendario no lo recoge todo.
+   - Objetivos por SEMANA según su fase (Descarga, Carga, Recuperación,
+     Mantenimiento, Volumen, Definición), en g/kg y % sobre el mantenimiento,
+     con el «por qué» de cada número. Tus datos (peso, altura, edad, % grasa)
+     viven solo en el móvil: nunca en el repo, los tests ni las capturas.
+   Lógica pura: node la carga para los tests (tests/nutricion.test.mjs).
+   =========================================================================== */
+(function (raiz, fabrica) {
+  var X = fabrica(raiz);
+  if (typeof module === "object" && module.exports) module.exports = X;
+  else raiz.Nutricion = X;
+})(typeof window !== "undefined" ? window : this, function (raiz) {
+"use strict";
+
+var EN_NODE = typeof module === "object" && module.exports && typeof require === "function";
+var M = {};
+function usa(n, f) { if (!M[n]) M[n] = EN_NODE ? require(f) : raiz[n]; return M[n]; }
+function Rc() { return usa("Receta", "./receta.js"); }
+function Tabla() { return usa("NutriTabla", "./nutri-tabla.js"); }
+function norm(s) { return Rc().norm(s); }
+function r1(n) { return Math.round(n * 10) / 10; }
+
+var CLAVES = ["kcal", "prot", "hc", "grasa", "fibra", "vitC", "folato", "hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "sodio"];
+var NOMBRE = { kcal: "Energía", prot: "Proteína", hc: "Carbohidratos", grasa: "Grasa", fibra: "Fibra", vitC: "Vitamina C", folato: "Folato",
+  hierro: "Hierro", magnesio: "Magnesio", potasio: "Potasio", b12: "Vitamina B12", vitD: "Vitamina D", calcio: "Calcio", sodio: "Sodio" };
+var UNIDAD = { kcal: "kcal", prot: "g", hc: "g", grasa: "g", fibra: "g", vitC: "mg", folato: "µg", hierro: "mg", magnesio: "mg", potasio: "mg",
+  b12: "µg", vitD: "µg", calcio: "mg", sodio: "mg" };
+var PRIORIDAD = ["hc", "fibra", "vitC", "folato"];
+
+/* ------------------------------ un alimento ------------------------------ */
+var RE_C = {};
+function fila(nombre) {
+  var n = norm(nombre); if (!n) return null;
+  var T = Tabla();
+  for (var i = 0; i < T.length; i++) {
+    var re = RE_C[T[i].k] || (RE_C[T[i].k] = new RegExp(T[i].k));
+    if (re.test(n)) return T[i];
+  }
+  return null;
+}
+// gramos de una cantidad: g y ml tal cual; cucharadas; unidades con lo que pesa una (la tabla o tus alimentos)
+var GR_UD = { g: 1, kg: 1000, ml: 1, l: 1000, cl: 10, cda: 15, cdta: 5, "puñado": 30, pizca: 0.5 };
+function gramos(c, F, eq) {
+  if (!c || !(c.n > 0)) return null;
+  if (GR_UD[c.ud] != null) return c.n * (c.ud === "cda" && F && /aceite/i.test(F.nombre) ? 13 : GR_UD[c.ud]);
+  if (eq && eq.n > 0 && /^(g|ml)$/.test(eq.ud)) return c.n * eq.n;
+  if (F && F.ud) return c.n * F.ud;
+  return null;
+}
+function vacio() { var o = {}; CLAVES.forEach(function (k) { o[k] = 0; }); return o; }
+function suma(a, b, f) { CLAVES.forEach(function (k) { if (b[k] != null) a[k] += b[k] * (f == null ? 1 : f); }); return a; }
+/* Un ingrediente (de receta.js) -> {n: nutrientes, g, F (fila), fuente} o {sinDatos: motivo}.
+   ali = tu alimento (si lo hay): su nutricion de Open Food Facts o la tuya manda en los macros. */
+function deIngrediente(g, ali) {
+  var F = fila(g.base || g.nombre || g.txt || ""), gr = gramos(g.c, F, ali && ali.eq);
+  if (gr == null) return { sinDatos: g.c ? "cantidad sin peso" : "sin cantidad", txt: g.txt };
+  var por100 = null, fuente = null;
+  if (ali && ali.nutri && ali.nutri.kcal != null) {
+    por100 = {}; CLAVES.forEach(function (k) { if (ali.nutri[k] != null) por100[k] = ali.nutri[k]; });
+    if (F) CLAVES.forEach(function (k) { if (por100[k] == null && F.n[k] != null && !/kcal|prot|hc|grasa/.test(k)) por100[k] = F.n[k]; });
+    fuente = ali.nutri.fuente || "OFF";
+  } else if (F) { por100 = F.n; fuente = "USDA"; }
+  if (!por100) return { sinDatos: "sin datos de nutrición", txt: g.txt };
+  var n = {}; CLAVES.forEach(function (k) { if (por100[k] != null) n[k] = por100[k] * gr / 100; });
+  return { n: n, g: gr, F: F, fuente: fuente, txt: g.txt };
+}
+/* Una comida del calendario (receta.js), por ración -> {n, sinDatos: [txt], lineas: [...]}.
+   Los básicos sin cantidad (sal, "AOVE al gusto") no cuentan ni se avisan.                 */
+function deComida(R, aliDe) {
+  var tot = vacio(), sin = [], L = [], rac = R.raciones && R.raciones > 0 ? R.raciones : 1;
+  (R.ingredientes || []).forEach(function (g) {
+    if (!g.clave || (g.basico && !g.c)) return;
+    var x = deIngrediente(g, aliDe ? aliDe(g.base || g.nombre) : null);
+    if (x.sinDatos) { sin.push(g.txt); return; }
+    suma(tot, x.n, 1 / rac); L.push(x);
+  });
+  return { n: tot, sinDatos: sin, lineas: L, raciones: rac };
+}
+// lo que apuntas tú: "200 g de yogur griego", "2 dátiles", o un favorito con sus nutrientes
+function deTexto(txt, aliDe) {
+  var tot = vacio(), sin = [], gs = Rc().ings(String(txt || ""));
+  gs.forEach(function (g) { var x = deIngrediente(g, aliDe ? aliDe(g.base || g.nombre) : null); if (x.sinDatos) sin.push(g.txt); else suma(tot, x.n); });
+  return { n: tot, sinDatos: sin };
+}
+
+/* ------------------------------ favoritos (registro rápido) ------------------------------
+   Con lo que llevan: se calculan con la tabla. "Comida fuera" es una ESTIMACIÓN (solo energía y
+   macros; los micros quedan sin datos).                                                       */
+var FAVORITOS = [
+  { id: "batido", txt: "Batido de proteína", ings: "30 g de proteína en polvo, 300 ml de leche semidesnatada" },
+  { id: "datiles", txt: "Dátiles", ings: "3 dátiles" },
+  { id: "yogurprot", txt: "Yogur griego con proteína", ings: "170 g de yogur griego, 15 g de proteína en polvo" },
+  { id: "platano", txt: "Plátano", ings: "1 plátano" },
+  { id: "fuera-ligera", txt: "Comida fuera · ligera", estimado: { kcal: 600, prot: 30, hc: 70, grasa: 20 } },
+  { id: "fuera-normal", txt: "Comida fuera · normal", estimado: { kcal: 900, prot: 40, hc: 100, grasa: 35 } },
+  { id: "fuera-copiosa", txt: "Comida fuera · copiosa", estimado: { kcal: 1300, prot: 50, hc: 140, grasa: 55 } }
+];
+function deFavorito(f, aliDe) {
+  if (f.estimado) { var n = vacio(); for (var k in f.estimado) n[k] = f.estimado[k]; return { n: n, sinDatos: [], estimado: true, micros: false }; }
+  var x = deTexto(f.ings, aliDe); x.micros = true; return x;
+}
+
+/* ------------------------------ fases y objetivos ------------------------------
+   Rangos por fase (g por kg de peso; energía en % sobre el mantenimiento). Fuentes:
+   ACSM/AND/DC 2016 (Nutrition and Athletic Performance), IOC 2018 (consenso), ISSN 2017
+   (proteína), Aragon 2017 (ISSN, dieta y composición corporal), EFSA DRV (fibra y micros).   */
+var FASES = {
+  descarga: { nombre: "Descarga", kcal: [-10, -5], prot: [1.6, 1.8], hc: [5, 6], grasa: [0.8, 1.0], fibra: [25, 30],
+    porque: "Menos volumen de entreno: un poco menos de energía, carbohidratos para llegar con el depósito lleno a la carrera (ACSM/IOC)." },
+  carga: { nombre: "Carga de hidratos", kcal: [10, 15], prot: [1.2, 1.6], hc: [7, 8], grasa: [0.5, 0.8], fibra: [10, 20],
+    porque: "Los 2 días antes de la carrera: 7–8 g/kg de carbohidratos (el IOC pide 10–12 g/kg para pruebas de más de 90 min) y poca fibra para no cargar el intestino." },
+  recuperacion: { nombre: "Recuperación", kcal: [0, 0], prot: [1.8, 2.0], hc: [4, 6], grasa: [0.9, 1.1], fibra: [30, 40],
+    porque: "Tras la carrera: más proteína para reparar músculo (ISSN 1,4–2,0 g/kg) y carbohidratos para reponer glucógeno." },
+  mantenimiento: { nombre: "Mantenimiento", kcal: [0, 0], prot: [1.6, 1.8], hc: [4, 6], grasa: [0.9, 1.1], fibra: [30, 40],
+    porque: "Energía igual al gasto; proteína en el rango que mantiene la masa muscular entrenando fuerza (ISSN)." },
+  volumen: { nombre: "Volumen", kcal: [8, 11], prot: [1.6, 2.0], hc: [5, 6], grasa: [0.9, 1.1], fibra: [30, 40],
+    porque: "Un superávit pequeño (+250–300 kcal) para ganar músculo con poca grasa (Aragon/ISSN)." },
+  definicion: { nombre: "Definición", kcal: [-15, -10], prot: [2.0, 2.2], hc: [3, 5], grasa: [0.8, 1.0], fibra: [30, 40],
+    porque: "Déficit suave (−300…−400 kcal, como mucho −0,5 % de peso por semana) con más proteína para no perder músculo (ISSN)." }
+};
+// micronutrientes: EFSA, hombre adulto (editables en el perfil)
+var MICROS = { vitC: [110, null, "EFSA: 110 mg/día (hombre adulto)"], folato: [330, null, "EFSA: 330 µg DFE/día"], fibra: [25, null, "EFSA: 25 g/día como mínimo"],
+  hierro: [11, null, "EFSA: 11 mg/día"], magnesio: [350, null, "EFSA: 350 mg/día (AI)"], potasio: [3500, null, "EFSA: 3500 mg/día (AI)"],
+  b12: [4, null, "EFSA: 4 µg/día (AI)"], vitD: [15, 100, "EFSA: 15 µg/día; máximo tolerable 100 µg"], calcio: [950, null, "EFSA: 950 mg/día"] };
+// carbohidratos según el día (g/kg sobre el rango de la fase): descanso −1, gimnasio 0, calidad +1, tirada +2
+var DIA = { descanso: [-1, "Día de descanso: 1 g/kg menos."], gimnasio: [0, "Día de gimnasio: el rango de la fase."],
+  calidad: [1, "Día de calidad (series, ritmo): 1 g/kg más."], tirada: [2, "Tirada larga o carrera: 2 g/kg más."] };
+
+// gasto en reposo: Mifflin-St Jeor; mantenimiento = reposo × 1,6 si no lo pones tú
+function reposo(p) { if (!p || !(p.peso > 0) || !(p.altura > 0) || !(p.edad > 0)) return null; return Math.round(10 * p.peso + 6.25 * p.altura - 5 * p.edad + (p.sexo === "m" ? -161 : 5)); }
+function mantenimiento(p) {
+  if (p && p.mant > 0) return { kcal: Math.round(p.mant), porque: "El que has puesto tú." };
+  var r = p && p.bmr > 0 ? Math.round(p.bmr) : reposo(p);
+  if (!r) return null;
+  return { kcal: Math.round(r * 1.6), porque: (p.bmr > 0 ? "Tu metabolismo basal (" + r + " kcal)" : "Mifflin-St Jeor (" + r + " kcal en reposo)") +
+    " × 1,6 por entrenar 6–7 días a la semana. Contrástalo con tu peso medio semanal y cámbialo si hace falta." };
+}
+
+/* El plan de fases inicial (editable semana a semana en la app). Semanas de lunes a domingo. */
+var PLAN = [
+  { desde: "2026-10-12", hasta: "2026-10-18", fase: "descarga", dias: { "2026-10-16": "carga", "2026-10-17": "carga" } },
+  { desde: "2026-10-19", hasta: "2026-11-02", fase: "recuperacion" },
+  { desde: "2026-11-03", hasta: "2026-11-30", fase: "mantenimiento" },
+  { desde: "2026-12-01", hasta: "2027-03-31", fase: "definicion" }
+];
+function lunes(iso) { var p = iso.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2], 12); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+/* La fase de un día: lo que hayas puesto para su semana (semanas = {lunes: {fase, peso, ...}}) o el plan.
+   -> {fase, deSemana: bool, dia: fase del dia si cambia (carga)} */
+function faseDe(iso, semanas) {
+  var s = semanas && semanas[lunes(iso)];
+  var P = PLAN.filter(function (x) { return iso >= x.desde && iso <= x.hasta; })[0];
+  var f = s && s.fase ? s.fase : P ? P.fase : "mantenimiento";
+  var dia = !(s && s.fase) && P && P.dias && P.dias[iso] ? P.dias[iso] : (s && s.dias && s.dias[iso]) || null;
+  return { fase: dia || f, semana: f, propia: !!(s && s.fase) };
+}
+/* Objetivos de un día -> {kcal, prot, hc, grasa, fibra, vitC, ...: {min, max, u, porque}} o null sin perfil.
+   peso: el medio de la semana si lo hay; tipo: el del día (descanso, gimnasio, calidad, tirada).            */
+function objetivos(perfil, iso, semanas, tipo) {
+  var s = semanas && semanas[lunes(iso)] || {}, peso = s.peso > 0 ? s.peso : perfil && perfil.peso;
+  if (!peso) return null;
+  var p = {}; for (var k in perfil) p[k] = perfil[k]; p.peso = peso;
+  var F = faseDe(iso, semanas), C = FASES[F.fase] || FASES.mantenimiento, man = mantenimiento(p), aj = s.ajustes || {};
+  var out = { fase: F.fase, faseNombre: C.nombre, porque: C.porque, peso: peso, pesoDe: s.peso > 0 ? "tu peso medio de esta semana" : "tu peso" };
+  function rango(k, a, b, u, porque) {
+    var x = aj[k]; out[k] = x && x.length === 2 ? { min: x[0], max: x[1], u: u, porque: "Lo has puesto tú para esta semana.", propio: true } : { min: a, max: b, u: u, porque: porque };
+  }
+  if (man) rango("kcal", Math.round(man.kcal * (1 + C.kcal[0] / 100)), Math.round(man.kcal * (1 + C.kcal[1] / 100)), "kcal",
+    "Mantenimiento " + man.kcal + " kcal (" + man.porque + ") " + (C.kcal[0] || C.kcal[1] ? (C.kcal[0] > 0 ? "+" : "") + C.kcal[0] + "…" + (C.kcal[1] > 0 ? "+" : "") + C.kcal[1] + " % en " + C.nombre.toLowerCase() + "." : "sin cambio en " + C.nombre.toLowerCase() + "."));
+  rango("prot", Math.round(C.prot[0] * peso), Math.round(C.prot[1] * peso), "g", C.prot[0] + "–" + C.prot[1] + " g/kg × " + r1(peso) + " kg (" + out.pesoDe + ").");
+  var d = F.fase === "carga" ? 0 : DIA[tipo] ? DIA[tipo][0] : 0, h0 = Math.max(3, C.hc[0] + d), h1 = Math.max(h0, C.hc[1] + d);
+  rango("hc", Math.round(h0 * peso), Math.round(h1 * peso), "g", h0 + "–" + h1 + " g/kg × " + r1(peso) + " kg." + (d && DIA[tipo] ? " " + DIA[tipo][1] : ""));
+  rango("grasa", Math.round(C.grasa[0] * peso), Math.round(C.grasa[1] * peso), "g", C.grasa[0] + "–" + C.grasa[1] + " g/kg.");
+  rango("fibra", C.fibra[0], C.fibra[1], "g", F.fase === "carga" ? "Poca fibra los días de carga." : "EFSA: 25 g como mínimo; " + C.fibra[0] + "–" + C.fibra[1] + " g en " + C.nombre.toLowerCase() + ".");
+  Object.keys(MICROS).forEach(function (k) { if (k !== "fibra") rango(k, MICROS[k][0], MICROS[k][1], UNIDAD[k], MICROS[k][2]); });
+  return out;
+}
+
+/* ------------------------------ el día ------------------------------
+   comidas: las de ese día (receta.js), sin las que no hiciste; registro: [{n, sinDatos, estimado, micros}]
+   -> {plan: {n, sinDatos}, reg: {n, sinDatos, estimado}, total: n}                                      */
+function dia(comidas, registro, aliDe) {
+  var plan = vacio(), sin = [], reg = vacio(), sinR = [], est = false, sinMicros = false;
+  (comidas || []).forEach(function (R) { var x = deComida(R, aliDe); suma(plan, x.n); sin = sin.concat(x.sinDatos); });
+  (registro || []).forEach(function (e) { suma(reg, e.n || {}); sinR = sinR.concat(e.sinDatos || []); if (e.estimado) est = true; if (e.micros === false) sinMicros = true; });
+  var tot = suma(suma(vacio(), plan), reg);
+  return { plan: { n: plan, sinDatos: sin }, reg: { n: reg, sinDatos: sinR, estimado: est, sinMicros: sinMicros }, total: tot };
+}
+
+/* ------------------------------ te falta X; cómete Y ------------------------------
+   Lo que falta de los prioritarios (carbohidratos, fibra, vitamina C, folato) hasta el mínimo, y qué
+   comer: primero lo que hay en casa, luego lo que ya está en la lista; si no, qué comprar. Es algo
+   que se añade (un tentempié o un acompañamiento): no cambia ninguna comida del plan.
+   enCasa / enLista: [nombres] -> [{k, falta, u, y: {txt, aporta, donde: "casa" | "lista" | "comprar"}}]    */
+var PORCION = { "Plátano": 120, "Kiwi": 75, "Naranja": 180, "Manzana": 180, "Espinacas": 60, "Pimiento": 80, "Fresas": 150, "Brócoli": 100,
+  "Garbanzos cocidos": 120, "Lentejas (secas)": 60, "Avena": 50, "Dátiles": 48, "Aguacate": 75, "Arroz cocido": 125, "Pan integral": 60 };
+function teFalta(total, obj, enCasa, enLista) {
+  if (!obj) return [];
+  var out = [], casa = (enCasa || []).map(fila).filter(Boolean), lista = (enLista || []).map(fila).filter(Boolean);
+  PRIORIDAD.forEach(function (k) {
+    var o = obj[k]; if (!o || o.min == null) return;
+    var falta = o.min - (total[k] || 0); if (falta <= o.min * 0.05) return;
+    function mejor(L, todo) {
+      var m = null, pm = 0;
+      L.forEach(function (F) { var g = PORCION[F.nombre] || F.ud || 100, a = (F.n[k] || 0) * g / 100; if (a > pm) { pm = a; m = { F: F, g: g, a: a }; } });
+      return m && (todo || m.a >= falta * 0.15) ? m : null;
+    }
+    var y = mejor(casa), donde = "casa";
+    if (!y) { y = mejor(lista); donde = "lista"; }
+    if (!y) { y = mejor(Tabla().filter(function (F) { return PORCION[F.nombre]; }), true); donde = "comprar"; }
+    out.push({ k: k, nombre: NOMBRE[k], falta: Math.round(falta), u: UNIDAD[k],
+      y: y ? { nombre: y.F.nombre, txt: porcionTxt(y.F, y.g), aporta: Math.round(y.a), donde: donde } : null });
+  });
+  return out;
+}
+function porcionTxt(F, g) { return F.ud ? (Math.round(g / F.ud) <= 1 ? "1 " : Math.round(g / F.ud) + " × ") + F.nombre.toLowerCase() : g + " g de " + F.nombre.toLowerCase(); }
+
+return { CLAVES: CLAVES, NOMBRE: NOMBRE, UNIDAD: UNIDAD, PRIORIDAD: PRIORIDAD, FASES: FASES, MICROS: MICROS, DIA: DIA, PLAN: PLAN, FAVORITOS: FAVORITOS,
+  fila: fila, gramos: gramos, deIngrediente: deIngrediente, deComida: deComida, deTexto: deTexto, deFavorito: deFavorito,
+  reposo: reposo, mantenimiento: mantenimiento, lunes: lunes, faseDe: faseDe, objetivos: objetivos, dia: dia, teFalta: teFalta };
+});

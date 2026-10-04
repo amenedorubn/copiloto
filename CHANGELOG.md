@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.44.0] - 2026-10-04
+
+### Añadido
+
+- Nutrición, la base: tabla de 75 alimentos de USDA FoodData Central (CC0), nutrientes por ración de cada comida (lo que no se sabe queda sin datos), objetivos por semana según la fase en g/kg y % sobre el mantenimiento con su porqué, carbohidratos según el tipo de día y Te falta X; cómete Y (sin pantalla todavía)
+
 ## [2.43.0] - 2026-10-04
 
 ### Añadido
@@ -676,6 +682,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.44.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.44.0
 [2.43.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.43.0
 [2.42.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.42.0
 [2.41.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.41.0

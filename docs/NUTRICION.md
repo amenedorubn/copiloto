@@ -1,0 +1,58 @@
+# Nutrición
+
+Planificado contra objetivos, por semana. Lógica en `nutricion.js` (tests: `tests/nutricion.test.mjs`).
+
+## De dónde salen los números
+
+- **Alimentos:** `nutri-tabla.js`, 75 alimentos de **USDA FoodData Central (SR Legacy, CC0)** por 100 g: energía,
+  macros, fibra, vitamina C, folato (DFE), hierro, magnesio, potasio, B12, vitamina D, calcio y sodio. Se rehace con
+  `python scripts/usda-tabla.py <carpeta del CSV>`. Lo que pesa una unidad (`ud`: 1 plátano = 120 g) es estimación propia.
+- **Tus alimentos** (escaneados): sus macros de Open Food Facts (o los tuyos) mandan; los micros siguen de USDA.
+- **Lo que no se encuentra o no se puede pesar queda «sin datos»**: nunca se inventa un 0.
+
+## Planificado y registrado
+
+- **Planificado:** las comidas del calendario «Comidas», por ración (`2 RACIONES` → la mitad).
+- **Registrado:** lo que apuntas tú y no está en el calendario: favoritos de un toque (batido de proteína, dátiles,
+  yogur griego con proteína, plátano) o texto («200 g de yogur griego»).
+- **Comer fuera** es una **estimación** de energía y macros (ligera ~600, normal ~900, copiosa ~1300 kcal), sin micros.
+- La app nunca dice que eso es lo que has comido: el calendario no lo recoge todo.
+
+## Objetivos por semana
+
+Cada semana tiene una **fase**. La fase rellena los rangos en g/kg (con el peso medio de esa semana, si lo pones) y la
+energía como % sobre el mantenimiento. Cada número lleva su «por qué».
+
+| Fase | Energía | Proteína | Carbohidratos | Grasa | Fibra |
+|---|---|---|---|---|---|
+| Descarga | −10…−5 % | 1,6–1,8 g/kg | 5–6 g/kg | 0,8–1,0 | 25–30 g |
+| Carga de hidratos | +10…+15 % | 1,2–1,6 | 7–8 | 0,5–0,8 | 10–20 g |
+| Recuperación | = | 1,8–2,0 | 4–6 | 0,9–1,1 | 30–40 g |
+| Mantenimiento | = | 1,6–1,8 | 4–6 | 0,9–1,1 | 30–40 g |
+| Volumen | +8…+11 % (~+250–300 kcal) | 1,6–2,0 | 5–6 | 0,9–1,1 | 30–40 g |
+| Definición | −15…−10 % (~−300…−400, ≤0,5 %/sem) | 2,0–2,2 | 3–5 | 0,8–1,0 | 30–40 g |
+
+- **Carbohidratos según el día** (del calendario de entrenos): descanso −1 g/kg, gimnasio =, calidad +1, tirada larga
+  o carrera +2. En carga, el día no suma.
+- **Mantenimiento:** el que pongas tú. Si no, el basal que pongas (o Mifflin-St Jeor) × 1,6. Contrástalo con el peso
+  medio semanal.
+- **Micros (EFSA, hombre adulto):** vitamina C 110 mg, folato 330 µg, fibra ≥ 25 g, hierro 11 mg, magnesio 350 mg,
+  potasio 3500 mg, B12 4 µg, vitamina D 15 µg (máximo 100), calcio 950 mg.
+- **Fuentes:** ACSM/AND/DC 2016, consenso del IOC 2018, ISSN 2017 (proteína), Aragon 2017 (ISSN) y EFSA DRV.
+- **Plan inicial** (editable en la app):
+  - descarga del 12 al 18/10, con carga el 16 y el 17;
+  - recuperación del 19/10 al 2/11;
+  - mantenimiento en noviembre;
+  - definición de diciembre a marzo.
+
+**Tus datos** (peso, altura, edad, % grasa, mantenimiento) viven solo en el móvil (`copiloto.nutri.perfil.v1`):
+nunca en el repo, en los tests ni en las capturas.
+
+## Te falta X; cómete Y
+
+Mira lo que falta de los prioritarios (carbohidratos, fibra, vitamina C y folato) hasta el mínimo y propone qué comer:
+1. Primero, lo que ya hay en casa.
+2. Luego, lo que está en la lista.
+3. Si no, qué comprar.
+
+Es algo que se **añade** (un tentempié o un acompañamiento): no cambia ninguna comida del plan.

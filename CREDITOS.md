@@ -6,3 +6,7 @@ App Android (carpeta app/):
 - Capgo Capacitor Updater (actualizaciones sin reinstalar, en modo propio, sin su nube), licencia MPL-2.0 — https://github.com/Cap-go/capacitor-updater
 - sherpa-onnx (voz neuronal sin internet), licencia Apache-2.0 — https://github.com/k2-fsa/sherpa-onnx
 - Voz "Miro" (Piper, es-ES) de OpenVoiceOS, licencia CC BY-NC-SA 4.0: uso no comercial — https://huggingface.co/OpenVoiceOS/pipertts_es-ES_miro (la licencia va dentro del APK en assets/voz/LICENCIA.md)
+
+Nutrición (nutri-tabla.js, nutricion.js):
+- USDA FoodData Central, SR Legacy (abril 2018), dominio público (CC0) — https://fdc.nal.usda.gov · la tabla se rehace con scripts/usda-tabla.py
+- Open Food Facts (lo escaneado), licencia ODbL — https://world.openfoodfacts.org
