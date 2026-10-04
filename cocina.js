@@ -587,6 +587,10 @@ CSS +=
   ".cocFichaAcc{margin-top:16px}.cocFichaForm{margin-top:24px}" +
   ".cocFotoBtn{display:flex!important;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:14px;background:var(--sf2);color:var(--fg)!important;font-size:15px!important;font-weight:800!important;cursor:pointer}" +
   ".cocFotoBtn svg{width:18px;height:18px}" +
+  /* ---- v2.49 subpestañas de Nutrición ---- */
+  ".ntSubs{margin-top:12px}.ntSubs button[aria-pressed=true]{background:var(--fg);color:var(--bg)}" +
+  ".ntVista{margin-top:16px}.ntCaja{background:var(--sf2);border-radius:18px;padding:12px 14px;margin-top:12px}" +
+  ".ntCap{margin:24px 0 6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}" +
   /* ---- v2.48 suplementos ---- */
   ".ntTabla.conSupl .ntFila{grid-template-columns:1.4fr .7fr .7fr .7fr 1fr .6fr;font-size:13px}" +
   ".ntSupl{font-weight:800}" +
@@ -598,7 +602,7 @@ CSS +=
   "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
-  var st = document.createElement("style"); st.id = "cocCss"; st.textContent = CSS; document.head.appendChild(st);
+  var st = document.createElement("style"); st.id = "cocCss"; st.textContent = CSS + (raiz.NutriGraficas ? raiz.NutriGraficas.CSS : ""); document.head.appendChild(st);
 }
 
 /* --------------------------------- datos --------------------------------- */
@@ -698,6 +702,8 @@ var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Casa"], ["n
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
 var CORRIGE = null, PCANT = null, ABIERTA = null, TERMINA = false;
 var FFORM = false, FICHAX = null, FSUPL = null;   // v2.48: la ficha abierta desde Nutricion o Casa (suplementos) y el formulario de uno   // v2.47: rellenando la ficha a mano
+var NSUB = "hoy";   // v2.49: la subpestaña de Nutrición
+var NSUBS = [["hoy", "Hoy"], ["semana", "Semana"], ["tendencias", "Tendencias"], ["fases", "Fases"], ["entreno", "Entreno"], ["micros", "Micros"]];
 var NDIA = 0, NSEMANA = false, NPERFIL = false, NPORQUE = null, NMAS = false;   // v2.45: el dia que miras (0 = hoy), las hojas   // TERMINA: la hoja "Terminar compra" (v2.42)   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
 function subDe(s) { if (s === "despensa" || s === "casa") s = "tengo"; if (s === "recetas") s = "semana"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 /* La Casa de prueba (Ajustes): la pestaña Cocina entera con los datos de ejemplo de
@@ -1583,6 +1589,19 @@ function nutri(E, LC) {
   var dTxt = NDIA === 0 ? "Hoy" : NDIA === 1 ? "Mañana" : NDIA === -1 ? "Ayer" : mayus1(Dp().diaCorto(fecha)) + " " + (+fecha.slice(8));
   s.innerHTML = '<p class="cocLead">Nutrición · ' + esc(dTxt) + '</p><p class="sub">' + esc((N.FASES[F.fase] || {}).nombre || "") + ' · semana del ' + esc(corta(N.lunes(fecha))) +
     (tipo ? ' · ' + esc({ descanso: "descanso", gimnasio: "gimnasio", calidad: "calidad", tirada: "tirada larga" }[tipo] || tipo) : "") + '</p>';
+  // las subpestañas de Nutrición
+  var sb = el("div", "cocSuperB ntSubs"); sb.setAttribute("role", "tablist"); sb.setAttribute("aria-label", "Nutrición");
+  NSUBS.forEach(function (x) {
+    var b = el("button", "", esc(x[1])); b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(NSUB === x[0])); b.setAttribute("aria-pressed", String(NSUB === x[0]));
+    b.addEventListener("click", function () { NSUB = x[0]; NPORQUE = null; pinta(); cont.scrollTop = 0; });
+    sb.appendChild(b);
+  });
+  s.appendChild(sb);
+  if (NSUB !== "hoy") {
+    if (!perfil) s.appendChild(el("p", "ntNota", "Sin tus datos no hay objetivos: las gráficas solo enseñan lo que hay. Ponlos en Hoy → Poner tus datos."));
+    s.appendChild(vistaNutri(NSUB, E, LC, fecha, perfil, semanas));
+    return s;
+  }
   var dias = el("div", "cocSuperB ntDias");
   [-1, 0, 1, 2, 3].forEach(function (d) {
     var f = sumaDia(o.hoy, d), b = el("button", "", esc(d === 0 ? "Hoy" : d === 1 ? "Mañana" : d === -1 ? "Ayer" : mayus1(Dp().diaCorto(f))));
@@ -1630,6 +1649,36 @@ function nutri(E, LC) {
   s.appendChild(seccionSupl(fecha, tipo, SPd));
   return s;
 }
+/* ------------------------------ las vistas de estadísticas (v2.49) ------------------------------
+   Todo sale de Nutricion.resumenDia con las fuentes de aquí: lo que hay, sin inventar.               */
+function fuentesNu(E) {
+  var N = Nu(), o = E.o;
+  return {
+    comidas: function (f) { return E.Rs.filter(function (R) { return R.fecha === f && R.tipo === "comida" && Dp().estadoComida(R, E.CB, o) !== "saltada"; }); },
+    registro: function (f) { return registro().filter(function (x) { return x.fecha === f; }); },
+    supl: function (f, tipo) { return suplementos().map(function (sp) { return N.deSuplemento(sp, aliDe(sp.nombre), tipo || "gimnasio"); }).filter(function (x) { return x.tomas > 0 || x.sinFicha; }); },
+    aliDe: function (n) { return aliDe(n); }, perfil: lee(K_PERFIL, null), semanas: lee(K_SEMANAS, {}), tipo: CTX.tipoDia || null
+  };
+}
+function vistaNutri(sub, E, LC, fecha, perfil, semanas) {
+  var w = el("div", "ntVista");
+  try {
+    if (!CTX.dia) { w.appendChild(el("p", "cocVacio", "Trayendo el calendario…")); return w; }
+    var V = { tendencias: vistaTendencias, fases: vistaFases, entreno: vistaEntreno, micros: vistaMicros }[sub];
+    if (V) V(w, E, fecha, perfil, semanas);
+    else w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión."));
+  } catch (e) {
+    w.innerHTML = "";
+    var er = el("div", "cocAviso", svg("cerrar") + '<span><b>No se ha podido calcular esta vista</b>' + esc(String(e && e.message || e)).slice(0, 120) + '. El resto de Nutrición sigue igual.</span>');
+    var b = el("button", "cocBtn", "Reintentar"); b.addEventListener("click", function () { pinta(); });
+    w.appendChild(er); w.appendChild(b);
+  }
+  return w;
+}
+function vistaTendencias(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
+function vistaFases(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
+function vistaEntreno(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
+function vistaMicros(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
 function tablaNutri(D, obj) {
   var N = Nu(), w = el("div", "ntTabla"), filas = N.PRIORIDAD.concat(["kcal", "prot", "grasa"]), mas = ["hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];
   if (D.supl && D.supl.hay) mas.forEach(function (k) { if (D.supl.n[k] && filas.indexOf(k) < 0 && !NMAS) filas.push(k); });   // lo que traen tus suplementos, siempre a la vista

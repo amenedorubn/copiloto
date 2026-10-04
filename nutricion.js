@@ -243,6 +243,98 @@ function avisosUL(total, supl) {
   return out;
 }
 
+/* ------------------------------ días, semanas y tendencias (v2.49) ------------------------------
+   F = {comidas(f) -> [R], registro(f) -> [e], supl(f, tipo) -> [deSuplemento], aliDe, perfil, semanas, tipo(f)}
+   Un día "con datos" tiene alguna comida del calendario o algo registrado (los suplementos solos no cuentan).
+   Lo que no tiene datos sale null: las gráficas dicen "s/d", nunca 0.                                   */
+function masDias(iso, n) { var p = iso.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2] + n, 12);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function resumenDia(f, F) {
+  var tipo = F.tipo ? F.tipo(f) : null, C = (F.comidas && F.comidas(f)) || [], Rg = (F.registro && F.registro(f)) || [], S = (F.supl && F.supl(f, tipo)) || [];
+  var D = dia(C, Rg, F.aliDe, S), obj = F.perfil ? objetivos(F.perfil, f, F.semanas || {}, tipo || "gimnasio") : null;
+  return { fecha: f, tipo: tipo, D: D, obj: obj, conDatos: C.length + Rg.length > 0 };
+}
+function diasDesde(desde, n, F) { var L = []; for (var i = 0; i < n; i++) L.push(resumenDia(masDias(desde, i), F)); return L; }
+function semana(lunesIso, F) { return diasDesde(lunesIso, 7, F); }
+// en rango: energía dentro de su rango (±10 %), proteína y carbohidratos por encima de su mínimo. null sin datos u objetivos
+function enRango(r) {
+  if (!r.conDatos || !r.obj) return null;
+  var t = r.D.total, o = r.obj;
+  if (o.prot && t.prot < o.prot.min) return false;
+  if (o.hc && t.hc < o.hc.min) return false;
+  if (o.kcal && (t.kcal < o.kcal.min * 0.9 || t.kcal > o.kcal.max * 1.1)) return false;
+  return true;
+}
+// media de un nutriente en los días con datos -> {v, supl, n} (v null si no hay ninguno)
+function media(dias, k) {
+  var L = dias.filter(function (r) { return r.conDatos; });
+  if (!L.length) return { v: null, supl: null, n: 0 };
+  var s = 0, sp = 0; L.forEach(function (r) { s += r.D.total[k] || 0; sp += r.D.supl.n[k] || 0; });
+  return { v: s / L.length, supl: sp / L.length, n: L.length };
+}
+/* Tendencias: nSem semanas que acaban en la de lunesFin -> [{lunes, dias, peso, fase, obj (de su miércoles)}] */
+function semanas(lunesFin, nSem, F) {
+  var out = [];
+  for (var i = nSem - 1; i >= 0; i--) {
+    var l = masDias(lunesFin, -7 * i), d = semana(l, F), s = (F.semanas || {})[l] || {};
+    var ref = d[2];
+    out.push({ lunes: l, dias: d, peso: s.peso > 0 ? s.peso : null, fase: faseDe(l, F.semanas).semana, obj: ref.obj });
+  }
+  return out;
+}
+/* Una métrica de una semana: "hcKg" y "protKg" en g/kg (con su peso medio o el del perfil); el resto, media diaria.
+   -> {v, lo, hi} (lo/hi: el objetivo de esa semana en la misma unidad)                                          */
+function metrica(S, k, perfil) {
+  var kk = k === "hcKg" ? "hc" : k === "protKg" ? "prot" : k, m = media(S.dias, kk), o = S.obj && S.obj[kk];
+  var peso = S.peso || (perfil && perfil.peso) || null, div = /Kg$/.test(k) ? peso : 1;
+  if (!div) return { v: null, lo: null, hi: null };
+  return { v: m.v == null ? null : m.v / div, lo: o ? o.min / div : null, hi: o && o.max != null ? o.max / div : null };
+}
+// lo esperado del peso en cada fase (por semana, sobre el primero que se sepa)
+var CAMBIO_SEM = { definicion: -0.004, volumen: 0.0025 };
+function pesoEsperado(S) {
+  var i0 = -1; S.forEach(function (s, i) { if (i0 < 0 && s.peso) i0 = i; });
+  if (i0 < 0) return S.map(function () { return null; });
+  var p = S[i0].peso;
+  return S.map(function (s, i) { if (i < i0) return null; if (i > i0) p = p * (1 + (CAMBIO_SEM[s.fase] || 0)); return Math.round(p * 10) / 10; });
+}
+/* Las fases por bloques desde una semana: [{fase, desde, hasta (domingo), semanas}] */
+function bloquesFase(desde, nSem, sem) {
+  var out = [], l = lunes(desde);
+  for (var i = 0; i < nSem; i++) {
+    var w = masDias(l, 7 * i), f = faseDe(w, sem).semana, ult = out[out.length - 1];
+    if (ult && ult.fase === f) { ult.hasta = masDias(w, 6); ult.semanas++; }
+    else out.push({ fase: f, nombre: (FASES[f] || {}).nombre, desde: w, hasta: masDias(w, 6), semanas: 1 });
+  }
+  return out;
+}
+/* Carbohidratos por kg según el tipo de día, en los días con datos -> [{tipo, v (media g/kg), n, lo, hi (de la fase)}] */
+function porTipo(dias, perfil, fase) {
+  var C = FASES[fase] || FASES.mantenimiento, peso = perfil && perfil.peso;
+  return ["descanso", "gimnasio", "calidad", "tirada"].map(function (t) {
+    var L = dias.filter(function (r) { return r.conDatos && (r.tipo || "gimnasio") === t; });
+    var off = DIA[t][0], lo = Math.max(3, C.hc[0] + off), hi = Math.max(lo, C.hc[1] + off);
+    var v = L.length && peso ? L.reduce(function (s, r) { return s + (r.D.total.hc || 0) / ((r.obj && r.obj.peso) || peso); }, 0) / L.length : null;
+    return { tipo: t, v: v, n: L.length, lo: lo, hi: hi };
+  });
+}
+// cobertura media de un micro: % del mínimo (con lo de suplementos aparte) -> {total, supl} o {total: null}
+function cobertura(dias, k) {
+  var L = dias.filter(function (r) { return r.conDatos && r.obj && r.obj[k] && r.obj[k].min; });
+  if (!L.length) return { total: null, supl: null };
+  var t = 0, s = 0; L.forEach(function (r) { t += (r.D.total[k] || 0) / r.obj[k].min * 100; s += (r.D.supl.n[k] || 0) / r.obj[k].min * 100; });
+  return { total: t / L.length, supl: s / L.length };
+}
+// huecos que se repiten: cuántos días (con datos) quedan por debajo del mínimo en cada prioritario
+function huecos(dias, ks) {
+  var L = dias.filter(function (r) { return r.conDatos && r.obj; });
+  return (ks || PRIORIDAD).map(function (k) {
+    var bajo = L.filter(function (r) { return r.obj[k] && r.obj[k].min && (r.D.total[k] || 0) < r.obj[k].min; });
+    var m = L.length ? L.reduce(function (s, r) { return s + (r.D.total[k] || 0); }, 0) / L.length : null;
+    return { k: k, nombre: NOMBRE[k], u: UNIDAD[k], bajo: bajo.length, de: L.length, media: m, min: L[0] && L[0].obj[k] ? L[0].obj[k].min : null };
+  }).filter(function (h) { return h.bajo > 0; }).sort(function (a, b) { return b.bajo - a.bajo; });
+}
+
 /* ------------------------------ te falta X; cómete Y ------------------------------
    Lo que falta de los prioritarios (carbohidratos, fibra, vitamina C, folato) hasta el mínimo, y qué
    comer: primero lo que hay en casa, luego lo que ya está en la lista; si no, qué comprar. Es algo
@@ -271,7 +363,8 @@ function teFalta(total, obj, enCasa, enLista) {
 }
 function porcionTxt(F, g) { return F.ud ? (Math.round(g / F.ud) <= 1 ? "1 " : Math.round(g / F.ud) + " × ") + F.nombre.toLowerCase() : g + " g de " + F.nombre.toLowerCase(); }
 
-return { MOMENTOS: MOMENTOS, DIAS_S: DIAS_S, UL: UL, tomasDe: tomasDe, deSuplemento: deSuplemento, avisosUL: avisosUL, CLAVES: CLAVES, NOMBRE: NOMBRE, UNIDAD: UNIDAD, PRIORIDAD: PRIORIDAD, FASES: FASES, MICROS: MICROS, DIA: DIA, PLAN: PLAN, FAVORITOS: FAVORITOS,
+return { masDias: masDias, resumenDia: resumenDia, diasDesde: diasDesde, semana: semana, enRango: enRango, media: media, semanas: semanas, metrica: metrica,
+  pesoEsperado: pesoEsperado, bloquesFase: bloquesFase, porTipo: porTipo, cobertura: cobertura, huecos: huecos, MOMENTOS: MOMENTOS, DIAS_S: DIAS_S, UL: UL, tomasDe: tomasDe, deSuplemento: deSuplemento, avisosUL: avisosUL, CLAVES: CLAVES, NOMBRE: NOMBRE, UNIDAD: UNIDAD, PRIORIDAD: PRIORIDAD, FASES: FASES, MICROS: MICROS, DIA: DIA, PLAN: PLAN, FAVORITOS: FAVORITOS,
   fila: fila, gramos: gramos, deIngrediente: deIngrediente, deComida: deComida, deTexto: deTexto, deFavorito: deFavorito,
   reposo: reposo, mantenimiento: mantenimiento, lunes: lunes, faseDe: faseDe, objetivos: objetivos, dia: dia, teFalta: teFalta };
 });

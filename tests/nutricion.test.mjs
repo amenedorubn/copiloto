@@ -121,3 +121,39 @@ test("el día: lo de los suplementos va aparte y suma al total; avisos del máxi
   assert.deepEqual(N.avisosUL({ magnesio: 600 }, { magnesio: 100 }), []);
   assert.deepEqual(N.avisosUL({ magnesio: 600 }, { magnesio: 300 }).map((x) => x.k), ["magnesio"]);
 });
+
+/* ------------------------------ semanas, tendencias y fases (v2.49). Datos ficticios ------------------------------ */
+function fuentes(porDia) {
+  return { comidas: (f) => porDia[f] ? [ev("Comida", "INGREDIENTES\n· " + porDia[f] + " g de macarrones\nPROCESO\n1. Cuece 9 min.")] : [],
+    registro: () => [], supl: () => [], perfil: PERFIL, semanas: {}, tipo: (f) => (new Date(f + "T12:00").getDay() === 0 ? "tirada" : "gimnasio") };
+}
+test("semana: 7 días; sin comida es «sin datos» (null), nunca 0; adherencia", () => {
+  const F = fuentes({ "2026-11-09": 100, "2026-11-10": 400 });
+  const S = N.semana("2026-11-09", F);
+  assert.equal(S.length, 7); assert.ok(S[0].conDatos); assert.ok(!S[2].conDatos);
+  assert.equal(N.enRango(S[2]), null);
+  assert.equal(N.enRango(S[0]), false);                                       // 100 g de pasta: poca proteína
+  const m = N.media(S, "hc"); assert.equal(m.n, 2); assert.ok(Math.abs(m.v - (74.7 + 298.8) / 2) < 0.5);
+  assert.equal(N.media(N.semana("2026-11-16", F), "hc").v, null);
+});
+test("tendencias: métrica por semana en g/kg con su banda; peso esperado según la fase", () => {
+  const F = fuentes({ "2026-11-10": 400 });
+  const W = N.semanas("2026-11-09", 3, F);
+  assert.deepEqual(W.map((s) => s.lunes), ["2026-10-26", "2026-11-02", "2026-11-09"]);
+  const m = N.metrica(W[2], "hcKg", PERFIL);
+  assert.ok(Math.abs(m.v - 298.8 / 70) < 0.05); assert.equal(m.lo, 4); assert.equal(m.hi, 6);
+  assert.equal(N.metrica(W[0], "hcKg", PERFIL).v, null);
+  const esp = N.pesoEsperado([{ peso: null, fase: "mantenimiento" }, { peso: 80, fase: "definicion" }, { peso: null, fase: "definicion" }]);
+  assert.deepEqual(esp, [null, 80, 79.7]);
+});
+test("fases por bloques, carbohidratos por tipo de día, cobertura y huecos", () => {
+  const B = N.bloquesFase("2026-10-12", 4, {});
+  assert.deepEqual(B.map((b) => [b.fase, b.semanas]), [["descarga", 1], ["recuperacion", 3]]);   // la recuperación acaba el lunes 2/11
+  const F = fuentes({ "2026-11-09": 400, "2026-11-15": 400 });
+  const S = N.semana("2026-11-09", F);
+  const T = N.porTipo(S, PERFIL, "mantenimiento");
+  assert.equal(T.find((x) => x.tipo === "tirada").n, 1); assert.equal(T.find((x) => x.tipo === "tirada").lo, 6);
+  assert.equal(T.find((x) => x.tipo === "descanso").v, null);
+  const c = N.cobertura(S, "folato"); assert.ok(c.total > 0 && c.total < 100); assert.equal(c.supl, 0);
+  const H = N.huecos(S); assert.ok(H.some((h) => h.k === "vitC" && h.bajo === 2 && h.de === 2));
+});
