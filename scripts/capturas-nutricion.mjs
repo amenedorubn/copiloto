@@ -43,6 +43,12 @@ for (const tema of ["oscuro", "claro"]) {
     if (process.env.ABAJO) { await p.evaluate(() => { const c = document.getElementById("ptCuerpo"); c.scrollTop = 700; }); await p.waitForTimeout(150);
       await p.screenshot({ path: `${OUT}${s.toLowerCase()}-abajo-${tema}.png` }); await p.evaluate(() => { document.getElementById("ptCuerpo").scrollTop = 0; }); }
   }
+  if (!SOLO || SOLO === "Huecos") {                 // N6: los huecos de nutrientes, en Comprar
+    await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(400);
+    const hz = await p.$(".ntHuecos");
+    if (hz) { await hz.scrollIntoViewIfNeeded(); await p.waitForTimeout(200); await p.screenshot({ path: `${OUT}huecos-${tema}.png` }); }
+    else { errores++; console.log("NO SALEN LOS HUECOS"); }
+  }
   await p.click(".cocSim button"); await p.waitForTimeout(500);
   // fuera de la cuenta lo que la app refresca sola (el calendario)
   const despues = await p.evaluate(() => JSON.stringify(window.__ls)), A = JSON.parse(antes), D = JSON.parse(despues);

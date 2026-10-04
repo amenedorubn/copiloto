@@ -608,6 +608,8 @@ CSS +=
   ".ntCruz{transform:rotateY(180deg)}.ntFlip:not(.vuelta) .ntCruz{pointer-events:none}.ntFlip.vuelta .ntCara{pointer-events:none}" +
   ".ntCobBtn{width:100%;background:none;color:var(--fg);padding:0!important;border-radius:0!important;text-align:left;display:block}" +
   "@media (prefers-reduced-motion:reduce){.ntFlipIn{transition:none}}" +
+  ".ntHuecos{margin-top:8px}.ntHueco{padding:8px 0;border-top:1px solid var(--ln)}.ntHueco:first-child{border-top:0}" +
+  ".ntHueco p{margin:0;font-size:15px;font-weight:700;line-height:1.4}.ntHueco small{display:block;font-size:13px;font-weight:600;color:var(--mu)}.ntHuecoB{margin-top:8px}" +
   ".ntBigTxt{margin:0;font-size:22px;font-weight:800}.ntNav{margin-top:0}" +
   ".ntTiras{padding-top:2px}.ntCaja .ngTiraB,.ntCaja .ngCobB{background:var(--sf)}" +
   /* ---- v2.48 suplementos ---- */
@@ -1100,6 +1102,7 @@ function compra(E, LC) {
     tb.addEventListener("click", function () { TERMINA = true; pinta(); });
     s.appendChild(tb);
   }
+  try { var hz = huecosN6(E, LC); if (hz) s.appendChild(hz); } catch (e) { s.appendChild(el("p", "ntNota", "No se han podido calcular los huecos de nutrientes.")); }
   s.appendChild(botonEscaner());
   if (TERMINA && LC.carro.length) s.appendChild(hojaTermina(LC.carro));
   else TERMINA = false;
@@ -1703,6 +1706,38 @@ function hoyN1(D, obj, hay) {
   }).join("");
   w.appendChild(el("p", "ntCap", "Todos los nutrientes"));
   w.appendChild(el("div", "ntCaja ntTiras", h));
+  return w;
+}
+/* N6 · Huecos (A con la gráfica de la D), en Comprar: los nutrientes prioritarios que se quedan por debajo del
+   mínimo varios días de las 2 últimas semanas, con qué se arreglan (lo de casa, la lista o «A la lista») y la
+   curva día a día del que más se repite. Sin tus datos o sin días con datos, no sale.                           */
+function huecosN6(E, LC) {
+  var N = Nu(), G = raiz.NutriGraficas, F = fuentesNu(E);
+  if (!F.perfil || !G) return null;
+  var D = N.diasDesde(N.masDias(E.o.hoy, -13), 14, F), con = D.filter(function (r) { return r.conDatos; });
+  if (con.length < 2) return null;
+  var H = N.huecos(D).filter(function (h) { return h.bajo >= 2; }), w = el("div", "ntHuecos");
+  w.appendChild(el("p", "ntCap", "Huecos de nutrientes · 2 semanas"));
+  if (!H.length) { w.appendChild(el("p", "ntNota", "Ningún nutriente prioritario se queda corto más de un día en las 2 últimas semanas.")); return w; }
+  var obj = N.resumenDia(E.o.hoy, F).obj, casa = E.H ? E.H.todos.map(function (x) { return x.nombre; }) : [], lista = LC.items.map(function (x) { return x.ver; });
+  var c = el("div", "ntCaja");
+  H.forEach(function (h) {
+    var tot = {}; N.PRIORIDAD.forEach(function (k) { tot[k] = obj && obj[k] ? obj[k].min : 0; }); tot[h.k] = h.media || 0;
+    var y = obj ? N.teFalta(tot, obj, casa, lista).filter(function (x) { return x.k === h.k; })[0] : null;
+    var f = el("div", "ntHueco", '<p><b>' + esc(h.nombre) + ' · ' + h.bajo + ' de ' + h.de + ' días por debajo</b><small>' +
+      (y && y.y ? "Se arregla con " + esc(y.y.txt) + " (≈" + y.y.aporta + " " + esc(h.u) + ") · " + (y.y.donde === "casa" ? "lo tienes en casa" : y.y.donde === "lista" ? "está en tu lista" : "no lo tienes") : "Media " + fmtN(h.media) + " de " + fmtN(h.min) + " " + esc(h.u)) + '</small></p>');
+    if (y && y.y && y.y.donde === "comprar") {
+      var b = el("button", "cocBtn ntHuecoB", svg("mas") + "A la lista"); b.addEventListener("click", function () { aLista(y.y.nombre); aviso("En la lista: " + y.y.nombre + "."); pinta(); });
+      f.appendChild(b);
+    }
+    c.appendChild(f);
+  });
+  // la grafica de la D: el hueco que más se repite, día a día, con su mínimo
+  var h0 = H[0], ult = D.slice(-7), L = "DLMXJVS";
+  c.appendChild(el("p", "ntCap", esc(h0.nombre) + " · últimos 7 días"));
+  c.appendChild(el("div", "", G.curva(ult.map(function (r) { return { label: L.charAt(new Date(r.fecha + "T12:00").getDay()), v: r.conDatos ? r.D.total[h0.k] : null, lo: r.obj && r.obj[h0.k] ? r.obj[h0.k].min : null }; }), { ultimo: 6, h: 150 }) +
+    '<p class="ntNota">La banda: del mínimo hacia arriba. «s/d»: día sin datos.</p>'));
+  w.appendChild(c);
   return w;
 }
 function vistaNutri(sub, E, LC, fecha, perfil, semanas) {

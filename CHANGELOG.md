@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.56.0] - 2026-10-04
+
+### Añadido
+
+- Comprar: huecos de nutrientes, los prioritarios que se quedan cortos varios días de las 2 últimas semanas, con qué se arreglan (lo de casa, la lista o A la lista) y la curva de 7 días del que más se repite
+
 ## [2.55.0] - 2026-10-04
 
 ### Añadido
@@ -760,6 +766,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.56.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.0
 [2.55.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.55.0
 [2.54.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.54.0
 [2.53.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.53.0

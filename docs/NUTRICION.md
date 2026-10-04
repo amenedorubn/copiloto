@@ -104,3 +104,21 @@ En **Nutrición → Suplementos**, debajo del registro. También en **Casa → S
   Se guardan solo en este móvil (`copiloto.nutri.suplementos.v1`). Su ficha es parte de tus alimentos.
 - **En la Cocina de prueba:** vitamina D3, omega-3 (2 tomas, solo los días de entreno) y magnesio sin etiqueta, todos
   de EJEMPLO.
+
+## Estadísticas (v2.49–v2.56)
+
+Nutrición tiene subpestañas **Hoy · Semana · Tendencias · Fases · Entreno · Micros**; los huecos van en **Comprar**.
+Las gráficas son SVG a mano (`nutri-graficas.js`, con el lenguaje del Arc) y los datos salen de
+`Nutricion.resumenDia/semana/semanas/porTipo/cobertura/huecos`. Un día sin comidas ni registro es «s/d», nunca 0.
+- **Hoy (N1):** energía en grande («estimado» si toca) con los macros; debajo, todos los nutrientes en tiras de rango
+  (lo de suplementos, marcado). Luego, «Te falta», la tabla planificado/registrado/Supl., el registro y los suplementos.
+- **Semana (N2):** energía por día apilada (proteína, carbohidratos, grasa) con el mínimo y la adherencia (energía ±10 %,
+  proteína y carbohidratos ≥ mínimo); carbohidratos por día con su banda y la media del resto (Supl. aparte).
+- **Tendencias (N3):** 8 semanas, una curva con selector (carbohidratos y proteína por kg, fibra, vitamina C, folato) y
+  la banda de cada semana; el peso medio semanal (de «Semana») contra lo esperado de cada fase.
+- **Fases (N4):** la fase de ahora con sus fechas y cómo va hoy; «Luego», la tira de 6 meses; tocar una fase da sus g/kg.
+- **Entreno (N5):** carbohidratos por kg según el tipo de día (4 semanas) contra la banda de la fase.
+- **Micros (N7):** cobertura de 4 semanas (% del mínimo, Supl. más claro, o «Solo comida»); al tocar se da la vuelta al
+  mapa de calor de 8 semanas.
+- **Huecos (N6, en Comprar):** lo que se queda corto ≥ 2 días de 2 semanas, con qué se arregla y su curva de 7 días.
+- Capturas rápidas: `node scripts/capturas-nutricion.mjs <carpeta> [Subpestaña|Huecos]` (Cocina de prueba, sin rastro).
