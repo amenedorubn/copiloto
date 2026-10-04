@@ -30,7 +30,6 @@ gimnasio. Se sirve con GitHub Pages.
 | `scripts/bump.mjs` | Sube la versión en todos los sitios a la vez. |
 | `scripts/capturas-arc.mjs`, `scripts/audita-arc.js` | Capturas y revisión de diseño del Arc en Chrome (necesita `npm i --no-save playwright-core`; no forma parte de la app). |
 | `scripts/salud-arc.mjs` | De `huawei.db` (el ETL de `Documents/Projects/HUAWEI`) a `copiloto-salud.json`: sueño, hora de acostarse y levantarse, siestas, pasos y caminatas por día. Se importa en el móvil en Ajustes del Arc. **Son datos de salud: el fichero no va al repo** (está en `.gitignore`). |
-| `scripts/iconos3d/` | Modelos 3D (three.js) y exportador de los iconos de destino del Arc; ver su `LEEME.md`. No forma parte de la app. |
 | `scripts/check-version.mjs` | Comprueba que las tres versiones coinciden (lo usa el Action). |
 | `scripts/releases.sh` | Crea una GitHub Release desde el CHANGELOG (lo usa el Action; a mano solo si hiciera falta). |
 | `v20/` | Copia congelada de la 2.0.0 (ver aviso de arriba). |
