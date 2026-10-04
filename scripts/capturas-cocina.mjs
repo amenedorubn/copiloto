@@ -1,5 +1,5 @@
 // Capturas de la pestaña Cocina a 390x844 (oscuro y claro): una por subpestaña (Semana, Comprar,
-// Tengo, Recetas), lo que pasa al tocar en Tengo y en Comprar, el modo paso a paso, HOY y el
+// Despensa, Recetas), lo que pasa al tocar en Despensa y en Comprar, el modo paso a paso, HOY y el
 // escaner (el de Chrome y el de la app Android, de mentira). Los datos de prueba viven
 // SOLO aquí (o en el FIXTURE que se le pase): calendario y Worker interceptados, localStorage simulado.
 //
@@ -41,7 +41,7 @@ const EJEMPLO = {
     { uid: "r1", fuente: "rutina", fecha: "2026-10-01", hora: "21:40", fin: "22:20", titulo: "Rutina de noche · cama 22:20",
       texto: "21:40 · Prepara la comida de mañana (10 min)\n22:00 · Ducha (10 min)\n22:10 · Leer (10 min)\n22:20 · Cama, móvil fuera" }
   ],
-  // la compra de la nota es del sabado 26/09: ya esta hecha (sale en Tengo, no en Comprar)
+  // la compra de la nota es del sabado 26/09: ya esta hecha (sale en Despensa, no en Comprar)
   nota: "DESPENSA EN VIVO — última actualización: 25/09/2026 (noche)\n\n\\## CONGELADOR\nBolsas: cebolla troceada, ajo troceado, 4 bolsas de arroz de microondas (3 min)\n\n" +
     "\\## NEVERA\nLeche semi abierta, yogur natural, 2 lonchas de pavo, 1 tomate\n\n\\## DESPENSA SECA\n6 huevos, rigatoni (1 kg), bote de tomate triturado 800 g, pan rallado, sal, AOVE, pan de molde\n\n" +
     "\\## ESPECIAS\nOrégano, pimentón dulce, perejil, curry, pimienta negra\n\n\\## NO HAY\nPollo, carne picada, crema de verduras\n\n" +
@@ -87,7 +87,7 @@ for (const tema of ["oscuro", "claro"]) {
   await p.waitForTimeout(1500);
   await p.click("#hCocina"); await p.waitForTimeout(1200);
   // una por subpestaña, del tamaño de la pantalla: se ve si hace falta bajar
-  for (const [k, n] of [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Tengo"], ["recetas", "Recetas"]]) {
+  for (const [k, n] of [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["recetas", "Recetas"]]) {
     await p.click(`.cocSeg button:has-text('${n}')`); await p.waitForTimeout(350);
     await p.screenshot({ path: `${OUT}${tema}-${k}.png` });
   }
@@ -107,9 +107,9 @@ for (const tema of ["oscuro", "claro"]) {
   const a3 = await pestaña(); await desliza(140); await p.waitForTimeout(300);
   const a4 = await pestaña();
   console.log("deslizar:", a1, a2, a3, a4);
-  if (!/^Comprar/.test(a1) || a2 !== "Tengo" || a3 !== "Semana" || a4 !== "Semana") { errores++; console.log("DESLIZAR MAL"); }
+  if (!/^Comprar/.test(a1) || a2 !== "Despensa" || a3 !== "Semana" || a4 !== "Semana") { errores++; console.log("DESLIZAR MAL"); }
   if (tema === "oscuro") {
-    // Tengo: tocar algo -> Se acabó / a la lista; y ver una zona sola
+    // Despensa: tocar algo -> Se acabó / a la lista; y ver una zona sola
     await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}tengo-todo.png` });
     await p.click(".cocZonaFila:has-text('Nevera')"); await p.waitForTimeout(300);
@@ -118,7 +118,7 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocHojaBot button:has-text('a la lista')"); await p.waitForTimeout(300);
     await p.click(".cocChips button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}tengo-despensa.png` });
-    // Comprar: marcar uno -> al carro (y a Tengo)
+    // Comprar: marcar uno -> al carro (y a la Despensa)
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await p.click(".cocCompra li button >> nth=0"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}comprar-carro.png` });
@@ -126,9 +126,9 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocSeg button:has-text('Semana')"); await p.waitForTimeout(300);
     await p.click("#ptCuerpo .tjGo"); await p.waitForTimeout(800);
     await p.screenshot({ path: `${OUT}modo-paso1.png` });
-    const boton = async (re) => { for (const b of await p.$("#cocPaso button")) if (re.test((await b.innerText()).trim())) { await b.click(); await p.waitForTimeout(400); return true; } return false; };
+    const boton = async (re) => { for (const b of await p.$$("#cocPaso button")) if (re.test((await b.innerText()).trim())) { await b.click(); await p.waitForTimeout(400); return true; } return false; };
     await boton(/^Listo|^Hecho/);
-    await boton(/^(▶s*)?Empezar/); await p.clock.runFor(65000); await p.waitForTimeout(400);
+    await boton(/^(▶\s*)?Empezar/); await p.clock.runFor(65000); await p.waitForTimeout(400);
     await p.screenshot({ path: `${OUT}modo-paso2.png` });
     await boton(/^Pasos$/); await p.screenshot({ path: `${OUT}modo-pasos.png` });
     await p.evaluate(() => window.Cocina.atras()); await p.waitForTimeout(300);

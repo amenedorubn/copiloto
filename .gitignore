@@ -2,3 +2,6 @@ copiloto-salud*.json
 node_modules/
 # GPX sueltos en la raiz: el inicio de una ruta suele estar cerca de casa y este repo es publico
 /*.gpx
+# maquetas de Cocina v3: lo que generan los scripts
+docs/propuestas-cocina-v3/fuente/png/
+docs/propuestas-cocina-v3/fuente/hoja.html
