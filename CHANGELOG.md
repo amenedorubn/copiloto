@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.40.0] - 2026-10-04
+
+### Añadido
+
+- Despensa: Por confirmar (la comida que ya acabó: Así fue o Corregir; lo marcado en Comprar: Bien u Otra cantidad; las dudas: Sí, Cuánto o Se acabó), filas con la cantidad clara (240 g · 3 ud), deslizar a la izquierda para Se acabó, ¿Cuánto queda? en un toque (lleno, ¾, ½, ¼, nada), los tuppers del congelador (máx. 3) y sugerencias al añadir
+
 ## [2.39.0] - 2026-10-04
 
 ### Añadido
@@ -652,6 +658,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.40.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.40.0
 [2.39.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.39.0
 [2.38.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.38.0
 [2.37.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.37.0

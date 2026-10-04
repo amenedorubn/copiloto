@@ -121,15 +121,40 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}tengo-todo.png` });
     await p.click(".cocZonaFila:has-text('Nevera')"); await p.waitForTimeout(300);
-    await p.click(".cocPills button:has-text('Yogur')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}casa-zona.png` });                       // v2.40: filas con su cantidad
+    // deslizar una fila a la izquierda: "Se acabó"
+    await p.evaluate(() => {
+      const b = [...document.querySelectorAll(".cocFilaZin")].find((x) => /Pavo/.test(x.textContent)); if (!b) return;
+      const t = (x) => new Touch({ identifier: 2, target: b, clientX: x, clientY: 400 });
+      b.dispatchEvent(new TouchEvent("touchstart", { touches: [t(300)], changedTouches: [t(300)], bubbles: true }));
+      b.dispatchEvent(new TouchEvent("touchmove", { touches: [t(180)], changedTouches: [t(180)], bubbles: true }));
+      b.dispatchEvent(new TouchEvent("touchend", { touches: [], changedTouches: [t(180)], bubbles: true }));
+    });
+    await p.waitForTimeout(400);
+    await p.screenshot({ path: `${OUT}casa-deslizar.png` });
+    await p.click(".cocFilaZin:has-text('Yogur')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}tengo-tocado.png` });
     await p.click(".cocHojaBot button:has-text('a la lista')"); await p.waitForTimeout(300);
     await p.click(".cocChips button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}tengo-despensa.png` });
+    await p.click(".cocFilaZin:has-text('Rigatoni')").catch(() => {}); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}casa-cuanto.png` });                     // ¿cuánto queda? lleno, ¾, ½, ¼, nada
+    await p.click(".cocHojaX").catch(() => {}); await p.waitForTimeout(200);
     // Comprar: marcar uno -> al carro (y a la Despensa)
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await p.click(".cocCompra li button >> nth=0"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}comprar-carro.png` });
+    // v2.40: "Por confirmar" en la Despensa (el desayuno que ya pasó y lo marcado en Comprar)
+    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
+    await p.click(".cocChips button:has-text('Todo')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}casa-porconfirmar.png` });
+    await p.click(".cocPcB button:has-text('Corregir')").catch(() => {}); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}casa-corregir.png` });
+    await p.click(".cocCorrige button:has-text('Cancelar')").catch(() => {}); await p.waitForTimeout(200);
+    await p.click(".cocBtn:has-text('Añadir')"); await p.waitForTimeout(200);
+    await p.fill("#cocAnadeTengo", "ri"); await p.dispatchEvent("#cocAnadeTengo", "input"); await p.waitForTimeout(200);
+    await p.screenshot({ path: `${OUT}casa-anadir.png` });
+    await p.click(".cocBtn:has-text('Añadir')"); await p.waitForTimeout(200);
     // v2.36: el paso a paso con carriles (la pasta con tomate y atún): plan, manos, espera, tarde, la pasta y el final
     const abreUid = (uid) => p.evaluate((uid) => {
       const ev = window.__dia.find((e) => e.uid === uid);

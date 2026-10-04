@@ -52,6 +52,21 @@ Arriba, fijas: **Semana**, **Comprar**, **Despensa** y **Recetas**; se cambian t
     punto de partida. Lo de antes deja de contar.
   - **Para Claude**: copia lo que hay con el formato del bloque «Estado actual», para pegárselo a la Claude que
     planea las comidas.
+- **Despensa desde la v2.40 (opción C de la propuesta):**
+  - **Por confirmar**, arriba en «Todo». Es lo que la app cree que ha pasado (`Despensa.porConfirmar`) y se confirma
+    con un toque:
+    - **Una comida que ya acabó** (en los 3 últimos días) y de la que nadie apuntó qué gastó. Ya se resta sola.
+      «Así fue» la deja apuntada; «Corregir» deja quitar lo que no usaste o decir «No la hice».
+    - **Lo marcado en Comprar**, que entró con la cantidad de la receta. «Bien» u «Otra cantidad». Lo escaneado no
+      sale, porque ya trae la suya.
+    - **Las dudas**: «¿Te queda pan de molde?», con Sí, Cuánto o «No, se acabó».
+  - **Los tuppers del congelador:** su fila dice «2 de 3 tuppers», y con 3 avisa de que el de la siguiente ración doble
+    no cabe.
+  - **Una zona:** una fila por cosa con su **cantidad clara**. Con la equivalencia de tus alimentos sale «240 g · 3 ud»
+    o «2 latas · 160 g». **Desliza a la izquierda: Se acabó.** Toca: **¿Cuánto queda?** en un toque (lleno, ¾, ½,
+    ¼ o nada, del paquete si se conoce), o escrito. También dice el nombre del paquete y la nutrición con su fuente.
+  - **Añadir:** mientras escribes salen tus alimentos con tu nombre. Al tocar uno, la zona se elige sola y solo
+    falta cuánto.
 - **Recetas**: las de Copiloto Cocina, con «Tienes todo» o «Falta …».
 
 ## El paso a paso con carriles (v2.36)

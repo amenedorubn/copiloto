@@ -235,6 +235,7 @@ var ICO = {
   cerrar: '<path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>'
 };
 ICO.campana = '<path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"/>';
+ICO.copo = '<path d="M223.77,150.09a8,8,0,0,1-5.86,9.68l-24.64,6,6.46,24.11a8,8,0,0,1-5.66,9.8A8.25,8.25,0,0,1,192,200a8,8,0,0,1-7.72-5.93l-7.72-28.8L136,141.86v46.83l21.66,21.65a8,8,0,0,1-11.32,11.32L128,203.31l-18.34,18.35a8,8,0,0,1-11.32-11.32L120,188.69V141.86L79.45,165.27l-7.72,28.8A8,8,0,0,1,64,200a8.25,8.25,0,0,1-2.08-.27,8,8,0,0,1-5.66-9.8l6.46-24.11-24.64-6a8,8,0,0,1,3.82-15.54l29.45,7.23L112,128,71.36,104.54l-29.45,7.23A7.85,7.85,0,0,1,40,112a8,8,0,0,1-1.91-15.77l24.64-6L56.27,66.07a8,8,0,0,1,15.46-4.14l7.72,28.8L120,114.14V67.31L98.34,45.66a8,8,0,0,1,11.32-11.32L128,52.69l18.34-18.35a8,8,0,0,1,11.32,11.32L136,67.31v46.83l40.55-23.41,7.72-28.8a8,8,0,0,1,15.46,4.14l-6.46,24.11,24.64,6A8,8,0,0,1,216,112a7.85,7.85,0,0,1-1.91-.23l-29.45-7.23L144,128l40.64,23.46,29.45-7.23A8,8,0,0,1,223.77,150.09Z"/>';   // Phosphor snowflake
 ICO.carro = '<path d="M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Zm4-74.57A8,8,0,0,1,196.1,136H77.22L65.59,72H214.41Z"/>';
 ICO.copia = '<path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>';
 ICO.lista = '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/>';
@@ -482,6 +483,38 @@ CSS +=
   "#cocEsc .eSin{flex-direction:column;gap:14px}" +
   "#cocEsc .eOtraVez{height:56px;padding:0 26px!important;border-radius:28px!important;background:#f08a4b;color:#140b04;font-size:17px;font-weight:800;display:inline-flex;align-items:center;gap:10px}" +
   "#cocEsc .eOtraVez svg{width:22px;height:22px}";
+CSS +=
+  /* ---- v2.40 Casa: por confirmar, filas con cantidad, deslizar, cuánto queda ---- */
+  ".cocPc{background:var(--sf2);border-radius:18px;padding:12px 14px;margin:12px 0 0}" +
+  ".cocPcTit{margin:0 0 4px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);display:flex;gap:8px}" +
+  ".cocPcTit b{color:var(--fg)}" +
+  ".cocPcIt{padding:10px 0;border-top:1px solid var(--ln)}.cocPcIt:first-of-type{border-top:0}" +
+  ".cocPcIt p{margin:0;font-size:15px;font-weight:700;line-height:1.4}.cocPcIt p small{display:block;font-size:13px;font-weight:600;color:var(--mu);line-height:1.5;margin-top:2px}" +
+  ".cocPcB{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}" +
+  ".cocPcB button{flex:1 1 auto;min-height:44px;border-radius:14px!important;background:var(--sf);color:var(--fg);font-size:14px;font-weight:800;padding:0 12px!important;display:inline-flex;align-items:center;justify-content:center;gap:6px}" +
+  ".cocPcB button.si{background:var(--fg);color:var(--bg)}.cocPcB svg{width:16px;height:16px}" +
+  ".cocCorrige{margin-top:10px}.cocChecksC{list-style:none;margin:0;padding:0}" +
+  ".cocChecksC button{width:100%;min-height:44px;display:flex;align-items:center;gap:10px;background:none;color:var(--fg);font-size:15px;font-weight:600;text-align:left;padding:0!important}" +
+  ".cocChecksC i{width:22px;height:22px;border-radius:7px;box-shadow:inset 0 0 0 2px var(--mu);display:flex;align-items:center;justify-content:center;flex:none}" +
+  ".cocChecksC button[aria-pressed=true] i{background:var(--fg);color:var(--bg);box-shadow:none}.cocChecksC i svg{width:14px;height:14px}" +
+  ".cocChecksC button[aria-pressed=false] span{color:var(--mu);text-decoration:line-through}" +
+  ".cocAviso{display:flex;gap:10px;align-items:flex-start;background:var(--sf2);border-radius:16px;padding:12px 14px;margin-top:12px;font-size:14px;font-weight:600;line-height:1.5}" +
+  ".cocAviso b{display:block;font-size:15px}.cocAviso svg{width:20px;height:20px;flex:none;margin-top:2px}" +
+  ".cocTup{font-style:normal;font-size:12px;font-weight:700;color:var(--mu);margin-left:6px}" +
+  ".cocAyuda{margin:12px 0 4px;font-size:13px;font-weight:600;color:var(--mu)}" +
+  ".cocFilasZ{list-style:none;margin:0;padding:0}" +
+  ".cocFilaZ{position:relative;overflow:hidden;border-top:1px solid var(--ln)}.cocFilaZ:first-child{border-top:0}" +
+  ".cocFueraZ{position:absolute;right:0;top:0;bottom:0;width:112px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:0!important}" +
+  ".cocFueraZ svg{width:16px;height:16px}" +
+  ".cocFilaZin{position:relative;width:100%;min-height:52px;display:flex;align-items:center;gap:12px;background:var(--sf);color:var(--fg);text-align:left;padding:6px 0!important;border-radius:0!important;transition:transform .18s ease}" +
+  ".cocFilaZ.abierta .cocFilaZin{transform:translateX(-112px)}" +
+  ".cocFilaZin span{flex:1;min-width:0;font-size:15px;font-weight:700;line-height:1.35}.cocFilaZin span small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
+  ".cocFilaZin em{font-style:normal;font-size:15px;font-weight:700;white-space:nowrap}.cocFilaZin.duda em{color:var(--mu)}" +
+  ".cocFrac{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}.cocFrac span{width:100%;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}" +
+  ".cocFrac button{flex:1 1 0;min-height:44px;border-radius:14px!important;background:var(--sf2);color:var(--fg);font-size:15px;font-weight:800}" +
+  ".cocSugs{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}" +
+  ".cocSugs button{min-height:44px;border-radius:14px!important;background:var(--sf2);color:var(--fg);font-size:14px;font-weight:700;padding:0 12px!important}" +
+  "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
   var st = document.createElement("style"); st.id = "cocCss"; st.textContent = CSS; document.head.appendChild(st);
@@ -579,6 +612,7 @@ var CTX = null, MCTX = null, SEL = null, cont = null, RELOJ = null;
 function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CTX.activa || CTX.activa())); }
 var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["recetas", "Recetas"]];
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
+var CORRIGE = null, PCANT = null, ABIERTA = null;   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
 function subDe(s) { if (s === "despensa") s = "tengo"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 API.pinta = function (c, ctx) {
   ponCSS(); cont = c; CTX = ctx || {}; MCTX = CTX;
@@ -635,7 +669,7 @@ function gestos(c) {
     if (!enTab() || e.touches.length !== 1) return;
     var t = e.touches[0], w = window.innerWidth || 400;
     if (t.clientX < 28 || t.clientX > w - 28) return;
-    if (e.target.closest && e.target.closest(".cocChips,input,textarea,select")) return;
+    if (e.target.closest && e.target.closest(".cocChips,.cocFilasZ,input,textarea,select")) return;
     x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
   }, { passive: true });
   c.addEventListener("touchend", function (e) {
@@ -936,6 +970,23 @@ function formQueCuanto(hecho) {
     '<button type="submit" aria-label="Añadir">' + svg("mas") + '</button>';
   var q = f.querySelector("#cocAnadeTengo"), n = f.querySelector("#cocAnadeCuanto");
   q.addEventListener("keydown", function (e) { if (e.key === "Enter" && q.value.trim() && !n.value.trim()) { e.preventDefault(); n.focus(); } });
+  // v2.40: mientras escribes, tus alimentos (con tu nombre): un toque y solo falta cuánto
+  var sug = el("div", "cocSugs"); sug.hidden = true;
+  q.addEventListener("input", function () {
+    var t = Rc().norm(q.value); sug.innerHTML = ""; sug.hidden = true;
+    if (t.length < 2) return;
+    var vistos = {}, L = [];
+    Al().vivos(alimentos()).map(function (a) { return a.nombre; }).concat(conocidos()).forEach(function (nom) {
+      var k = Rc().norm(nom); if (vistos[k] || k.indexOf(t) < 0) return; vistos[k] = 1; L.push(nom);
+    });
+    L.slice(0, 4).forEach(function (nom) {
+      var b = el("button", "", esc(nom)); b.type = "button";
+      b.addEventListener("click", function () { q.value = nom; sug.hidden = true; sug.innerHTML = ""; if (f.alElegir) f.alElegir(nom); n.focus(); });
+      sug.appendChild(b);
+    });
+    sug.hidden = !L.length;
+  });
+  f.appendChild(sug);
   f.addEventListener("submit", function (e) {
     e.preventDefault(); var t = q.value.trim(); if (!t) { q.focus(); return; }
     hecho(t, n.value.trim()); q.value = ""; n.value = ""; pinta();
@@ -943,6 +994,8 @@ function formQueCuanto(hecho) {
   });
   return f;
 }
+// los nombres que ya usas: lo que hay en casa y lo que hubo
+function conocidos() { var E = estado(CTX && CTX.dia || []); return E.H ? E.H.todos.map(function (x) { return x.nombre; }) : []; }
 function formAnadir(id, ph, hecho) {
   var f = el("form", "cocAnade");
   f.innerHTML = '<input id="' + id + '" type="text" autocomplete="off" enterkeyhint="done" placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '"><button type="submit" aria-label="Añadir">' + svg("mas") + '</button>';
@@ -1005,6 +1058,11 @@ function tengo(E) {
       aviso("Apuntado: " + t + ".");
     }));
     fz.setAttribute("data-z", ZONA || "");
+    var fq = s.querySelector(".cocQueCuanto");
+    if (fq) fq.alElegir = function (nom) {
+      var A = aliDe(nom), z = (A && A.zona) || Dp().zonaPara(nom);
+      fz.setAttribute("data-z", z); [].forEach.call(fz.children, function (x) { x.setAttribute("aria-pressed", x.textContent === z); });
+    };
     Dp().ZONAS.forEach(function (z) {
       var b = el("button", "", esc(z)); b.type = "button"; b.setAttribute("aria-pressed", ZONA === z);
       b.addEventListener("click", function () { fz.setAttribute("data-z", z); [].forEach.call(fz.children, function (x) { x.setAttribute("aria-pressed", x === b); }); });
@@ -1013,10 +1071,16 @@ function tengo(E) {
     s.appendChild(fz);
   }
   if (!ZONA) {
+    var tp = Dp().tuppers(H);
+    if (tp >= Dp().MAX_TUPPERS) s.appendChild(el("div", "cocAviso", svg("copo") + '<span><b>El congelador está lleno de tuppers</b>' + tp + ' de ' + Dp().MAX_TUPPERS +
+      '. Una comida de ración doble no tendrá sitio para su tupper: come uno antes.</span>'));
+    var PC = Dp().porConfirmar(E.CB, E.Rs, H, E.o);
+    if (PC.length) s.appendChild(porConfirmarHtml(PC, E));
     // Todo: una fila por zona con lo que hay (cabe en la pantalla); tocarla abre esa zona
     var zl = el("div", "cocZonas");
     H.zonas.forEach(function (z) {
-      var b = el("button", "cocZonaFila", '<span><b>' + esc(z.zona) + '</b><small>' + esc(z.items.slice(0, 5).map(function (x) { return x.nombre + (x.dudoso ? " (?)" : ""); }).join(" · ") +
+      var tz = z.zona === "Congelador" ? Dp().tuppers(H) : 0;
+      var b = el("button", "cocZonaFila", '<span><b>' + esc(z.zona) + (tz ? ' <i class="cocTup">' + tz + ' de ' + Dp().MAX_TUPPERS + ' tuppers</i>' : "") + '</b><small>' + esc(z.items.slice(0, 5).map(function (x) { return x.nombre + (x.dudoso ? " (?)" : ""); }).join(" · ") +
         (z.items.length > 5 ? " · y " + (z.items.length - 5) + " más" : "")) + '</small></span><em>' + z.items.length + '</em>' + svg("der"));
       b.addEventListener("click", function () { ZONA = z.zona; TOCADO = null; pinta(); cont.scrollTop = 0; });
       zl.appendChild(b);
@@ -1024,20 +1088,101 @@ function tengo(E) {
     s.appendChild(zl);
   } else H.zonas.forEach(function (z) {
     if (z.zona !== ZONA) return;
-    var p = el("div", "cocPills cocPillsZona");
-    z.items.forEach(function (x) {
-      var b = el("button", x.dudoso ? "duda" : "", esc(x.nombre) + (x.dudoso ? '<i>?</i>' : "") + (x.c ? '<b>' + esc(Rc().cantTxt(x.c)) + '</b>' : ""));
-      b.setAttribute("aria-pressed", TOCADO === x.clave);
-      b.addEventListener("click", function () { TOCADO = TOCADO === x.clave ? null : x.clave; pinta(); });
-      p.appendChild(b);
-    });
-    s.appendChild(p);
+    s.appendChild(el("p", "cocAyuda", "Desliza a la izquierda: se acabó. Toca: cuánto queda."));
+    var ul = el("ul", "cocFilasZ");
+    z.items.forEach(function (x) { ul.appendChild(filaCasa(x)); });
+    s.appendChild(ul);
   });
   s.appendChild(acciones2());
   var tx = TOCADO && H.todos.filter(function (x) { return x.clave === TOCADO; })[0];
   if (tx) s.appendChild(hojaItem(tx));
   else TOCADO = null;
   return s;
+}
+// "240 g · 3 ud": con la equivalencia de tus alimentos, si la hay
+function cantCasa(x) {
+  if (!x.c) return x.dudoso ? "?" : "";
+  var A = aliDe(x.nombre);
+  return Al().cantDoble(x.c, A && A.eq);
+}
+function filaCasa(x) {
+  var li = el("li", "cocFilaZ" + (ABIERTA === x.clave ? " abierta" : ""));
+  var fuera = el("button", "cocFueraZ", svg("cerrar") + "Se acabó");
+  fuera.addEventListener("click", function () { apunta({ tipo: "acaba", items: [x.nombre] }); ABIERTA = null; aviso("Se acabó: " + x.nombre + "."); pinta(); });
+  var b = el("button", "cocFilaZin" + (x.dudoso ? " duda" : ""), '<span>' + esc(x.nombre) + (x.dudoso ? '<small>¿Te queda? ' + esc(x.razon || "") + '</small>' : "") + '</span><em>' + esc(cantCasa(x)) + '</em>');
+  b.setAttribute("aria-label", x.nombre + (x.c ? ", " + Rc().cantTxt(x.c) : "") + ". Toca para cambiar cuánto queda");
+  b.addEventListener("click", function () { if (ABIERTA === x.clave) { ABIERTA = null; pinta(); return; } TOCADO = x.clave; pinta(); });
+  li.appendChild(fuera); li.appendChild(b);
+  // deslizar: la fila sigue al dedo; pasada la mitad del boton se queda abierta
+  var x0 = null, dx = 0;
+  b.addEventListener("touchstart", function (e) { if (e.touches.length !== 1) return; x0 = e.touches[0].clientX; dx = 0; b.style.transition = "none"; }, { passive: true });
+  b.addEventListener("touchmove", function (e) {
+    if (x0 == null) return; dx = Math.min(0, Math.max(-128, e.touches[0].clientX - x0 + (ABIERTA === x.clave ? -112 : 0)));
+    b.style.transform = "translateX(" + dx + "px)";
+  }, { passive: true });
+  b.addEventListener("touchend", function () {
+    if (x0 == null) return; x0 = null; b.style.transition = ""; b.style.transform = "";
+    var abre = dx < -56; if (abre !== (ABIERTA === x.clave)) { ABIERTA = abre ? x.clave : null; pinta(); }
+  }, { passive: true });
+  return li;
+}
+// "Por confirmar": lo que la app cree que ha pasado, con un toque
+function porConfirmarHtml(PC, E) {
+  var box = el("div", "cocPc");
+  box.appendChild(el("h4", "cocPcTit", "Por confirmar <b>" + PC.length + "</b>"));
+  PC.forEach(function (x) {
+    var it = el("div", "cocPcIt"), bot = el("div", "cocPcB");
+    function boton(txt, cls, fn) { var b = el("button", cls || "", txt); b.addEventListener("click", fn); bot.appendChild(b); return b; }
+    if (x.tipo === "comida") {
+      var R = x.R, cuando = (R.fecha === E.o.hoy ? "hoy" : Dp().diaCorto(R.fecha)) + (R.hora ? " " + R.hora : "");
+      it.innerHTML = '<p><b>' + esc(R.titulo) + ' · ' + esc(cuando) + '</b><small>Gastó ' + esc(x.items.join(" · ")) + '</small></p>';
+      boton(svg("tick") + "Así fue", "si", function () { apunta({ tipo: "gasto", uid: R.uid, de: R.titulo, items: x.items }); aviso("Apuntado lo que gastó."); pinta(); });
+      boton("Corregir", "", function () { CORRIGE = { uid: R.uid, items: x.items.map(function (t) { return { txt: t, on: true }; }) }; pinta(); });
+      if (CORRIGE && CORRIGE.uid === R.uid) it.appendChild(corrige(R));
+    } else if (x.tipo === "compra") {
+      var cb = x.cb, g0 = Rc().ingrediente((cb.items || [])[0] || ""), nom = mayus1(g0.ver || g0.base || (cb.items || [])[0] || "");
+      it.innerHTML = '<p><b>Compraste: ' + esc(nom) + (g0.c ? " · " + esc(Rc().cantTxt(g0.c)) : "") + '</b><small>' + esc(cb.zona || "") +
+        (g0.c ? " · la cantidad de la receta: ¿fue esa?" : " · ¿cuánto?") + '</small></p>';
+      boton(svg("tick") + "Bien", "si", function () { apunta({ tipo: "confirma", ref: x.k }); pinta(); });
+      boton(g0.c ? "Otra cantidad" : "Cuánto", "", function () { PCANT = cb.id; pinta(); var i = document.getElementById("cocPcCant"); if (i) i.focus(); });
+      if (PCANT === cb.id) it.appendChild(formCant("cocPcCant", "Cuánto has comprado (p. ej. 1 kg, 6)", function (q) {
+        desapunta(cb.id);
+        apunta({ tipo: "compra", items: [conCant(q, nom)], zona: cb.zona, lista: cb.lista, nutri: cb.nutri, ali: cb.ali });
+        var n2 = cambios().slice(-1)[0]; if (n2) apunta({ tipo: "confirma", ref: "compra:" + n2.id });
+        PCANT = null; aviso("Apuntado: " + conCant(q, nom) + ".");
+      }));
+    } else {
+      var d = x.item;
+      it.innerHTML = '<p><b>¿Te queda ' + esc(d.nombre.toLowerCase()) + '?</b><small>' + esc(d.razon || "No se sabe si queda") + '</small></p>';
+      boton("Sí", "si", function () { apunta({ tipo: "hay", items: [d.nombre] }); pinta(); });
+      boton("Cuánto", "", function () { ZONA = d.zona; TOCADO = d.clave; pinta(); });
+      boton("No, se acabó", "", function () { apunta({ tipo: "acaba", items: [d.nombre] }); pinta(); });
+    }
+    it.insertBefore(bot, it.children[1] || null);
+    box.appendChild(it);
+  });
+  return box;
+}
+// Corregir lo que gastó una comida: quita lo que no usaste, o "No la hice"
+function corrige(R) {
+  var f = el("div", "cocCorrige"), ul = el("ul", "cocChecksC");
+  CORRIGE.items.forEach(function (g) {
+    var b = el("button", "", '<i>' + (g.on ? svg("tick") : "") + '</i><span>' + esc(g.txt) + '</span>');
+    b.setAttribute("aria-pressed", g.on);
+    b.addEventListener("click", function () { g.on = !g.on; pinta(); });
+    ul.appendChild(el("li")).appendChild(b);
+  });
+  f.appendChild(ul);
+  var fila = el("div", "cocPcB"), ok = el("button", "si", "Apuntar lo gastado"), no = el("button", "", "No la hice"), x = el("button", "", "Cancelar");
+  ok.addEventListener("click", function () {
+    var its = CORRIGE.items.filter(function (g) { return g.on; }).map(function (g) { return g.txt; });
+    apunta(its.length ? { tipo: "gasto", uid: R.uid, de: R.titulo, items: its } : { tipo: "hecho", uid: R.uid });
+    CORRIGE = null; aviso("Apuntado."); pinta();
+  });
+  no.addEventListener("click", function () { apunta({ tipo: "saltada", uid: R.uid }); CORRIGE = null; aviso("No gasta nada."); pinta(); });
+  x.addEventListener("click", function () { CORRIGE = null; pinta(); });
+  fila.appendChild(ok); fila.appendChild(no); fila.appendChild(x); f.appendChild(fila);
+  return f;
 }
 function acciones2() {
   var d = el("div", "cocDos cocDos2");
@@ -1051,9 +1196,26 @@ function acciones2() {
 // lo tocado en Tengo: abajo, fija, con lo que se puede hacer
 function hojaItem(x) {
   var h = el("div", "cocHojaIt");
-  h.innerHTML = '<div><b>' + esc(x.nombre) + '</b>' + (x.c ? '<span>' + esc(Rc().cantTxt(x.c)) + '</span>' : "") +
+  var A = aliDe(x.nombre), nu = (A && A.nutri) || x.nutri, fmt = A && (A.codigos || []).map(function (c) { return c.formato; }).filter(Boolean)[0];
+  var paq = fmt ? Al().formato(fmt) : null;
+  h.innerHTML = '<div><b>' + esc(x.nombre) + '</b>' + (x.c ? '<span>' + esc(cantCasa(x)) + '</span>' : "") +
     (x.dudoso ? '<small>¿Te queda? ' + esc(x.razon || "") + '</small>' : "") +
-    (x.nutri ? '<small>Por ' + esc(x.nutri.por) + ': ' + esc(nutriTxt(x.nutri)) + '</small>' : "") + '</div>';
+    (A && A.alias && A.alias.length ? '<small>También: ' + esc(A.alias.slice(0, 2).join(" · ")) + '</small>' : "") +
+    (nu ? '<small>Por ' + esc(nu.por || "100 g") + ': ' + esc(nutriTxt(nu)) + ' · ' + esc(nu.fuente || "OFF") + '</small>' : "") + '</div>';
+  var fr = Dp().fracciones(x.c, paq && paq.total);
+  if (fr.length) {
+    var q = el("div", "cocFrac", '<span>¿Cuánto queda?</span>');
+    fr.concat([{ txt: "Nada", c: null }]).forEach(function (f) {
+      var b = el("button", "", esc(f.txt)); b.type = "button";
+      b.addEventListener("click", function () {
+        if (!f.c) { apunta({ tipo: "acaba", items: [x.nombre] }); aviso("Se acabó: " + x.nombre + "."); }
+        else { apunta({ tipo: "hay", items: [conCant(Rc().cantTxt(f.c), x.nombre)] }); aviso("Queda " + Rc().cantTxt(f.c) + "."); }
+        TOCADO = null; pinta();
+      });
+      q.appendChild(b);
+    });
+    h.appendChild(q);
+  }
   if (x.dudoso) {
     var m = el("button", "cocHojaSi", "Me queda");
     m.addEventListener("click", function () { apunta({ tipo: "hay", items: [x.nombre] }); TOCADO = null; pinta(); });

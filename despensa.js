@@ -427,6 +427,50 @@ function estadoDe(ing, H) {
   return { estado: mejor.dudoso ? "dudoso" : "hay", item: mejor, zona: mejor.zona };
 }
 
+/* ------------------------------ por confirmar (v2.40) ------------------------------
+   Lo que la app cree que ha pasado y se confirma con un toque:
+   - comida: una comida que ya acabó (en los 3 últimos días) y nadie apuntó qué gastó. Ya se
+     resta sola; "Así fue" lo deja apuntado (gasto con sus líneas) y "Corregir" deja cambiarlo;
+   - compra: lo marcado en Comprar entró con la cantidad de la receta: ¿fue esa? (lo escaneado
+     no, que ya trae la suya);
+   - duda: lo que no se sabe si queda ("¿te quedan huevos?").
+   Lo confirmado se apunta {tipo: "confirma", ref: k}.
+   -> [{tipo, k, R?, items?, cb?, item?}]                                                    */
+function porConfirmar(cambios, comidas, H, opts) {
+  opts = opts || {}; var ahora = opts.ahoraMs != null ? opts.ahoraMs : Date.now(), CB = vivos(cambios), out = [], ok = {};
+  var desde = H && H._m ? H._m.desde : 0;
+  CB.forEach(function (cb) { if (cb.tipo === "confirma" && cb.ref) ok[cb.ref] = 1; });
+  (comidas || []).filter(function (R) { return R.tipo === "comida"; }).sort(porHora).forEach(function (R) {
+    var t0 = msDe(R.fecha, R.hora || "12:00"), t1 = finDe(R);
+    if (t1 > ahora || ahora - t1 > 3 * 864e5 || t0 <= desde || ok["comida:" + R.uid]) return;
+    if (marcaDe(R, CB, ["gasto", "hecho", "saltada"])) return;
+    var items = (R.ingredientes || []).filter(function (g) { return g.clave && !g.basico && !g.hecho && !g.deCasa && !SIEMPRE.test(g.clave); })
+      .map(function (g) { return g.txt; });
+    if (items.length) out.push({ tipo: "comida", k: "comida:" + R.uid, R: R, items: items });
+  });
+  CB.filter(function (cb) { return cb.tipo === "compra" && cb.lista && !cb.codigo && ahora - cb.t < 2 * 864e5 && cb.t <= ahora && !ok["compra:" + cb.id]; })
+    .forEach(function (cb) { out.push({ tipo: "compra", k: "compra:" + cb.id, cb: cb }); });
+  (H ? H.todos : []).filter(function (x) { return x.dudoso; }).slice(0, 3)
+    .forEach(function (x) { out.push({ tipo: "duda", k: "duda:" + x.clave, item: x }); });
+  return out;
+}
+// cuantos tuppers hay en el congelador (el plan admite 3 a la vez)
+var MAX_TUPPERS = 3;
+function tuppers(H) {
+  return (H ? H.todos : []).filter(function (x) { return x.zona === "Congelador" && x.tupper; })
+    .reduce(function (n, x) { return n + (x.c && x.c.ud === "tupper" ? Math.max(1, Math.round(x.c.n)) : x.c && x.c.ud === "ud" ? Math.max(1, Math.round(x.c.n)) : 1); }, 0);
+}
+/* "¿Cuánto queda?" en un toque: lleno, ¾, ½, ¼ (de lo que hay ahora, o del paquete si se sabe)
+   -> [{txt: "½", c: {n, ud}}]. Solo con gramos o mililitros.                              */
+function fracciones(c, paquete) {
+  var base = paquete && paquete.n > 0 && c && paquete.ud === c.ud ? paquete : c;
+  if (!base || !/^(g|ml)$/.test(base.ud) || !(base.n > 0)) return [];
+  return [["Lleno", 1], ["¾", 0.75], ["½", 0.5], ["¼", 0.25]].map(function (f) {
+    var n = base.n * f[1]; n = n >= 100 ? Math.round(n / 10) * 10 : Math.round(n);
+    return { txt: f[0], c: { n: n, ud: base.ud } };
+  });
+}
+
 /* ------------------------------ lo que comprar ------------------------------ */
 function sumaDias(iso, n) { var d = new Date(msDe(iso, "12:00")); d.setDate(d.getDate() + n); return isoDe(d.getTime()); }
 function dos2(n) { return Math.round(n * 100) / 100; }
@@ -562,7 +606,7 @@ function textoClaude(H, opts) {
   return L.join("\n").replace(/\n+$/, "") + "\n";
 }
 
-return { ZONAS: ZONAS6, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
+return { ZONAS: ZONAS6, porConfirmar: porConfirmar, tuppers: tuppers, MAX_TUPPERS: MAX_TUPPERS, fracciones: fracciones, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
   estadoComida: estadoComida, queToca: queToca, faltan: faltan, origenDe: origenDe, paraTxt: paraTxt, textoClaude: textoClaude,
   isoDe: isoDe, msDe: msDe, diaLargo: diaLargo, diaCorto: diaCorto };
 });
