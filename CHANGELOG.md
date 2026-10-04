@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.33.0] - 2026-10-04
+
+### Añadido
+
+- Iconos de destino corregidos: Eiffel sin mitades en gris, El Castillo como bloque opaco, Ámsterdam con tulipanes, Atomium de frente y Coliseo con la composición de la referencia (muro alto con pilastras y ático, corte inclinado, tramo bajo y muro interior) en tonos sin color; la bandera de México y la Torre de Hércules se quedan igual
+
 ## [2.32.0] - 2026-10-04
 
 ### Añadido
@@ -604,6 +610,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.33.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.33.0
 [2.32.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.32.0
 [2.31.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.31.0
 [2.30.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.30.1
