@@ -61,7 +61,7 @@ function curva(pts, opt) {
   var mn = Math.min.apply(null, vs), mx = Math.max.apply(null, vs), pad = (mx - mn) * .12 || Math.abs(mx) * .1 || 1; mn -= pad; mx += pad;
   var X = function (i) { return 16 + (n > 1 ? i * (W - 32) / (n - 1) : (W - 32) / 2); }, Y = function (v) { return 10 + (1 - (v - mn) / (mx - mn)) * (H - 34); };
   var bw = n > 1 ? (W - 32) / (n - 1) : 40;
-  pts.forEach(function (p, i) { if (p.lo != null) { var hi = p.hi != null ? p.hi : mx; h += '<rect x="' + (X(i) - bw / 2) + '" y="' + Y(hi) + '" width="' + bw + '" height="' + Math.max(1, Y(p.lo) - Y(hi)) + '" fill="var(--sf2)"/>'; } });
+  pts.forEach(function (p, i) { if (p.lo != null) { var hi = p.hi != null ? p.hi : mx; h += '<rect x="' + (X(i) - bw / 2) + '" y="' + Y(hi) + '" width="' + bw + '" height="' + Math.max(1, Y(p.lo) - Y(hi)) + '" fill="var(--mu)" opacity=".22"/>'; } });
   if (opt.ref) { var d2 = "", on = false; opt.ref.forEach(function (v, i) { if (v == null) { on = false; return; } d2 += (on ? "L" : "M") + X(i) + " " + Y(v); on = true; }); h += '<path d="' + d2 + '" fill="none" stroke="var(--mu)" stroke-width="2" stroke-dasharray="4 4"/>'; }
   var d = "", pen = false;
   pts.forEach(function (p, i) { if (p.v == null) { pen = false; return; } d += (pen ? "L" : "M") + X(i) + " " + Y(p.v); pen = true; });
@@ -81,9 +81,9 @@ function barrasBanda(g, max, opt) {
   var y = function (v) { return H - 24 - v / max * (H - 46); };
   g.forEach(function (b, i) {
     var x = i * bw + bw * .12, w = bw * .76;
-    if (b.lo != null) h += '<rect x="' + x + '" y="' + y(b.hi) + '" width="' + w + '" height="' + Math.max(1, y(b.lo) - y(b.hi)) + '" fill="var(--sf2)"/>';
+    if (b.lo != null) h += '<rect x="' + x + '" y="' + y(b.hi) + '" width="' + w + '" height="' + Math.max(1, y(b.lo) - y(b.hi)) + '" fill="var(--mu)" opacity=".25"/>';
     if (b.v == null) h += '<text x="' + (x + w / 2) + '" y="' + (H - 32) + '" text-anchor="middle" font-size="10" fill="var(--mu)" ' + T + '>s/d</text>';
-    else h += '<rect x="' + (x + w * .3) + '" y="' + y(b.v) + '" width="' + (w * .4) + '" height="' + (H - 24 - y(b.v)) + '" rx="3" fill="' + (b.lo != null && b.v < b.lo ? "var(--coc)" : "var(--fg)") + '"/>' +
+    else h += '<rect x="' + (x + w * .3) + '" y="' + y(b.v) + '" width="' + (w * .4) + '" height="' + (H - 24 - y(b.v)) + '" rx="3" fill="' + (opt.acento && b.lo != null && b.v < b.lo ? "var(--coc)" : "var(--fg)") + '"/>' +
       '<text x="' + (x + w / 2) + '" y="' + (y(b.v) - 5) + '" text-anchor="middle" font-size="11" fill="var(--fg)" ' + T + '>' + n1(b.v) + '</text>';
     h += '<text x="' + (x + w / 2) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="10" fill="var(--mu)" ' + T + '>' + esc(b.label) + '</text>';
   });
@@ -124,6 +124,8 @@ var CSS =
   ".ngCalor td.sd{color:var(--mu);font-size:11px;box-shadow:inset 0 0 0 1px var(--ln)}" +
   ".ngCob{display:grid;grid-template-columns:96px 1fr 48px;gap:10px;align-items:center;min-height:44px}.ngCob span{font-size:13px;font-weight:700}.ngCob em{font-style:normal;font-size:13px;font-weight:800;text-align:right}" +
   ".ngCobB{position:relative;height:12px;background:var(--sf2);border-radius:6px;display:flex;overflow:visible}.ngCobB i{display:block;height:100%;background:var(--fg)}.ngCobB i:first-child{border-radius:6px 0 0 6px}" +
+  ".ngLey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;font-weight:600;color:var(--mu);margin-top:6px;align-items:center}" +
+  ".ngLey i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle;background:var(--fg)}" +
   ".ngCobB i.s{opacity:.4}.ngCobB b{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--mu)}";
 
 return { esc: esc, n1: n1, tira: tira, barras: barras, curva: curva, barrasBanda: barrasBanda, calor: calor, cobertura: cobertura, CSS: CSS };

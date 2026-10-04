@@ -595,6 +595,7 @@ CSS +=
   ".ntBig span{font-size:13px;font-weight:600;color:var(--mu)}.ntBarra{height:10px;margin-top:10px}" +
   ".ntMacros{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.ntMacros div{background:var(--sf);border-radius:12px;padding:8px 10px}" +
   ".ntMacros small{display:block;font-size:12px;font-weight:600;color:var(--mu)}.ntMacros b{display:block;font-size:17px;font-weight:800}" +
+  ".ntBigTxt{margin:0;font-size:22px;font-weight:800}.ntNav{margin-top:0}" +
   ".ntTiras{padding-top:2px}.ntCaja .ngTiraB,.ntCaja .ngCobB{background:var(--sf)}" +
   /* ---- v2.48 suplementos ---- */
   ".ntTabla.conSupl .ntFila{grid-template-columns:1.4fr .7fr .7fr .7fr 1fr .6fr;font-size:13px}" +
@@ -1592,7 +1593,8 @@ function nutri(E, LC) {
   var N = Nu(), o = E.o, s = el("section", "cocSec cocNutri"), fecha = sumaDia(o.hoy, NDIA), perfil = lee(K_PERFIL, null), semanas = lee(K_SEMANAS, {});
   var tipo = CTX.tipoDia ? CTX.tipoDia(fecha) : null, F = N.faseDe(fecha, semanas), obj = perfil ? N.objetivos(perfil, fecha, semanas, tipo || "gimnasio") : null;
   var dTxt = NDIA === 0 ? "Hoy" : NDIA === 1 ? "Mañana" : NDIA === -1 ? "Ayer" : mayus1(Dp().diaCorto(fecha)) + " " + (+fecha.slice(8));
-  s.innerHTML = '<p class="cocLead">Nutrición · ' + esc(dTxt) + '</p><p class="sub">' + esc((N.FASES[F.fase] || {}).nombre || "") + ' · semana del ' + esc(corta(N.lunes(fecha))) +
+  var subTxt = NSUB === "hoy" ? dTxt : (NSUBS.filter(function (x) { return x[0] === NSUB; })[0] || ["", ""])[1];
+  s.innerHTML = '<p class="cocLead">Nutrición · ' + esc(subTxt) + '</p><p class="sub">' + esc((N.FASES[F.fase] || {}).nombre || "") + ' · semana del ' + esc(corta(N.lunes(fecha))) +
     (tipo ? ' · ' + esc({ descanso: "descanso", gimnasio: "gimnasio", calidad: "calidad", tirada: "tirada larga" }[tipo] || tipo) : "") + '</p>';
   // las subpestañas de Nutrición
   var sb = el("div", "cocSuperB ntSubs"); sb.setAttribute("role", "tablist"); sb.setAttribute("aria-label", "Nutrición");
@@ -1694,7 +1696,7 @@ function vistaNutri(sub, E, LC, fecha, perfil, semanas) {
   var w = el("div", "ntVista");
   try {
     if (!CTX.dia) { w.appendChild(el("p", "cocVacio", "Trayendo el calendario…")); return w; }
-    var V = { tendencias: vistaTendencias, fases: vistaFases, entreno: vistaEntreno, micros: vistaMicros }[sub];
+    var V = { semana: vistaSemana, tendencias: vistaTendencias, fases: vistaFases, entreno: vistaEntreno, micros: vistaMicros }[sub];
     if (V) V(w, E, fecha, perfil, semanas);
     else w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión."));
   } catch (e) {
@@ -1704,6 +1706,46 @@ function vistaNutri(sub, E, LC, fecha, perfil, semanas) {
     w.appendChild(er); w.appendChild(b);
   }
   return w;
+}
+/* N2 · Semana (A arriba + lo de la D abajo): energía por día apilada por macros con la adherencia; debajo, los
+   carbohidratos por día con su banda y la media de la semana de todos los demás nutrientes (Supl. aparte).       */
+var NSEM = 0;   // semanas atrás (0 = la de hoy)
+function navSemana(w, l) {
+  var nav = el("div", "cocPcB ntNav"), a = el("button", "", "Semana anterior"), b = el("button", "", "Siguiente");
+  b.disabled = NSEM <= 0;
+  a.addEventListener("click", function () { NSEM++; pinta(); }); b.addEventListener("click", function () { if (NSEM > 0) { NSEM--; pinta(); } });
+  nav.appendChild(a); nav.appendChild(b);
+  w.appendChild(el("p", "ntCap", "Semana del " + esc(corta(l)) + (NSEM === 0 ? " · esta" : "")));
+  w.appendChild(nav);
+}
+function vistaSemana(w, E, fecha) {
+  var N = Nu(), G = raiz.NutriGraficas, F = fuentesNu(E), l = N.masDias(N.lunes(E.o.hoy), -7 * NSEM), S = N.semana(l, F);
+  navSemana(w, l);
+  var con = S.filter(function (r) { return r.conDatos; }), ref = S.filter(function (r) { return r.obj; })[0], L = "LMXJVSD";
+  if (!con.length) { w.appendChild(el("p", "cocVacio", "Sin datos esta semana: no hay comidas en el calendario ni nada registrado.")); return; }
+  var hoyI = NSEM === 0 ? S.map(function (r) { return r.fecha; }).indexOf(E.o.hoy) : -1;
+  var dias = S.map(function (r, i) { var t = r.D.total; return { label: L.charAt(i), segs: r.conDatos ? [t.prot * 4, t.hc * 4, t.grasa * 9] : null, total: t.kcal }; });
+  var mx = Math.max.apply(null, dias.map(function (d) { return d.segs ? d.total : 0 }).concat(ref && ref.obj.kcal ? [ref.obj.kcal.max] : [1])) * 1.1;
+  w.appendChild(el("p", "ntCap", "Energía por día · kcal"));
+  var c = el("div", "ntCaja");
+  c.innerHTML = G.barras(dias, mx, ref && ref.obj.kcal ? ref.obj.kcal.min : null, { acento: hoyI, valor: function (d) { return Math.round(d.total); }, aria: "Energía por día" }) +
+    '<div class="ngLey"><span><i></i>Proteína</span><span><i style="opacity:.55"></i>Carbohidratos</span><span><i style="opacity:.28"></i>Grasa</span>' + (ref && ref.obj.kcal ? '<span>- - - mínimo de energía</span>' : "") + '</div>';
+  w.appendChild(c);
+  var ok = S.map(N.enRango), conObj = ok.filter(function (x) { return x != null; });
+  w.appendChild(el("p", "ntCap", "Adherencia"));
+  w.appendChild(el("p", "ntBigTxt", conObj.length ? ok.filter(function (x) { return x === true; }).length + " de " + conObj.length + " días en rango" : "Sin objetivos: pon tus datos"));
+  w.appendChild(el("p", "ntNota", "En rango: energía dentro de su rango (±10 %) y proteína y carbohidratos por encima de su mínimo. Los días sin datos no cuentan."));
+  // abajo (D): carbohidratos por día con su banda, y la media de todo lo demás
+  w.appendChild(el("p", "ntCap", "Carbohidratos por día · g"));
+  var g = S.map(function (r, i) { return { label: L.charAt(i), v: r.conDatos ? r.D.total.hc : null, lo: r.obj && r.obj.hc ? r.obj.hc.min : null, hi: r.obj && r.obj.hc ? r.obj.hc.max : null }; });
+  var mh = Math.max.apply(null, g.map(function (x) { return Math.max(x.v || 0, x.hi || 0); }).concat([1])) * 1.1;
+  w.appendChild(el("div", "ntCaja", G.barrasBanda(g, mh) + '<p class="ntNota">La banda: el objetivo de cada día (cambia con el tipo de día).</p>'));
+  w.appendChild(el("p", "ntCap", "Media de la semana · " + con.length + (con.length === 1 ? " día con datos" : " días con datos")));
+  var ks = ["fibra", "vitC", "folato", "prot", "grasa", "hierro", "magnesio", "potasio", "calcio", "b12", "vitD", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];
+  w.appendChild(el("div", "ntCaja ntTiras", ks.map(function (k) {
+    var m = N.media(S, k), o = ref && ref.obj[k];
+    return G.tira({ nombre: N.NOMBRE[k], v: m.v, min: o ? o.min : null, max: o ? o.max : null, u: N.UNIDAD[k], supl: m.supl || 0 });
+  }).join("")));
 }
 function vistaTendencias(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
 function vistaFases(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }

@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.51.0] - 2026-10-04
+
+### Añadido
+
+- Nutrición · Semana: energía por día apilada por macros con el mínimo y la adherencia; debajo, carbohidratos por día con su banda y la media de la semana del resto de nutrientes, con lo de suplementos aparte; semanas anteriores
+
 ## [2.50.0] - 2026-10-04
 
 ### Añadido
@@ -730,6 +736,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.51.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.51.0
 [2.50.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.50.0
 [2.49.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.49.0
 [2.48.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.48.0
