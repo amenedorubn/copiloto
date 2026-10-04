@@ -556,7 +556,7 @@ CSS +=
   ".ntFavs button{min-height:44px;padding:0 12px!important;border-radius:14px!important;background:var(--sf2);color:var(--fg);font-size:14px;font-weight:700}" +
   ".ntFavs button[aria-pressed=true]{background:var(--fg);color:var(--bg)}" +
   ".ntRegIt{display:flex;align-items:center;gap:8px;min-height:52px;border-top:1px solid var(--ln)}.ntRegIt span{flex:1;font-size:15px;font-weight:700}.ntRegIt small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
-  ".ntPerfil{display:grid;gap:8px;margin-top:12px}.ntPerfil label{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--mu);text-transform:none;letter-spacing:0;margin:0}" +
+  ".ntPerfil{display:grid;gap:8px;margin-top:12px}.ntPerfil label{display:grid;gap:4px;font-size:13px!important;font-weight:700;color:var(--mu);text-transform:none!important;letter-spacing:0!important;margin:0!important}" +
   ".ntPerfil input{width:100%}" +
   ".ntPerfil input{min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);padding:0 12px;font:700 16px Manrope,sans-serif}" +
   "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
