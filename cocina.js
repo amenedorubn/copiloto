@@ -596,6 +596,12 @@ CSS +=
   ".ntMacros{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.ntMacros div{background:var(--sf);border-radius:12px;padding:8px 10px}" +
   ".ntMacros small{display:block;font-size:12px;font-weight:600;color:var(--mu)}.ntMacros b{display:block;font-size:17px;font-weight:800}" +
   ".ntFila2{display:flex;justify-content:space-between;align-items:center;min-height:44px;border-top:1px solid var(--ln);font-size:14px;font-weight:600}.ntFila2:first-child{border-top:0}.ntFila2 b{font-weight:800}" +
+  ".ntFasesT{display:flex;height:36px;border-radius:10px;overflow:hidden;gap:2px}.ntFasesT i{background:var(--fg)}" +
+  ".ntFasesYa{width:2px;height:12px;background:var(--coc);margin-left:2px}" +
+  ".ntFaseF{width:100%;display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 0!important;background:none;color:var(--fg);text-align:left;border-top:1px solid var(--ln);border-radius:0!important}" +
+  ".ntFaseF i{width:14px;height:14px;border-radius:4px;background:var(--fg);flex:none}.ntFaseF span{flex:1}.ntFaseF b{display:block;font-size:15px}.ntFaseF small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
+  ".ntFaseF svg{width:16px;height:16px;color:var(--mu)}.ntFaseF[aria-expanded=true] svg{transform:rotate(90deg)}.ntFaseP{padding:0 0 8px 26px}" +
+  ".ntCap.ac{color:var(--coc)}" +
   ".ntBigTxt{margin:0;font-size:22px;font-weight:800}.ntNav{margin-top:0}" +
   ".ntTiras{padding-top:2px}.ntCaja .ngTiraB,.ntCaja .ngCobB{background:var(--sf)}" +
   /* ---- v2.48 suplementos ---- */
@@ -1778,7 +1784,47 @@ function vistaTendencias(w, E) {
       '<p class="ntNota">Esperado: definición −0,4 %/semana, volumen +0,25 %/semana, el resto igual, desde el primer peso que pusiste.</p>'));
   }
 }
-function vistaFases(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
+/* N4 · Fases (D + la tira de la A en «Luego»): la fase de ahora con sus fechas y cómo va hoy (en g/kg y % del
+   mantenimiento); debajo, la tira de las fases que vienen. Tocar una fase enseña sus proporciones.            */
+var NFASE = null;
+function fechaCorta(iso) { var p = iso.split("-"), M = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]; return (+p[2]) + " " + M[+p[1] - 1]; }
+function vistaFases(w, E) {
+  var N = Nu(), G = raiz.NutriGraficas, F = fuentesNu(E), B = N.bloquesFase(E.o.hoy, 26, F.semanas), ya = B[0], r = N.resumenDia(E.o.hoy, F);
+  var C = N.FASES[ya.fase], peso = r.obj ? r.obj.peso : (F.perfil && F.perfil.peso);
+  var c = el("div", "ntCaja", '<p class="ntCap ac" style="margin:0">Ahora · ' + esc(C.nombre) + '</p><p class="ntBigTxt">' + esc(fechaCorta(ya.desde)) + ' – ' + esc(fechaCorta(ya.hasta)) + '</p>' +
+    '<p class="ntNota">' + esc(C.porque) + '</p>');
+  if (r.obj && peso) {
+    var t = r.D.total, man = r.obj.mant;
+    var h = G.tira({ nombre: "Carbohidratos hoy · g/kg", v: r.conDatos ? t.hc / peso : null, min: r.obj.hc.min / peso, max: r.obj.hc.max / peso, u: "g/kg" }) +
+            G.tira({ nombre: "Proteína hoy · g/kg", v: r.conDatos ? t.prot / peso : null, min: C.prot[0], max: C.prot[1], u: "g/kg" }) +
+            (man ? G.tira({ nombre: "Energía hoy · % del mantenimiento", v: r.conDatos ? t.kcal / man.kcal * 100 : null, min: 100 + C.kcal[0], max: 100 + C.kcal[1], u: "%", est: man.estimado ? "estimado" : "" }) : "");
+    c.appendChild(el("div", "ntTiras", h));
+    if (!r.conDatos) c.appendChild(el("p", "ntNota", "Hoy aún no hay datos: ni comidas en el calendario ni nada registrado."));
+  } else c.appendChild(el("p", "ntNota", "Pon tus datos para ver cómo vas en esta fase."));
+  w.appendChild(c);
+  // Luego: la tira de las fases (26 semanas)
+  w.appendChild(el("p", "ntCap", "Luego · 6 meses"));
+  var tot = B.reduce(function (a, x) { return a + x.semanas; }, 0), op = { descarga: 1, carga: 1, recuperacion: .7, mantenimiento: .45, volumen: .6, definicion: .28 };
+  var tira = '<div class="ntFasesT" role="img" aria-label="' + esc(B.map(function (x) { return (N.FASES[x.fase] || {}).nombre + " " + x.semanas + " semanas"; }).join(", ")) + '">' +
+    B.map(function (x) { return '<i style="flex:' + x.semanas + ';opacity:' + (op[x.fase] || .5) + '"></i>'; }).join("") + '</div><div class="ntFasesYa"></div>';
+  var lc = el("div", "ntCaja", tira);
+  B.forEach(function (x, i) {
+    var f = N.FASES[x.fase] || {}, b = el("button", "ntFaseF", '<i style="opacity:' + (op[x.fase] || .5) + '"></i><span><b>' + esc(f.nombre) + (i === 0 ? " · ahora" : "") + '</b><small>' +
+      esc(fechaCorta(x.desde) + " – " + fechaCorta(x.hasta) + " · " + x.semanas + (x.semanas === 1 ? " semana" : " semanas")) + '</small></span>' + svg("der"));
+    b.setAttribute("aria-expanded", String(NFASE === i));
+    b.addEventListener("click", function () { NFASE = NFASE === i ? null : i; pinta(); });
+    lc.appendChild(b);
+    if (NFASE === i) lc.appendChild(el("div", "ntFaseP", '<div class="ntFila2"><span>Proteína</span><b>' + fmtN(f.prot[0]) + "–" + fmtN(f.prot[1]) + ' g/kg</b></div>' +
+      '<div class="ntFila2"><span>Carbohidratos</span><b>' + fmtN(f.hc[0]) + "–" + fmtN(f.hc[1]) + ' g/kg</b></div>' +
+      '<div class="ntFila2"><span>Grasa</span><b>' + fmtN(f.grasa[0]) + "–" + fmtN(f.grasa[1]) + ' g/kg</b></div>' +
+      '<div class="ntFila2"><span>Energía</span><b>' + (f.kcal[0] || f.kcal[1] ? (f.kcal[0] > 0 ? "+" : "") + f.kcal[0] + "…" + (f.kcal[1] > 0 ? "+" : "") + f.kcal[1] + " %" : "= mantenimiento") + '</b></div>' +
+      '<div class="ntFila2"><span>Fibra</span><b>' + f.fibra[0] + "–" + f.fibra[1] + ' g</b></div>' +
+      (peso ? '<p class="ntNota">Con ' + fmtN(peso) + ' kg: proteína ' + Math.round(f.prot[0] * peso) + "–" + Math.round(f.prot[1] * peso) + ' g, carbohidratos ' + Math.round(f.hc[0] * peso) + "–" + Math.round(f.hc[1] * peso) + ' g al día.</p>' : "") +
+      '<p class="ntNota">' + esc(f.porque) + '</p>'));
+  });
+  lc.appendChild(el("p", "ntNota", "Cada semana se cambia en Hoy → Semana. Los días de carga de hidratos van dentro de su semana."));
+  w.appendChild(lc);
+}
 function vistaEntreno(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
 function vistaMicros(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
 function tablaNutri(D, obj) {

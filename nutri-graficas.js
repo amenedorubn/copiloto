@@ -26,7 +26,7 @@ function tira(o) {
   var banda = o.min != null ? '<i class="ngB" style="left:' + x(o.min) + ';width:' + (o.max != null && o.max > o.min ? ((o.max - o.min) / top * 100).toFixed(1) + "%" : "calc(100% - " + x(o.min) + ")") + '"></i>' : "";
   var sp = o.supl && o.v ? '<i class="ngS" style="left:' + x(Math.max(0, o.v - o.supl)) + ';width:' + (o.supl / top * 100).toFixed(1) + '%"></i>' : "";
   var mk = o.v != null ? '<i class="ngM' + (o.acento ? " ac" : "") + '" style="left:' + x(o.v) + '"></i>' : "";
-  var obj = o.min == null ? "" : o.max != null && o.max !== o.min ? n1(o.min) + "–" + n1(o.max) : "≥ " + n1(o.min);
+  var obj = o.min == null ? "" : o.max != null && o.max !== o.min ? n1(o.min) + "–" + n1(o.max) : o.max === o.min ? n1(o.min) : "≥ " + n1(o.min);
   return '<div class="ngTira" role="img" aria-label="' + esc(o.nombre + ": " + n1(o.v) + " " + o.u + (obj ? ", objetivo " + obj : "") + (o.supl ? ", " + n1(o.supl) + " de suplementos" : "")) + '">' +
     '<div class="ngTiraT"><span>' + esc(o.nombre) + '</span><span><b>' + n1(o.v) + '</b> ' + (obj ? '<em>/ ' + obj + '</em> ' : "") + esc(o.u) +
     (o.est ? ' <em>· ' + esc(o.est) + '</em>' : "") + (o.supl ? ' <em>· ' + n1(o.supl) + ' Supl.</em>' : "") + '</span></div>' +
