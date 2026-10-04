@@ -93,7 +93,14 @@ function casa(hoy, ahoraMs) {
   var registro = [{ id: "prueba-r1", t: t, fecha: hoy, txt: "Batido de proteína", fav: "batido",
     n: { kcal: 270, prot: 37.4, hc: 15.5, grasa: 5.6, fibra: 0, vitC: 0, folato: 15, calcio: 485 }, sinDatos: [], estimado: false, micros: true }];
   var tipoDia = function (f) { var d = new Date(f + "T12:00:00").getDay(); return d === 0 ? "tirada" : d === 3 ? "calidad" : d === 6 ? "descanso" : "gimnasio"; };
-  return { dia: dia, nota: nota, cambios: cambios, lista: lista, alimentos: alimentos, perfil: perfil, registro: registro, tipoDia: tipoDia };
+  // suplementos de EJEMPLO: uno con etiqueta, uno en dos tomas solo los días de entreno y uno sin etiqueta (no suma)
+  var suplementos = [
+    { id: "prueba-s1", nombre: "Vitamina D3 (ejemplo)", dosis: { n: 1, ud: "cápsula" }, momentos: [{ m: "desayuno" }], dias: "todos" },
+    { id: "prueba-s2", nombre: "Omega-3 (ejemplo)", dosis: { n: 1, ud: "cápsula" }, momentos: [{ m: "comida" }, { m: "cena" }], dias: "entreno" },
+    { id: "prueba-s3", nombre: "Magnesio (ejemplo)", dosis: { n: 1, ud: "comprimido" }, momentos: [{ m: "dormir" }], dias: "todos" }];
+  alimentos.push({ id: "prueba-a2", t: t, nombre: "Vitamina D3 (ejemplo)", alias: [], zona: "Suplementos", codigos: [], nutri: { por: "1 unidad", vitD: 25, fuente: "tú" } },
+                 { id: "prueba-a3", t: t, nombre: "Omega-3 (ejemplo)", alias: [], zona: "Suplementos", codigos: [], nutri: { por: "1 unidad", epa: 175, dha: 125, vitE: 6, fuente: "tú" } });
+  return { dia: dia, nota: nota, cambios: cambios, lista: lista, alimentos: alimentos, perfil: perfil, registro: registro, tipoDia: tipoDia, suplementos: suplementos };
 }
 
 var API = { RECETAS: RECETAS, VELOCIDADES: VELOCIDADES, evento: evento, casa: casa };

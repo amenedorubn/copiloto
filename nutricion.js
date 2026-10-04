@@ -29,11 +29,13 @@ function Tabla() { return usa("NutriTabla", "./nutri-tabla.js"); }
 function norm(s) { return Rc().norm(s); }
 function r1(n) { return Math.round(n * 10) / 10; }
 
-var CLAVES = ["kcal", "prot", "hc", "grasa", "fibra", "vitC", "folato", "hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "sodio"];
+var CLAVES = ["kcal", "prot", "hc", "grasa", "fibra", "vitC", "folato", "hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "sodio",
+              "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];   // v2.48: lo que suele venir en los suplementos
 var NOMBRE = { kcal: "Energía", prot: "Proteína", hc: "Carbohidratos", grasa: "Grasa", fibra: "Fibra", vitC: "Vitamina C", folato: "Folato",
-  hierro: "Hierro", magnesio: "Magnesio", potasio: "Potasio", b12: "Vitamina B12", vitD: "Vitamina D", calcio: "Calcio", sodio: "Sodio" };
+  hierro: "Hierro", magnesio: "Magnesio", potasio: "Potasio", b12: "Vitamina B12", vitD: "Vitamina D", calcio: "Calcio", sodio: "Sodio",
+  vitA: "Vitamina A", vitE: "Vitamina E", b6: "Vitamina B6", zinc: "Zinc", yodo: "Yodo", epadha: "EPA + DHA" };
 var UNIDAD = { kcal: "kcal", prot: "g", hc: "g", grasa: "g", fibra: "g", vitC: "mg", folato: "µg", hierro: "mg", magnesio: "mg", potasio: "mg",
-  b12: "µg", vitD: "µg", calcio: "mg", sodio: "mg" };
+  b12: "µg", vitD: "µg", calcio: "mg", sodio: "mg", vitA: "µg", vitE: "mg", b6: "mg", zinc: "mg", yodo: "µg", epadha: "mg" };
 var PRIORIDAD = ["hc", "fibra", "vitC", "folato"];
 
 /* ------------------------------ un alimento ------------------------------ */
@@ -130,7 +132,13 @@ var FASES = {
 // micronutrientes: EFSA, hombre adulto (editables en el perfil)
 var MICROS = { vitC: [110, null, "EFSA: 110 mg/día (hombre adulto)"], folato: [330, null, "EFSA: 330 µg DFE/día"], fibra: [25, null, "EFSA: 25 g/día como mínimo"],
   hierro: [11, null, "EFSA: 11 mg/día"], magnesio: [350, null, "EFSA: 350 mg/día (AI)"], potasio: [3500, null, "EFSA: 3500 mg/día (AI)"],
-  b12: [4, null, "EFSA: 4 µg/día (AI)"], vitD: [15, 100, "EFSA: 15 µg/día; máximo tolerable 100 µg"], calcio: [950, null, "EFSA: 950 mg/día"] };
+  b12: [4, null, "EFSA: 4 µg/día (AI)"], vitD: [15, 100, "EFSA: 15 µg/día; máximo tolerable 100 µg"], calcio: [950, 2500, "EFSA: 950 mg/día; máximo tolerable 2500 mg"],
+  vitA: [750, 3000, "EFSA: 750 µg/día; máximo tolerable 3000 µg"], vitE: [13, 300, "EFSA: 13 mg/día (AI); máximo tolerable 300 mg"], b6: [1.7, 12, "EFSA: 1,7 mg/día; máximo tolerable 12 mg"],
+  zinc: [9.4, 25, "EFSA: 9,4–16,3 mg/día según el fitato; máximo tolerable 25 mg"], yodo: [150, 600, "EFSA: 150 µg/día; máximo tolerable 600 µg"],
+  epadha: [250, null, "EFSA: 250 mg/día de EPA + DHA"] };
+/* Máximos tolerables (UL) de EFSA, adulto. "supl": solo cuenta lo que viene de suplementos (magnesio, folato). */
+var UL = { vitD: [100, "µg"], vitA: [3000, "µg"], vitE: [300, "mg"], b6: [12, "mg"], zinc: [25, "mg"], calcio: [2500, "mg"], yodo: [600, "µg"],
+  folato: [1000, "µg", "supl"], magnesio: [250, "mg", "supl"] };
 // carbohidratos según el día (g/kg sobre el rango de la fase): descanso −1, gimnasio 0, calidad +1, tirada +2
 var DIA = { descanso: [-1, "Día de descanso: 1 g/kg menos."], gimnasio: [0, "Día de gimnasio: el rango de la fase."],
   calidad: [1, "Día de calidad (series, ritmo): 1 g/kg más."], tirada: [2, "Tirada larga o carrera: 2 g/kg más."] };
@@ -190,12 +198,49 @@ function objetivos(perfil, iso, semanas, tipo) {
 /* ------------------------------ el día ------------------------------
    comidas: las de ese día (receta.js), sin las que no hiciste; registro: [{n, sinDatos, estimado, micros}]
    -> {plan: {n, sinDatos}, reg: {n, sinDatos, estimado}, total: n}                                      */
-function dia(comidas, registro, aliDe) {
-  var plan = vacio(), sin = [], reg = vacio(), sinR = [], est = false, sinMicros = false;
+function dia(comidas, registro, aliDe, supl) {
+  var plan = vacio(), sin = [], reg = vacio(), sinR = [], est = false, sinMicros = false, sp = vacio(), sinF = [];
+  (supl || []).forEach(function (x) { if (x.sinFicha) sinF.push(x.nombre); else suma(sp, x.n); });
   (comidas || []).forEach(function (R) { var x = deComida(R, aliDe); suma(plan, x.n); sin = sin.concat(x.sinDatos); });
   (registro || []).forEach(function (e) { suma(reg, e.n || {}); sinR = sinR.concat(e.sinDatos || []); if (e.estimado) est = true; if (e.micros === false) sinMicros = true; });
-  var tot = suma(suma(vacio(), plan), reg);
-  return { plan: { n: plan, sinDatos: sin }, reg: { n: reg, sinDatos: sinR, estimado: est, sinMicros: sinMicros }, total: tot };
+  var tot = suma(suma(suma(vacio(), plan), reg), sp);
+  return { plan: { n: plan, sinDatos: sin }, reg: { n: reg, sinDatos: sinR, estimado: est, sinMicros: sinMicros },
+           supl: { n: sp, sinFicha: sinF, hay: (supl || []).length > 0 }, total: tot };
+}
+
+/* ------------------------------ suplementos (v2.48) ------------------------------
+   s = {id, nombre, dosis: {n, ud}, momentos: [{m, hora?}], dias: "todos" | "entreno" | "descanso"}
+   Su etiqueta es la ficha de tu alimento (A.nutri), casi siempre POR UNIDAD (cápsula, comprimido,
+   cacito: nutri.por = "1 unidad"); si es por 100 g, la dosis va en g o ml.                         */
+var MOMENTOS = { desayuno: "Desayuno", comida: "Comida", cena: "Cena", dormir: "Antes de dormir", antes: "Antes de entrenar", despues: "Después de entrenar", hora: "A una hora" };
+var DIAS_S = { todos: "Todos los días", entreno: "Solo días de entreno", descanso: "Solo días de descanso" };
+function tomasDe(s, tipo) {
+  if (!s) return 0;
+  if (s.dias === "entreno" && tipo === "descanso") return 0;
+  if (s.dias === "descanso" && tipo && tipo !== "descanso") return 0;
+  return Math.max(1, (s.momentos || []).length);
+}
+var MICRO_K = ["vitA", "vitD", "vitE", "vitC", "b1", "b2", "b3", "b6", "folato", "b12", "calcio", "hierro", "magnesio", "potasio", "zinc", "fosforo", "yodo", "cobre", "selenio", "epa", "dha"];
+// -> {nombre, n (lo de ese dia), tomas, sinFicha, incompleta (ninguna vitamina ni mineral en su etiqueta)}
+function deSuplemento(s, A, tipo) {
+  var nu = A && A.nutri, t = tomasDe(s, tipo), out = { nombre: s.nombre, tomas: t, n: {}, sinFicha: !nu };
+  if (!nu || !t) return out;
+  var d = s.dosis && s.dosis.n > 0 ? s.dosis.n : 1, porUnidad = !/100/.test(nu.por || "1 unidad");
+  var f = porUnidad ? d * t : (/^(g|ml)$/.test(s.dosis && s.dosis.ud) ? d / 100 * t : null);
+  if (f == null) { out.sinFicha = true; return out; }
+  CLAVES.concat(["epa", "dha"]).forEach(function (k) { if (typeof nu[k] === "number") out.n[k] = nu[k] * f; });
+  if (out.n.epa != null || out.n.dha != null) out.n.epadha = (out.n.epa || 0) + (out.n.dha || 0);
+  out.incompleta = !MICRO_K.some(function (k) { return typeof nu[k] === "number"; });
+  return out;
+}
+/* Lo que pasa del máximo tolerable de EFSA (folato y magnesio: solo lo de los suplementos) */
+function avisosUL(total, supl) {
+  var out = [];
+  Object.keys(UL).forEach(function (k) {
+    var v = UL[k][2] === "supl" ? (supl || {})[k] : total[k];
+    if (v != null && v > UL[k][0]) out.push({ k: k, nombre: NOMBRE[k] || k, valor: Math.round(v * 10) / 10, ul: UL[k][0], u: UL[k][1], soloSupl: UL[k][2] === "supl" });
+  });
+  return out;
 }
 
 /* ------------------------------ te falta X; cómete Y ------------------------------
@@ -226,7 +271,7 @@ function teFalta(total, obj, enCasa, enLista) {
 }
 function porcionTxt(F, g) { return F.ud ? (Math.round(g / F.ud) <= 1 ? "1 " : Math.round(g / F.ud) + " × ") + F.nombre.toLowerCase() : g + " g de " + F.nombre.toLowerCase(); }
 
-return { CLAVES: CLAVES, NOMBRE: NOMBRE, UNIDAD: UNIDAD, PRIORIDAD: PRIORIDAD, FASES: FASES, MICROS: MICROS, DIA: DIA, PLAN: PLAN, FAVORITOS: FAVORITOS,
+return { MOMENTOS: MOMENTOS, DIAS_S: DIAS_S, UL: UL, tomasDe: tomasDe, deSuplemento: deSuplemento, avisosUL: avisosUL, CLAVES: CLAVES, NOMBRE: NOMBRE, UNIDAD: UNIDAD, PRIORIDAD: PRIORIDAD, FASES: FASES, MICROS: MICROS, DIA: DIA, PLAN: PLAN, FAVORITOS: FAVORITOS,
   fila: fila, gramos: gramos, deIngrediente: deIngrediente, deComida: deComida, deTexto: deTexto, deFavorito: deFavorito,
   reposo: reposo, mantenimiento: mantenimiento, lunes: lunes, faseDe: faseDe, objetivos: objetivos, dia: dia, teFalta: teFalta };
 });

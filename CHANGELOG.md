@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.48.0] - 2026-10-04
+
+### Añadido
+
+- Nutrición: suplementos y pastillas, con su ficha (la misma de Casa, por unidad), cuándo (momento u hora), qué días (todos, entreno, descanso) y dosis; lo que aportan suma a los micros del día en su columna Supl., con aviso discreto si se pasa del máximo tolerable de EFSA; también en Casa → Suplementos y en la Cocina de prueba
+
 ## [2.47.0] - 2026-10-04
 
 ### Añadido
@@ -712,6 +718,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.48.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.48.0
 [2.47.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.47.0
 [2.46.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.46.1
 [2.46.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.46.0

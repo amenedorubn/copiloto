@@ -165,7 +165,9 @@ var CAMPOS = [
   ["b1", "Tiamina (B1)", "mg", "Vitaminas"], ["b2", "Riboflavina (B2)", "mg", "Vitaminas"], ["b3", "Niacina (B3)", "mg", "Vitaminas"], ["b6", "Vitamina B6", "mg", "Vitaminas"],
   ["folato", "Ácido fólico / folato", "µg", "Vitaminas"], ["b12", "Vitamina B12", "µg", "Vitaminas"],
   ["calcio", "Calcio", "mg", "Minerales"], ["hierro", "Hierro", "mg", "Minerales"], ["magnesio", "Magnesio", "mg", "Minerales"], ["potasio", "Potasio", "mg", "Minerales"],
-  ["zinc", "Zinc", "mg", "Minerales"], ["fosforo", "Fósforo", "mg", "Minerales"], ["yodo", "Yodo", "µg", "Minerales"]
+  ["zinc", "Zinc", "mg", "Minerales"], ["fosforo", "Fósforo", "mg", "Minerales"], ["yodo", "Yodo", "µg", "Minerales"],
+  ["cobre", "Cobre", "mg", "Minerales"], ["selenio", "Selenio", "µg", "Minerales"],
+  ["epa", "EPA (omega-3)", "mg", "Ácidos grasos"], ["dha", "DHA (omega-3)", "mg", "Ácidos grasos"]   // v2.48, para los suplementos
 ];
 var BASICOS = ["kcal", "grasa", "sat", "hc", "azucar", "prot", "sal"];   // lo que lleva toda etiqueta (UE 1169/2011)
 function num(v) { return typeof v === "number" && isFinite(v) ? v : null; }

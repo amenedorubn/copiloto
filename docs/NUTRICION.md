@@ -76,3 +76,31 @@ Cocina → **Nutrición**, la cuarta pestaña (Semana · Comprar · Casa · Nutr
 - **Registrar lo que no está en el calendario:** los favoritos de un toque o texto libre. Se quitan con la ×.
 - **Dónde se guarda:** tus datos, tus semanas y tu registro, en el móvil (`copiloto.nutri.*`). No se suben al Worker.
 - **En la Cocina de prueba,** con un perfil de EJEMPLO (70 kg, 175 cm, 30 años) y un batido registrado.
+
+## Suplementos (v2.48)
+
+En **Nutrición → Suplementos**, debajo del registro. También en **Casa → Suplementos**, que abre su ficha.
+- **Cada suplemento es uno de tus alimentos.** Tiene la misma ficha que lo de Casa (escanear, rellenar a mano, foto de
+  la etiqueta), pero su etiqueta va **por unidad**: cápsula, comprimido o cacito. Si es por 100 g, la dosis va en g o ml.
+  En su ficha solo sale lo que trae; el resto de la etiqueta se resume en una línea, «sin dato».
+- **Cuándo y cuánto:**
+  - Cuándo: desayuno, comida, cena, antes de dormir, antes o después de entrenar, o a una hora. Se pueden elegir varios
+    y cada uno es una toma.
+  - Qué días: todos, solo los de entreno o solo los de descanso, según el tipo de día del calendario.
+  - Dosis por toma.
+- **Lo que aportan suma a los micros del día** en su propia columna **«Supl.»**, aparte de lo planificado y lo
+  registrado. Las filas de lo que traen salen siempre a la vista. En las vistas de semana y de micros (N2 y N7) irá
+  igual, marcado «suplemento».
+- **Máximos tolerables de EFSA** (adulto). Si se pasan, hay una línea discreta debajo de la tabla. Los límites son:
+  vitamina D 100 µg, A 3000 µg, E 300 mg, B6 12 mg, zinc 25 mg, calcio 2500 mg y yodo 600 µg. Para el folato
+  (1000 µg) y el magnesio (250 mg) solo cuenta lo que viene de suplementos.
+- **Estados:**
+  - Vacío: sin suplementos, con la explicación y «Añadir suplemento».
+  - Sin etiqueta: «sin etiqueta: no suma nada».
+  - Etiqueta sin vitaminas ni minerales: lo dice.
+  - Hoy no toca.
+  - Suma hoy.
+  
+  Se guardan solo en este móvil (`copiloto.nutri.suplementos.v1`). Su ficha es parte de tus alimentos.
+- **En la Cocina de prueba:** vitamina D3, omega-3 (2 tomas, solo los días de entreno) y magnesio sin etiqueta, todos
+  de EJEMPLO.

@@ -328,6 +328,26 @@ for (const tema of ["oscuro", "claro"]) {
     await p.evaluate(() => { const c = document.getElementById("ptCuerpo"); if (c) c.scrollTop = 0; });
     await p.click(".cocBtn:has-text('Semana ·')"); await p.waitForTimeout(300);
     await foto("nutri-semana");
+    // v2.48: suplementos (de ejemplo): la columna Supl., la lista, su ficha, uno sin etiqueta, añadir y desde Casa
+    await p.click(".cocBtn:has-text('Semana ·')"); await p.waitForTimeout(250);
+    await p.evaluate(() => document.querySelector(".ntTabla").scrollIntoView({ block: "start" })); await p.waitForTimeout(200);
+    await foto("supl-tabla");
+    await p.evaluate(() => document.querySelector(".ntSuplSec").scrollIntoView({ block: "start" })); await p.waitForTimeout(200);
+    await foto("supl-lista");
+    await p.click(".ntSuplIt:has-text('Vitamina D3')"); await p.waitForTimeout(350);
+    await foto("supl-ficha");
+    await p.click(".cocFichaTop .cocHojaX"); await p.waitForTimeout(250);
+    await p.click(".ntSuplIt:has-text('Magnesio')"); await p.waitForTimeout(350);
+    await foto("supl-sinficha");
+    await p.click(".cocFichaTop .cocHojaX"); await p.waitForTimeout(250);
+    await p.click(".ntSuplSec .cocBtn"); await p.waitForTimeout(300);
+    await p.evaluate(() => document.querySelector(".ntFormSupl").scrollIntoView({ block: "start" })); await p.waitForTimeout(200);
+    await foto("supl-form");
+    await p.click(".ntFormSupl .fsNo"); await p.waitForTimeout(250);
+    await p.click(".cocSeg button:has-text('Casa')"); await p.waitForTimeout(300);
+    await p.click(".cocChips button:has-text('Todo')").catch(() => {}); await p.waitForTimeout(200);
+    await p.click(".cocZonaFila:has-text('Suplementos')"); await p.waitForTimeout(300);
+    await foto("supl-casa");
     await p.click(".cocSim button"); await p.waitForTimeout(800);
     await foto("prueba-vuelta");                                                     // Terminar: de vuelta a Ajustes
     await p.click("#hojaX").catch(() => {}); await p.waitForTimeout(400);

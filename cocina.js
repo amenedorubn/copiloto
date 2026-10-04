@@ -39,6 +39,7 @@ var K_RECETAS = "copiloto.cocina.recetas.v1", K_CAMBIOS = "copiloto.cocina.cambi
     K_SUPER = "copiloto.cocina.super.v1",
     // v2.45 · nutricion: tus datos y tu registro, solo en este movil (nunca en el repo ni en el Worker)
     K_FOTOS = "copiloto.cocina.fotos.v1",   // v2.47: la foto de la etiqueta de cada alimento (solo en este movil)
+    K_SUPL = "copiloto.nutri.suplementos.v1",   // v2.48: tus suplementos (solo en este movil)
     K_PERFIL = "copiloto.nutri.perfil.v1", K_SEMANAS = "copiloto.nutri.semanas.v1", K_REG = "copiloto.nutri.registro.v1";
 
 function dos(n) { return n < 10 ? "0" + n : "" + n; }
@@ -586,6 +587,14 @@ CSS +=
   ".cocFichaAcc{margin-top:16px}.cocFichaForm{margin-top:24px}" +
   ".cocFotoBtn{display:flex!important;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:14px;background:var(--sf2);color:var(--fg)!important;font-size:15px!important;font-weight:800!important;cursor:pointer}" +
   ".cocFotoBtn svg{width:18px;height:18px}" +
+  /* ---- v2.48 suplementos ---- */
+  ".ntTabla.conSupl .ntFila{grid-template-columns:1.4fr .7fr .7fr .7fr 1fr .6fr;font-size:13px}" +
+  ".ntSupl{font-weight:800}" +
+  ".ntUL{color:var(--fg)}" +
+  ".ntSuplIt{width:100%;display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 0!important;background:none;color:var(--fg);text-align:left;border-top:1px solid var(--ln);border-radius:0!important}" +
+  ".ntSuplIt span{flex:1;min-width:0}.ntSuplIt b{display:block;font-size:15px}.ntSuplIt small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
+  ".ntSuplIt small.ntAviso{color:var(--fg);font-weight:700}.ntSuplIt svg{width:16px;height:16px;color:var(--mu)}" +
+  ".ntSuplSec .cocBtn{margin-top:8px;width:100%}.ntSuplL{list-style:none;margin:8px 0 0;padding:0}" +
   "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
@@ -688,7 +697,7 @@ function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CT
 var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Casa"], ["nutri", "Nutrición"]];
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
 var CORRIGE = null, PCANT = null, ABIERTA = null, TERMINA = false;
-var FFORM = false;   // v2.47: rellenando la ficha a mano
+var FFORM = false, FICHAX = null, FSUPL = null;   // v2.48: la ficha abierta desde Nutricion o Casa (suplementos) y el formulario de uno   // v2.47: rellenando la ficha a mano
 var NDIA = 0, NSEMANA = false, NPERFIL = false, NPORQUE = null, NMAS = false;   // v2.45: el dia que miras (0 = hoy), las hojas   // TERMINA: la hoja "Terminar compra" (v2.42)   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
 function subDe(s) { if (s === "despensa" || s === "casa") s = "tengo"; if (s === "recetas") s = "semana"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 /* La Casa de prueba (Ajustes): la pestaña Cocina entera con los datos de ejemplo de
@@ -699,7 +708,7 @@ API.pintaPrueba = function (c, op) {
   var o = ahoraOpts(), ej = X.casa(o.hoy, o.ahoraMs);
   if (!CAJA) REAL = { NOTA: NOTA };
   CAJA = {}; CAJA[K_CAMBIOS] = ej.cambios; CAJA[K_LISTA] = ej.lista; CAJA[K_ALIM] = ej.alimentos;
-  CAJA[K_PERFIL] = ej.perfil; CAJA[K_REG] = ej.registro; CAJA[K_SEMANAS] = {};
+  CAJA[K_PERFIL] = ej.perfil; CAJA[K_REG] = ej.registro; CAJA[K_SEMANAS] = {}; CAJA[K_SUPL] = ej.suplementos || [];
   NOTA = { t: Date.now(), texto: ej.nota };
   CAJA.__fin = op && op.alTerminar;
   API.pinta(c, { dia: ej.dia, hoy: o.hoy, ahora: o.ahora, conf: null, marca: op && op.marca, atrasManual: op && op.atrasManual,
@@ -752,6 +761,7 @@ function pinta() {
   var pag = SUB === "comprar" ? compra(E, LC) : SUB === "tengo" ? tengo(E) : SUB === "nutri" ? nutri(E, LC) : semana(E);
   if (ENTRA) { pag.classList.add(ENTRA > 0 ? "cocDer" : "cocIzq"); ENTRA = 0; }
   c.appendChild(pag);
+  if (FICHAX) c.appendChild(fichaAlimento(FICHAX));
   c.scrollTop = y;
   if (foco && document.getElementById(foco)) document.getElementById(foco).focus();
 }
@@ -1184,7 +1194,7 @@ function tengo(E) {
     s.appendChild(acciones2());
     return s;
   }
-  if (ZONA && !H.zonas.some(function (z) { return z.zona === ZONA; })) ZONA = null;
+  if (ZONA && ZONA !== "Suplementos" && !H.zonas.some(function (z) { return z.zona === ZONA; })) ZONA = null;
   var inv = vigentes(E.CB).filter(function (cb) { return cb.tipo === "inventario"; }).pop();
   var desde = inv && H.desde && inv.t >= Dp().msDe(H.desde, "00:00") ? "tu recuento del " + corta(H.desde) : E.D && E.D.fecha ? "la nota del " + corta(E.D.fecha) : "";
   s.innerHTML = '<p class="cocLead">' + H.n + (H.n === 1 ? " cosa" : " cosas") + ' en casa</p>' +
@@ -1239,7 +1249,22 @@ function tengo(E) {
       b.addEventListener("click", function () { ZONA = z.zona; TOCADO = null; pinta(); cont.scrollTop = 0; });
       zl.appendChild(b);
     });
+    var SP = suplementos();
+    if (SP.length) {                                   // v2.48: los suplementos, con su ficha (se gestionan en Nutrición)
+      var bsp = el("button", "cocZonaFila", '<span><b>Suplementos</b><small>' + esc(SP.map(function (x) { return x.nombre; }).join(" · ")) + '</small></span><em>' + SP.length + '</em>' + svg("der"));
+      bsp.addEventListener("click", function () { ZONA = "Suplementos"; pinta(); cont.scrollTop = 0; });
+      zl.appendChild(bsp);
+    }
     s.appendChild(zl);
+  } else if (ZONA === "Suplementos") {
+    var us = el("ul", "cocFilasZ");
+    suplementos().forEach(function (sp) {
+      var b2 = el("button", "cocFilaZin", '<span>' + esc(sp.nombre) + '<small>' + esc(tomaTxt(sp)) + '</small></span><em>' + svg("der") + '</em>');
+      b2.addEventListener("click", function () { FICHAX = { nombre: sp.nombre, zona: "Suplementos", supl: true, sid: sp.id }; pinta(); });
+      us.appendChild(el("li", "cocFilaZ")).appendChild(b2);
+    });
+    s.appendChild(el("p", "cocAyuda", "Cuándo los tomas y cuánto, en Nutrición → Suplementos."));
+    s.appendChild(us);
   } else H.zonas.forEach(function (z) {
     if (z.zona !== ZONA) return;
     s.appendChild(el("p", "cocAyuda", "Desliza a la izquierda: se acabó. Toca: cuánto queda."));
@@ -1346,6 +1371,7 @@ function fichaDe(x) {
   var A = aliDe(x.nombre);
   if (A && A.nutri && Object.keys(A.nutri).some(function (k) { return Al().CAMPOS.some(function (c) { return c[0] === k; }); }))
     return { A: A, nu: A.nutri, fuente: A.nutri.fuente === "tú" ? "Tuya (rellenada a mano)" : "Etiqueta · Open Food Facts" };
+  if (x.supl) return { A: A, nu: null, fuente: null };          // un suplemento no tiene ficha generica
   var F = Nu().fila(x.nombre), g = Al().deUSDA(F);
   return { A: A, nu: g, fuente: g ? "Genérico · USDA (" + F.nombre + ")" : null };
 }
@@ -1354,18 +1380,20 @@ function fichaAlimento(x) {
   var w = el("div", "cocFicha"), FD = fichaDe(x), nu = FD.nu, fotos = lee(K_FOTOS, {}), foto = FD.A && fotos[FD.A.id];
   var top = el("div", "cocFichaTop", '<div><small>' + esc(x.zona) + '</small><b>' + esc(x.nombre) + '</b></div>');
   var cx = el("button", "cocHojaX", svg("cerrar")); cx.setAttribute("aria-label", "Cerrar la ficha");
-  cx.addEventListener("click", function () { TOCADO = null; FFORM = false; pinta(); });
+  cx.addEventListener("click", function () { TOCADO = null; FFORM = false; FICHAX = null; FSUPL = null; pinta(); });
   top.appendChild(cx); w.appendChild(top);
-  var hi = hojaItem(x); hi.className = "cocHojaIt enFicha"; var bot = hi.querySelector(".cocHojaX"); if (bot) bot.remove();
-  w.appendChild(hi);
+  if (x.supl) w.appendChild(comoLoTomas(x));
+  else { var hi = hojaItem(x); hi.className = "cocHojaIt enFicha"; var bot = hi.querySelector(".cocHojaX"); if (bot) bot.remove(); w.appendChild(hi); }
   if (FFORM) { w.appendChild(formFicha(x, FD, foto)); return w; }
   var cabN = el("div", "cocFichaN", '<h4>Información nutricional</h4>');
   if (nu) {
-    cabN.appendChild(el("p", "ntNota", esc(FD.fuente) + (Al().incompleta(nu) ? ' · <b>incompleta</b>' : "") + (nu.porcionG ? " · porción: " + esc(nu.porcionTxt || nu.porcionG + " g") : "")));
+    cabN.appendChild(el("p", "ntNota", esc(FD.fuente) + (!x.supl && Al().incompleta(nu) ? ' · <b>incompleta</b>' : "") + (nu.porcionG ? " · porción: " + esc(nu.porcionTxt || nu.porcionG + " g") : "")));
     var t = el("div", "cocFichaT"), grupo = null, conPor = !!nu.porcionG;
     t.appendChild(el("div", "cocFichaF cab" + (conPor ? "" : " sinPor"), '<span></span><span>Por ' + esc(nu.por || "100 g") + '</span>' + (conPor ? '<span>Por porción</span>' : "")));
+    var vacias = 0;
     Al().fichaFilas(nu).forEach(function (f) {
       if (f.k === "kj") return;
+      if (x.supl && f.v100 == null) { vacias++; return; }      // un suplemento: solo lo que trae (lo demas, en una linea)
       if (f.grupo !== grupo) { grupo = f.grupo; }
       var sub = /^de |^mono|^poli/.test(f.nombre);
       var v = f.v100 != null ? fmtF(f.v100) + " " + f.u + (f.k === "kcal" && fmtF(Math.round(f.v100 * 4.184)) ? " · " + Math.round(f.v100 * 4.184) + " kJ" : "") : '<i>sin dato</i>';
@@ -1373,6 +1401,7 @@ function fichaAlimento(x) {
         (conPor ? '<span>' + (f.vPor != null ? fmtF(f.vPor) + " " + f.u : '<i>sin dato</i>') + '</span>' : "")));
     });
     cabN.appendChild(t);
+    if (x.supl && vacias) cabN.appendChild(el("p", "ntNota", "El resto de la etiqueta (" + vacias + " campos): sin dato."));
   } else cabN.appendChild(el("p", "cocVacio", "Sin ficha: no se sabe su información nutricional. Escanea su código de barras o rellénala a mano (con una foto de la etiqueta te será más fácil)."));
   w.appendChild(cabN);
   if (foto) w.appendChild(el("img", "cocFichaFoto")).src = foto;
@@ -1386,7 +1415,7 @@ function fichaAlimento(x) {
 // rellenar la ficha a mano, campo a campo: se guarda a medias; lo vacío sigue "sin dato"
 function formFicha(x, FD, foto) {
   var nu = FD.nu || {}, f = el("form", "ntPerfil cocFichaForm");
-  f.innerHTML = '<h4>Rellenar la ficha · por 100 g</h4><p class="ntNota">Copia los números de la etiqueta. Deja vacío lo que no ponga: queda «sin dato». Se guarda aunque no esté entera.</p>' +
+  f.innerHTML = '<h4>Rellenar la ficha · ' + (x.supl ? "por 1 unidad (cápsula, comprimido, cacito…)" : "por 100 g") + '</h4><p class="ntNota">Copia los números de la etiqueta. Deja vacío lo que no ponga: queda «sin dato». Se guarda aunque no esté entera.</p>' +
     '<label class="cocFotoBtn">' + svg("camara") + ' Foto de la etiqueta<input type="file" accept="image/*" capture="environment" hidden></label>' +
     (foto ? '<img class="cocFichaFoto" src="' + foto + '" alt="Foto de la etiqueta">' : "") +
     '<label>Porción (g)<input name="porcionG" inputmode="decimal" autocomplete="off" value="' + esc(nu.porcionG != null ? String(nu.porcionG).replace(".", ",") : "") + '"></label>' +
@@ -1409,10 +1438,12 @@ function formFicha(x, FD, foto) {
     };
     rd.readAsDataURL(file);
   });
+  var A0 = aliDe(x.nombre);
   f.addEventListener("submit", function (e) {
     e.preventDefault(); var val = {}, ex = {};
     Al().CAMPOS.forEach(function (c) { if (c[0] === "kj") return; var t = String(f.elements[c[0]].value).trim().replace(",", "."); val[c[0]] = t === "" ? null : parseFloat(t); if (val[c[0]] != null && !isFinite(val[c[0]])) val[c[0]] = null; });
     var pg = parseFloat(String(f.elements.porcionG.value).replace(",", ".")); if (isFinite(pg) && pg > 0) { ex.porcionG = pg; ex.porcionTxt = pg + " g"; }
+    if (x.supl) ex.por = (A0 && A0.nutri && /100/.test(A0.nutri.por || "") ? A0.nutri.por : "1 unidad");
     var A = aseguraAli(x), B = Al().conFicha(A, val, ex);
     if (A.nutri && A.nutri.fuente !== "tú") {                       // lo que venía de la etiqueta y no tocas, se queda
       Al().CAMPOS.forEach(function (c) { if (B.nutri[c[0]] == null && A.nutri[c[0]] != null && val[c[0]] === undefined) B.nutri[c[0]] = A.nutri[c[0]]; });
@@ -1568,7 +1599,8 @@ function nutri(E, LC) {
   // el dia: planificado (calendario) + registrado (tu)
   var comidas = E.Rs.filter(function (R) { return R.fecha === fecha && R.tipo === "comida" && Dp().estadoComida(R, E.CB, o) !== "saltada"; });
   var regs = registro().filter(function (x) { return x.fecha === fecha; });
-  var D = N.dia(comidas, regs, function (n) { return aliDe(n); });
+  var SPd = suplementos().map(function (sp) { return N.deSuplemento(sp, aliDe(sp.nombre), tipo || "gimnasio"); }).filter(function (x) { return x.tomas > 0 || x.sinFicha; });
+  var D = N.dia(comidas, regs, function (n) { return aliDe(n); }, SPd);
   s.appendChild(el("p", "ntQue", '<b>Planificado</b> sale del calendario (' + comidas.length + (comidas.length === 1 ? " comida" : " comidas") + '). <b>Registrado</b> es lo que apuntas tú (' + regs.length +
     '). No es lo que has comido de verdad: el calendario no lo recoge todo.'));
   if (obj) {
@@ -1590,16 +1622,24 @@ function nutri(E, LC) {
   }
   if (!comidas.length && !regs.length) s.appendChild(el("p", "cocVacio", "Nada planificado ni registrado para " + dTxt.toLowerCase() + ". Si comes algo que no está en el calendario, apúntalo abajo."));
   s.appendChild(tablaNutri(D, obj));
+  var UL = N.avisosUL(D.total, D.supl.n);
+  if (UL.length) s.appendChild(el("p", "ntNota ntUL", UL.map(function (u) {
+    return esc(u.nombre) + ": " + fmtN(u.valor) + " " + esc(u.u) + (u.soloSupl ? " de suplementos" : " hoy") + ", por encima del máximo tolerable de EFSA (" + u.ul + " " + esc(u.u) + ")";
+  }).join(" · ") + "."));
   s.appendChild(registroRapido(fecha, regs));
+  s.appendChild(seccionSupl(fecha, tipo, SPd));
   return s;
 }
 function tablaNutri(D, obj) {
-  var N = Nu(), w = el("div", "ntTabla"), filas = N.PRIORIDAD.concat(["kcal", "prot", "grasa"]), mas = ["hierro", "magnesio", "potasio", "b12", "vitD", "calcio"];
-  w.appendChild(el("div", "ntFila ntCab", '<span>Nutriente</span><span>Plan.</span><span>Reg.</span><span>Objetivo</span><span>%</span>'));
+  var N = Nu(), w = el("div", "ntTabla"), filas = N.PRIORIDAD.concat(["kcal", "prot", "grasa"]), mas = ["hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];
+  if (D.supl && D.supl.hay) mas.forEach(function (k) { if (D.supl.n[k] && filas.indexOf(k) < 0 && !NMAS) filas.push(k); });   // lo que traen tus suplementos, siempre a la vista
+  var cs = D.supl && D.supl.hay;
+  if (cs) w.classList.add("conSupl");
+  w.appendChild(el("div", "ntFila ntCab", '<span>Nutriente</span><span>Plan.</span><span>Reg.</span>' + (cs ? '<span>Supl.</span>' : "") + '<span>Objetivo</span><span>%</span>'));
   (NMAS ? filas.concat(mas) : filas).forEach(function (k) {
     var o = obj && obj[k], t = D.total[k], pct = o && o.min ? Math.round(t / o.min * 100) : null, sinMicro = D.reg.sinMicros && !/kcal|prot|hc|grasa/.test(k);
     var b = el("button", "ntFila" + (N.PRIORIDAD.indexOf(k) >= 0 ? " prio" : ""), '<span>' + esc(N.NOMBRE[k]) + '<small>' + esc(N.UNIDAD[k]) + '</small></span><span>' + fmtN(D.plan.n[k], k) + '</span><span>' +
-      (D.reg.n[k] ? fmtN(D.reg.n[k], k) : sinMicro ? "s/d" : "—") + '</span><span>' + (o ? rangoTxt(o) + (o.estimado ? '<small>estimado</small>' : "") : "—") + '</span><b>' + (pct == null ? "—" : pct + " %") + '</b>');
+      (D.reg.n[k] ? fmtN(D.reg.n[k], k) : sinMicro ? "s/d" : "—") + '</span>' + (cs ? '<span class="ntSupl">' + (D.supl.n[k] ? fmtN(D.supl.n[k], k) : "—") + '</span>' : "") + '<span>' + (o ? rangoTxt(o) + (o.estimado ? '<small>estimado</small>' : "") : "—") + '</span><b>' + (pct == null ? "—" : pct + " %") + '</b>');
     b.setAttribute("aria-label", N.NOMBRE[k] + ": planificado " + fmtN(D.plan.n[k], k) + ", registrado " + fmtN(D.reg.n[k], k) + " " + N.UNIDAD[k] + (o ? ", objetivo " + rangoTxt(o) : ""));
     b.addEventListener("click", function () { NPORQUE = NPORQUE === k ? null : k; pinta(); });
     w.appendChild(b);
@@ -1642,6 +1682,82 @@ function registroRapido(fecha, regs) {
     w.appendChild(ul);
   }
   return w;
+}
+/* ------------------------------ suplementos (v2.48) ------------------------------
+   Tus suplementos: su ficha (la misma de Casa, por unidad), cuándo los tomas, qué días y cuánto. Lo que
+   aportan suma a los micros del día en su propia columna ("Supl.").                                   */
+function suplementos() { return lee(K_SUPL, []); }
+function tomaTxt(sp) {
+  var N = Nu(), m = (sp.momentos || []).map(function (x) { return x.m === "hora" && x.hora ? x.hora : N.MOMENTOS[x.m] || x.m; }).join(", ");
+  return (sp.dosis ? fmtN(sp.dosis.n) + " " + (sp.dosis.ud || "") : "") + (m ? " · " + m : "") + " · " + (N.DIAS_S[sp.dias || "todos"] || "").toLowerCase();
+}
+function seccionSupl(fecha, tipo, SPd) {
+  var w = el("div", "ntReg ntSuplSec", '<h4 class="cocPcTit">Suplementos</h4>'), L = suplementos();
+  if (FSUPL === "nuevo") { w.appendChild(formSupl(null)); return w; }
+  if (!L.length) w.appendChild(el("p", "ntNota", "No tienes suplementos apuntados. Añádelos con su etiqueta y cuándo los tomas: lo que aportan suma a las vitaminas y minerales del día, marcado «suplemento»."));
+  else {
+    var ul = el("ul", "ntSuplL");
+    L.forEach(function (sp) {
+      var d = SPd.filter(function (x) { return x.nombre === sp.nombre; })[0], A = aliDe(sp.nombre);
+      var est = !A || !A.nutri ? "sin etiqueta: no suma nada" : d && d.incompleta ? "su etiqueta no trae vitaminas ni minerales" : !d || !d.tomas ? "hoy no toca" : "suma hoy";
+      var b = el("button", "ntSuplIt", '<span><b>' + esc(sp.nombre) + '</b><small>' + esc(tomaTxt(sp)) + '</small><small class="' + (/sin|no trae/.test(est) ? "ntAviso" : "") + '">' + esc(est) + '</small></span>' + svg("der"));
+      b.addEventListener("click", function () { FICHAX = { nombre: sp.nombre, zona: "Suplementos", supl: true, sid: sp.id }; pinta(); });
+      ul.appendChild(el("li")).appendChild(b);
+    });
+    w.appendChild(ul);
+  }
+  var a = el("button", "cocBtn", svg("mas") + "Añadir suplemento");
+  a.addEventListener("click", function () { FSUPL = "nuevo"; pinta(); });
+  w.appendChild(a);
+  return w;
+}
+// dentro de la ficha de un suplemento: cuándo y cuánto (y cambiarlo o quitarlo)
+function comoLoTomas(x) {
+  var sp = suplementos().filter(function (s) { return s.id === x.sid || s.nombre === x.nombre; })[0];
+  if (FSUPL && sp && FSUPL === sp.id) return formSupl(sp);
+  var w = el("div", "cocPc", '<h4 class="cocPcTit">Cómo lo tomas</h4>' + (sp ? '<p class="ntNota" style="color:var(--fg)">' + esc(tomaTxt(sp)) + '</p>' : ""));
+  if (sp) {
+    var b = el("div", "cocPcB"), c = el("button", "", "Cambiar"), q = el("button", "", "Quitar");
+    c.addEventListener("click", function () { FSUPL = sp.id; pinta(); });
+    q.addEventListener("click", function () { guarda(K_SUPL, suplementos().filter(function (s) { return s.id !== sp.id; })); FICHAX = null; aviso("Quitado: " + sp.nombre + "."); pinta(); });
+    b.appendChild(c); b.appendChild(q); w.appendChild(b);
+  }
+  return w;
+}
+function formSupl(sp) {
+  var N = Nu(), f = el("form", "ntPerfil ntFormSupl"), d = sp || { nombre: "", dosis: { n: 1, ud: "cápsula" }, momentos: [{ m: "desayuno" }], dias: "todos" };
+  var mom = {}; (d.momentos || []).forEach(function (x) { mom[x.m] = x.hora || true; });
+  f.innerHTML = '<label>Nombre<input name="nombre" autocomplete="off" value="' + esc(d.nombre) + '" placeholder="p. ej. vitamina D3"' + (sp ? " readonly" : "") + '></label>' +
+    '<label>Dosis por toma<input name="dosis" inputmode="decimal" autocomplete="off" value="' + esc(String(d.dosis.n).replace(".", ",")) + '"></label>' +
+    '<div class="ntFavs" data-g="ud">' + ["cápsula", "comprimido", "cacito", "gotas", "g", "ml"].map(function (u) { return '<button type="button" data-v="' + u + '" aria-pressed="' + (d.dosis.ud === u) + '">' + u + '</button>'; }).join("") + '</div>' +
+    '<p class="ntNota">Cuándo (puedes elegir varios)</p><div class="ntFavs" data-g="mom">' + Object.keys(N.MOMENTOS).map(function (m) { return '<button type="button" data-v="' + m + '" aria-pressed="' + !!mom[m] + '">' + esc(N.MOMENTOS[m]) + '</button>'; }).join("") + '</div>' +
+    '<label>Hora (si es «a una hora»)<input name="hora" type="time" value="' + esc(typeof mom.hora === "string" ? mom.hora : "") + '"></label>' +
+    '<p class="ntNota">Qué días</p><div class="ntFavs" data-g="dias">' + Object.keys(N.DIAS_S).map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + ((d.dias || "todos") === k) + '">' + esc(N.DIAS_S[k]) + '</button>'; }).join("") + '</div>' +
+    '<div class="cocPcB"><button class="si" type="submit">Guardar</button><button type="button" class="fsNo">Cancelar</button></div>';
+  Array.prototype.forEach.call(f.querySelectorAll(".ntFavs"), function (g) {
+    var multi = g.getAttribute("data-g") === "mom";
+    Array.prototype.forEach.call(g.querySelectorAll("button"), function (b) {
+      b.addEventListener("click", function () {
+        if (multi) b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+        else Array.prototype.forEach.call(g.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      });
+    });
+  });
+  f.querySelector(".fsNo").addEventListener("click", function () { FSUPL = null; pinta(); });
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var nom = f.elements.nombre.value.trim(); if (!nom) { f.elements.nombre.focus(); return; }
+    var sel = function (g) { return Array.prototype.filter.call(f.querySelectorAll('[data-g="' + g + '"] button'), function (b) { return b.getAttribute("aria-pressed") === "true"; }).map(function (b) { return b.getAttribute("data-v"); }); };
+    var n = parseFloat(String(f.elements.dosis.value).replace(",", ".")), hora = f.elements.hora.value;
+    var ms = sel("mom").map(function (m) { return m === "hora" ? { m: m, hora: hora || null } : { m: m }; });
+    var x = { id: sp ? sp.id : nuevoId(), nombre: mayus1(nom), dosis: { n: isFinite(n) && n > 0 ? n : 1, ud: sel("ud")[0] || "cápsula" }, momentos: ms.length ? ms : [{ m: "desayuno" }], dias: sel("dias")[0] || "todos" };
+    var L = suplementos().filter(function (s) { return s.id !== x.id; }); L.push(x); guarda(K_SUPL, L);
+    aseguraAli({ nombre: x.nombre, zona: "Suplementos" });
+    FSUPL = null;
+    if (!sp) FICHAX = { nombre: x.nombre, zona: "Suplementos", supl: true, sid: x.id };   // nuevo: a su ficha, para la etiqueta
+    aviso("Guardado: " + x.nombre + "."); pinta();
+  });
+  return f;
 }
 function apuntaReg(x) { x.id = nuevoId(); x.t = Date.now(); var L = registro(); L.push(x); guarda(K_REG, L.slice(-1500)); pinta(); }
 // tus datos: solo en este movil
@@ -1725,6 +1841,7 @@ API.guia = function (ev, ctx) {
 };
 API.atras = function () {                   // el gesto de atras: el escaner, la ficha, luego el paso a paso
   if (ESC) { cierraEscaner(true); return true; }
+  if (FICHAX && enTab()) { if (FFORM) FFORM = false; else if (FSUPL) FSUPL = null; else FICHAX = null; pinta(); return true; }
   if (TOCADO && SUB === "tengo" && enTab()) { if (FFORM) FFORM = false; else TOCADO = null; pinta(); return true; }
   var M = Modo();
   return !!(M && M.atras && M.atras());

@@ -299,7 +299,7 @@ function limpiaAlimento(x) {
     const n = {};
     // v2.47: la ficha entera (alimentos.js, CAMPOS) y la porción
     for (const k of ["kcal", "kj", "grasa", "sat", "mono", "poli", "hc", "azucar", "polioles", "fibra", "prot", "sal", "vitA", "vitD", "vitE", "vitC", "b1", "b2", "b3", "b6",
-                     "folato", "b12", "calcio", "hierro", "magnesio", "potasio", "zinc", "fosforo", "yodo", "porcionG"]) if (isFinite(x.nutri[k])) n[k] = +x.nutri[k];
+                     "folato", "b12", "calcio", "hierro", "magnesio", "potasio", "zinc", "fosforo", "yodo", "cobre", "selenio", "epa", "dha", "porcionG"]) if (isFinite(x.nutri[k])) n[k] = +x.nutri[k];
     for (const k of ["por", "nutriscore", "fuente", "fecha"]) { const v = texto(x.nutri[k], 12); if (v) n[k] = v; }
     { const v = texto(x.nutri.porcionTxt, 60); if (v) n.porcionTxt = v; }
     if (x.nutri.incompleta) n.incompleta = true;

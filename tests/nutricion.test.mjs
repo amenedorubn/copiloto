@@ -91,3 +91,33 @@ test("te falta X; cómete Y: primero lo de casa, luego la lista, si no qué comp
   const sin = N.teFalta({ hc: 0, fibra: 0, vitC: 0, folato: 0 }, obj, [], []);
   assert.ok(sin.every((x) => x.y && x.y.donde === "comprar"));
 });
+
+/* ------------------------------ suplementos (v2.48). Datos ficticios ------------------------------ */
+const VITD = { nombre: "Vitamina D3 de ejemplo", nutri: { por: "1 unidad", vitD: 25 } };
+const OMEGA = { nombre: "Omega-3 de ejemplo", nutri: { por: "1 unidad", epa: 175, dha: 125 } };
+test("suplemento: dosis por toma × tomas; solo los días que tocan", () => {
+  const d = N.deSuplemento({ nombre: "D3", dosis: { n: 1, ud: "cápsula" }, momentos: [{ m: "desayuno" }], dias: "todos" }, VITD, "gimnasio");
+  assert.equal(d.n.vitD, 25); assert.equal(d.tomas, 1); assert.ok(!d.sinFicha); assert.ok(!d.incompleta);
+  const o = N.deSuplemento({ nombre: "O3", dosis: { n: 2, ud: "cápsula" }, momentos: [{ m: "comida" }], dias: "entreno" }, OMEGA, "tirada");
+  assert.equal(o.n.epadha, 600);
+  assert.equal(N.deSuplemento({ nombre: "O3", dosis: { n: 2 }, momentos: [{ m: "comida" }], dias: "entreno" }, OMEGA, "descanso").tomas, 0);
+  // por 100 g con la dosis en g (un cacito de 30 g)
+  const w = N.deSuplemento({ nombre: "Prot", dosis: { n: 30, ud: "g" }, momentos: [{ m: "despues" }] }, { nutri: { por: "100 g", prot: 80, calcio: 400 } }, "gimnasio");
+  assert.equal(w.n.prot, 24); assert.equal(w.n.calcio, 120);
+});
+test("suplemento sin etiqueta o sin micros: no suma y se dice", () => {
+  assert.ok(N.deSuplemento({ nombre: "Magnesio", dosis: { n: 1 }, momentos: [{ m: "cena" }] }, null, "gimnasio").sinFicha);
+  assert.ok(N.deSuplemento({ nombre: "X", dosis: { n: 1 }, momentos: [{ m: "cena" }] }, { nutri: { por: "1 unidad", kcal: 5 } }, "gimnasio").incompleta);
+  const D = N.dia([], [], null, [N.deSuplemento({ nombre: "Magnesio", dosis: { n: 1 }, momentos: [{ m: "cena" }] }, null, "gimnasio")]);
+  assert.deepEqual(D.supl.sinFicha, ["Magnesio"]);
+});
+test("el día: lo de los suplementos va aparte y suma al total; avisos del máximo tolerable", () => {
+  const d3 = N.deSuplemento({ nombre: "D3", dosis: { n: 5, ud: "cápsula" }, momentos: [{ m: "desayuno" }] }, VITD, "gimnasio");   // 125 µg
+  const D = N.dia([], [{ n: { vitD: 2 } }], null, [d3]);
+  assert.equal(D.supl.n.vitD, 125); assert.equal(D.total.vitD, 127); assert.ok(D.supl.hay);
+  const A = N.avisosUL(D.total, D.supl.n);
+  assert.deepEqual(A.map((x) => [x.k, x.ul]), [["vitD", 100]]);
+  // magnesio: el máximo es solo para lo de los suplementos (la comida no cuenta)
+  assert.deepEqual(N.avisosUL({ magnesio: 600 }, { magnesio: 100 }), []);
+  assert.deepEqual(N.avisosUL({ magnesio: 600 }, { magnesio: 300 }).map((x) => x.k), ["magnesio"]);
+});
