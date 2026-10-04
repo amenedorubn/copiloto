@@ -114,6 +114,35 @@ Capturas: `node scripts/capturas-cocina.mjs` saca `carril-plan`, `carril-agua`, 
 
 **Lo que entra en casa (v2.46.1)** solo se junta con lo que es lo mismo: misma clave, plural o un nombre que solo añade una palabra («pan de molde» = «pan de molde integral»). Lo parecido no se junta («proteína de cookies» ≠ «proteína whey de chocolate»; umbral 0,8 de `Receta.mismo`). Sin nota ni recuento, cualquier cosa apuntada ya es punto de partida (`Despensa.hayBase`).
 
+## La ficha de un alimento (v2.47)
+
+Tocar cualquier cosa de **Casa** abre su ficha a pantalla completa:
+- **Arriba, cuánto hay:** «¿Cuánto queda?», la cantidad escrita, la zona y «Se acabó».
+- **Debajo, toda la información nutricional de la etiqueta** (`Alimentos.CAMPOS`), por 100 g y por porción si se sabe
+  cuánto es:
+  - energía en kcal y kJ;
+  - grasas, con saturadas, monoinsaturadas y poliinsaturadas;
+  - hidratos, con azúcares y polialcoholes;
+  - fibra, proteínas y sal;
+  - vitaminas A, D, E, C, B1, B2, B3, B6, folato y B12;
+  - calcio, hierro, magnesio, potasio, zinc, fósforo y yodo.
+  
+  **Lo que falta dice «sin dato»**, nunca 0. Si falta algo de lo obligatorio en una etiqueta (energía, grasas,
+  saturadas, hidratos, azúcares, proteínas y sal), la ficha sale como «incompleta».
+- **De dónde sale**, en este orden:
+  1. tu alimento: la etiqueta de Open Food Facts, que ahora se guarda entera con la porción y con vitaminas y minerales
+     pasados a mg y µg, o lo que hayas rellenado tú;
+  2. si no hay, la ficha **genérica de USDA** (fruta, verdura, carne…).
+  
+  Siempre dice su fuente.
+- **Sin ficha, o para cambiarla:**
+  - **Escanear el código:** lo que encuentra va a la ficha de ese alimento con tu nombre, sin apuntar una compra.
+  - **Rellenar a mano:** campo a campo, con la porción. Se guarda aunque esté a medias y lo vacío sigue «sin dato».
+    La **foto de la etiqueta** (cámara o galería) se ve mientras rellenas. Se guarda pequeña y solo en este móvil
+    (`copiloto.cocina.fotos.v1`): no se sube.
+- **Dónde se guarda:** la ficha es parte de tus alimentos y se sincroniza con el Worker (`/cocina`, `alimentos`), que
+  ya guarda todos los campos.
+
 ## Cocina de prueba (v2.38; una sola desde la v2.43)
 
 **Desde la v2.43 hay una sola fila en Ajustes, «Cocina de prueba»**. Abre la pestaña Cocina entera con datos de ejemplo

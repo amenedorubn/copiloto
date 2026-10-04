@@ -33,7 +33,7 @@ test("un codigo de barras de Open Food Facts: nombre, marca, cantidad y donde se
   assert.equal(C.productoOFF({ status: 0 }), null, "si no lo conoce, se escribe a mano");
   const n = C.productoOFF({ status: 1, product: { product_name: "Yogur griego", quantity: "500 g", nutriscore_grade: "b",
     nutriments: { "energy-kcal_100g": 97, proteins_100g: 9.2, carbohydrates_100g: 4, fat_100g: 5, salt_100g: 0.1 } } }).nutri;
-  assert.deepEqual(n, { kcal: 97, prot: 9.2, hc: 4, grasa: 5, sal: 0.1, por: "100 g", nutriscore: "B" });
+  assert.deepEqual(n, { kcal: 97, prot: 9.2, hc: 4, grasa: 5, sal: 0.1, por: "100 g", nutriscore: "B", incompleta: true });   // sin saturadas ni azúcares: incompleta
   assert.equal(C.nutriTxt(n), "97 kcal · 9,2 g proteína · 4 g hidratos · 5 g grasa");
   assert.equal(C.productoOFF({ status: 1, product: { product_name: "Leche", quantity: "1 l", nutriments: { energy_100g: 200 } } }).nutri.kcal, 47.8, "solo kJ: se pasa a kcal");
   assert.equal(C.productoOFF({ status: 1, product: { product_name: "Leche", quantity: "1 l", nutriments: { energy_100g: 200 } } }).nutri.por, "100 ml");

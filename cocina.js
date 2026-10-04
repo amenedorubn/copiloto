@@ -38,6 +38,7 @@ var K_RECETAS = "copiloto.cocina.recetas.v1", K_CAMBIOS = "copiloto.cocina.cambi
     K_NOTA = "copiloto.cocina.nota.v1", K_LISTA = "copiloto.cocina.lista.v1", K_ALIM = "copiloto.cocina.alimentos.v1",
     K_SUPER = "copiloto.cocina.super.v1",
     // v2.45 · nutricion: tus datos y tu registro, solo en este movil (nunca en el repo ni en el Worker)
+    K_FOTOS = "copiloto.cocina.fotos.v1",   // v2.47: la foto de la etiqueta de cada alimento (solo en este movil)
     K_PERFIL = "copiloto.nutri.perfil.v1", K_SEMANAS = "copiloto.nutri.semanas.v1", K_REG = "copiloto.nutri.registro.v1";
 
 function dos(n) { return n < 10 ? "0" + n : "" + n; }
@@ -190,21 +191,31 @@ function productoOFF(j) {
   var nu = nutricion(p); if (nu) out.nutri = nu;
   return out;
 }
-// lo que trae la etiqueta por 100 g (o 100 ml): lo que no venga, fuera
-var NUTRI = [["kcal", "energy-kcal_100g"], ["prot", "proteins_100g"], ["hc", "carbohydrates_100g"], ["azucar", "sugars_100g"],
-             ["grasa", "fat_100g"], ["sat", "saturated-fat_100g"], ["fibra", "fiber_100g"], ["sal", "salt_100g"]];
+// lo que trae la etiqueta por 100 g (o 100 ml), ENTERA (v2.47): lo que no venga, fuera (sin dato, nunca 0).
+// Open Food Facts guarda vitaminas y minerales en g por 100 g: se pasan a mg o µg.
+var NUTRI = [["kcal", "energy-kcal", 1], ["kj", "energy-kj", 1], ["grasa", "fat", 1], ["sat", "saturated-fat", 1], ["mono", "monounsaturated-fat", 1],
+             ["poli", "polyunsaturated-fat", 1], ["hc", "carbohydrates", 1], ["azucar", "sugars", 1], ["polioles", "polyols", 1], ["fibra", "fiber", 1],
+             ["prot", "proteins", 1], ["sal", "salt", 1], ["vitA", "vitamin-a", 1e6], ["vitD", "vitamin-d", 1e6], ["vitE", "vitamin-e", 1e3], ["vitC", "vitamin-c", 1e3],
+             ["b1", "vitamin-b1", 1e3], ["b2", "vitamin-b2", 1e3], ["b3", "vitamin-pp", 1e3], ["b6", "vitamin-b6", 1e3], ["folato", "vitamin-b9", 1e6],
+             ["b12", "vitamin-b12", 1e6], ["calcio", "calcium", 1e3], ["hierro", "iron", 1e3], ["magnesio", "magnesium", 1e3], ["potasio", "potassium", 1e3],
+             ["zinc", "zinc", 1e3], ["fosforo", "phosphorus", 1e3], ["yodo", "iodine", 1e6]];
 function nutricion(p) {
   var n = p && p.nutriments; if (!n) return null;
   var out = {}, hay = false;
   NUTRI.forEach(function (k) {
-    var v = n[k[1]];
+    var v = n[k[1] + "_100g"];
     if (k[0] === "kcal" && (v == null || v === "") && n["energy_100g"] != null) v = n["energy_100g"] / 4.184;   // solo kJ
+    if (k[0] === "folato" && (v == null || v === "")) v = n["folates_100g"];
     v = parseFloat(v);
-    if (isFinite(v) && v >= 0) { out[k[0]] = Math.round(v * 10) / 10; hay = true; }
+    if (isFinite(v) && v >= 0) { v = v * k[2]; out[k[0]] = v >= 10 ? Math.round(v * 10) / 10 : Math.round(v * 1000) / 1000; hay = true; }
   });
   if (!hay) return null;
   out.por = /\d\s*(ml|cl|l)\b/i.test(String(p.quantity || "")) ? "100 ml" : "100 g";
+  var pq = parseFloat(p.serving_quantity);
+  if (isFinite(pq) && pq > 0) out.porcionG = pq;
+  if (p.serving_size) out.porcionTxt = String(p.serving_size).slice(0, 60);
   if (p.nutriscore_grade && /^[a-e]$/.test(p.nutriscore_grade)) out.nutriscore = p.nutriscore_grade.toUpperCase();
+  out.incompleta = Al().incompleta(out);
   return out;
 }
 // "90 kcal · 12 g proteína · 3 g hidratos · 4 g grasa" (por 100 g)
@@ -240,6 +251,7 @@ var ICO = {
 };
 ICO.campana = '<path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"/>';
 ICO.copo = '<path d="M223.77,150.09a8,8,0,0,1-5.86,9.68l-24.64,6,6.46,24.11a8,8,0,0,1-5.66,9.8A8.25,8.25,0,0,1,192,200a8,8,0,0,1-7.72-5.93l-7.72-28.8L136,141.86v46.83l21.66,21.65a8,8,0,0,1-11.32,11.32L128,203.31l-18.34,18.35a8,8,0,0,1-11.32-11.32L120,188.69V141.86L79.45,165.27l-7.72,28.8A8,8,0,0,1,64,200a8.25,8.25,0,0,1-2.08-.27,8,8,0,0,1-5.66-9.8l6.46-24.11-24.64-6a8,8,0,0,1,3.82-15.54l29.45,7.23L112,128,71.36,104.54l-29.45,7.23A7.85,7.85,0,0,1,40,112a8,8,0,0,1-1.91-15.77l24.64-6L56.27,66.07a8,8,0,0,1,15.46-4.14l7.72,28.8L120,114.14V67.31L98.34,45.66a8,8,0,0,1,11.32-11.32L128,52.69l18.34-18.35a8,8,0,0,1,11.32,11.32L136,67.31v46.83l40.55-23.41,7.72-28.8a8,8,0,0,1,15.46,4.14l-6.46,24.11,24.64,6A8,8,0,0,1,216,112a7.85,7.85,0,0,1-1.91-.23l-29.45-7.23L144,128l40.64,23.46,29.45-7.23A8,8,0,0,1,223.77,150.09Z"/>';   // Phosphor snowflake
+ICO.camara = '<path d="M208,56H180.28L166.65,35.56A8,8,0,0,0,160,32H96a8,8,0,0,0-6.65,3.56L75.71,56H48A24,24,0,0,0,24,80V192a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V80A24,24,0,0,0,208,56Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V80a8,8,0,0,1,8-8H80a8,8,0,0,0,6.66-3.56L100.28,48h55.43l13.63,20.44A8,8,0,0,0,176,72h32a8,8,0,0,1,8,8ZM128,88a44,44,0,1,0,44,44A44.05,44.05,0,0,0,128,88Zm0,72a28,28,0,1,1,28-28A28,28,0,0,1,128,160Z"/>';   // Phosphor camera
 ICO.carro = '<path d="M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Zm4-74.57A8,8,0,0,1,196.1,136H77.22L65.59,72H214.41Z"/>';
 ICO.copia = '<path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>';
 ICO.lista = '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/>';
@@ -559,6 +571,21 @@ CSS +=
   ".ntPerfil{display:grid;gap:8px;margin-top:12px}.ntPerfil label{display:grid;gap:4px;font-size:13px!important;font-weight:700;color:var(--mu);text-transform:none!important;letter-spacing:0!important;margin:0!important}" +
   ".ntPerfil input{width:100%}" +
   ".ntPerfil input{min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);padding:0 12px;font:700 16px Manrope,sans-serif}" +
+  /* ---- v2.47 la ficha de un alimento ---- */
+  ".cocFicha{position:fixed;inset:0;z-index:80;background:var(--bg);color:var(--fg);overflow-y:auto;overscroll-behavior:contain;padding:calc(10px + var(--safe-area-inset-top,env(safe-area-inset-top,0px))) 16px 28px}" +
+  ".cocFichaTop{display:flex;align-items:center;gap:8px;min-height:52px}.cocFichaTop div{flex:1;min-width:0}.cocFichaTop small{display:block;font-size:12px;font-weight:700;color:var(--mu)}" +
+  ".cocFichaTop b{display:block;font-size:22px;font-weight:800;line-height:1.2}" +
+  ".cocHojaIt.enFicha{position:static;box-shadow:none;margin:8px 0 0;border-radius:18px}" +
+  ".cocFichaN{margin-top:24px}.cocFichaN h4,.cocFichaForm h4{margin:0;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}" +
+  ".cocFichaT{margin-top:8px;background:var(--sf);border-radius:18px;padding:4px 14px}" +
+  ".cocFichaF{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:center;min-height:40px;border-top:1px solid var(--ln);font-size:14px;font-weight:700}" +
+  ".cocFichaF.sinPor{grid-template-columns:1.6fr 1.2fr}.cocFichaF span+span{text-align:right}" +
+  ".cocFichaF.cab{border-top:0;min-height:34px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}" +
+  ".cocFichaF.sub span:first-child{padding-left:12px;font-weight:600;color:var(--mu)}.cocFichaF i{font-style:normal;font-weight:600;color:var(--mu)}" +
+  ".cocFichaFoto{display:block;width:100%;border-radius:16px;margin-top:12px}" +
+  ".cocFichaAcc{margin-top:16px}.cocFichaForm{margin-top:24px}" +
+  ".cocFotoBtn{display:flex!important;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:14px;background:var(--sf2);color:var(--fg)!important;font-size:15px!important;font-weight:800!important;cursor:pointer}" +
+  ".cocFotoBtn svg{width:18px;height:18px}" +
   "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
@@ -661,6 +688,7 @@ function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CT
 var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Casa"], ["nutri", "Nutrición"]];
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
 var CORRIGE = null, PCANT = null, ABIERTA = null, TERMINA = false;
+var FFORM = false;   // v2.47: rellenando la ficha a mano
 var NDIA = 0, NSEMANA = false, NPERFIL = false, NPORQUE = null, NMAS = false;   // v2.45: el dia que miras (0 = hoy), las hojas   // TERMINA: la hoja "Terminar compra" (v2.42)   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
 function subDe(s) { if (s === "despensa" || s === "casa") s = "tengo"; if (s === "recetas") s = "semana"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 /* La Casa de prueba (Ajustes): la pestaña Cocina entera con los datos de ejemplo de
@@ -1221,7 +1249,7 @@ function tengo(E) {
   });
   s.appendChild(acciones2());
   var tx = TOCADO && H.todos.filter(function (x) { return x.clave === TOCADO; })[0];
-  if (tx) s.appendChild(hojaItem(tx));
+  if (tx) s.appendChild(fichaAlimento(tx));
   else TOCADO = null;
   return s;
 }
@@ -1309,6 +1337,95 @@ function corrige(R) {
   x.addEventListener("click", function () { CORRIGE = null; pinta(); });
   fila.appendChild(ok); fila.appendChild(no); fila.appendChild(x); f.appendChild(fila);
   return f;
+}
+/* ------------------------------ la ficha de un alimento (v2.47) ------------------------------
+   A pantalla completa: cuánto hay (lo de antes) y TODA su etiqueta por 100 g y por porción. Viene de
+   tu alimento (Open Food Facts o lo tuyo) o, si no tiene, de la tabla genérica de USDA. Lo que falta
+   dice "sin dato". Sin ficha: escanear el código o rellenarla a mano (con la foto de la etiqueta).   */
+function fichaDe(x) {
+  var A = aliDe(x.nombre);
+  if (A && A.nutri && Object.keys(A.nutri).some(function (k) { return Al().CAMPOS.some(function (c) { return c[0] === k; }); }))
+    return { A: A, nu: A.nutri, fuente: A.nutri.fuente === "tú" ? "Tuya (rellenada a mano)" : "Etiqueta · Open Food Facts" };
+  var F = Nu().fila(x.nombre), g = Al().deUSDA(F);
+  return { A: A, nu: g, fuente: g ? "Genérico · USDA (" + F.nombre + ")" : null };
+}
+function fmtF(v) { if (v == null) return null; var r = v >= 100 ? Math.round(v) : v >= 10 ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100; return String(r).replace(".", ","); }
+function fichaAlimento(x) {
+  var w = el("div", "cocFicha"), FD = fichaDe(x), nu = FD.nu, fotos = lee(K_FOTOS, {}), foto = FD.A && fotos[FD.A.id];
+  var top = el("div", "cocFichaTop", '<div><small>' + esc(x.zona) + '</small><b>' + esc(x.nombre) + '</b></div>');
+  var cx = el("button", "cocHojaX", svg("cerrar")); cx.setAttribute("aria-label", "Cerrar la ficha");
+  cx.addEventListener("click", function () { TOCADO = null; FFORM = false; pinta(); });
+  top.appendChild(cx); w.appendChild(top);
+  var hi = hojaItem(x); hi.className = "cocHojaIt enFicha"; var bot = hi.querySelector(".cocHojaX"); if (bot) bot.remove();
+  w.appendChild(hi);
+  if (FFORM) { w.appendChild(formFicha(x, FD, foto)); return w; }
+  var cabN = el("div", "cocFichaN", '<h4>Información nutricional</h4>');
+  if (nu) {
+    cabN.appendChild(el("p", "ntNota", esc(FD.fuente) + (Al().incompleta(nu) ? ' · <b>incompleta</b>' : "") + (nu.porcionG ? " · porción: " + esc(nu.porcionTxt || nu.porcionG + " g") : "")));
+    var t = el("div", "cocFichaT"), grupo = null, conPor = !!nu.porcionG;
+    t.appendChild(el("div", "cocFichaF cab" + (conPor ? "" : " sinPor"), '<span></span><span>Por ' + esc(nu.por || "100 g") + '</span>' + (conPor ? '<span>Por porción</span>' : "")));
+    Al().fichaFilas(nu).forEach(function (f) {
+      if (f.k === "kj") return;
+      if (f.grupo !== grupo) { grupo = f.grupo; }
+      var sub = /^de |^mono|^poli/.test(f.nombre);
+      var v = f.v100 != null ? fmtF(f.v100) + " " + f.u + (f.k === "kcal" && fmtF(Math.round(f.v100 * 4.184)) ? " · " + Math.round(f.v100 * 4.184) + " kJ" : "") : '<i>sin dato</i>';
+      t.appendChild(el("div", "cocFichaF" + (sub ? " sub" : "") + (conPor ? "" : " sinPor"), '<span>' + esc(f.nombre) + '</span><span>' + v + '</span>' +
+        (conPor ? '<span>' + (f.vPor != null ? fmtF(f.vPor) + " " + f.u : '<i>sin dato</i>') + '</span>' : "")));
+    });
+    cabN.appendChild(t);
+  } else cabN.appendChild(el("p", "cocVacio", "Sin ficha: no se sabe su información nutricional. Escanea su código de barras o rellénala a mano (con una foto de la etiqueta te será más fácil)."));
+  w.appendChild(cabN);
+  if (foto) w.appendChild(el("img", "cocFichaFoto")).src = foto;
+  var acc = el("div", "cocPcB cocFichaAcc");
+  var be = el("button", "", svg("barras") + "Escanear el código"), bm = el("button", nu ? "" : "si", nu && nu.fuente === "tú" ? "Corregir a mano" : "Rellenar a mano");
+  be.addEventListener("click", function () { MCTX = CTX; abreEscaner({ nombre: x.nombre, zona: x.zona }); });
+  bm.addEventListener("click", function () { FFORM = true; pinta(); });
+  acc.appendChild(be); acc.appendChild(bm); w.appendChild(acc);
+  return w;
+}
+// rellenar la ficha a mano, campo a campo: se guarda a medias; lo vacío sigue "sin dato"
+function formFicha(x, FD, foto) {
+  var nu = FD.nu || {}, f = el("form", "ntPerfil cocFichaForm");
+  f.innerHTML = '<h4>Rellenar la ficha · por 100 g</h4><p class="ntNota">Copia los números de la etiqueta. Deja vacío lo que no ponga: queda «sin dato». Se guarda aunque no esté entera.</p>' +
+    '<label class="cocFotoBtn">' + svg("camara") + ' Foto de la etiqueta<input type="file" accept="image/*" capture="environment" hidden></label>' +
+    (foto ? '<img class="cocFichaFoto" src="' + foto + '" alt="Foto de la etiqueta">' : "") +
+    '<label>Porción (g)<input name="porcionG" inputmode="decimal" autocomplete="off" value="' + esc(nu.porcionG != null ? String(nu.porcionG).replace(".", ",") : "") + '"></label>' +
+    Al().CAMPOS.filter(function (c) { return c[0] !== "kj"; }).map(function (c) {
+      var v = nu[c[0]];
+      return '<label>' + esc(c[1]) + ' (' + esc(c[2]) + ')<input name="' + c[0] + '" inputmode="decimal" autocomplete="off" value="' + esc(v != null ? String(v).replace(".", ",") : "") + '" placeholder="sin dato"></label>';
+    }).join("") + '<div class="cocPcB"><button class="si" type="submit">Guardar la ficha</button><button type="button" class="ffNo">Cancelar</button></div>';
+  f.querySelector(".ffNo").addEventListener("click", function () { FFORM = false; pinta(); });
+  f.querySelector('input[type=file]').addEventListener("change", function (e) {
+    var file = e.target.files && e.target.files[0]; if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var img = new Image();
+      img.onload = function () {   // pequeña (720 px) para que quepa en el movil
+        var k = Math.min(1, 720 / Math.max(img.width, img.height)), cv = document.createElement("canvas");
+        cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        var A = aseguraAli(x), F = lee(K_FOTOS, {}); F[A.id] = cv.toDataURL("image/jpeg", 0.7); guarda(K_FOTOS, F); pinta();
+      };
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  });
+  f.addEventListener("submit", function (e) {
+    e.preventDefault(); var val = {}, ex = {};
+    Al().CAMPOS.forEach(function (c) { if (c[0] === "kj") return; var t = String(f.elements[c[0]].value).trim().replace(",", "."); val[c[0]] = t === "" ? null : parseFloat(t); if (val[c[0]] != null && !isFinite(val[c[0]])) val[c[0]] = null; });
+    var pg = parseFloat(String(f.elements.porcionG.value).replace(",", ".")); if (isFinite(pg) && pg > 0) { ex.porcionG = pg; ex.porcionTxt = pg + " g"; }
+    var A = aseguraAli(x), B = Al().conFicha(A, val, ex);
+    if (A.nutri && A.nutri.fuente !== "tú") {                       // lo que venía de la etiqueta y no tocas, se queda
+      Al().CAMPOS.forEach(function (c) { if (B.nutri[c[0]] == null && A.nutri[c[0]] != null && val[c[0]] === undefined) B.nutri[c[0]] = A.nutri[c[0]]; });
+      B.nutri.incompleta = Al().incompleta(B.nutri);
+    }
+    guardaAli(B); FFORM = false; aviso(B.nutri.incompleta ? "Guardada, incompleta: faltan datos de la etiqueta." : "Ficha guardada."); pinta();
+  });
+  return f;
+}
+// el alimento de esta cosa de casa (si aun no existe, se crea con su nombre)
+function aseguraAli(x) {
+  var A = aliDe(x.nombre); if (A) return A;
+  return guardaAli(Al().registra(alimentos(), { nombre: x.nombre, zona: x.zona }).A);
 }
 function acciones2() {
   var d = el("div", "cocDos cocDos2");
@@ -1606,8 +1723,9 @@ API.guia = function (ev, ctx) {
   if (ctx) MCTX = ctx;
   return M.abre({ guia: { uid: ev.uid, titulo: Rc().sinEmoji(ev.titulo).replace(/\s+/g, " ").trim() }, pasos: P }, ctxModo(MCTX || {}));
 };
-API.atras = function () {                   // el gesto de atras: el escaner, luego el paso a paso
+API.atras = function () {                   // el gesto de atras: el escaner, la ficha, luego el paso a paso
   if (ESC) { cierraEscaner(true); return true; }
+  if (TOCADO && SUB === "tengo" && enTab()) { if (FFORM) FFORM = false; else TOCADO = null; pinta(); return true; }
   var M = Modo();
   return !!(M && M.atras && M.atras());
 };
@@ -1618,11 +1736,11 @@ API.atras = function () {                   // el gesto de atras: el escaner, lu
    Cada producto entra en Tengo
    como comprado (con su zona) y se sigue escaneando.                           */
 var ESC = null;
-function abreEscaner() {
+function abreEscaner(ficha) {
   ponCSS();
   var box = document.getElementById("cocEsc") || document.body.appendChild(el("div"));
   box.id = "cocEsc"; box.hidden = false;
-  ESC = { box: box, stream: null, det: null, parado: false, res: null, zona: "Despensa", hechos: [], t: null };
+  ESC = { box: box, stream: null, det: null, parado: false, res: null, zona: "Despensa", hechos: [], t: null, ficha: ficha || null };
   if (MCTX && MCTX.marca) MCTX.marca("escaner");
   box.innerHTML = '<div class="eTop"><button class="eX" aria-label="Salir">' + svg("cerrar") + '</button><span>Escanear lo que has comprado</span></div>' +
     '<div class="eCuerpo"><div class="eCam"><video playsinline muted></video><div class="eVisor" hidden></div><div class="eSin">Abriendo la cámara…</div></div>' +
@@ -1688,7 +1806,7 @@ function buscaCodigo(codigo) {
   var tuyo = Al().porCodigo(alimentos(), codigo);
   if (tuyo) { resultado(codigo, null, false, tuyo); return; }   // ya lo conoces: con tu nombre, sin preguntar
   r.innerHTML = '<small>Código ' + esc(codigo) + '</small><p>Buscando en Open Food Facts…</p>';
-  fetch(OFF_URL + encodeURIComponent(codigo) + ".json?fields=code,product_name,product_name_es,generic_name,generic_name_es,brands,quantity,categories_tags,nutriments,nutriscore_grade", { cache: "no-store" })
+  fetch(OFF_URL + encodeURIComponent(codigo) + ".json?fields=code,product_name,product_name_es,generic_name,generic_name_es,brands,quantity,serving_size,serving_quantity,categories_tags,nutriments,nutriscore_grade", { cache: "no-store" })
     .then(function (x) { return x.json(); }).then(function (j) { resultado(codigo, productoOFF(j)); }, function () { resultado(codigo, null, true); });
 }
 /* Lo escaneado entra con TU nombre (v2.39). Un código que ya conoces sale con tu nombre y no
@@ -1764,6 +1882,20 @@ function resultado(codigo, p, sinRed, tuyo) {
     otro();
   };
   r.querySelector(".eOtro").onclick = otro;
+  if (ESC.ficha) {                                  // v2.47: para la ficha de un alimento de Casa (no es una compra)
+    var X = ESC.ficha;
+    Array.prototype.forEach.call(r.querySelectorAll(".eUds,.eZonas,.eNoms,.eCap,.eNota,.eNom"), function (e) { e.hidden = true; e.style.display = "none"; });
+    var ok2 = r.querySelector(".eOk");
+    ok2.textContent = p && p.nutri ? "Usar para la ficha de «" + X.nombre + "»" : "Rellenar la ficha a mano";
+    ok2.onclick = function () {
+      if (p && p.nutri) {
+        var A0 = aliDe(X.nombre);
+        guardaAli(Al().registra(alimentos(), { id: A0 && A0.id, nombre: X.nombre, codigo: codigo, offNombre: p.nombre, marca: p.marca, formato: p.cantidad, nutri: p.nutri, fuente: "OFF", zona: X.zona }).A);
+        aviso("Ficha de " + X.nombre + ": de Open Food Facts.");
+      } else FFORM = true;
+      cierraEscaner(false);
+    };
+  }
   function otro() {
     r.hidden = true; r.innerHTML = ""; ESC.box.querySelector("input").value = "";
     if (ESC.nativo) { ESC.parado = false; escaneaNativo(); return; }   // el siguiente, con el de Google

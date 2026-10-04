@@ -294,6 +294,26 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocPcB button:has-text('Así fue') >> nth=0"); await p.waitForTimeout(400);
     await p.click(".cocZonaFila:has-text('Congelador')"); await p.waitForTimeout(300);
     await foto("casaprueba-congelador");
+    // v2.47: la ficha entera de un alimento: con etiqueta, genérica (USDA), sin ficha y rellenándola a mano
+    const ficha = async (zona, nombre, n) => {
+      await p.click(`.cocChips button:has-text('${zona}')`); await p.waitForTimeout(250);
+      await p.click(`.cocFilaZin:has-text('${nombre}')`); await p.waitForTimeout(350);
+      await foto(n);
+    };
+    await ficha("Despensa salada", "Atún en lata", "ficha-etiqueta");
+    await p.evaluate(() => { const f = document.querySelector(".cocFicha"); if (f) f.scrollTop = 520; }); await p.waitForTimeout(150);
+    await foto("ficha-etiqueta-abajo");
+    await p.click(".cocFichaTop .cocHojaX"); await p.waitForTimeout(250);
+    await ficha("Fruta", "Plátanos", "ficha-usda");
+    await p.click(".cocFichaTop .cocHojaX"); await p.waitForTimeout(250);
+    await ficha("Especias", "Orégano", "ficha-sin");
+    await p.click(".cocFichaAcc button:has-text('Rellenar a mano')"); await p.waitForTimeout(300);
+    await p.fill(".cocFichaForm input[name=kcal]", "280"); await p.fill(".cocFichaForm input[name=prot]", "9");
+    await foto("ficha-form");
+    await p.click(".cocFichaForm button.si"); await p.waitForTimeout(400);
+    await foto("ficha-incompleta");
+    await p.click(".cocFichaTop .cocHojaX"); await p.waitForTimeout(250);
+    await p.click(".cocChips button:has-text('Todo')"); await p.waitForTimeout(200);
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await foto("casaprueba-comprar");
     // v2.45: Nutrición con el perfil de ejemplo: hoy, el porqué, la semana y registrar

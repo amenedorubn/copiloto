@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.47.0] - 2026-10-04
+
+### Añadido
+
+- Casa: la ficha entera de cada alimento al tocarlo (toda la etiqueta por 100 g y por porción, sin dato en lo que falta, fuente e incompleta); sin ficha, escanear el código o rellenarla a mano con la foto de la etiqueta; Open Food Facts se guarda entero y el Worker guarda todos los campos
+
 ## [2.46.1] - 2026-10-04
 
 ### Corregido
@@ -706,6 +712,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.47.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.47.0
 [2.46.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.46.1
 [2.46.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.46.0
 [2.45.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.45.1

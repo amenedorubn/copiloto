@@ -153,6 +153,56 @@ function cantDoble(c, eq) {
   return a;
 }
 
-return { mezcla: mezcla, vivos: vivos, porCodigo: porCodigo, porNombre: porNombre, nombres: nombres, limpiaNombre: limpiaNombre,
+/* ------------------------------ la ficha entera (v2.47) ------------------------------
+   Todo lo de una etiqueta, por 100 g (y por porción si se sabe cuánto es). Lo que falta es "sin dato":
+   nunca 0 ni inventado. A.nutri = {campo: valor por 100 g, ..., porcionG, porcionTxt, fuente, fecha, incompleta} */
+var CAMPOS = [
+  ["kcal", "Energía", "kcal", "Energía"], ["kj", "Energía", "kJ", "Energía"],
+  ["grasa", "Grasas", "g", "Grasas"], ["sat", "de las cuales saturadas", "g", "Grasas"], ["mono", "monoinsaturadas", "g", "Grasas"], ["poli", "poliinsaturadas", "g", "Grasas"],
+  ["hc", "Hidratos de carbono", "g", "Hidratos"], ["azucar", "de los cuales azúcares", "g", "Hidratos"], ["polioles", "polialcoholes", "g", "Hidratos"], ["fibra", "Fibra alimentaria", "g", "Hidratos"],
+  ["prot", "Proteínas", "g", "Proteínas y sal"], ["sal", "Sal", "g", "Proteínas y sal"],
+  ["vitA", "Vitamina A", "µg", "Vitaminas"], ["vitD", "Vitamina D", "µg", "Vitaminas"], ["vitE", "Vitamina E", "mg", "Vitaminas"], ["vitC", "Vitamina C", "mg", "Vitaminas"],
+  ["b1", "Tiamina (B1)", "mg", "Vitaminas"], ["b2", "Riboflavina (B2)", "mg", "Vitaminas"], ["b3", "Niacina (B3)", "mg", "Vitaminas"], ["b6", "Vitamina B6", "mg", "Vitaminas"],
+  ["folato", "Ácido fólico / folato", "µg", "Vitaminas"], ["b12", "Vitamina B12", "µg", "Vitaminas"],
+  ["calcio", "Calcio", "mg", "Minerales"], ["hierro", "Hierro", "mg", "Minerales"], ["magnesio", "Magnesio", "mg", "Minerales"], ["potasio", "Potasio", "mg", "Minerales"],
+  ["zinc", "Zinc", "mg", "Minerales"], ["fosforo", "Fósforo", "mg", "Minerales"], ["yodo", "Yodo", "µg", "Minerales"]
+];
+var BASICOS = ["kcal", "grasa", "sat", "hc", "azucar", "prot", "sal"];   // lo que lleva toda etiqueta (UE 1169/2011)
+function num(v) { return typeof v === "number" && isFinite(v) ? v : null; }
+// ¿le falta algo de lo obligatorio?
+function incompleta(nu) { return !nu || BASICOS.some(function (k) { return num(nu[k]) == null; }); }
+/* Las filas de la ficha: [{k, nombre, u, grupo, v100 (o null = sin dato), vPor (o null)}] */
+function fichaFilas(nu) {
+  var pg = nu && num(nu.porcionG);
+  return CAMPOS.map(function (c) {
+    var v = nu ? num(nu[c[0]]) : null;
+    if (c[0] === "kj" && v == null && nu && num(nu.kcal) != null) v = Math.round(nu.kcal * 4.184);        // kJ de las kcal (la misma medida)
+    return { k: c[0], nombre: c[1], u: c[2], grupo: c[3], v100: v, vPor: v != null && pg ? Math.round(v * pg) / 100 : null };
+  });
+}
+/* Guardar lo que rellenas a mano (aunque sea a medias): solo los campos que pones; los vacíos siguen "sin dato".
+   valores = {campo: número | null}. La fuente pasa a ser "tú" en lo que tocas.                                   */
+function conFicha(A, valores, extra, ahora) {
+  var B = JSON.parse(JSON.stringify(A)); B.t = ahora || Date.now();
+  var nu = B.nutri ? B.nutri : {};
+  Object.keys(valores || {}).forEach(function (k) { var v = valores[k]; if (v == null || v === "") delete nu[k]; else if (isFinite(+v)) nu[k] = +v; });
+  for (var e in (extra || {})) if (extra[e] != null && extra[e] !== "") nu[e] = extra[e];
+  nu.fuente = "tú"; nu.fecha = new Date(B.t).toISOString().slice(0, 10); nu.incompleta = incompleta(nu); nu.por = nu.por || "100 g";
+  B.nutri = nu;
+  return B;
+}
+/* Una ficha genérica de la tabla USDA (para lo que no tiene etiqueta: fruta, verdura...). sodio (mg) -> sal (g) */
+function deUSDA(F) {
+  if (!F) return null;
+  var nu = { por: "100 g", fuente: "USDA", generico: F.nombre };
+  ["kcal", "prot", "hc", "grasa", "fibra", "azucar", "vitC", "folato", "hierro", "magnesio", "potasio", "b12", "vitD", "calcio"].forEach(function (k) { if (num(F.n[k]) != null) nu[k] = F.n[k]; });
+  if (num(F.n.sodio) != null) nu.sal = Math.round(F.n.sodio * 2.5) / 1000;
+  if (F.ud) { nu.porcionG = F.ud; nu.porcionTxt = "1 unidad (" + F.ud + " g, estimado)"; }
+  nu.incompleta = incompleta(nu);
+  return nu;
+}
+
+return { CAMPOS: CAMPOS, BASICOS: BASICOS, incompleta: incompleta, fichaFilas: fichaFilas, conFicha: conFicha, deUSDA: deUSDA,
+  mezcla: mezcla, vivos: vivos, porCodigo: porCodigo, porNombre: porNombre, nombres: nombres, limpiaNombre: limpiaNombre,
   sugiere: sugiere, formato: formato, registra: registra, renombra: renombra, cantDoble: cantDoble };
 });

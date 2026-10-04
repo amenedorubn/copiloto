@@ -76,3 +76,35 @@ test("cantDoble: unidad y gramos con su equivalencia", () => {
   assert.equal(A.cantDoble({ n: 2, ud: "lata" }, { n: 80, ud: "g" }), "2 latas · 160 g");
   assert.equal(A.cantDoble({ n: 500, ud: "g" }, null), "500 g");
 });
+
+/* ------------------------------ la ficha entera (v2.47) ------------------------------ */
+test("ficha: Open Food Facts entera, con vitaminas en mg/µg y la porción; lo que no viene, sin dato", () => {
+  const C = createRequire(import.meta.url)("../cocina.js");
+  const p = C.productoOFF({ status: 1, code: "1", product: { product_name: "Cereales de ejemplo", quantity: "375 g", serving_quantity: "30", serving_size: "30 g",
+    nutriments: { "energy-kcal_100g": 380, "fat_100g": 2.5, "saturated-fat_100g": 0.5, "carbohydrates_100g": 80, "sugars_100g": 8, "fiber_100g": 6, "proteins_100g": 9,
+                  "salt_100g": 0.7, "vitamin-c_100g": 0.0275, "vitamin-b9_100g": 0.0002, "iron_100g": 0.0084, "vitamin-d_100g": 0.0000042 } } });
+  const n = p.nutri;
+  assert.equal(n.vitC, 27.5); assert.equal(n.folato, 200); assert.equal(n.hierro, 8.4); assert.equal(n.vitD, 4.2);
+  assert.equal(n.porcionG, 30); assert.equal(n.porcionTxt, "30 g");
+  assert.equal(n.mono, undefined); assert.equal(n.incompleta, false);
+  const f = A.fichaFilas(n), fila = (k) => f.find((x) => x.k === k);
+  assert.equal(fila("mono").v100, null);                                    // sin dato, nunca 0
+  assert.equal(fila("kcal").vPor, 114); assert.equal(fila("kj").v100, Math.round(380 * 4.184));
+});
+
+test("ficha a mano: se guarda a medias, lo vacío sigue sin dato y queda «incompleta»", () => {
+  const a = A.registra([], { nombre: "Proteína de cookies" }, T0).A;
+  const b = A.conFicha(a, { kcal: 370, prot: 75, hc: "", sat: null }, { porcionG: 30 }, T0 + 1);
+  assert.equal(b.nutri.kcal, 370); assert.equal(b.nutri.prot, 75);
+  assert.ok(!("hc" in b.nutri)); assert.ok(b.nutri.incompleta); assert.equal(b.nutri.fuente, "tú"); assert.equal(b.nutri.porcionG, 30);
+  const c = A.conFicha(b, { grasa: 6, sat: 1.5, hc: 8, azucar: 2, sal: 0.4 }, null, T0 + 2);
+  assert.equal(c.nutri.incompleta, false); assert.equal(c.nutri.kcal, 370);
+});
+
+test("ficha genérica de USDA para lo que no tiene etiqueta (sal desde el sodio)", () => {
+  const T = createRequire(import.meta.url)("../nutri-tabla.js"), kiwi = T.find((x) => x.nombre === "Kiwi");
+  const n = A.deUSDA(kiwi);
+  assert.equal(n.fuente, "USDA"); assert.equal(n.vitC, 92.7); assert.equal(n.sal, Math.round(3 * 2.5) / 1000); assert.equal(n.porcionG, 75);
+  assert.equal(n.sat, undefined); assert.ok(n.incompleta);
+  assert.equal(A.deUSDA(null), null);
+});
