@@ -595,6 +595,7 @@ CSS +=
   ".ntBig span{font-size:13px;font-weight:600;color:var(--mu)}.ntBarra{height:10px;margin-top:10px}" +
   ".ntMacros{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.ntMacros div{background:var(--sf);border-radius:12px;padding:8px 10px}" +
   ".ntMacros small{display:block;font-size:12px;font-weight:600;color:var(--mu)}.ntMacros b{display:block;font-size:17px;font-weight:800}" +
+  ".ntFila2{display:flex;justify-content:space-between;align-items:center;min-height:44px;border-top:1px solid var(--ln);font-size:14px;font-weight:600}.ntFila2:first-child{border-top:0}.ntFila2 b{font-weight:800}" +
   ".ntBigTxt{margin:0;font-size:22px;font-weight:800}.ntNav{margin-top:0}" +
   ".ntTiras{padding-top:2px}.ntCaja .ngTiraB,.ntCaja .ngCobB{background:var(--sf)}" +
   /* ---- v2.48 suplementos ---- */
@@ -1747,7 +1748,36 @@ function vistaSemana(w, E, fecha) {
     return G.tira({ nombre: N.NOMBRE[k], v: m.v, min: o ? o.min : null, max: o ? o.max : null, u: N.UNIDAD[k], supl: m.supl || 0 });
   }).join("")));
 }
-function vistaTendencias(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
+/* N3 · Tendencias (B arriba + D debajo): una curva grande de 8 semanas con selector y la banda del objetivo de cada
+   semana; debajo, el peso medio semanal contra lo esperado en cada fase (el peso que pones en «Semana»).          */
+var NMET = "hcKg";
+function vistaTendencias(w, E) {
+  var N = Nu(), G = raiz.NutriGraficas, F = fuentesNu(E), W = N.semanas(N.lunes(E.o.hoy), 8, F), perfil = F.perfil;
+  var MET = [["hcKg", "Carb. g/kg", "g/kg"], ["protKg", "Prot. g/kg", "g/kg"], ["fibra", "Fibra", "g"], ["vitC", "Vit. C", "mg"], ["folato", "Folato", "µg"]];
+  var ch = el("div", "ntFavs");
+  MET.forEach(function (m) { var b = el("button", "", esc(m[1])); b.setAttribute("aria-pressed", String(NMET === m[0])); b.addEventListener("click", function () { NMET = m[0]; pinta(); }); ch.appendChild(b); });
+  w.appendChild(ch);
+  var u = MET.filter(function (m) { return m[0] === NMET; })[0][2];
+  var pts = W.map(function (S) { var m = N.metrica(S, NMET, perfil); return { label: corta(S.lunes), v: m.v, lo: m.lo, hi: m.hi }; });
+  var con = pts.filter(function (x) { return x.v != null; });
+  if (!con.length) w.appendChild(el("p", "cocVacio", "Sin datos en las últimas 8 semanas: no hay comidas en el calendario ni nada registrado."));
+  else {
+    w.appendChild(el("div", "ntCaja", G.curva(pts, { ultimo: pts.length - 1 }) + '<p class="ntNota">Media de cada semana (de los días con datos). La banda: el objetivo de la fase de esa semana. «s/d»: semana sin datos.</p>'));
+    var ult = pts[pts.length - 1], med = con.reduce(function (a, x) { return a + x.v; }, 0) / con.length;
+    w.appendChild(el("div", "ntCaja", '<div class="ntFila2"><span>Esta semana</span><b>' + (ult.v == null ? "s/d" : fmtN(ult.v) + " " + u) + '</b></div>' +
+      '<div class="ntFila2"><span>Media de ' + con.length + (con.length === 1 ? " semana" : " semanas") + '</span><b>' + fmtN(med) + " " + u + '</b></div>' +
+      (ult.lo != null ? '<div class="ntFila2"><span>Objetivo de esta semana</span><b>' + fmtN(ult.lo) + (ult.hi != null ? "–" + fmtN(ult.hi) : "+") + " " + u + '</b></div>' : "")));
+  }
+  // D: el peso medio semanal contra lo esperado
+  w.appendChild(el("p", "ntCap", "Peso medio semanal · kg"));
+  var pesos = W.map(function (S) { return S.peso; }), esp = N.pesoEsperado(W);
+  if (!pesos.some(function (x) { return x; })) w.appendChild(el("p", "cocVacio", "Sin datos de peso: pon tu peso medio de cada semana en Hoy → Semana (la media, no el dato del día)."));
+  else {
+    w.appendChild(el("div", "ntCaja", G.curva(W.map(function (S) { return { label: corta(S.lunes), v: S.peso }; }), { ref: esp, ultimo: W.length - 1 }) +
+      '<div class="ngLey"><span><i></i>Tu media</span><span>- - - lo esperado en cada fase</span></div>' +
+      '<p class="ntNota">Esperado: definición −0,4 %/semana, volumen +0,25 %/semana, el resto igual, desde el primer peso que pusiste.</p>'));
+  }
+}
 function vistaFases(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
 function vistaEntreno(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
 function vistaMicros(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
