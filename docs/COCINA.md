@@ -1,12 +1,13 @@
 # Cocina
 
-Pestaña de HOY (icono de la olla, junto a Estadísticas). Desde la v2.38 son seis archivos, cada uno
+Pestaña de HOY (icono de la olla, junto a Estadísticas). Desde la v2.39 son siete archivos, cada uno
 con sus tests (`node --test tests/<archivo>.test.mjs`):
 
 | Archivo | Qué hace |
 |---|---|
 | `receta.js` | Entiende el texto de cada evento de «Comidas»: ingredientes (con cantidad, corte y si ya está en casa), pasos, tiempos y avisos, «Antes de empezar» |
 | `despensa.js` | Lo que hay en casa (Despensa) y lo que comprar (Comprar) |
+| `alimentos.js` | Tus alimentos con tu nombre: alias, códigos de barras, lo que pesa una unidad y la nutrición con su fuente |
 | `carriles.js` | Las recetas con carriles: cuándo va cada paso (manos de una en una, fuegos, sartén, ollas, micro, air fryer) y el replan si vas tarde |
 | `cocina-modo.js` | El paso a paso a pantalla completa |
 | `cocina-prueba.js` | La Cocina de prueba de Ajustes: recetas de ejemplo con carriles y el reloj simulado |
@@ -129,9 +130,22 @@ eventos que ya son un aviso, a su hora. El APK los pone como notificación (`Avi
 
 ## Escanear lo comprado
 
-Comprar o Tengo → «Escanear»: en Chrome, `BarcodeDetector`; en la app Android, el escáner de Google Play
-Services (`Nativo.escanea`). El código se busca en Open Food Facts y entra en la Despensa con su zona, su
-etiqueta y la cantidad: la del paquete por **cuántos** has comprado (2 × 500 g = 1 kg).
+Comprar o Despensa → «Escanear»: en Chrome, `BarcodeDetector`; en la app Android, el escáner de Google Play
+Services (`Nativo.escanea`).
+
+**Tu nombre manda (v2.39, `alimentos.js`).** Cada alimento tiene el nombre que usas tú y nunca cambia solo:
+- **Un código que ya conoces** sale con tu nombre y no pregunta.
+- **Uno nuevo** se busca en Open Food Facts y pregunta «¿Cómo lo llamas tú?». Propone primero lo tuyo que se
+  parece y lo que ya está en casa (así se junta, no se duplica), y luego el nombre del paquete sin marca ni peso.
+- El nombre del paquete queda como **alias**, junto al código, la marca, el formato («240 g (3 × 80 g)»), lo que
+  pesa una unidad y la nutrición por 100 g con su **fuente** (OFF). La que escribes tú (fuente «tú») no la pisa
+  ninguna otra.
+- La cantidad es la del paquete por **cuántos** has comprado: 2 × 240 g = 480 g (6 × 80 g).
+- Tus alimentos se guardan en el móvil (`copiloto.cocina.alimentos.v1`) y en el Worker (`/cocina`, `alimentos`).
+  De cada uno gana la versión más nueva.
+
+El Worker guarda desde la v2.39 todos los tipos de cambio (`hay`, `hecho`, `saltada`, `mueve`, `inventario`,
+`confirma`). Antes solo guardaba `compra`, `gasto` y `acaba`, y los demás llegaban al otro móvil sin tipo.
 
 ## Capturas
 

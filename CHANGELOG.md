@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.39.0] - 2026-10-04
+
+### Añadido
+
+- Escáner: tu nombre manda. Un código conocido sale con tu nombre; uno nuevo pregunta cómo lo llamas (propone lo tuyo o lo de casa para no duplicar) y el nombre de Open Food Facts queda como alias con su código, formato, peso por unidad y nutrición con su fuente (alimentos.js). Worker: guarda tus alimentos y todos los tipos de cambio
+
 ## [2.38.0] - 2026-10-04
 
 ### Añadido
@@ -646,6 +652,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.39.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.39.0
 [2.38.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.38.0
 [2.37.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.37.0
 [2.36.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.36.0

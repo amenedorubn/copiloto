@@ -30,10 +30,11 @@ function usa(nombre, archivo) {                // receta.js, despensa.js, cocina
 function Rc() { return usa("Receta", "./receta.js"); }
 function Dp() { return usa("Despensa", "./despensa.js"); }
 function Modo() { return EN_NODE ? null : raiz.CocinaModo; }
+function Al() { return usa("Alimentos", "./alimentos.js"); }
 
 var RECETAS_URL = "https://raw.githubusercontent.com/amenedorubn/cocina/main/recetas/";
 var K_RECETAS = "copiloto.cocina.recetas.v1", K_CAMBIOS = "copiloto.cocina.cambios.v1",
-    K_NOTA = "copiloto.cocina.nota.v1", K_LISTA = "copiloto.cocina.lista.v1";
+    K_NOTA = "copiloto.cocina.nota.v1", K_LISTA = "copiloto.cocina.lista.v1", K_ALIM = "copiloto.cocina.alimentos.v1";
 
 function dos(n) { return n < 10 ? "0" + n : "" + n; }
 function mayus1(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
@@ -216,7 +217,7 @@ function esCodigo(c) { return /^\d{8}$|^\d{12,14}$/.test(String(c || "").trim())
 
 var API = { comida: comida, comidasDe: comidasDe, recetaDe: recetaDe, queGrande: queGrande, avisosComida: avisosComida,
   pasosGuia: pasosGuia, mezcla: mezcla, vigentes: vigentes, productoOFF: productoOFF, nutriTxt: nutriTxt, esCodigo: esCodigo,
-  OFF_URL: OFF_URL, RECETAS_URL: RECETAS_URL, K: { recetas: K_RECETAS, cambios: K_CAMBIOS, nota: K_NOTA, lista: K_LISTA } };
+  OFF_URL: OFF_URL, RECETAS_URL: RECETAS_URL, K: { recetas: K_RECETAS, cambios: K_CAMBIOS, nota: K_NOTA, lista: K_LISTA, alimentos: K_ALIM } };
 
 /* ================================ pantalla ================================
    Cocina.pinta(contenedor, ctx) con ctx = {dia, hoy, ahora, conf, marca, atrasManual, sel, activa}
@@ -459,6 +460,15 @@ CSS +=
   "#cocEsc .eRes h3{margin:6px 0 2px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.01em}" +
   "#cocEsc .eRes p{margin:0;font-size:15px;font-weight:600;line-height:1.5;color:#9aa0a8}" +
   "#cocEsc .eRes p.eNutri{margin-top:8px;font-size:14px;color:#c9ccd3}#cocEsc .eRes p.eNutri b{color:#f4f5f7}" +
+  "#cocEsc .eCap{margin:14px 0 6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9aa0a8}" +
+  "#cocEsc .eNoms{display:flex;flex-direction:column;gap:6px}" +
+  "#cocEsc .eNoms button{min-height:48px;border-radius:14px!important;background:rgba(255,255,255,.08);color:#f4f5f7;font-size:16px;font-weight:700;text-align:left;padding:8px 14px!important;display:flex;justify-content:space-between;align-items:center;gap:8px}" +
+  "#cocEsc .eNoms button small{font-size:12px;font-weight:700;color:#9aa0a8}" +
+  "#cocEsc .eNoms button[aria-pressed=true]{background:#f4f5f7;color:#101113}#cocEsc .eNoms button[aria-pressed=true] small{color:#4a4f57}" +
+  "#cocEsc .eRes .eNom{width:100%;margin-top:8px}" +
+  "#cocEsc .eRes p.eNota{margin-top:8px;font-size:13px}" +
+  "#cocEsc .eRes p b{color:#f4f5f7}" +
+  "#cocEsc .eFuente{font-size:11px;font-weight:800;letter-spacing:.06em;border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:1px 6px;margin-left:4px}" +
   "#cocEsc .eZonas{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}" +
   "#cocEsc .eZonas button{height:44px;border-radius:14px!important;background:rgba(255,255,255,.08);color:#f4f5f7;font-size:14px;font-weight:700}" +
   "#cocEsc .eZonas button[aria-pressed=true]{box-shadow:inset 0 0 0 2px #f4f5f7}" +
@@ -524,6 +534,10 @@ function aLista(txt) {
   if (L.some(function (x) { return !x.borrado && Rc().ingrediente(x.txt).clave === k; })) return;
   L.push({ id: nuevoId(), t: Date.now(), txt: mayus1(txt) }); guarda(K_LISTA, L.slice(-300)); subeLuego();
 }
+// tus alimentos (alimentos.js): con tu nombre; se suben con lo demas
+function alimentos() { return lee(K_ALIM, []); }
+function guardaAli(A) { guarda(K_ALIM, Al().mezcla(alimentos(), [A])); subeLuego(); return A; }
+function aliDe(nombre) { return nombre ? Al().porNombre(alimentos(), nombre) : null; }
 function deLista(id) { var L = lista(); L.forEach(function (x) { if (x.id === id) { x.borrado = true; x.tb = Date.now(); } }); guarda(K_LISTA, L); subeLuego(); }
 /* Los cambios y la lista, tambien en el Worker (/cocina): el movil y Chrome ven lo mismo. Se
    sube al cambiar algo (1,5 s despues) y se baja al abrir la pestaña. Sin red, espera.   */
@@ -533,7 +547,7 @@ function sincroniza() {
   var conf = (CTX && CTX.conf) || (MCTX && MCTX.conf);
   if (!conf || !conf.url || !conf.key || subiendo || typeof fetch !== "function") return;
   subiendo = true;
-  var antes = JSON.stringify([conId(cambios()), lista()]), cuerpo = { cambios: conId(cambios()), lista: lista() };
+  var antes = JSON.stringify([conId(cambios()), lista(), alimentos()]), cuerpo = { cambios: conId(cambios()), lista: lista(), alimentos: alimentos() };
   fetch(conf.url.replace(/\/+$/, "") + "/cocina", { method: "POST", cache: "no-store",
     headers: { "X-Copiloto-Key": conf.key, "Content-Type": "application/json" },
     body: JSON.stringify(cuerpo) })
@@ -541,8 +555,9 @@ function sincroniza() {
     .then(function (j) {
       if (!j || !Array.isArray(j.cambios)) return;
       var C2 = mezcla(cambios(), j.cambios, 400), L2 = mezcla(lista(), j.lista || [], 300);   // y lo de aqui mientras tanto
-      guarda(K_CAMBIOS, C2); guarda(K_LISTA, L2);
-      if (JSON.stringify([C2, L2]) !== antes && enTab()) pinta();
+      var A2 = Al().mezcla(alimentos(), j.alimentos || []);
+      guarda(K_CAMBIOS, C2); guarda(K_LISTA, L2); guarda(K_ALIM, A2);
+      if (JSON.stringify([C2, L2, A2]) !== antes && enTab()) pinta();
     }, function () {})
     .then(function () { subiendo = false; });
 }
@@ -1176,13 +1191,6 @@ API.atras = function () {                   // el gesto de atras: el escaner, lu
   return !!(M && M.atras && M.atras());
 };
 
-// "500 g", "1 kg", "6 x 125 g", "330ml" -> {n, ud} (en g o ml); si no se entiende, null
-function cantPaquete(t) {
-  var s = String(t || "").toLowerCase().replace(",", "."), m = s.match(/(\d+)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(kg|g|ml|cl|l)\b/);
-  var c = m ? Rc().cantidad(m[2] + " " + m[3]) : Rc().cantidad((s.match(/\d+(?:\.\d+)?\s*(?:kg|g|ml|cl|l)\b/) || [""])[0]);
-  if (!c || !/^(g|ml)$/.test(c.ud)) return null;
-  return { n: c.n * (m ? +m[1] : 1), ud: c.ud };
-}
 /* ------------------------------- el escaner -------------------------------
    La camara de atras y BarcodeDetector (Chrome en Android); si no hay camara o no
    lo sabe leer, el numero se escribe a mano. En la app Android, el escaner de Google.
@@ -1255,42 +1263,80 @@ function avisoEsc(t) { var r = ESC && ESC.box.querySelector(".eRes"); if (!r) re
 function buscaCodigo(codigo) {
   if (!ESC) return;
   ESC.parado = true; pita(1);
-  var r = ESC.box.querySelector(".eRes"); r.hidden = false; r.innerHTML = '<small>Código ' + esc(codigo) + '</small><p>Buscando en Open Food Facts…</p>';
+  var r = ESC.box.querySelector(".eRes"); r.hidden = false;
+  var tuyo = Al().porCodigo(alimentos(), codigo);
+  if (tuyo) { resultado(codigo, null, false, tuyo); return; }   // ya lo conoces: con tu nombre, sin preguntar
+  r.innerHTML = '<small>Código ' + esc(codigo) + '</small><p>Buscando en Open Food Facts…</p>';
   fetch(OFF_URL + encodeURIComponent(codigo) + ".json?fields=code,product_name,product_name_es,generic_name,generic_name_es,brands,quantity,categories_tags,nutriments,nutriscore_grade", { cache: "no-store" })
     .then(function (x) { return x.json(); }).then(function (j) { resultado(codigo, productoOFF(j)); }, function () { resultado(codigo, null, true); });
 }
-function resultado(codigo, p, sinRed) {
+/* Lo escaneado entra con TU nombre (v2.39). Un código que ya conoces sale con tu nombre y no
+   pregunta; uno nuevo propone lo tuyo que se parece (para no duplicar) o el nombre del paquete,
+   y el de Open Food Facts queda como alias, con su código y su nutrición (fuente OFF).        */
+function resultado(codigo, p, sinRed, tuyo) {
   if (!ESC) return;
-  var r = ESC.box.querySelector(".eRes");
-  ESC.res = p; ESC.zona = p ? p.zona : "Despensa salada"; ESC.uds = 1;
-  r.innerHTML = '<small>Código ' + esc(codigo) + '</small>' +
-    (p ? '<h3>' + esc(p.nombre) + '</h3><p>' + esc([p.marca, p.cantidad].filter(Boolean).join(" · ") || "Open Food Facts") + '</p>' +
-         (p.nutri ? '<p class="eNutri">Por ' + esc(p.nutri.por) + ': <b>' + esc(nutriTxt(p.nutri)) + '</b>' + (p.nutri.nutriscore ? ' · Nutri-Score ' + esc(p.nutri.nutriscore) : "") + '</p>' : "")
-       : '<h3>' + (sinRed ? "Sin conexión" : "No está en Open Food Facts") + '</h3><p>Escribe qué es y se apunta igual.</p><input class="eNom" placeholder="p. ej. crema de calabaza" aria-label="Qué es" style="width:100%;margin-top:10px">') +
-    '<div class="eUds"><span>Cuántos</span><button class="eMenos" aria-label="Uno menos">−</button><b>1</b><button class="eMasU" aria-label="Uno más">+</button><em></em></div>' +
+  var r = ESC.box.querySelector(".eRes"), H = estado(CTX && CTX.dia || []).H;
+  var formato = tuyo ? ((tuyo.codigos || []).filter(function (c) { return c.ean === codigo; })[0] || {}).formato || "" : p ? p.cantidad : "";
+  var sug = tuyo ? [] : p ? Al().sugiere(alimentos(), H ? H.todos : [], p.nombre, p.marca) : [];
+  ESC.res = p; ESC.tuyo = tuyo || null; ESC.uds = 1;
+  ESC.zona = (tuyo && tuyo.zona) || (p ? p.zona : "Despensa salada");
+  ESC.nom = tuyo ? { nombre: tuyo.nombre, id: tuyo.id } : sug[0] ? { nombre: sug[0].nombre, id: sug[0].id || null } : null;
+  var h = '<small>Código ' + esc(codigo) + '</small>';
+  if (tuyo) {
+    h += '<h3>' + esc(tuyo.nombre) + '</h3><p>Ya lo conoces: sale con tu nombre.' + ((tuyo.alias || [])[0] ? ' El paquete dice «' + esc(tuyo.alias[0]) + '».' : "") + '</p>';
+  } else if (p) {
+    h += '<p>El paquete dice <b>«' + esc(p.nombre) + '»</b>' + (p.marca || p.cantidad ? ' · ' + esc([p.marca, p.cantidad].filter(Boolean).join(" · ")) : "") + '</p>' +
+      '<h4 class="eCap">¿Cómo lo llamas tú?</h4><div class="eNoms">' + sug.map(function (x, i) {
+        return '<button data-i="' + i + '" aria-pressed="' + (i === 0) + '">' + esc(x.nombre) + (x.por === "tuyo" || x.por === "casa" ? '<small>ya lo tienes</small>' : "") + '</button>';
+      }).join("") + '<button data-i="otro" aria-pressed="false">Otro nombre</button></div>' +
+      '<input class="eNom" placeholder="Tu nombre (p. ej. atún en lata)" aria-label="Tu nombre" hidden>' +
+      '<p class="eNota">' + (sug[0] && sug[0].id ? "Se junta con lo tuyo: no se duplica." : "Tu nombre es el que sale en Casa y en Comprar. El del paquete se guarda aparte.") + '</p>';
+  } else {
+    h += '<h3>' + (sinRed ? "Sin conexión" : "No está en Open Food Facts") + '</h3><p>Escribe cómo lo llamas y se apunta igual.</p>' +
+      '<input class="eNom" placeholder="Tu nombre (p. ej. crema de calabaza)" aria-label="Tu nombre">';
+  }
+  var nu = (tuyo && tuyo.nutri) || (p && p.nutri);
+  if (nu) h += '<p class="eNutri">Por ' + esc(nu.por || "100 g") + ': <b>' + esc(nutriTxt(nu)) + '</b>' + (nu.nutriscore ? ' · Nutri-Score ' + esc(nu.nutriscore) : "") +
+    ' <span class="eFuente">' + esc(nu.fuente || "OFF") + '</span></p>';
+  h += '<div class="eUds"><span>Cuántos</span><button class="eMenos" aria-label="Uno menos">−</button><b>1</b><button class="eMasU" aria-label="Uno más">+</button><em></em></div>' +
     '<div class="eZonas">' + Dp().ZONAS.map(function (z) { return '<button aria-pressed="' + (z === ESC.zona) + '">' + z + '</button>'; }).join("") + '</div>' +
     '<button class="eOk">A la despensa</button><button class="eOtro">Otro producto</button>';
+  r.innerHTML = h;
   Array.prototype.forEach.call(r.querySelectorAll(".eZonas button"), function (b) {
     b.onclick = function () { ESC.zona = b.textContent; Array.prototype.forEach.call(r.querySelectorAll(".eZonas button"), function (x) { x.setAttribute("aria-pressed", x === b); }); };
   });
-  // cuantos has comprado: con la cantidad del paquete, el total ("2 × 500 g" -> 1 kg)
+  var inp = r.querySelector(".eNom");
+  Array.prototype.forEach.call(r.querySelectorAll(".eNoms button"), function (b) {
+    b.onclick = function () {
+      var i = b.getAttribute("data-i");
+      Array.prototype.forEach.call(r.querySelectorAll(".eNoms button"), function (x) { x.setAttribute("aria-pressed", x === b); });
+      if (i === "otro") { ESC.nom = null; inp.hidden = false; inp.focus(); }
+      else { ESC.nom = { nombre: sug[+i].nombre, id: sug[+i].id || null }; inp.hidden = true; }
+      var nota = r.querySelector(".eNota");
+      if (nota) nota.textContent = ESC.nom && ESC.nom.id ? "Se junta con lo tuyo: no se duplica." : "Tu nombre es el que sale en Casa y en Comprar. El del paquete se guarda aparte.";
+    };
+  });
+  // cuantos has comprado: con lo que trae el paquete, el total ("2 × 240 g" -> 480 g)
   function total() {
-    var q = p && cantPaquete(p.cantidad);
-    return q ? { n: Math.round(q.n * ESC.uds * 100) / 100, ud: q.ud } : { n: ESC.uds, ud: "ud" };
+    var f = Al().formato(formato);
+    return f ? { n: Math.round(f.total.n * ESC.uds * 100) / 100, ud: f.total.ud } : { n: ESC.uds, ud: "ud" };
   }
   function pintaUds() {
     r.querySelector(".eUds b").textContent = ESC.uds;
-    var t = total(); r.querySelector(".eUds em").textContent = p && cantPaquete(p.cantidad) ? "= " + Rc().cantTxt(t) : "";
+    var f = Al().formato(formato), t = total();
+    r.querySelector(".eUds em").textContent = f ? "= " + Rc().cantTxt(t) + (f.uds > 1 ? " (" + f.uds * ESC.uds + " × " + Rc().cantTxt(f.cada) + ")" : "") : "";
   }
   r.querySelector(".eMenos").onclick = function () { ESC.uds = Math.max(1, ESC.uds - 1); pintaUds(); };
   r.querySelector(".eMasU").onclick = function () { ESC.uds = Math.min(24, ESC.uds + 1); pintaUds(); };
   pintaUds();
   r.querySelector(".eOk").onclick = function () {
-    var nom = p ? p.nombre : (r.querySelector(".eNom").value || "").trim();
-    if (!nom) { r.querySelector(".eNom").focus(); return; }
-    var t = total(), txt = Rc().cantTxt(t) + (t.ud === "ud" ? " " : " de ") + nom.charAt(0).toLowerCase() + nom.slice(1) + (p && p.marca ? " (" + p.marca + ")" : "");
-    var cb = { t: Date.now(), tipo: "compra", items: [txt], zona: ESC.zona, codigo: codigo };
-    if (p && p.nutri) cb.nutri = p.nutri;                 // lo de la etiqueta, por 100 g
+    var nom = ESC.nom ? ESC.nom.nombre : (inp && inp.value || "").trim();
+    if (!nom) { if (inp) { inp.hidden = false; inp.focus(); } return; }
+    var A = guardaAli(Al().registra(alimentos(), { id: ESC.nom && ESC.nom.id, nombre: nom, codigo: codigo, offNombre: p ? p.nombre : "", marca: p ? p.marca : "",
+      formato: formato, nutri: p && p.nutri, fuente: "OFF", zona: ESC.zona }).A);
+    var t = total(), txt = Rc().cantTxt(t) + (t.ud === "ud" ? " " : " de ") + A.nombre.charAt(0).toLowerCase() + A.nombre.slice(1);
+    var cb = { t: Date.now(), tipo: "compra", items: [txt], zona: ESC.zona, codigo: codigo, ali: A.id };
+    if (A.nutri) cb.nutri = A.nutri;
     apunta(cb);
     ESC.hechos.push({ txt: txt, zona: ESC.zona });
     ESC.box.querySelector(".eLista").innerHTML = '<li><b>Añadido ahora</b></li>' + ESC.hechos.map(function (h) { return '<li>' + esc(h.txt) + '<small>' + esc(h.zona) + '</small></li>'; }).join("");

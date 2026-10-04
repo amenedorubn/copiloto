@@ -22,7 +22,8 @@
      GET /despensa                   con clave. El bloque "Estado actual" de la
                                      nota "Despensa habitual" (solo lectura).
      GET|POST /cocina                con clave. Lo que se apunta en Cocina (lo comprado,
-                                     lo gastado, lo que se acaba y la lista de la compra),
+                                     lo gastado, lo que se acaba, la lista de la compra y
+                                     tus alimentos con tu nombre, desde la v2.39),
                                      en KV: el movil y Chrome ven lo mismo.
    =========================================================================== */
 
@@ -262,7 +263,8 @@ async function despensa(env) {
    acaba) y la lista de la compra. La app manda lo suyo, aqui se junta con lo guardado
    por id (lo borrado en un sitio queda borrado) y se devuelve todo junto.        */
 const K_COCINA = "cocina.v1";
-const TIPOS = ["compra", "gasto", "acaba"];
+// v2.39: todos los tipos que apunta la app (antes solo los 3 primeros: los demas llegaban sin tipo al otro movil)
+const TIPOS = ["compra", "gasto", "acaba", "hay", "hecho", "saltada", "mueve", "inventario", "confirma"];
 function texto(v, n) { return typeof v === "string" ? v.slice(0, n) : undefined; }
 function limpiaCambio(x) {
   if (!x || typeof x !== "object" || typeof x.id !== "string" || !isFinite(x.t)) return null;
@@ -270,7 +272,8 @@ function limpiaCambio(x) {
   if (x.borrado) { y.borrado = true; if (isFinite(x.tb)) y.tb = +x.tb; }
   if (TIPOS.indexOf(x.tipo) >= 0) y.tipo = x.tipo;
   if (Array.isArray(x.items)) y.items = x.items.filter((i) => typeof i === "string").slice(0, 40).map((i) => i.slice(0, 200));
-  for (const k of ["de", "zona", "codigo", "lista", "txt"]) { const v = texto(x[k], 200); if (v) y[k] = v; }
+  for (const k of ["de", "zona", "codigo", "lista", "txt", "uid", "ali", "ref"]) { const v = texto(x[k], 200); if (v) y[k] = v; }
+  { const v = texto(x.texto, 6000); if (v) y.texto = v; }           // el recuento entero
   if (x.nutri && typeof x.nutri === "object") {
     const n = {};
     for (const k of ["kcal", "prot", "hc", "azucar", "grasa", "sat", "fibra", "sal"]) if (isFinite(x.nutri[k])) n[k] = +x.nutri[k];
@@ -279,6 +282,35 @@ function limpiaCambio(x) {
     y.nutri = n;
   }
   return y;
+}
+/* v2.39 · tus alimentos (alimentos.js): tu nombre, alias, codigos, equivalencia y nutricion con
+   su fuente. Se juntan por id y gana el mas nuevo (t).                                        */
+function limpiaAlimento(x) {
+  if (!x || typeof x !== "object" || typeof x.id !== "string" || !isFinite(x.t)) return null;
+  const y = { id: x.id.slice(0, 40), t: +x.t, nombre: texto(x.nombre, 120) || "" };
+  if (x.borrado) y.borrado = true;
+  if (Array.isArray(x.alias)) y.alias = x.alias.filter((a) => typeof a === "string").slice(0, 12).map((a) => a.slice(0, 120));
+  if (Array.isArray(x.codigos)) y.codigos = x.codigos.filter((c) => c && typeof c.ean === "string").slice(0, 12)
+    .map((c) => ({ ean: c.ean.slice(0, 14), marca: texto(c.marca, 80) || "", formato: texto(c.formato, 60) || "" }));
+  if (texto(x.zona, 40)) y.zona = texto(x.zona, 40);
+  if (x.eq && isFinite(x.eq.n) && texto(x.eq.ud, 10)) y.eq = { n: +x.eq.n, ud: texto(x.eq.ud, 10) };
+  if (x.nutri && typeof x.nutri === "object") {
+    const n = {};
+    for (const k of ["kcal", "prot", "hc", "azucar", "grasa", "sat", "fibra", "sal", "vitC", "folato"]) if (isFinite(x.nutri[k])) n[k] = +x.nutri[k];
+    for (const k of ["por", "nutriscore", "fuente", "fecha"]) { const v = texto(x.nutri[k], 12); if (v) n[k] = v; }
+    y.nutri = n;
+  }
+  return y;
+}
+function mezclaAlimentos(a, b, tope) {
+  const por = {}, out = [];
+  for (const x of [].concat(a || [], b || [])) {
+    const c = limpiaAlimento(x); if (!c) continue;
+    const y = por[c.id];
+    if (!y) { por[c.id] = c; out.push(c); continue; }
+    if (c.t > y.t) { out[out.indexOf(y)] = c; por[c.id] = c; }
+  }
+  return out.slice(-tope);
 }
 function mezclaCocina(a, b, tope) {
   const por = {}, out = [];
@@ -295,13 +327,15 @@ async function cocina(env, req) {
   if (!env.COPILOTO) return { error: "sin_kv", codigo: 503 };
   let g = {};
   try { g = JSON.parse((await env.COPILOTO.get(K_COCINA)) || "{}"); } catch (e) {}
-  const antes = { cambios: g.cambios || [], lista: g.lista || [] };
-  if (req.method !== "POST") return { cambios: antes.cambios, lista: antes.lista, t: g.t || null };
-  if (+(req.headers.get("Content-Length") || 0) > 400000) return { error: "demasiado", codigo: 413 };
+  const antes = { cambios: g.cambios || [], lista: g.lista || [], alimentos: g.alimentos || [] };
+  if (req.method !== "POST") return { cambios: antes.cambios, lista: antes.lista, alimentos: antes.alimentos, t: g.t || null };
+  if (+(req.headers.get("Content-Length") || 0) > 1500000) return { error: "demasiado", codigo: 413 };
   let c;
   try { c = await req.json(); } catch (e) { return { error: "json", codigo: 400 }; }
-  const out = { cambios: mezclaCocina(antes.cambios, c && c.cambios, 400), lista: mezclaCocina(antes.lista, c && c.lista, 300) };
-  if (JSON.stringify(out) !== JSON.stringify({ cambios: mezclaCocina(antes.cambios, [], 400), lista: mezclaCocina(antes.lista, [], 300) })) {
+  const out = { cambios: mezclaCocina(antes.cambios, c && c.cambios, 400), lista: mezclaCocina(antes.lista, c && c.lista, 300),
+                alimentos: mezclaAlimentos(antes.alimentos, c && c.alimentos, 1500) };
+  if (JSON.stringify(out) !== JSON.stringify({ cambios: mezclaCocina(antes.cambios, [], 400), lista: mezclaCocina(antes.lista, [], 300),
+                                               alimentos: mezclaAlimentos(antes.alimentos, [], 1500) })) {
     out.t = Date.now();
     await env.COPILOTO.put(K_COCINA, JSON.stringify(out));
   } else out.t = g.t || null;

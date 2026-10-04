@@ -1,14 +1,14 @@
-const C="copiloto-2.38.0";
+const C="copiloto-2.39.0";
 const F=["./manifest.webmanifest","./manifest-n1.webmanifest","./manifest-b1.webmanifest","./manifest-r1.webmanifest",
          "./iconos/n1/icon.svg","./iconos/n1/icon-192.png","./iconos/n1/icon-512.png","./iconos/n1/icon-maskable-192.png","./iconos/n1/icon-maskable-512.png","./iconos/n1/apple-touch-icon.png",
          "./iconos/b1/icon.svg","./iconos/b1/icon-192.png","./iconos/b1/icon-512.png","./iconos/b1/icon-maskable-192.png","./iconos/b1/icon-maskable-512.png","./iconos/b1/apple-touch-icon.png",
          "./iconos/r1/icon.svg","./iconos/r1/icon-192.png","./iconos/r1/icon-512.png","./iconos/r1/icon-maskable-192.png","./iconos/r1/icon-maskable-512.png","./iconos/r1/apple-touch-icon.png",
-         "./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2","./arc.js","./transiciones.js","./stats.js","./nativo.js","./receta.js","./despensa.js","./carriles.js","./cocina-modo.js","./cocina-prueba.js","./cocina.js","./pasos.js","./rutalocal.js"];
+         "./rutas/20K_ZAPATOCA.gpx","./rutas/6K_ZAPATOCA.gpx","./rutas/6K1_ZAPATOCA_RECTAS.gpx","./fonts/Manrope.woff2","./arc.js","./transiciones.js","./stats.js","./nativo.js","./receta.js","./despensa.js","./alimentos.js","./carriles.js","./cocina-modo.js","./cocina-prueba.js","./cocina.js","./pasos.js","./rutalocal.js"];
 // Las caches son de todo el dominio: v20/ tiene la suya ("copiloto-v20-…") y no
 // se toca. Aqui solo se borran las versiones viejas de la raiz: las X.Y.Z y la
 // "copiloto-v12" de antes del versionado.
 const MIA=/^copiloto-(\d+\.\d+\.\d+|v12)$/;
-const JS=/\/(arc|stats|transiciones|nativo|receta|despensa|carriles|cocina-modo|cocina-prueba|cocina|pasos|rutalocal)\.js$/;
+const JS=/\/(arc|stats|transiciones|nativo|receta|despensa|alimentos|carriles|cocina-modo|cocina-prueba|cocina|pasos|rutalocal)\.js$/;
 // La version nueva se instala y ESPERA: solo toma el mando cuando la app se
 // cierra del todo o cuando la pagina lo pide con "Actualizar ahora".
 self.addEventListener("install",e=>{

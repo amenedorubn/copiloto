@@ -199,6 +199,12 @@ for (const tema of ["oscuro", "claro"]) {
     await p.evaluate(() => { window.Nativo.es = false; });
     await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}esc-tengo.png` });
+    // v2.39: el mismo código otra vez sale con TU nombre y no pregunta
+    await p.click(".cocBtn:has-text('Escanear')"); await p.waitForTimeout(800);
+    await p.fill("#cocEsc input", process.env.CODIGO || "8431876302196");
+    await p.click("#cocEsc .eMano button"); await p.waitForTimeout(500);
+    await p.screenshot({ path: `${OUT}esc-conocido.png` });
+    await p.click("#cocEsc .eFin"); await p.waitForTimeout(600);
     // v2.38: la Cocina de prueba, desde Ajustes. No puede dejar rastro: ni localStorage ni el /cocina del Worker
     // fuera de la cuenta, lo que cambia solo con el tiempo de verdad: el calendario que se refresca y los
     // relojes de otra receta que ya estaban en marcha (siguen con la hora real). Una clave nueva sí cuenta.
