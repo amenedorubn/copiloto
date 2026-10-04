@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.55.0] - 2026-10-04
+
+### Añadido
+
+- Nutrición · Micros: cobertura media de 4 semanas de cada vitamina y mineral (% del mínimo, con lo de suplementos más claro, o solo comida); al tocar se da la vuelta al mapa de calor de 8 semanas
+
 ## [2.54.0] - 2026-10-04
 
 ### Añadido
@@ -754,6 +760,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.55.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.55.0
 [2.54.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.54.0
 [2.53.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.53.0
 [2.52.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.52.0

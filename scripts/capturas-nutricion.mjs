@@ -39,6 +39,7 @@ for (const tema of ["oscuro", "claro"]) {
   for (const s of SUBS) {
     await p.click(`.ntSubs button:has-text('${s}')`); await p.waitForTimeout(400);
     await p.screenshot({ path: `${OUT}${s.toLowerCase()}-${tema}.png` });
+    if (s === "Micros" && await p.$(".ntCobBtn")) { await p.click(".ntCobBtn >> nth=0"); await p.waitForTimeout(800); await p.screenshot({ path: `${OUT}micros-vuelta-${tema}.png` }); await p.click(".ntCruz .cocBtn"); await p.waitForTimeout(300); }
     if (process.env.ABAJO) { await p.evaluate(() => { const c = document.getElementById("ptCuerpo"); c.scrollTop = 700; }); await p.waitForTimeout(150);
       await p.screenshot({ path: `${OUT}${s.toLowerCase()}-abajo-${tema}.png` }); await p.evaluate(() => { document.getElementById("ptCuerpo").scrollTop = 0; }); }
   }

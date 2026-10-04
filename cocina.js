@@ -603,6 +603,11 @@ CSS +=
   ".ntFaseF svg{width:16px;height:16px;color:var(--mu)}.ntFaseF[aria-expanded=true] svg{transform:rotate(90deg)}.ntFaseP{padding:0 0 8px 26px}" +
   ".ntCap.ac{color:var(--coc)}" +
   ".ntFrase{font-size:18px;margin-top:16px}.ntMu{font-size:12px;font-weight:600;color:var(--mu)}" +
+  ".ntFlip{perspective:1200px;margin-top:12px}.ntFlipIn{position:relative;transition:transform .55s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d;display:grid}" +
+  ".ntFlip.vuelta .ntFlipIn{transform:rotateY(180deg)}.ntCara,.ntCruz{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;margin-top:0}" +
+  ".ntCruz{transform:rotateY(180deg)}.ntFlip:not(.vuelta) .ntCruz{pointer-events:none}.ntFlip.vuelta .ntCara{pointer-events:none}" +
+  ".ntCobBtn{width:100%;background:none;color:var(--fg);padding:0!important;border-radius:0!important;text-align:left;display:block}" +
+  "@media (prefers-reduced-motion:reduce){.ntFlipIn{transition:none}}" +
   ".ntBigTxt{margin:0;font-size:22px;font-weight:800}.ntNav{margin-top:0}" +
   ".ntTiras{padding-top:2px}.ntCaja .ngTiraB,.ntCaja .ngCobB{background:var(--sf)}" +
   /* ---- v2.48 suplementos ---- */
@@ -1846,7 +1851,39 @@ function vistaEntreno(w, E) {
     return '<div class="ntFila2"><span>' + esc(NOM[x.tipo]) + ' <small class="ntMu">· ' + x.n + (x.n === 1 ? " día" : " días") + ' · objetivo ' + fmtN(x.lo) + "–" + fmtN(x.hi) + '</small></span><b>' + (x.v == null ? "s/d" : fmtN(x.v) + " g/kg") + '</b></div>';
   }).join("")));
 }
-function vistaMicros(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
+/* N7 · Micros (B; al tocar se da la vuelta a la A): cobertura media de 4 semanas de cada micro (% del mínimo, con
+   lo de suplementos aparte) y, por detrás, el mapa de calor de 8 semanas. «Con suplementos» o «Solo comida».    */
+var NFLIP = false, NFLIPANIM = false, NSOLO = false;
+var MICROS_V = ["vitC", "folato", "fibra", "hierro", "magnesio", "potasio", "calcio", "b12", "vitD", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];
+function vistaMicros(w, E) {
+  var N = Nu(), G = raiz.NutriGraficas, F = fuentesNu(E);
+  if (!F.perfil) { w.appendChild(el("p", "cocVacio", "Pon tus datos para ver la cobertura: sin objetivos no hay mínimos.")); return; }
+  var ch = el("div", "ntFavs");
+  [[false, "Con suplementos"], [true, "Solo comida"]].forEach(function (x) { var b = el("button", "", x[1]); b.setAttribute("aria-pressed", String(NSOLO === x[0])); b.addEventListener("click", function () { NSOLO = x[0]; pinta(); }); ch.appendChild(b); });
+  w.appendChild(ch);
+  var D = N.diasDesde(N.masDias(E.o.hoy, -27), 28, F), W = N.semanas(N.lunes(E.o.hoy), 8, F);
+  if (!D.some(function (r) { return r.conDatos; })) { w.appendChild(el("p", "cocVacio", "Sin datos en las 4 últimas semanas: no hay comidas en el calendario ni nada registrado.")); return; }
+  var caja = el("div", "ntFlip" + (NFLIP && !NFLIPANIM ? " vuelta" : "")), dentro = el("div", "ntFlipIn");
+  // cara: cobertura de 4 semanas
+  var cara = el("div", "ntCara ntCaja", '<p class="ntCap" style="margin:0">% del mínimo · media de 4 semanas</p>');
+  MICROS_V.forEach(function (k) {
+    var c = N.cobertura(D, k), tot = c.total == null ? null : NSOLO ? c.total - c.supl : c.total;
+    var b = el("button", "ntCobBtn", G.cobertura({ nombre: N.NOMBRE[k], total: tot, supl: NSOLO ? 0 : c.supl }));
+    b.setAttribute("aria-label", N.NOMBRE[k] + ": " + (tot == null ? "sin datos" : Math.round(tot) + " %") + ". Toca para ver las semanas");
+    b.addEventListener("click", function () { NFLIP = true; NFLIPANIM = true; pinta(); });
+    cara.appendChild(b);
+  });
+  cara.appendChild(el("p", "ntNota", "La raya: el mínimo (100 %). " + (NSOLO ? "Solo lo de la comida." : "Más claro: lo de suplementos («Supl.»).") + " Toca una fila para ver las semanas."));
+  // cruz: el mapa de calor de 8 semanas
+  var cols = W.map(function (S) { return corta(S.lunes); });
+  var filas = MICROS_V.map(function (k) { return { nombre: N.NOMBRE[k].replace("Vitamina ", "Vit. "), celdas: W.map(function (S) { var c = N.cobertura(S.dias, k); return c.total == null ? null : NSOLO ? c.total - c.supl : c.total; }) }; });
+  var cruz = el("div", "ntCruz ntCaja", '<p class="ntCap" style="margin:0">% del mínimo por semana · ' + (NSOLO ? "solo comida" : "con suplementos") + '</p>' + G.calor(cols, filas) +
+    '<p class="ntNota">Media de cada semana (días con datos). «s/d»: semana sin datos.</p>');
+  var v = el("button", "cocBtn", "Volver a la media"); v.addEventListener("click", function () { NFLIP = false; NFLIPANIM = false; pinta(); });
+  cruz.appendChild(v);
+  dentro.appendChild(cara); dentro.appendChild(cruz); caja.appendChild(dentro); w.appendChild(caja);
+  if (NFLIP && NFLIPANIM) { NFLIPANIM = false; setTimeout(function () { caja.classList.add("vuelta"); }, 30); }
+}
 function tablaNutri(D, obj) {
   var N = Nu(), w = el("div", "ntTabla"), filas = N.PRIORIDAD.concat(["kcal", "prot", "grasa"]), mas = ["hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];
   if (D.supl && D.supl.hay) mas.forEach(function (k) { if (D.supl.n[k] && filas.indexOf(k) < 0 && !NMAS) filas.push(k); });   // lo que traen tus suplementos, siempre a la vista

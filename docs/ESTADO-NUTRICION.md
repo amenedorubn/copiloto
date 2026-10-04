@@ -14,10 +14,10 @@ Orden: subpestañas → N1 → N2 → N3 → N4 → N5 → N7 → N6. Cada panta
 | N3 · Tendencias | hecho: curva de 8 semanas con selector y banda por semana + peso medio contra lo esperado (peso desde «Semana»; Medidas y Peso irá aparte) | 2.52.0 |
 | N4 · Fases | hecho: la fase de ahora con fechas y cómo va hoy (g/kg, % del mantenimiento); «Luego» con la tira de 6 meses; tocar una fase enseña sus proporciones | 2.53.0 |
 | N5 · Entreno | hecho: carbohidratos por kg por tipo de día (4 semanas) contra la banda de la fase, frase con lo que se queda corto y tabla | 2.54.0 |
-| N7 · Micros | pendiente | |
+| N7 · Micros | hecho: cobertura de 4 semanas por micro (Supl. más claro; «Con suplementos / Solo comida»); al tocar se da la vuelta (animada; sin animación con movimiento reducido) al mapa de calor de 8 semanas | 2.55.0 |
 | N6 · Huecos (Casa/Comprar) | pendiente | |
 
-Siguiente paso: N7 (Micros).
+Siguiente paso: N6 (Huecos, en Casa/Comprar).
 
 Cómo comprobar: `node --test tests/*.test.mjs` y `node scripts/capturas-nutricion.mjs <carpeta> [Subpestaña]`, con
 `python -m http.server 8777` corriendo. Hace capturas de la Cocina de prueba en oscuro y en claro y falla si hay
