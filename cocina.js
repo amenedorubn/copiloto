@@ -394,7 +394,7 @@ var CSS =
 CSS +=
   /* ---- subpestañas, Comprar y Tengo ---- */
   ".cocTabs{position:sticky;top:0;z-index:3;background:var(--bg);padding:0 0 10px}" +
-  ".cocSeg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:4px;border-radius:18px;background:var(--sf)}" +
+  ".cocSeg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;padding:4px;border-radius:18px;background:var(--sf)}" +
   ".cocSeg button{height:40px;border-radius:14px!important;color:var(--mu);font-size:13px!important;font-weight:800!important;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
   ".cocSeg button[aria-selected=true]{background:var(--fg);color:var(--bg)}" +
   ".cocSeg button b{margin-left:3px;font-size:11px;font-weight:800;opacity:.65}" +
@@ -440,7 +440,7 @@ CSS +=
   "@keyframes cocDer{from{transform:translateX(36px);opacity:.2}}@keyframes cocIzq{from{transform:translateX(-36px);opacity:.2}}" +
   ".cocDer{animation:cocDer .22s ease-out}.cocIzq{animation:cocIzq .22s ease-out}" +
   "@media (prefers-reduced-motion:reduce){.cocDer,.cocIzq{animation:none}}" +
-  ".cocSeg{grid-template-columns:repeat(5,minmax(0,1fr))!important}" +
+  ".cocSeg{grid-template-columns:repeat(4,minmax(0,1fr))!important}" +
   "#cocEsc .eCam.nativo{height:170px}" +
   ".cocZonas{margin-top:12px}" +
   ".cocZonaFila{width:100%;display:grid;grid-template-columns:1fr auto 20px;gap:10px;align-items:center;text-align:left;min-height:64px;padding:10px 0;border-top:1px solid var(--ln);color:var(--fg)}" +
@@ -657,11 +657,12 @@ function estado(dia) {
 // pestaña, o HOY), para su marca en el historial.
 var CTX = null, MCTX = null, SEL = null, cont = null, RELOJ = null;
 function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CTX.activa || CTX.activa())); }
-var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["nutri", "Nutrición"], ["recetas", "Recetas"]];
+// v2.46: Recetas ya no es una pestaña (las de "Receta: …" siguen abriendo su paso a paso) y Despensa se llama Casa
+var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Casa"], ["nutri", "Nutrición"]];
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
 var CORRIGE = null, PCANT = null, ABIERTA = null, TERMINA = false;
 var NDIA = 0, NSEMANA = false, NPERFIL = false, NPORQUE = null, NMAS = false;   // v2.45: el dia que miras (0 = hoy), las hojas   // TERMINA: la hoja "Terminar compra" (v2.42)   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
-function subDe(s) { if (s === "despensa") s = "tengo"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
+function subDe(s) { if (s === "despensa" || s === "casa") s = "tengo"; if (s === "recetas") s = "semana"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 /* La Casa de prueba (Ajustes): la pestaña Cocina entera con los datos de ejemplo de
    cocina-prueba.js, en la CAJA, con "SIMULACIÓN · no cuenta". op = {marca, atrasManual, activa, alTerminar} */
 var REAL = null;
@@ -720,7 +721,7 @@ function pinta() {
     bn.appendChild(fin);
   }
   c.appendChild(barra(LC.n));
-  var pag = SUB === "comprar" ? compra(E, LC) : SUB === "tengo" ? tengo(E) : SUB === "nutri" ? nutri(E, LC) : SUB === "recetas" ? listaRecetas(E) : semana(E);
+  var pag = SUB === "comprar" ? compra(E, LC) : SUB === "tengo" ? tengo(E) : SUB === "nutri" ? nutri(E, LC) : semana(E);
   if (ENTRA) { pag.classList.add(ENTRA > 0 ? "cocDer" : "cocIzq"); ENTRA = 0; }
   c.appendChild(pag);
   c.scrollTop = y;
@@ -1044,7 +1045,7 @@ function compra(E, LC) {
 // Terminar compra: cuánto has comprado de verdad de cada cosa del carro; pasa a "Por confirmar"
 function hojaTermina(carro) {
   var h = el("div", "cocHojaIt cocHojaTermina");
-  h.appendChild(el("div", "", '<b>Terminar compra · ' + carro.length + '</b><small>Pon cuánto has comprado. Entra en casa y lo confirmas en Despensa → Por confirmar.</small>'));
+  h.appendChild(el("div", "", '<b>Terminar compra · ' + carro.length + '</b><small>Pon cuánto has comprado. Entra en casa y lo confirmas en Casa → Por confirmar.</small>'));
   var ul = h.appendChild(el("ul", "cocTerm")), filas = [];
   carro.forEach(function (cb) {
     var g0 = Rc().ingrediente((cb.items || [])[0] || ""), nom = mayus1(g0.ver || g0.base || (cb.items || []).join(", "));
@@ -1061,7 +1062,7 @@ function hojaTermina(carro) {
       desapunta(f.cb.id);
       apunta({ tipo: "compra", items: [q ? conCant(q, f.nom) : f.nom], zona: f.cb.zona, lista: f.cb.lista, nutri: f.cb.nutri, ali: f.cb.ali, pide: f.cb.pide, fin: 1 });
     });
-    TERMINA = false; aviso("En casa. Confírmalo en Despensa → Por confirmar."); pinta();
+    TERMINA = false; aviso("En casa. Confírmalo en Casa → Por confirmar."); pinta();
   });
   no.addEventListener("click", function () { TERMINA = false; pinta(); });
   bot.appendChild(ok); bot.appendChild(no); h.appendChild(bot);
@@ -1481,7 +1482,7 @@ function tablaNutri(D, obj) {
   (NMAS ? filas.concat(mas) : filas).forEach(function (k) {
     var o = obj && obj[k], t = D.total[k], pct = o && o.min ? Math.round(t / o.min * 100) : null, sinMicro = D.reg.sinMicros && !/kcal|prot|hc|grasa/.test(k);
     var b = el("button", "ntFila" + (N.PRIORIDAD.indexOf(k) >= 0 ? " prio" : ""), '<span>' + esc(N.NOMBRE[k]) + '<small>' + esc(N.UNIDAD[k]) + '</small></span><span>' + fmtN(D.plan.n[k], k) + '</span><span>' +
-      (D.reg.n[k] ? fmtN(D.reg.n[k], k) : sinMicro ? "s/d" : "—") + '</span><span>' + (o ? rangoTxt(o) : "—") + '</span><b>' + (pct == null ? "—" : pct + " %") + '</b>');
+      (D.reg.n[k] ? fmtN(D.reg.n[k], k) : sinMicro ? "s/d" : "—") + '</span><span>' + (o ? rangoTxt(o) + (o.estimado ? '<small>estimado</small>' : "") : "—") + '</span><b>' + (pct == null ? "—" : pct + " %") + '</b>');
     b.setAttribute("aria-label", N.NOMBRE[k] + ": planificado " + fmtN(D.plan.n[k], k) + ", registrado " + fmtN(D.reg.n[k], k) + " " + N.UNIDAD[k] + (o ? ", objetivo " + rangoTxt(o) : ""));
     b.addEventListener("click", function () { NPORQUE = NPORQUE === k ? null : k; pinta(); });
     w.appendChild(b);
@@ -1493,6 +1494,8 @@ function tablaNutri(D, obj) {
   if (sin.length) w.appendChild(el("p", "ntNota", "Sin datos (no cuentan): " + esc(sin.slice(0, 4).join(" · ")) + (sin.length > 4 ? " y " + (sin.length - 4) + " más" : "") + "."));
   if (D.reg.estimado) w.appendChild(el("p", "ntNota", "Comer fuera es una estimación de energía y macros; sus vitaminas y minerales, sin datos (s/d)."));
   if (!obj) w.appendChild(el("p", "ntNota", "Sin tus datos no hay objetivos: la tabla solo suma."));
+  else if (obj.kcal && obj.kcal.estimado && obj.mant) w.appendChild(el("p", "ntNota", "Energía estimada: " + (obj.mant.tmbEstimado ? "metabolismo basal con Mifflin-St Jeor (peso, altura y edad) = " : "tu basal ") +
+    obj.mant.tmb + " kcal × 1,6. Pon tu mantenimiento en Tus datos para afinarla."));
   return w;
 }
 function registroRapido(fecha, regs) {
@@ -1532,7 +1535,11 @@ function hojaPerfil(p, primera) {
     [["peso", "Peso (kg)", "decimal"], ["altura", "Altura (cm)", "numeric"], ["edad", "Edad", "numeric"], ["grasa", "% de grasa (opcional)", "decimal"],
      ["bmr", "Metabolismo basal, kcal (opcional)", "numeric"], ["mant", "Mantenimiento, kcal (opcional)", "numeric"]].map(function (c) {
       return '<label>' + esc(c[1]) + '<input name="' + c[0] + '" inputmode="' + c[2] + '" autocomplete="off" value="' + esc(p[c[0]] != null ? String(p[c[0]]).replace(".", ",") : "") + '"></label>';
-    }).join("") + '<button class="cocGo" type="submit">Guardar</button>';
+    }).join("") + (function () {
+      var N = Nu(), r = N.reposo(p), m = N.mantenimiento(p);
+      return '<p class="ntNota">La grasa y el basal son opcionales. Sin grasa, todo va por kg de peso (el medio de la semana si lo pones).' +
+        (r && !(p.bmr > 0) ? ' Basal <b>estimado</b>: ' + r + ' kcal (Mifflin-St Jeor).' : "") + (m && m.estimado ? ' Mantenimiento <b>estimado</b>: ' + m.kcal + ' kcal.' : "") + '</p>';
+    })() + '<button class="cocGo" type="submit">Guardar</button>';
   f.addEventListener("submit", function (e) {
     e.preventDefault(); var q = {}, ok = true;
     ["peso", "altura", "edad", "grasa", "bmr", "mant"].forEach(function (k) { var v = parseFloat(String(f.elements[k].value).replace(",", ".")); if (isFinite(v) && v > 0) q[k] = v; });
@@ -1567,26 +1574,6 @@ function hojaSemana(fecha, semanas, perfil, tipo) {
   f.querySelector(".ntBorra").addEventListener("click", function () { var S = lee(K_SEMANAS, {}); delete S[L]; guarda(K_SEMANAS, S); pinta(); });
   w.appendChild(f);
   return w;
-}
-
-/* ------------------------------ Recetas ------------------------------ */
-function listaRecetas(E) {
-  var s = el("section", "cocSec");
-  s.innerHTML = '<h3>Recetas</h3><p class="sub">De Copiloto Cocina · con temporizador y voz</p>';
-  if (!RJ.lista.length) { s.appendChild(el("p", "cocVacio", cargando ? "Trayendo las recetas…" : "Sin conexión: las recetas salen en cuanto haya red.")); return s; }
-  RJ.lista.forEach(function (r) {
-    var J = RJ.json[r.id], txt = "";
-    if (J && E.H) {
-      var no = (J.ingredientes || []).map(function (i) { return Rc().ingrediente((i.cantidad || "") + " " + i.nombre); })
-        .filter(function (g) { return !g.basico && Dp().estadoDe(g, E.H).estado === "no"; });
-      txt = !no.length ? "Tienes todo" : "Falta " + nombresDe(no);
-    }
-    var b = el("button", "cocFila", '<time><b>' + esc(r.tiempo_total_min ? r.tiempo_total_min + " min" : "") + '</b>' + esc(r.raciones ? r.raciones + " rac." : "") + '</time><span>' +
-      esc(r.titulo) + (txt ? '<small>' + esc(txt) + '</small>' : "") + '</span><em class="cocIr">' + svg("der") + '</em>');
-    b.addEventListener("click", function () { if (J) abreModo({ receta: J }); });
-    s.appendChild(b);
-  });
-  return s;
 }
 
 /* HOY, a la hora de una comida: su tarjeta en grande (la misma de Semana). Tocarla abre

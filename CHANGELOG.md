@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.46.0] - 2026-10-04
+
+### Añadido
+
+- Cocina: cuatro pestañas, Semana · Comprar · Casa · Nutrición (sin Recetas; las recetas de los eventos «Receta: …» siguen funcionando). Nutrición: la grasa y el basal son opcionales; sin ellos el basal sale de Mifflin-St Jeor y la energía se marca como estimado
+
 ## [2.45.1] - 2026-10-04
 
 ### Corregido
@@ -694,6 +700,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.46.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.46.0
 [2.45.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.45.1
 [2.45.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.45.0
 [2.44.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.44.0

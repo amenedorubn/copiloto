@@ -43,6 +43,9 @@ test("objetivos: fase de la semana, g/kg, % sobre el mantenimiento y su porqué"
   const man = Math.round((10 * 70 + 6.25 * 175 - 5 * 30 + 5) * 1.6);
   assert.deepEqual([o.kcal.min, o.kcal.max], [man, man]);
   assert.match(o.kcal.porque, /Mifflin/);
+  assert.ok(o.kcal.estimado); assert.ok(o.mant.tmbEstimado);              // sin basal ni mantenimiento: estimado
+  const p2 = N.objetivos({ ...PERFIL, mant: 2800 }, "2026-11-10", {}, "gimnasio");
+  assert.ok(!p2.kcal.estimado); assert.equal(p2.kcal.min, 2800);
   assert.equal(o.vitC.min, 110); assert.equal(o.folato.min, 330);
   // tirada larga: +2 g/kg; descanso: −1
   assert.equal(N.objetivos(PERFIL, "2026-11-10", {}, "tirada").hc.min, 420);

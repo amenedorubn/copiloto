@@ -96,7 +96,7 @@ for (const tema of ["oscuro", "claro"]) {
   await p.waitForTimeout(1500);
   await p.click("#hCocina"); await p.waitForTimeout(1200);
   // una por subpestaña, del tamaño de la pantalla: se ve si hace falta bajar
-  for (const [k, n] of [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["recetas", "Recetas"]]) {
+  for (const [k, n] of [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Casa"], ["nutri", "Nutrición"]]) {
     await p.click(`.cocSeg button:has-text('${n}')`); await p.waitForTimeout(350);
     await p.screenshot({ path: `${OUT}${tema}-${k}.png` });
   }
@@ -116,10 +116,10 @@ for (const tema of ["oscuro", "claro"]) {
   const a3 = await pestaña(); await desliza(140); await p.waitForTimeout(300);
   const a4 = await pestaña();
   console.log("deslizar:", a1, a2, a3, a4);
-  if (!/^Comprar/.test(a1) || a2 !== "Despensa" || a3 !== "Semana" || a4 !== "Semana") { errores++; console.log("DESLIZAR MAL"); }
+  if (!/^Comprar/.test(a1) || a2 !== "Casa" || a3 !== "Semana" || a4 !== "Semana") { errores++; console.log("DESLIZAR MAL"); }
   if (tema === "oscuro") {
     // Despensa: tocar algo -> Se acabó / a la lista; y ver una zona sola
-    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
+    await p.click(".cocSeg button:has-text('Casa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}tengo-todo.png` });
     await p.click(".cocZonaFila:has-text('Nevera')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}casa-zona.png` });                       // v2.40: filas con su cantidad
@@ -158,7 +158,7 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocSeg button:has-text('Nutrición')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}nutri-sinperfil.png` });
     // v2.40: "Por confirmar" en la Despensa (el desayuno que ya pasó y lo marcado en Comprar)
-    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
+    await p.click(".cocSeg button:has-text('Casa')"); await p.waitForTimeout(300);
     await p.click(".cocChips button:has-text('Todo')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}casa-porconfirmar.png` });
     await p.click(".cocPcB button:has-text('Corregir')").catch(() => {}); await p.waitForTimeout(300);
@@ -235,7 +235,7 @@ for (const tema of ["oscuro", "claro"]) {
     await p.screenshot({ path: `${OUT}esc-nativo-otro.png` });
     await p.click("#cocEsc .eFin"); await p.waitForTimeout(600);
     await p.evaluate(() => { window.Nativo.es = false; });
-    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
+    await p.click(".cocSeg button:has-text('Casa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}esc-tengo.png` });
     // v2.39: el mismo código otra vez sale con TU nombre y no pregunta
     await p.click(".cocBtn:has-text('Escanear')"); await p.waitForTimeout(800);
@@ -289,7 +289,7 @@ for (const tema of ["oscuro", "claro"]) {
     if (await abreDeSemana(/con errores/)) { await foto("prueba-errores"); await toca("simFin"); await p.waitForTimeout(500); }
     else { errores++; console.log("NO SALE LA RECETA CON ERRORES"); }
     // la Despensa y Comprar de ejemplo
-    await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
+    await p.click(".cocSeg button:has-text('Casa')"); await p.waitForTimeout(300);
     await foto("casaprueba-todo");
     await p.click(".cocPcB button:has-text('Así fue') >> nth=0"); await p.waitForTimeout(400);
     await p.click(".cocZonaFila:has-text('Congelador')"); await p.waitForTimeout(300);

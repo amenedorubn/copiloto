@@ -34,7 +34,7 @@ energía como % sobre el mantenimiento. Cada número lleva su «por qué».
 
 - **Carbohidratos según el día** (del calendario de entrenos): descanso −1 g/kg, gimnasio =, calidad +1, tirada larga
   o carrera +2. En carga, el día no suma.
-- **Mantenimiento:** el que pongas tú. Si no, el basal que pongas (o Mifflin-St Jeor) × 1,6. Contrástalo con el peso
+- **Mantenimiento:** el que pongas tú. Si no, el basal que pongas (o Mifflin-St Jeor con peso, altura y edad) × 1,6, y entonces la energía sale como **«estimado»** en la tabla y en Tus datos. La grasa corporal y el basal son opcionales: sin grasa, todo va por kg de peso (el medio de la semana si lo pones), nunca por masa magra. Contrástalo con el peso
   medio semanal.
 - **Micros (EFSA, hombre adulto):** vitamina C 110 mg, folato 330 µg, fibra ≥ 25 g, hierro 11 mg, magnesio 350 mg,
   potasio 3500 mg, B12 4 µg, vitamina D 15 µg (máximo 100), calcio 950 mg.
@@ -59,7 +59,7 @@ Es algo que se **añade** (un tentempié o un acompañamiento): no cambia ningun
 
 ## La pestaña (v2.45)
 
-Cocina → **Nutrición**, entre Despensa y Recetas:
+Cocina → **Nutrición**, la cuarta pestaña (Semana · Comprar · Casa · Nutrición):
 - **El día:** Ayer, Hoy, Mañana y los 2 siguientes. Arriba, la fase de su semana y el tipo de día (del calendario de
   entrenos: descanso, gimnasio, calidad o tirada larga).
 - **Tus datos:** peso, altura y edad, y si quieres el % de grasa, el basal y el mantenimiento. Solo en este móvil.

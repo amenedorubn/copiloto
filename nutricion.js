@@ -138,10 +138,10 @@ var DIA = { descanso: [-1, "Día de descanso: 1 g/kg menos."], gimnasio: [0, "D�
 // gasto en reposo: Mifflin-St Jeor; mantenimiento = reposo × 1,6 si no lo pones tú
 function reposo(p) { if (!p || !(p.peso > 0) || !(p.altura > 0) || !(p.edad > 0)) return null; return Math.round(10 * p.peso + 6.25 * p.altura - 5 * p.edad + (p.sexo === "m" ? -161 : 5)); }
 function mantenimiento(p) {
-  if (p && p.mant > 0) return { kcal: Math.round(p.mant), porque: "El que has puesto tú." };
+  if (p && p.mant > 0) return { kcal: Math.round(p.mant), estimado: false, porque: "El que has puesto tú." };
   var r = p && p.bmr > 0 ? Math.round(p.bmr) : reposo(p);
   if (!r) return null;
-  return { kcal: Math.round(r * 1.6), porque: (p.bmr > 0 ? "Tu metabolismo basal (" + r + " kcal)" : "Mifflin-St Jeor (" + r + " kcal en reposo)") +
+  return { kcal: Math.round(r * 1.6), estimado: true, tmb: r, tmbEstimado: !(p.bmr > 0), porque: (p.bmr > 0 ? "Tu metabolismo basal (" + r + " kcal)" : "Mifflin-St Jeor (" + r + " kcal en reposo)") +
     " × 1,6 por entrenar 6–7 días a la semana. Contrástalo con tu peso medio semanal y cámbialo si hace falta." };
 }
 
@@ -174,8 +174,10 @@ function objetivos(perfil, iso, semanas, tipo) {
   function rango(k, a, b, u, porque) {
     var x = aj[k]; out[k] = x && x.length === 2 ? { min: x[0], max: x[1], u: u, porque: "Lo has puesto tú para esta semana.", propio: true } : { min: a, max: b, u: u, porque: porque };
   }
+  out.mant = man;
   if (man) rango("kcal", Math.round(man.kcal * (1 + C.kcal[0] / 100)), Math.round(man.kcal * (1 + C.kcal[1] / 100)), "kcal",
     "Mantenimiento " + man.kcal + " kcal (" + man.porque + ") " + (C.kcal[0] || C.kcal[1] ? (C.kcal[0] > 0 ? "+" : "") + C.kcal[0] + "…" + (C.kcal[1] > 0 ? "+" : "") + C.kcal[1] + " % en " + C.nombre.toLowerCase() + "." : "sin cambio en " + C.nombre.toLowerCase() + "."));
+  if (out.kcal && man && man.estimado && !out.kcal.propio) out.kcal.estimado = true;
   rango("prot", Math.round(C.prot[0] * peso), Math.round(C.prot[1] * peso), "g", C.prot[0] + "–" + C.prot[1] + " g/kg × " + r1(peso) + " kg (" + out.pesoDe + ").");
   var d = F.fase === "carga" ? 0 : DIA[tipo] ? DIA[tipo][0] : 0, h0 = Math.max(3, C.hc[0] + d), h1 = Math.max(h0, C.hc[1] + d);
   rango("hc", Math.round(h0 * peso), Math.round(h1 * peso), "g", h0 + "–" + h1 + " g/kg × " + r1(peso) + " kg." + (d && DIA[tipo] ? " " + DIA[tipo][1] : ""));
