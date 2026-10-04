@@ -88,7 +88,12 @@ function casa(hoy, ahoraMs) {
     codigos: [{ ean: "0000000000017", marca: "Marca de ejemplo", formato: "240 g (3 x 80 g)" }], eq: { n: 80, ud: "g" },
     nutri: { kcal: 116, prot: 26, hc: 0, grasa: 1, por: "100 g", fuente: "OFF" } }];
   var lista = [{ id: "prueba-m1", t: t, txt: "Bolsas de basura" }];   // sin pasillo conocido y sin día de uso
-  return { dia: dia, nota: nota, cambios: cambios, lista: lista, alimentos: alimentos };
+  // nutricion: un perfil de EJEMPLO (no el tuyo), un batido registrado hoy y un tipo de dia por dia de la semana
+  var perfil = { peso: 70, altura: 175, edad: 30, sexo: "h" };
+  var registro = [{ id: "prueba-r1", t: t, fecha: hoy, txt: "Batido de proteína", fav: "batido",
+    n: { kcal: 270, prot: 37.4, hc: 15.5, grasa: 5.6, fibra: 0, vitC: 0, folato: 15, calcio: 485 }, sinDatos: [], estimado: false, micros: true }];
+  var tipoDia = function (f) { var d = new Date(f + "T12:00:00").getDay(); return d === 0 ? "tirada" : d === 3 ? "calidad" : d === 6 ? "descanso" : "gimnasio"; };
+  return { dia: dia, nota: nota, cambios: cambios, lista: lista, alimentos: alimentos, perfil: perfil, registro: registro, tipoDia: tipoDia };
 }
 
 var API = { RECETAS: RECETAS, VELOCIDADES: VELOCIDADES, evento: evento, casa: casa };

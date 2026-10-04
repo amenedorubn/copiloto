@@ -154,6 +154,9 @@ for (const tema of ["oscuro", "claro"]) {
     await p.click(".cocTermina"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}comprar-terminar.png` });
     await p.fill(".cocTerm input >> nth=0", "1 kg"); await p.click(".cocHojaTermina .cocHojaSi"); await p.waitForTimeout(400);
+    // v2.45: Nutrición sin tus datos: los pide (y se quedan en el móvil)
+    await p.click(".cocSeg button:has-text('Nutrición')"); await p.waitForTimeout(300);
+    await p.screenshot({ path: `${OUT}nutri-sinperfil.png` });
     // v2.40: "Por confirmar" en la Despensa (el desayuno que ya pasó y lo marcado en Comprar)
     await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.click(".cocChips button:has-text('Todo')"); await p.waitForTimeout(300);
@@ -293,6 +296,18 @@ for (const tema of ["oscuro", "claro"]) {
     await foto("casaprueba-congelador");
     await p.click(".cocSeg button:has-text('Comprar')"); await p.waitForTimeout(300);
     await foto("casaprueba-comprar");
+    // v2.45: Nutrición con el perfil de ejemplo: hoy, el porqué, la semana y registrar
+    await p.click(".cocSeg button:has-text('Nutrición')"); await p.waitForTimeout(400);
+    await foto("nutri-hoy");
+    await p.click(".ntFila:has-text('Vitamina C')"); await p.waitForTimeout(200);
+    await p.evaluate(() => document.querySelector(".ntTabla").scrollIntoView({ block: "start" })); await p.waitForTimeout(200);
+    await foto("nutri-tabla");
+    await p.click(".ntFavs button:has-text('Dátiles')"); await p.waitForTimeout(300);
+    await p.evaluate(() => document.querySelector(".ntReg").scrollIntoView({ block: "start" })); await p.waitForTimeout(200);
+    await foto("nutri-registro");
+    await p.evaluate(() => { const c = document.getElementById("ptCuerpo"); if (c) c.scrollTop = 0; });
+    await p.click(".cocBtn:has-text('Semana ·')"); await p.waitForTimeout(300);
+    await foto("nutri-semana");
     await p.click(".cocSim button"); await p.waitForTimeout(800);
     await foto("prueba-vuelta");                                                     // Terminar: de vuelta a Ajustes
     await p.click("#hojaX").catch(() => {}); await p.waitForTimeout(400);

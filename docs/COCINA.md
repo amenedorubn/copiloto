@@ -24,7 +24,7 @@ con sus tests (`node --test tests/<archivo>.test.mjs`):
 
 ## Las subpestañas
 
-Arriba, fijas: **Semana**, **Comprar**, **Despensa** y **Recetas**; se cambian tocándolas o deslizando a los lados.
+Arriba, fijas: **Semana**, **Comprar**, **Despensa**, **Nutrición** (v2.45, ver [NUTRICION.md](NUTRICION.md)) y **Recetas**; se cambian tocándolas o deslizando a los lados.
 
 - **Semana**: arriba, en grande, lo que toca ahora (o lo siguiente), la misma tarjeta que en HOY; si estás
   cocinándolo, «Cocinando · paso 3 de 9» y «Seguir». Debajo, la semana por días: lo hecho y lo pasado en gris,

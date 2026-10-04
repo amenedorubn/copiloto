@@ -31,11 +31,14 @@ function Rc() { return usa("Receta", "./receta.js"); }
 function Dp() { return usa("Despensa", "./despensa.js"); }
 function Modo() { return EN_NODE ? null : raiz.CocinaModo; }
 function Al() { return usa("Alimentos", "./alimentos.js"); }
+function Nu() { return usa("Nutricion", "./nutricion.js"); }
 
 var RECETAS_URL = "https://raw.githubusercontent.com/amenedorubn/cocina/main/recetas/";
 var K_RECETAS = "copiloto.cocina.recetas.v1", K_CAMBIOS = "copiloto.cocina.cambios.v1",
     K_NOTA = "copiloto.cocina.nota.v1", K_LISTA = "copiloto.cocina.lista.v1", K_ALIM = "copiloto.cocina.alimentos.v1",
-    K_SUPER = "copiloto.cocina.super.v1";
+    K_SUPER = "copiloto.cocina.super.v1",
+    // v2.45 · nutricion: tus datos y tu registro, solo en este movil (nunca en el repo ni en el Worker)
+    K_PERFIL = "copiloto.nutri.perfil.v1", K_SEMANAS = "copiloto.nutri.semanas.v1", K_REG = "copiloto.nutri.registro.v1";
 
 function dos(n) { return n < 10 ? "0" + n : "" + n; }
 function mayus1(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
@@ -437,7 +440,7 @@ CSS +=
   "@keyframes cocDer{from{transform:translateX(36px);opacity:.2}}@keyframes cocIzq{from{transform:translateX(-36px);opacity:.2}}" +
   ".cocDer{animation:cocDer .22s ease-out}.cocIzq{animation:cocIzq .22s ease-out}" +
   "@media (prefers-reduced-motion:reduce){.cocDer,.cocIzq{animation:none}}" +
-  ".cocSeg{grid-template-columns:repeat(4,minmax(0,1fr))!important}" +
+  ".cocSeg{grid-template-columns:repeat(5,minmax(0,1fr))!important}" +
   "#cocEsc .eCam.nativo{height:170px}" +
   ".cocZonas{margin-top:12px}" +
   ".cocZonaFila{width:100%;display:grid;grid-template-columns:1fr auto 20px;gap:10px;align-items:center;text-align:left;min-height:64px;padding:10px 0;border-top:1px solid var(--ln);color:var(--fg)}" +
@@ -540,6 +543,22 @@ CSS +=
   ".cocTerm li{display:grid;grid-template-columns:1fr 112px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--ln)}" +
   ".cocTerm li span b{display:block;font-size:15px;font-weight:700}.cocTerm li span small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
   ".cocTerm input{min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);padding:0 10px;font:700 15px Manrope,sans-serif;width:100%}" +
+  /* ---- v2.45 Nutrición ---- */
+  ".ntDias{margin-top:12px}.ntQue{margin:12px 0 0;font-size:13px;font-weight:600;line-height:1.5;color:var(--mu)}.ntQue b{color:var(--fg)}" +
+  ".ntNota{margin:8px 0 0;font-size:13px;font-weight:600;line-height:1.5;color:var(--mu)}.ntNota b{color:var(--fg)}" +
+  ".ntTabla{margin-top:16px}" +
+  ".ntFila{width:100%;display:grid;grid-template-columns:1.5fr .8fr .8fr 1.1fr .7fr;gap:6px;align-items:center;min-height:44px;padding:4px 0!important;border-top:1px solid var(--ln);background:none;color:var(--fg);text-align:right;font-size:14px;font-weight:600;border-radius:0!important}" +
+  ".ntFila span:first-child{text-align:left;font-weight:700}.ntFila span small{margin-left:4px;font-size:11px;color:var(--mu);font-weight:600}" +
+  ".ntFila b{font-weight:800}.ntFila.prio span:first-child{font-weight:800}" +
+  ".ntCab{min-height:32px;border-top:0;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}" +
+  ".ntPorque{margin:0 0 6px;font-size:13px;font-weight:600;line-height:1.5;color:var(--mu)}" +
+  ".ntReg{margin-top:24px}.ntFavs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}" +
+  ".ntFavs button{min-height:44px;padding:0 12px!important;border-radius:14px!important;background:var(--sf2);color:var(--fg);font-size:14px;font-weight:700}" +
+  ".ntFavs button[aria-pressed=true]{background:var(--fg);color:var(--bg)}" +
+  ".ntRegIt{display:flex;align-items:center;gap:8px;min-height:52px;border-top:1px solid var(--ln)}.ntRegIt span{flex:1;font-size:15px;font-weight:700}.ntRegIt small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
+  ".ntPerfil{display:grid;gap:8px;margin-top:12px}.ntPerfil label{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--mu);text-transform:none;letter-spacing:0;margin:0}" +
+  ".ntPerfil input{width:100%}" +
+  ".ntPerfil input{min-height:44px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--fg);padding:0 12px;font:700 16px Manrope,sans-serif}" +
   "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
@@ -638,9 +657,10 @@ function estado(dia) {
 // pestaña, o HOY), para su marca en el historial.
 var CTX = null, MCTX = null, SEL = null, cont = null, RELOJ = null;
 function enTab() { return !!(cont && document.body.contains(cont) && CTX && (!CTX.activa || CTX.activa())); }
-var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["recetas", "Recetas"]];
+var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"], ["nutri", "Nutrición"], ["recetas", "Recetas"]];
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
-var CORRIGE = null, PCANT = null, ABIERTA = null, TERMINA = false;   // TERMINA: la hoja "Terminar compra" (v2.42)   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
+var CORRIGE = null, PCANT = null, ABIERTA = null, TERMINA = false;
+var NDIA = 0, NSEMANA = false, NPERFIL = false, NPORQUE = null, NMAS = false;   // v2.45: el dia que miras (0 = hoy), las hojas   // TERMINA: la hoja "Terminar compra" (v2.42)   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
 function subDe(s) { if (s === "despensa") s = "tengo"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
 /* La Casa de prueba (Ajustes): la pestaña Cocina entera con los datos de ejemplo de
    cocina-prueba.js, en la CAJA, con "SIMULACIÓN · no cuenta". op = {marca, atrasManual, activa, alTerminar} */
@@ -650,10 +670,11 @@ API.pintaPrueba = function (c, op) {
   var o = ahoraOpts(), ej = X.casa(o.hoy, o.ahoraMs);
   if (!CAJA) REAL = { NOTA: NOTA };
   CAJA = {}; CAJA[K_CAMBIOS] = ej.cambios; CAJA[K_LISTA] = ej.lista; CAJA[K_ALIM] = ej.alimentos;
+  CAJA[K_PERFIL] = ej.perfil; CAJA[K_REG] = ej.registro; CAJA[K_SEMANAS] = {};
   NOTA = { t: Date.now(), texto: ej.nota };
   CAJA.__fin = op && op.alTerminar;
   API.pinta(c, { dia: ej.dia, hoy: o.hoy, ahora: o.ahora, conf: null, marca: op && op.marca, atrasManual: op && op.atrasManual,
-                 activa: op && op.activa, sub: "tengo", prueba: true });
+                 activa: op && op.activa, sub: "tengo", prueba: true, tipoDia: ej.tipoDia });
 };
 // salir de la prueba: se tira la CAJA y vuelve la nota de verdad
 API.salPrueba = function () {
@@ -699,7 +720,7 @@ function pinta() {
     bn.appendChild(fin);
   }
   c.appendChild(barra(LC.n));
-  var pag = SUB === "comprar" ? compra(E, LC) : SUB === "tengo" ? tengo(E) : SUB === "recetas" ? listaRecetas(E) : semana(E);
+  var pag = SUB === "comprar" ? compra(E, LC) : SUB === "tengo" ? tengo(E) : SUB === "nutri" ? nutri(E, LC) : SUB === "recetas" ? listaRecetas(E) : semana(E);
   if (ENTRA) { pag.classList.add(ENTRA > 0 ? "cocDer" : "cocIzq"); ENTRA = 0; }
   c.appendChild(pag);
   c.scrollTop = y;
@@ -1399,6 +1420,153 @@ function copia(s) {
   s.appendChild(ta); s.appendChild(b);
   setTimeout(function () { try { ta.focus(); ta.select(); } catch (e) {} }, 50);
   return s;
+}
+
+/* ------------------------------ Nutrición (v2.45) ------------------------------
+   nutricion.js hace las cuentas; aquí: el día (planificado del calendario + registrado por ti) contra
+   los objetivos de su semana, "Te falta X; cómete Y", el registro rápido y la hoja de la semana.     */
+function fmtN(v, k) { if (v == null || !isFinite(v)) return "—"; var r = v >= 100 || k === "kcal" ? Math.round(v) : Math.round(v * 10) / 10; return String(r).replace(".", ","); }
+function rangoTxt(o) { return !o ? "—" : o.max != null && o.max !== o.min ? fmtN(o.min) + "–" + fmtN(o.max) : (o.max === o.min ? "" : "≥ ") + fmtN(o.min); }
+function registro() { return lee(K_REG, []); }
+function nutri(E, LC) {
+  var N = Nu(), o = E.o, s = el("section", "cocSec cocNutri"), fecha = sumaDia(o.hoy, NDIA), perfil = lee(K_PERFIL, null), semanas = lee(K_SEMANAS, {});
+  var tipo = CTX.tipoDia ? CTX.tipoDia(fecha) : null, F = N.faseDe(fecha, semanas), obj = perfil ? N.objetivos(perfil, fecha, semanas, tipo || "gimnasio") : null;
+  var dTxt = NDIA === 0 ? "Hoy" : NDIA === 1 ? "Mañana" : NDIA === -1 ? "Ayer" : mayus1(Dp().diaCorto(fecha)) + " " + (+fecha.slice(8));
+  s.innerHTML = '<p class="cocLead">Nutrición · ' + esc(dTxt) + '</p><p class="sub">' + esc((N.FASES[F.fase] || {}).nombre || "") + ' · semana del ' + esc(corta(N.lunes(fecha))) +
+    (tipo ? ' · ' + esc({ descanso: "descanso", gimnasio: "gimnasio", calidad: "calidad", tirada: "tirada larga" }[tipo] || tipo) : "") + '</p>';
+  var dias = el("div", "cocSuperB ntDias");
+  [-1, 0, 1, 2, 3].forEach(function (d) {
+    var f = sumaDia(o.hoy, d), b = el("button", "", esc(d === 0 ? "Hoy" : d === 1 ? "Mañana" : d === -1 ? "Ayer" : mayus1(Dp().diaCorto(f))));
+    b.setAttribute("aria-pressed", String(NDIA === d)); b.addEventListener("click", function () { NDIA = d; NPORQUE = null; pinta(); });
+    dias.appendChild(b);
+  });
+  s.appendChild(dias);
+  var acc = el("div", "cocDos"), bs = el("button", "cocBtn", "Semana · " + esc((N.FASES[F.semana] || {}).nombre || "")), bp = el("button", "cocBtn", perfil ? "Tus datos" : "Poner tus datos");
+  bs.addEventListener("click", function () { NSEMANA = !NSEMANA; NPERFIL = false; pinta(); });
+  bp.addEventListener("click", function () { NPERFIL = !NPERFIL; NSEMANA = false; pinta(); });
+  acc.appendChild(bs); acc.appendChild(bp); s.appendChild(acc);
+  if (NPERFIL || !perfil) s.appendChild(hojaPerfil(perfil, !perfil));
+  if (NSEMANA && perfil) s.appendChild(hojaSemana(fecha, semanas, perfil, tipo));
+  // el dia: planificado (calendario) + registrado (tu)
+  var comidas = E.Rs.filter(function (R) { return R.fecha === fecha && R.tipo === "comida" && Dp().estadoComida(R, E.CB, o) !== "saltada"; });
+  var regs = registro().filter(function (x) { return x.fecha === fecha; });
+  var D = N.dia(comidas, regs, function (n) { return aliDe(n); });
+  s.appendChild(el("p", "ntQue", '<b>Planificado</b> sale del calendario (' + comidas.length + (comidas.length === 1 ? " comida" : " comidas") + '). <b>Registrado</b> es lo que apuntas tú (' + regs.length +
+    '). No es lo que has comido de verdad: el calendario no lo recoge todo.'));
+  if (obj) {
+    var falta = N.teFalta(D.total, obj, E.H ? E.H.todos.map(function (x) { return x.nombre; }) : [], LC.items.map(function (x) { return x.ver; }));
+    if (falta.length) {
+      var tf = el("div", "cocPc ntFalta", '<h4 class="cocPcTit">Te falta</h4>');
+      falta.forEach(function (x) {
+        var it = el("div", "cocPcIt", '<p><b>' + x.falta + ' ' + esc(x.u) + ' de ' + esc(/^Vitamina/.test(x.nombre) ? "vitamina " + x.nombre.slice(9) : x.nombre.toLowerCase()) + '</b>' +
+          (x.y ? '<small>Cómete ' + esc(x.y.txt) + ' (≈' + x.y.aporta + ' ' + esc(x.u) + ') · ' + (x.y.donde === "casa" ? "lo tienes en casa" : x.y.donde === "lista" ? "está en tu lista" : "no lo tienes: a la lista") + '</small>' : "") + '</p>');
+        if (x.y && x.y.donde === "comprar") {
+          var b = el("button", "", svg("mas") + "A la lista"); b.addEventListener("click", function () { aLista(x.y.nombre); aviso("En la lista: " + x.y.nombre + "."); pinta(); });
+          var w = el("div", "cocPcB"); w.appendChild(b); it.appendChild(w);
+        }
+        tf.appendChild(it);
+      });
+      tf.appendChild(el("p", "ntNota", "Se añade a lo que comes: no cambia ninguna comida del plan."));
+      s.appendChild(tf);
+    } else if (comidas.length || regs.length) s.appendChild(el("p", "cocVacio", "Con lo planificado y lo registrado llegas a los mínimos de carbohidratos, fibra, vitamina C y folato."));
+  }
+  if (!comidas.length && !regs.length) s.appendChild(el("p", "cocVacio", "Nada planificado ni registrado para " + dTxt.toLowerCase() + ". Si comes algo que no está en el calendario, apúntalo abajo."));
+  s.appendChild(tablaNutri(D, obj));
+  s.appendChild(registroRapido(fecha, regs));
+  return s;
+}
+function tablaNutri(D, obj) {
+  var N = Nu(), w = el("div", "ntTabla"), filas = N.PRIORIDAD.concat(["kcal", "prot", "grasa"]), mas = ["hierro", "magnesio", "potasio", "b12", "vitD", "calcio"];
+  w.appendChild(el("div", "ntFila ntCab", '<span>Nutriente</span><span>Plan.</span><span>Reg.</span><span>Objetivo</span><span>%</span>'));
+  (NMAS ? filas.concat(mas) : filas).forEach(function (k) {
+    var o = obj && obj[k], t = D.total[k], pct = o && o.min ? Math.round(t / o.min * 100) : null, sinMicro = D.reg.sinMicros && !/kcal|prot|hc|grasa/.test(k);
+    var b = el("button", "ntFila" + (N.PRIORIDAD.indexOf(k) >= 0 ? " prio" : ""), '<span>' + esc(N.NOMBRE[k]) + '<small>' + esc(N.UNIDAD[k]) + '</small></span><span>' + fmtN(D.plan.n[k], k) + '</span><span>' +
+      (D.reg.n[k] ? fmtN(D.reg.n[k], k) : sinMicro ? "s/d" : "—") + '</span><span>' + (o ? rangoTxt(o) : "—") + '</span><b>' + (pct == null ? "—" : pct + " %") + '</b>');
+    b.setAttribute("aria-label", N.NOMBRE[k] + ": planificado " + fmtN(D.plan.n[k], k) + ", registrado " + fmtN(D.reg.n[k], k) + " " + N.UNIDAD[k] + (o ? ", objetivo " + rangoTxt(o) : ""));
+    b.addEventListener("click", function () { NPORQUE = NPORQUE === k ? null : k; pinta(); });
+    w.appendChild(b);
+    if (NPORQUE === k) w.appendChild(el("p", "ntPorque", esc(o ? o.porque : "Pon tus datos para tener objetivos.")));
+  });
+  var m = el("button", "cocLink", NMAS ? "Menos nutrientes" : "Más nutrientes"); m.addEventListener("click", function () { NMAS = !NMAS; pinta(); });
+  w.appendChild(m);
+  var sin = D.plan.sinDatos.concat(D.reg.sinDatos);
+  if (sin.length) w.appendChild(el("p", "ntNota", "Sin datos (no cuentan): " + esc(sin.slice(0, 4).join(" · ")) + (sin.length > 4 ? " y " + (sin.length - 4) + " más" : "") + "."));
+  if (D.reg.estimado) w.appendChild(el("p", "ntNota", "Comer fuera es una estimación de energía y macros; sus vitaminas y minerales, sin datos (s/d)."));
+  if (!obj) w.appendChild(el("p", "ntNota", "Sin tus datos no hay objetivos: la tabla solo suma."));
+  return w;
+}
+function registroRapido(fecha, regs) {
+  var N = Nu(), w = el("div", "ntReg", '<h4 class="cocPcTit">Registrar lo que no está en el calendario</h4>'), ch = el("div", "ntFavs");
+  N.FAVORITOS.forEach(function (f) {
+    var b = el("button", "", esc(f.txt)); b.addEventListener("click", function () {
+      var x = N.deFavorito(f, function (n) { return aliDe(n); });
+      apuntaReg({ fecha: fecha, txt: f.txt, fav: f.id, n: x.n, sinDatos: x.sinDatos, estimado: !!x.estimado, micros: x.micros !== false });
+      aviso("Registrado: " + f.txt + (x.estimado ? " (estimación)" : "") + ".");
+    });
+    ch.appendChild(b);
+  });
+  w.appendChild(ch);
+  w.appendChild(formAnadir("ntOtra", "Otra cosa (p. ej. 200 g de yogur griego)", function (t) {
+    var x = N.deTexto(t, function (n) { return aliDe(n); });
+    apuntaReg({ fecha: fecha, txt: mayus1(t), n: x.n, sinDatos: x.sinDatos, estimado: false, micros: true });
+    if (x.sinDatos.length) aviso("Apuntado, pero sin datos: " + x.sinDatos.join(", ") + "."); else aviso("Registrado.");
+  }));
+  if (regs.length) {
+    var ul = el("ul", "cocCompra");
+    regs.forEach(function (r) {
+      var li = el("li", "ntRegIt", '<span>' + esc(r.txt) + '<small>' + fmtN(r.n.kcal, "kcal") + ' kcal · ' + fmtN(r.n.prot) + ' g prot. · ' + fmtN(r.n.hc) + ' g carb.' + (r.estimado ? " · estimación" : "") + '</small></span>');
+      var q = el("button", "cocQuita", svg("cerrar")); q.setAttribute("aria-label", "Quitar " + r.txt);
+      q.addEventListener("click", function () { guarda(K_REG, registro().filter(function (x) { return x.id !== r.id; })); pinta(); });
+      li.appendChild(q); ul.appendChild(li);
+    });
+    w.appendChild(ul);
+  }
+  return w;
+}
+function apuntaReg(x) { x.id = nuevoId(); x.t = Date.now(); var L = registro(); L.push(x); guarda(K_REG, L.slice(-1500)); pinta(); }
+// tus datos: solo en este movil
+function hojaPerfil(p, primera) {
+  p = p || {};
+  var f = el("form", "ntPerfil");
+  f.innerHTML = (primera ? '<p class="ntNota"><b>Para calcular tus objetivos</b> hacen falta tu peso, tu altura y tu edad. Se quedan en este móvil: no salen de aquí.</p>' : "") +
+    [["peso", "Peso (kg)", "decimal"], ["altura", "Altura (cm)", "numeric"], ["edad", "Edad", "numeric"], ["grasa", "% de grasa (opcional)", "decimal"],
+     ["bmr", "Metabolismo basal, kcal (opcional)", "numeric"], ["mant", "Mantenimiento, kcal (opcional)", "numeric"]].map(function (c) {
+      return '<label>' + esc(c[1]) + '<input name="' + c[0] + '" inputmode="' + c[2] + '" autocomplete="off" value="' + esc(p[c[0]] != null ? String(p[c[0]]).replace(".", ",") : "") + '"></label>';
+    }).join("") + '<button class="cocGo" type="submit">Guardar</button>';
+  f.addEventListener("submit", function (e) {
+    e.preventDefault(); var q = {}, ok = true;
+    ["peso", "altura", "edad", "grasa", "bmr", "mant"].forEach(function (k) { var v = parseFloat(String(f.elements[k].value).replace(",", ".")); if (isFinite(v) && v > 0) q[k] = v; });
+    if (!q.peso || !q.altura || !q.edad) { aviso("Faltan el peso, la altura o la edad."); return; }
+    q.sexo = p.sexo || "h"; guarda(K_PERFIL, q); NPERFIL = false; aviso("Guardado en este móvil."); pinta();
+  });
+  return f;
+}
+// la semana: su fase, tu peso medio y lo que quieras cambiar de sus objetivos
+function hojaSemana(fecha, semanas, perfil, tipo) {
+  var N = Nu(), L = N.lunes(fecha), sm = semanas[L] || {}, F = N.faseDe(fecha, semanas), w = el("div", "cocPc ntSemana");
+  var obj = N.objetivos(perfil, fecha, semanas, tipo || "gimnasio");
+  w.innerHTML = '<h4 class="cocPcTit">Semana del ' + esc(corta(L)) + '</h4><p class="ntNota">' + esc(obj ? obj.porque : "") + '</p>';
+  var fz = el("div", "ntFavs");
+  Object.keys(N.FASES).forEach(function (k) {
+    var b = el("button", "", esc(N.FASES[k].nombre)); b.setAttribute("aria-pressed", String(F.semana === k));
+    b.addEventListener("click", function () { var S = lee(K_SEMANAS, {}); S[L] = Object.assign({}, S[L] || {}, { fase: k }); guarda(K_SEMANAS, S); pinta(); });
+    fz.appendChild(b);
+  });
+  w.appendChild(fz);
+  var f = el("form", "ntPerfil");
+  f.innerHTML = '<label>Peso medio de esta semana (kg)<input name="peso" inputmode="decimal" autocomplete="off" value="' + esc(sm.peso ? String(sm.peso).replace(".", ",") : "") + '" placeholder="' + esc(String(perfil.peso).replace(".", ",")) + '"></label>' +
+    ["kcal", "prot", "hc", "grasa"].map(function (k) {
+      var o = obj && obj[k]; return '<label>' + esc(N.NOMBRE[k]) + ' (' + esc(N.UNIDAD[k]) + ')' + '<input name="' + k + '" autocomplete="off" value="' + esc(o && o.propio ? o.min + "-" + o.max : "") + '" placeholder="' + esc(o ? o.min + "-" + o.max : "") + '"></label>';
+    }).join("") + '<div class="cocPcB"><button class="si" type="submit">Guardar la semana</button><button type="button" class="ntBorra">Lo de la fase</button></div>';
+  f.addEventListener("submit", function (e) {
+    e.preventDefault(); var S = lee(K_SEMANAS, {}), x = Object.assign({}, S[L] || {}), aj = {};
+    var pe = parseFloat(String(f.elements.peso.value).replace(",", ".")); if (isFinite(pe) && pe > 0) x.peso = pe; else delete x.peso;
+    ["kcal", "prot", "hc", "grasa"].forEach(function (k) { var m = String(f.elements[k].value).match(/(\d+(?:[.,]\d+)?)\s*[-–]\s*(\d+(?:[.,]\d+)?)/); if (m) aj[k] = [parseFloat(m[1].replace(",", ".")), parseFloat(m[2].replace(",", "."))]; });
+    x.ajustes = aj; S[L] = x; guarda(K_SEMANAS, S); NSEMANA = false; aviso("Semana guardada."); pinta();
+  });
+  f.querySelector(".ntBorra").addEventListener("click", function () { var S = lee(K_SEMANAS, {}); delete S[L]; guarda(K_SEMANAS, S); pinta(); });
+  w.appendChild(f);
+  return w;
 }
 
 /* ------------------------------ Recetas ------------------------------ */

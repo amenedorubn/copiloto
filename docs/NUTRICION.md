@@ -56,3 +56,23 @@ Mira lo que falta de los prioritarios (carbohidratos, fibra, vitamina C y folato
 3. Si no, qué comprar.
 
 Es algo que se **añade** (un tentempié o un acompañamiento): no cambia ninguna comida del plan.
+
+## La pestaña (v2.45)
+
+Cocina → **Nutrición**, entre Despensa y Recetas:
+- **El día:** Ayer, Hoy, Mañana y los 2 siguientes. Arriba, la fase de su semana y el tipo de día (del calendario de
+  entrenos: descanso, gimnasio, calidad o tirada larga).
+- **Tus datos:** peso, altura y edad, y si quieres el % de grasa, el basal y el mantenimiento. Solo en este móvil.
+  Sin ellos no hay objetivos y la tabla solo suma: lo dice.
+- **Semana:**
+  - su fase (6 botones) y su «por qué»;
+  - tu peso medio de esa semana;
+  - energía, proteína, carbohidratos y grasa propios («150-160»);
+  - «Lo de la fase» lo deshace.
+- **Te falta X; cómete Y:** con lo de casa, la lista o «a la lista».
+- **La tabla:** nutriente · planificado · registrado · objetivo (rango) · % del mínimo. Primero carbohidratos, fibra,
+  vitamina C y folato, luego energía, proteína y grasa. «Más nutrientes» añade hierro, magnesio, potasio, B12,
+  vitamina D y calcio. Tocar una fila dice su «por qué». Abajo, lo que no tiene datos y no cuenta. «s/d» es sin datos.
+- **Registrar lo que no está en el calendario:** los favoritos de un toque o texto libre. Se quitan con la ×.
+- **Dónde se guarda:** tus datos, tus semanas y tu registro, en el móvil (`copiloto.nutri.*`). No se suben al Worker.
+- **En la Cocina de prueba,** con un perfil de EJEMPLO (70 kg, 175 cm, 30 años) y un batido registrado.
