@@ -277,6 +277,19 @@ for (const tema of ["oscuro", "claro"]) {
     await toca("simFin"); await p.waitForTimeout(800);
     await elige("errores"); await p.click("#cprGo"); await p.waitForTimeout(500); await foto("prueba-errores");
     await toca("simFin"); await p.waitForTimeout(800);
+    // v2.41: la Casa de prueba (la pestaña Cocina con datos de ejemplo, en una caja)
+    await p.$eval("#cfCasaPrueba", (e) => e.scrollIntoView({ block: "center" })); await p.waitForTimeout(200);
+    await foto("casaprueba-ajustes");
+    await p.click("#cfCasaPrueba"); await p.waitForTimeout(900);
+    await foto("casaprueba-todo");
+    await p.click(".cocPcB button:has-text('Así fue') >> nth=0"); await p.waitForTimeout(400);
+    await foto("casaprueba-asifue");
+    await p.click(".cocZonaFila:has-text('Congelador')"); await p.waitForTimeout(300);
+    await foto("casaprueba-congelador");
+    await p.click(".cocChips button:has-text('Despensa salada')"); await p.waitForTimeout(300);
+    await foto("casaprueba-cantidades");
+    await p.click(".cocSim button"); await p.waitForTimeout(800);
+    await foto("casaprueba-vuelta");                                               // Terminar: de vuelta a Ajustes
     await p.click("#hojaX").catch(() => {}); await p.waitForTimeout(400);
     const despuesLS = await huella(antesLS);
     if (despuesLS !== antesLS || posts !== antesKV) {

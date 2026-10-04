@@ -243,8 +243,15 @@ function svg(k, cls) { return '<svg viewBox="0 0 256 256" fill="currentColor" ar
 API.icono = function () { return svg("olla"); };
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
-function lee(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch (e) { return d; } }
-function guarda(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+// v2.41 · Casa de prueba: mientras está abierta, todo se lee y se guarda en CAJA (en memoria),
+// nunca en el móvil ni en el Worker; al salir, CAJA se tira y todo queda como estaba.
+var CAJA = null;
+function copiaJ(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
+function lee(k, d) {
+  if (CAJA) return k in CAJA ? copiaJ(CAJA[k]) : d;
+  try { var v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch (e) { return d; }
+}
+function guarda(k, v) { if (CAJA) { CAJA[k] = copiaJ(v); return; } try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 var DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 function diaTxt(iso, hoy) {
   if (iso === hoy) return "Hoy";
@@ -514,6 +521,9 @@ CSS +=
   ".cocFrac button{flex:1 1 0;min-height:44px;border-radius:14px!important;background:var(--sf2);color:var(--fg);font-size:15px;font-weight:800}" +
   ".cocSugs{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}" +
   ".cocSugs button{min-height:44px;border-radius:14px!important;background:var(--sf2);color:var(--fg);font-size:14px;font-weight:700;padding:0 12px!important}" +
+  ".cocSim{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;background:var(--sf2);border-radius:16px;padding:10px 10px 10px 14px;margin-bottom:10px}" +
+  ".cocSim b{font-size:12px;font-weight:800;letter-spacing:.08em}.cocSim span{grid-column:1;font-size:13px;font-weight:600;color:var(--mu);line-height:1.4}" +
+  ".cocSim button{grid-column:2;grid-row:1/3;height:44px;padding:0 16px!important;border-radius:14px!important;background:var(--fg);color:var(--bg);font-size:15px;font-weight:800}" +
   "@media (prefers-reduced-motion:reduce){.cocFilaZin{transition:none}}";
 function ponCSS() {
   if (document.getElementById("cocCss")) return;
@@ -540,6 +550,7 @@ function recetas(cb) {                     // el indice y las recetas de Copilot
 }
 var NOTA = lee(K_NOTA, null), pidiendoNota = null;   // {t, texto, fecha} | {t, error}
 function nota(conf, cb) {                    // la nota de la despensa, por el Worker (/despensa)
+  if (CAJA) { if (cb) cb(); return; }          // en la prueba, la nota es la de ejemplo
   if (!conf || !conf.url || !conf.key) { if (cb) cb(); return; }
   if (NOTA && Date.now() - NOTA.t < 5 * 60e3) { if (cb) cb(); return; }
   if (pidiendoNota) return;
@@ -575,8 +586,9 @@ function deLista(id) { var L = lista(); L.forEach(function (x) { if (x.id === id
 /* Los cambios y la lista, tambien en el Worker (/cocina): el movil y Chrome ven lo mismo. Se
    sube al cambiar algo (1,5 s despues) y se baja al abrir la pestaña. Sin red, espera.   */
 var SUBE = null, subiendo = false;
-function subeLuego() { clearTimeout(SUBE); SUBE = setTimeout(sincroniza, 1500); }
+function subeLuego() { if (CAJA) return; clearTimeout(SUBE); SUBE = setTimeout(sincroniza, 1500); }
 function sincroniza() {
+  if (CAJA) return;
   var conf = (CTX && CTX.conf) || (MCTX && MCTX.conf);
   if (!conf || !conf.url || !conf.key || subiendo || typeof fetch !== "function") return;
   subiendo = true;
@@ -614,7 +626,29 @@ var SUBS = [["semana", "Semana"], ["comprar", "Comprar"], ["tengo", "Despensa"],
 var CANT = null, ORIGEN = null, SUB = "semana", ZONA = null, TOCADO = null, ANADIR = false, ENTRA = 0, RECUENTO = null, COPIA = null, PASADA = null;
 var CORRIGE = null, PCANT = null, ABIERTA = null;   // v2.40: la comida que corriges, la compra a la que cambias la cantidad, la fila deslizada
 function subDe(s) { if (s === "despensa") s = "tengo"; return s === "ahora" ? "semana" : SUBS.some(function (x) { return x[0] === s; }) ? s : "semana"; }
+/* La Casa de prueba (Ajustes): la pestaña Cocina entera con los datos de ejemplo de
+   cocina-prueba.js, en la CAJA, con "SIMULACIÓN · no cuenta". op = {marca, atrasManual, activa, alTerminar} */
+var REAL = null;
+API.pintaPrueba = function (c, op) {
+  var X = raiz.CocinaPrueba; if (!X || !X.casa) { c.innerHTML = '<p class="cocVacio">Falta un archivo de la app. Actualízala.</p>'; return; }
+  var o = ahoraOpts(), ej = X.casa(o.hoy, o.ahoraMs);
+  if (!CAJA) REAL = { NOTA: NOTA };
+  CAJA = {}; CAJA[K_CAMBIOS] = ej.cambios; CAJA[K_LISTA] = ej.lista; CAJA[K_ALIM] = ej.alimentos;
+  NOTA = { t: Date.now(), texto: ej.nota };
+  CAJA.__fin = op && op.alTerminar;
+  API.pinta(c, { dia: ej.dia, hoy: o.hoy, ahora: o.ahora, conf: null, marca: op && op.marca, atrasManual: op && op.atrasManual,
+                 activa: op && op.activa, sub: "tengo", prueba: true });
+};
+// salir de la prueba: se tira la CAJA y vuelve la nota de verdad
+API.salPrueba = function () {
+  if (!CAJA) return;
+  CAJA = null; if (REAL) NOTA = REAL.NOTA; REAL = null;
+  if (ESC) cierraEscaner(true);
+  var t = document.getElementById("cocToast"); if (t) t.hidden = true;
+};
+API.enPrueba = function () { return !!CAJA; };
 API.pinta = function (c, ctx) {
+  if (CAJA && !(ctx && ctx.prueba)) API.salPrueba();   // la Cocina de verdad nunca ve la caja
   ponCSS(); cont = c; CTX = ctx || {}; MCTX = CTX;
   SUB = subDe(CTX.sub); TOCADO = null; ANADIR = false; ZONA = null; RECUENTO = null; COPIA = null; PASADA = null;
   SEL = CTX.sel || null;                     // se abre con una comida de la linea del dia o de HOY
@@ -642,6 +676,12 @@ function pinta() {
   var E = estado(CTX.dia);
   var LC = listaCompra(E);
   var y = c.scrollTop, foco = document.activeElement && document.activeElement.id; c.innerHTML = "";
+  if (CAJA) {
+    var bn = c.appendChild(el("div", "cocSim", '<b>SIMULACIÓN · no cuenta</b><span>Datos de ejemplo: no toca tu despensa, ni el calendario, ni Comprar.</span>'));
+    var fin = el("button", "", "Terminar");
+    fin.addEventListener("click", function () { var f = CAJA && CAJA.__fin; API.salPrueba(); if (f) f(); });
+    bn.appendChild(fin);
+  }
   c.appendChild(barra(LC.n));
   var pag = SUB === "comprar" ? compra(E, LC) : SUB === "tengo" ? tengo(E) : SUB === "recetas" ? listaRecetas(E) : semana(E);
   if (ENTRA) { pag.classList.add(ENTRA > 0 ? "cocDer" : "cocIzq"); ENTRA = 0; }
@@ -706,6 +746,8 @@ function modoDe(R) {
 function numPasos(q) { return q.receta ? (q.receta.pasos || []).length : (q.pasos || pasosDe(q.comida)).length; }
 function ctxModo(base) {
   base = base || CTX || {};
+  if (CAJA) return { marca: base.marca, atrasManual: base.atrasManual, prueba: { vel: 1 },   // el paso a paso de la prueba tampoco guarda nada
+                     repinta: function () { if (enTab()) pinta(); } };
   return {
     marca: base.marca, atrasManual: base.atrasManual,
     repinta: function () { if (enTab()) pinta(); if (base.repinta && base !== CTX) base.repinta(); },

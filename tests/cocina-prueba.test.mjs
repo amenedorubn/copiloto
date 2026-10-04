@@ -30,3 +30,16 @@ test("prueba: abre el mismo modo con carriles que la cocina de verdad", () => {
   assert.equal(P.evento("pasta").uid, "prueba-pasta");                   // nunca un uid del calendario
   assert.deepEqual(P.VELOCIDADES, [1, 10, 30]);
 });
+
+test("casa de prueba: los datos de ejemplo enseñan todo lo de «Por confirmar» y el congelador lleno", () => {
+  const Dp = req("../despensa.js"), ahora = Date.parse("2026-10-05T13:00:00"), o = { ahoraMs: ahora, hoy: "2026-10-05" };
+  const ej = P.casa("2026-10-05", ahora);
+  assert.ok(ej.dia.every((e) => /^prueba-/.test(e.uid)), "nunca un uid del calendario");
+  const Rs = ej.dia.map((e) => R.leer(e)), H = Dp.casa(Dp.despensa(ej.nota), ej.cambios, Rs, o);
+  const PC = Dp.porConfirmar(ej.cambios, Rs, H, o);
+  assert.ok(PC.some((x) => x.tipo === "comida" && x.R.uid === "prueba-c1"), "el desayuno de hoy");
+  assert.ok(PC.some((x) => x.tipo === "comida" && x.R.uid === "prueba-c2"), "la cena de ayer");
+  assert.ok(PC.some((x) => x.tipo === "compra"), "lo marcado en Comprar");
+  assert.ok(PC.some((x) => x.tipo === "duda"), "los huevos sin confirmar");
+  assert.equal(Dp.tuppers(H), 3);
+});

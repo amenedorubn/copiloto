@@ -112,6 +112,25 @@ carriles **de verdad** (`receta.js`, `carriles.js` y `cocina-modo.js`) con una r
 - `scripts/capturas-cocina.mjs` lo recorre entero (`prueba-*`) y falla si el `localStorage` o el `/cocina` del Worker
   cambian.
 
+## Casa de prueba (v2.41)
+
+Ajustes → **Casa de prueba**, debajo de Cocina de prueba. Es la pestaña Cocina **entera y de verdad** (Semana,
+Comprar, Despensa y Recetas) con los datos de ejemplo de `cocina-prueba.js` (`CocinaPrueba.casa`), con fechas
+alrededor de hoy:
+- una despensa con el congelador lleno (3 de 3 tuppers), huevos sin confirmar y atún con su equivalencia (240 g · 3 ud);
+- dos comidas que ya pasaron, para «Así fue» o «Corregir»;
+- una compra marcada en Comprar, para «Bien» u «Otra cantidad»;
+- la pasta con carriles para la cena.
+
+- «SIMULACIÓN · no cuenta» y **Terminar** vuelven a Ajustes, igual que «atrás».
+- **Sin rastro.** Mientras está abierta, todo se lee y se guarda en una caja en memoria (`Cocina.pintaPrueba`):
+  - no lee ni escribe tu despensa, el calendario, Comprar ni tus alimentos;
+  - no sube nada al Worker ni lee tu nota;
+  - el paso a paso que abras va en modo prueba.
+  
+  Al salir, la caja se tira. Escanear sí busca en Open Food Facts, pero lo que apuntes se queda en la caja.
+- `scripts/capturas-cocina.mjs` la recorre (`casaprueba-*`) y falla si cambia el `localStorage` o se llama a `/cocina`.
+
 ## El paso a paso
 
 - Paso 0 **Antes de empezar**: qué sacar, qué cortar y cómo («1 boniato · pélalo, en cubos de 2 cm») y qué
