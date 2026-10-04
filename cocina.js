@@ -602,6 +602,7 @@ CSS +=
   ".ntFaseF i{width:14px;height:14px;border-radius:4px;background:var(--fg);flex:none}.ntFaseF span{flex:1}.ntFaseF b{display:block;font-size:15px}.ntFaseF small{display:block;font-size:13px;font-weight:600;color:var(--mu)}" +
   ".ntFaseF svg{width:16px;height:16px;color:var(--mu)}.ntFaseF[aria-expanded=true] svg{transform:rotate(90deg)}.ntFaseP{padding:0 0 8px 26px}" +
   ".ntCap.ac{color:var(--coc)}" +
+  ".ntFrase{font-size:18px;margin-top:16px}.ntMu{font-size:12px;font-weight:600;color:var(--mu)}" +
   ".ntBigTxt{margin:0;font-size:22px;font-weight:800}.ntNav{margin-top:0}" +
   ".ntTiras{padding-top:2px}.ntCaja .ngTiraB,.ntCaja .ngCobB{background:var(--sf)}" +
   /* ---- v2.48 suplementos ---- */
@@ -1825,7 +1826,26 @@ function vistaFases(w, E) {
   lc.appendChild(el("p", "ntNota", "Cada semana se cambia en Hoy → Semana. Los días de carga de hidratos van dentro de su semana."));
   w.appendChild(lc);
 }
-function vistaEntreno(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
+/* N5 · Entreno (A): carbohidratos por kg según el tipo de día, media de las 4 últimas semanas contra la banda de
+   la fase de ahora. El tipo de día sale del calendario de entrenos.                                           */
+function vistaEntreno(w, E) {
+  var N = Nu(), G = raiz.NutriGraficas, F = fuentesNu(E), D = N.diasDesde(N.masDias(E.o.hoy, -27), 28, F), fase = N.faseDe(E.o.hoy, F.semanas).semana;
+  var NOM = { descanso: "Descanso", gimnasio: "Gimnasio", calidad: "Calidad", tirada: "Tirada larga" };
+  if (!F.tipo) w.appendChild(el("p", "ntNota", "Sin calendario de entrenos: todos los días cuentan como gimnasio."));
+  if (!F.perfil) { w.appendChild(el("p", "cocVacio", "Pon tus datos (peso) para ver los carbohidratos por kg.")); return; }
+  var T = N.porTipo(D, F.perfil, fase);
+  if (!T.some(function (x) { return x.n; })) { w.appendChild(el("p", "cocVacio", "Sin datos en las 4 últimas semanas: no hay comidas en el calendario ni nada registrado.")); return; }
+  w.appendChild(el("p", "ntCap", "Carbohidratos · media en g/kg · 4 semanas"));
+  var mx = Math.max.apply(null, T.map(function (x) { return Math.max(x.v || 0, x.hi); })) * 1.15;
+  w.appendChild(el("div", "ntCaja", G.barrasBanda(T.map(function (x) { return { label: NOM[x.tipo], v: x.v, lo: x.lo, hi: x.hi }; }), mx) +
+    '<div class="ngLey"><span><i style="opacity:.25;background:var(--mu)"></i>Objetivo (' + esc((N.FASES[fase] || {}).nombre || "") + ')</span><span><i></i>Tu media</span></div>'));
+  var corto = T.filter(function (x) { return x.v != null && x.v < x.lo; });
+  w.appendChild(el("p", "ntBigTxt ntFrase", corto.length ? corto.map(function (x) { return NOM[x.tipo] + ": " + fmtN(x.v) + " de " + fmtN(x.lo) + "–" + fmtN(x.hi) + " g/kg"; }).join(" · ") : "En todos los tipos de día llegas al mínimo."));
+  if (corto.length) w.appendChild(el("p", "ntNota", "Se quedan cortos de carbohidratos."));
+  w.appendChild(el("div", "ntCaja", T.map(function (x) {
+    return '<div class="ntFila2"><span>' + esc(NOM[x.tipo]) + ' <small class="ntMu">· ' + x.n + (x.n === 1 ? " día" : " días") + ' · objetivo ' + fmtN(x.lo) + "–" + fmtN(x.hi) + '</small></span><b>' + (x.v == null ? "s/d" : fmtN(x.v) + " g/kg") + '</b></div>';
+  }).join("")));
+}
 function vistaMicros(w) { w.appendChild(el("p", "cocVacio", "Esta vista llega en la siguiente versión.")); }
 function tablaNutri(D, obj) {
   var N = Nu(), w = el("div", "ntTabla"), filas = N.PRIORIDAD.concat(["kcal", "prot", "grasa"]), mas = ["hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];
