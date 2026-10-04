@@ -574,6 +574,12 @@ API.progreso = function (q, ahora) {
 };
 
 var V = null;            // el modo abierto
+/* La Cocina de prueba (v2.38) lleva su propio reloj: va x1, x10 o x30 y se puede adelantar.
+   Todo lo del modo abierto usa ya(); los relojes de otras recetas siguen con la hora real. */
+var RELOJ = null;
+function ya() { return RELOJ ? RELOJ.base + (Date.now() - RELOJ.real) * RELOJ.vel : Date.now(); }
+function ponReloj(vel, salto) { var a = ya() + (salto || 0) * 1000; RELOJ = { base: a, real: Date.now(), vel: vel }; }
+function esPrueba(id) { return /^prueba:/.test(String(id || "")); }
 var VIVOS = {};          // id -> {S, M0, q, ctx}: estados con relojes, para avisar con el modo cerrado
 var TICK = null, TICK_MS = 0, cerrojo = null, ac = null, ALARMA = {};
 
@@ -823,6 +829,14 @@ var CSS =
   R0 + ".ccTxt{font-size:17px;line-height:1.5;font-weight:600;margin-top:12px}" + R0 + ".ccTxt.mu{color:var(--mu);font-size:15px;margin-top:6px}" +
   R0 + ".ccMesa{font-size:13px;font-weight:700;color:var(--mu);white-space:nowrap;padding:0 4px}" + R0 + ".ccMesa b{color:#f4f5f7}" +
   R0 + ".cpHecho.blanco{background:#f4f5f7;color:#101113}" +
+  R0 + ".ccSim{flex:0 0 auto;background:var(--sf2);border-radius:16px;padding:8px 8px 8px 14px;margin-top:6px}" +
+  R0 + ".ccSimT{display:flex;align-items:center;justify-content:space-between;gap:8px}" +
+  R0 + ".ccSimT b{font-size:12px;font-weight:800;letter-spacing:.08em}" +
+  R0 + ".ccSimT button{height:44px;padding:0 16px;border-radius:14px;background:#f4f5f7;color:#101113;font-size:15px;font-weight:800}" +
+  R0 + ".ccSimC{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}" +
+  R0 + ".ccSimC button{flex:none;min-width:52px;height:44px;padding:0 12px;border-radius:12px;background:var(--sf);font-size:14px;font-weight:800;white-space:nowrap}" +
+  R0 + ".ccSimC button[data-a=hCocina]{flex:1}" + R0 + ".ccSimC button[data-a=simTarde]{flex:1 1 100%}" +
+  R0 + ".ccSimC button[aria-pressed=true]{background:#f4f5f7;color:#101113}" +
   /* aviso con el modo cerrado */
   "#cocPasoAviso{position:fixed;z-index:95;font-family:Manrope,-apple-system,'Segoe UI',Roboto,sans-serif;--ca:#f08a4b}" +
   "#cocPasoAviso[hidden]{display:none}" +
@@ -870,7 +884,7 @@ function vozPaso(M0, k) {
 
 /* ------------------------------- guardar ------------------------------- */
 function guarda(id, S) {
-  if (!S) return;
+  if (!S || esPrueba(id)) return;
   if (S.terminado && !S.timers.length) { escribe(PREF + id, null); delete VIVOS[id]; }
   else escribe(PREF + id, S);
   try { window.dispatchEvent(new CustomEvent("cocinarelojes")); } catch (e) {}
@@ -892,7 +906,7 @@ function recupera() {
 // todos los relojes vivos (de cualquier receta), para el aviso nativo
 API.relojes = function () {
   var out = [];
-  Object.keys(VIVOS).forEach(function (id) { out = out.concat(avisosDe(VIVOS[id].S, VIVOS[id].titulo)); });
+  Object.keys(VIVOS).forEach(function (id) { if (!esPrueba(id)) out = out.concat(avisosDe(VIVOS[id].S, VIVOS[id].titulo)); });
   return out;
 };
 
@@ -902,8 +916,10 @@ API.abre = function (q, ctx) {
   var M0 = normaliza(q); if (!M0.pasos.length) return false;
   ponCSS();
   if (V) cierra(true, true);
-  var ahora = Date.now(), S = (VIVOS[M0.id] && VIVOS[M0.id].S) || lee(PREF + M0.id), viejo = null;
-  if (!S || S.v !== 2) { viejo = lee(PREF_VIEJO + M0.id); S = migra(viejo, M0, ahora); if (viejo) escribe(PREF_VIEJO + M0.id, null); }
+  var prueba = ctx && ctx.prueba;
+  if (prueba) { M0.id = "prueba:" + M0.id; RELOJ = null; ponReloj(prueba.vel || 1); } else RELOJ = null;
+  var ahora = ya(), S = prueba ? null : (VIVOS[M0.id] && VIVOS[M0.id].S) || lee(PREF + M0.id), viejo = null;
+  if (!prueba && (!S || S.v !== 2)) { viejo = lee(PREF_VIEJO + M0.id); S = migra(viejo, M0, ahora); if (viejo) escribe(PREF_VIEJO + M0.id, null); }
   var d = decide(S, M0, ahora);
   if (d === "nuevo") {
     var quedan0 = S && S.timers ? S.timers.filter(function (T) { return T.pausa == null && T.fin > ahora; }) : [];
@@ -916,7 +932,7 @@ API.abre = function (q, ctx) {
   var pant = d === "retoma" ? "retoma" : "paso";
   if (M0.carr) { if (d === "nuevo" || !S.carr || !S.carr.ini) { S.carr = null; pant = "plan"; } else pant = "carril"; }
   V = { id: M0.id, q: q, M0: M0, S: S, ctx: ctx || {}, box: box, pant: pant, visto: null, hoja: null,
-        toast: null, ultToque: ahora, gasto: null, cocina: miCocina(lee(MI_COCINA)) };
+        toast: null, ultToque: Date.now(), gasto: null, cocina: miCocina(lee(MI_COCINA)), prueba: !!prueba };
   VIVOS[M0.id] = { S: S, M0: M0, q: q, ctx: V.ctx, titulo: M0.titulo, acento: M0.acento };
   guarda(M0.id, S);
   if (!box.cpListo) { escucha(box); box.cpListo = true; }
@@ -933,6 +949,14 @@ function cierra(desdeAtras, sinRepintar) {
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
   try { if (cerrojo) cerrojo.release(); } catch (e) {} cerrojo = null;
   X.box.hidden = true; X.box.innerHTML = "";
+  if (X.prueba) {                                 // la prueba no deja nada: ni estado, ni relojes, ni alarmas
+    X.S.timers.forEach(function (T) { delete ALARMA[T.id]; });
+    delete VIVOS[X.id]; RELOJ = null;
+    if (!desdeAtras && history.state && history.state.pant === "cocina" && X.ctx.atrasManual) X.ctx.atrasManual();
+    ajustaTick();
+    if (!desdeAtras && X.ctx.alCerrar) { try { X.ctx.alCerrar(); } catch (e) {} }
+    return;
+  }
   if (X.pant === "fin") { X.S.terminado = Date.now(); X.S.timers = X.S.timers.filter(function (T) { return restante(T, Date.now()) > 0; }); }
   guarda(X.id, X.S);
   registra(X.M0, X.S, X.q, X.ctx);
@@ -970,8 +994,9 @@ function ajustaTick() {
   clearInterval(TICK); TICK = setInterval(late, ms); TICK_MS = ms;
 }
 function late() {
-  var ahora = Date.now(), cambio = false;
+  var ahora = ya(), real = Date.now(), cambio = false, sim = ahora;
   Object.keys(VIVOS).forEach(function (id) {
+    var ahora = V && V.id === id ? sim : real;
     var X = VIVOS[id], S = X.S, ev = revisa(S, ahora);
     if (ev.length) { guarda(id, S); ev.forEach(function (e) { avisa(id, X, e); }); cambio = true; }
     S.timers.forEach(function (T) {
@@ -982,10 +1007,10 @@ function late() {
     if (!S.timers.length && (!V || V.id !== id)) delete VIVOS[id];
   });
   if (V) {
-    if (V.visto != null && !V.hoja && ahora - V.ultToque > MIRA_MAX) { V.visto = null; cambio = true; }
-    if (V.toast && ahora > V.toast.hasta) { V.toast = null; cambio = true; }
-    if (V.pant === "carril" && !V.hoja && ahora - (V.ultPlan || 0) >= 1000) {
-      V.ultPlan = ahora;
+    if (V.visto != null && !V.hoja && real - V.ultToque > MIRA_MAX) { V.visto = null; cambio = true; }
+    if (V.toast && real > V.toast.hasta) { V.toast = null; cambio = true; }
+    if (V.pant === "carril" && !V.hoja && real - (V.ultPlan || 0) >= 1000) {
+      V.ultPlan = real;
       var antes = V.firma, viejo = V.pl && V.pl.m.ahora && V.pl.m.cuando <= V.pl.desde + 15 ? V.pl.m.ahora.id : null;
       V.pl = planCarril(V.M0, V.S, ahora, V.cocina);
       var nuevo = V.pl.m.ahora && V.pl.m.cuando <= V.pl.desde + 15 ? V.pl.m.ahora.id : null;
@@ -996,7 +1021,7 @@ function late() {
     }
     if (cambio) pinta(false); else refresca(ahora);
   }
-  pintaAvisoFuera(ahora);
+  pintaAvisoFuera(real);
   ajustaTick();
 }
 function avisa(id, X, e) {
@@ -1040,7 +1065,7 @@ function quedaHtml(ahora) {
 /* ------------------------------- pintar ------------------------------- */
 function pinta(habla) {
   if (!V) return;
-  var box = V.box, ahora = Date.now(), cu = box.querySelector(".cpCuerpo"), y = 0;
+  var box = V.box, ahora = ya(), cu = box.querySelector(".cpCuerpo"), y = 0;
   var vista = V.pant + ":" + (V.visto != null ? V.visto : V.S.actual);
   if (cu && V.ultVista === vista) y = cu.scrollTop;
   V.ultVista = vista;
@@ -1048,7 +1073,7 @@ function pinta(habla) {
   V.ultHoja = V.hoja;
   var cc = V.M0.carr && (V.pant === "plan" || V.pant === "carril");
   if (cc) { V.pl = planCarril(V.M0, V.S, ahora, V.cocina); marcaEmpezo(ahora); }
-  var h = arriba() + (V.pant === "paso" ? cabecera(ahora) : "") + (cc ? "" : tira(ahora));
+  var h = (V.prueba ? bandaPrueba() : "") + arriba() + (V.pant === "paso" ? cabecera(ahora) : "") + (cc ? "" : tira(ahora));
   if (V.pant === "plan") h += planHtml(ahora);
   else if (V.pant === "carril") h += carrilHtml(ahora);
   else if (V.pant === "retoma") h += retoma(ahora);
@@ -1062,6 +1087,13 @@ function pinta(habla) {
   if (V.pant === "carril") { V.firma = firmaCarril(); if (habla) di(vozCarril()); }
 }
 // la tarea de manos que ya toca: desde cuando (para su barra y lo que queda)
+// "SIMULACIÓN · no cuenta", como en la del GPS, con el reloj de la prueba
+function bandaPrueba() {
+  var v = RELOJ ? RELOJ.vel : 1;
+  return '<div class="ccSim"><div class="ccSimT"><b>SIMULACIÓN · no cuenta</b><button data-a="simFin">Terminar</button></div>' +
+    '<div class="ccSimC">' + [1, 10, 30].map(function (x) { return '<button data-a="simVel" data-v="' + x + '" aria-pressed="' + (x === v) + '">×' + x + '</button>'; }).join("") +
+    '<button data-a="hCocina">Mi cocina</button><button data-a="simTarde">Retrasarme 2 min</button></div></div>';
+}
 function marcaEmpezo(ahora) {
   var m = V.pl.m, x = m.ahora;
   if (V.pant !== "carril" || !x || !V.S.carr || x.manos < x.dur || V.S.carr.empezo[x.id] || m.cuando > V.pl.desde + 15) return;
@@ -1070,7 +1102,7 @@ function marcaEmpezo(ahora) {
 // lo que, si cambia, hay que repintar (y avisar si es que ya toca otra cosa)
 function firmaCarril() {
   var m = V.pl.m, x = m.ahora, due = x && m.cuando <= V.pl.desde + 15;
-  return (x ? x.id : "-") + "|" + (due ? 1 : 0) + "|" + Math.round(V.pl.total / 30) + "|" + V.S.timers.filter(function (T) { return T.carril && restante(T, Date.now()) > 0; }).length;
+  return (x ? x.id : "-") + "|" + (due ? 1 : 0) + "|" + Math.round(V.pl.total / 30) + "|" + V.S.timers.filter(function (T) { return T.carril && restante(T, ya()) > 0; }).length;
 }
 function arriba() {
   var M0 = V.M0;
@@ -1201,6 +1233,7 @@ function retoma(ahora) {
 function final(ahora) {
   var M0 = V.M0, rep = M0.reparto, h = '<div class="cpCuerpo"><div class="cpFin"><div class="cpFinOk">' + svg("tick") + '</div><h2>¡Hecho!</h2>';
   h += '<p class="cpDet">' + (M0.G ? esc(M0.titulo) + " completa." : "Buen provecho.") + '</p>';
+  if (V.prueba) h += '<div class="cpPar"><h3>Simulación</h3><p>No se apunta lo gastado ni cuenta como hecha. Todo queda como estaba.</p></div>';
   if (rep && rep.taper) h += '<div class="cpPar"><h3>El táper</h3><p>' + negritas(rep.taper) + '</p></div>';
   var corren = V.S.timers.filter(function (T) { return restante(T, ahora) > 0; });
   if (corren.length) h += '<div class="cpPar tip"><h3>Sigue en marcha</h3><p>' + corren.map(function (T) { return esc(T.nombre); }).join(", ") + ': te aviso al acabar.</p></div>';
@@ -1212,7 +1245,7 @@ function final(ahora) {
   var n = V.gasto ? V.gasto.filter(function (g) { return g.on; }).length : 0;
   h += V.gasto && V.gasto.length
     ? '<div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="apunta"' + (n ? "" : " disabled") + '>Apuntar lo gastado</button><button class="cpAnt" data-a="sinApuntar">Salir sin apuntar</button></div>'
-    : '<div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="sinApuntar">Salir</button></div>';
+    : '<div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="sinApuntar">' + (V.prueba ? "Terminar" : "Salir") + '</button></div>';
   return h;
 }
 function alarma(ahora) {
@@ -1443,7 +1476,7 @@ function cambia(habla) {                    // tras tocar algo que cambia el est
 function ponToast(txt, fn) { V.toast = { txt: txt, fn: fn || null, hasta: Date.now() + (fn ? 5000 : 3500) }; }
 function lista(nums) { return nums.length === 1 ? String(nums[0]) : nums.slice(0, -1).join(", ") + " y " + nums[nums.length - 1]; }
 function accion(a, b) {
-  var M0 = V.M0, S = V.S, ahora = Date.now(), n = M0.pasos.length, k, T, id;
+  var M0 = V.M0, S = V.S, ahora = ya(), n = M0.pasos.length, k, T, id;
   var duenio = b.getAttribute("data-v"), SX = duenio && VIVOS[duenio] ? VIVOS[duenio].S : S;
   switch (a) {
     case "x": if (V.pant === "fin") termina(null); else cierra(false); return;
@@ -1490,11 +1523,15 @@ function accion(a, b) {
         function () { deshacer(S, r.antes, Date.now()); });
       cambia(true); return;
     case "hCocina": V.hoja = "cocina"; pinta(false); return;
+    case "simFin": cierra(false); return;
+    case "simVel": ponReloj(+b.getAttribute("data-v")); pinta(false); return;
+    case "simTarde": ponReloj(RELOJ ? RELOJ.vel : 1, 120); V.ultPlan = 0; ponToast("Te has retrasado 2 min"); late(); return;
     case "cocMas": case "cocMenos":
       k = b.getAttribute("data-k");
       V.cocina[k] = Math.max(0, Math.min(9, (V.cocina[k] | 0) + (a === "cocMas" ? 1 : -1)));
-      escribe(MI_COCINA, V.cocina); pinta(false); return;
-    case "cocDefecto": escribe(MI_COCINA, null); V.cocina = miCocina(null); pinta(false); return;
+      if (!V.prueba) escribe(MI_COCINA, V.cocina);
+      pinta(false); return;
+    case "cocDefecto": if (!V.prueba) escribe(MI_COCINA, null); V.cocina = miCocina(V.prueba ? lee(MI_COCINA) : null); pinta(false); return;
     case "cEmpieza":
       S.carr = { ini: ahora, hechas: {}, empezo: {}, fin: {}, mesa0: ahora + (V.pl ? V.pl.total : 0) * 1000 }; S.t = ahora; V.pant = "carril"; V.hoja = null;
       cambia(true); return;
@@ -1504,7 +1541,7 @@ function accion(a, b) {
       hechaCarril(S, M0, id, ahora);
       // el aviso de "plan rehecho" ya se ha visto: cuenta desde aqui
       var pl2 = planCarril(M0, S, ahora, V.cocina); S.carr.mesa0 = pl2.mesa;
-      ponToast("Hecho: " + T.txt, function () { Object.keys(antesC).forEach(function (x) { S[x] = antesC[x]; }); S.t = Date.now(); });
+      ponToast("Hecho: " + T.txt, function () { Object.keys(antesC).forEach(function (x) { S[x] = antesC[x]; }); S.t = ya(); });
       if (todoHecho(M0, S, ahora)) { aFin(ahora); return; }
       cambia(true); return;
     case "cero":
@@ -1524,7 +1561,7 @@ function guardaOtro(id) { if (id && VIVOS[id] && (!V || id !== V.id)) guarda(id,
 function aFin(ahora) {
   V.pant = "fin"; V.hoja = null; V.visto = null;
   if (V.M0.carr) V.S.timers = V.S.timers.filter(function (T) { return !T.carril || restante(T, ahora) > 0; });
-  V.gasto = gastadoDe(V.M0); V.toast = null;          // los relojes que siguen ya salen en su tarjeta
+  V.gasto = V.prueba ? [] : gastadoDe(V.M0); V.toast = null;          // los relojes que siguen ya salen en su tarjeta
   guarda(V.id, V.S);
   di(V.M0.G ? (/noche/i.test(V.M0.titulo) ? "Hecho. Buenas noches." : "Hecho.") : "Hecho. Buen provecho.");
   pinta(false);
@@ -1534,7 +1571,7 @@ function termina(gastado, desdeAtras) {
   var info = { uid: M0.R ? M0.R.uid : M0.G ? M0.G.uid : null, titulo: M0.titulo, id: M0.J ? M0.J.id : (M0.R && M0.R.receta) || null,
                gastado: gastado && gastado.length ? gastado : null };
   if (M0.G) info.guia = true;
-  if (ctx.alTerminar) { try { ctx.alTerminar(info); } catch (e) {} }
+  if (ctx.alTerminar && !V.prueba) { try { ctx.alTerminar(info); } catch (e) {} }
   V.pant = "fin";
   cierra(!!desdeAtras);
 }

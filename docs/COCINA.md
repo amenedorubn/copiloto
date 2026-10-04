@@ -1,6 +1,6 @@
 # Cocina
 
-Pestaña de HOY (icono de la olla, junto a Estadísticas). Desde la v2.35 son cinco archivos, cada uno
+Pestaña de HOY (icono de la olla, junto a Estadísticas). Desde la v2.38 son seis archivos, cada uno
 con sus tests (`node --test tests/<archivo>.test.mjs`):
 
 | Archivo | Qué hace |
@@ -9,6 +9,7 @@ con sus tests (`node --test tests/<archivo>.test.mjs`):
 | `despensa.js` | Lo que hay en casa (Despensa) y lo que comprar (Comprar) |
 | `carriles.js` | Las recetas con carriles: cuándo va cada paso (manos de una en una, fuegos, sartén, ollas, micro, air fryer) y el replan si vas tarde |
 | `cocina-modo.js` | El paso a paso a pantalla completa |
+| `cocina-prueba.js` | La Cocina de prueba de Ajustes: recetas de ejemplo con carriles y el reloj simulado |
 | `cocina.js` | Las pantallas, HOY, los avisos del tupper y la avena, el escáner y la sincronización |
 
 ## De dónde sale cada cosa
@@ -76,6 +77,24 @@ no van en fila, sino por carriles:
 
 Capturas: `node scripts/capturas-cocina.mjs` saca `carril-plan`, `carril-agua`, `carril-manos`, `carril-tarde`,
 `carril-espera`, `carril-pasta`, `carril-fin`, `carril-error` y `carril-micocina` con la pasta de ejemplo.
+
+## Cocina de prueba (v2.38)
+
+Ajustes → **Cocina de prueba · Ver el paso a paso con carriles**, junto a Simulación. Abre el paso a paso con
+carriles **de verdad** (`receta.js`, `carriles.js` y `cocina-modo.js`) con una receta de ejemplo de
+`cocina-prueba.js`:
+- pasta con tomate y atún (la del formato);
+- albóndigas con rigatoni (air fryer, fuego y micro a la vez);
+- pollo con verduras escrito mal a propósito (sin sartén ni olla, un paso sin minutos y un `(tras VERDURAS)` que no existe).
+
+- Arriba, «SIMULACIÓN · no cuenta» y **Terminar**, que vuelve a Ajustes.
+- Reloj simulado **×1, ×10, ×30** y **Retrasarme 2 min**: el reloj salta 2 min y se ve cómo se rehace el plan.
+- **Mi cocina** se puede cambiar (quitar fuegos u ollas) para ver el efecto, pero solo vale en la prueba.
+- **Sin rastro.** No lee ni escribe el calendario, Comprar, la Despensa, lo gastado, Mi cocina ni el estado del paso a
+  paso. No pone avisos en el móvil, y el final no ofrece «Apuntar lo gastado». Los relojes de una receta de verdad
+  que ya estuviera en marcha siguen con la hora real.
+- `scripts/capturas-cocina.mjs` lo recorre entero (`prueba-*`) y falla si el `localStorage` o el `/cocina` del Worker
+  cambian.
 
 ## El paso a paso
 

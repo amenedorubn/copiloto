@@ -77,13 +77,13 @@ for (const tema of ["oscuro", "claro"]) {
     // en Windows Chrome no trae BarcodeDetector (en Android si): uno que mira y no encuentra nada
     if (!("BarcodeDetector" in window)) window.BarcodeDetector = class { detect() { return Promise.resolve([]); } };
   }, ls);
-  let kv = { cambios: [], lista: [] };   // el /cocina del Worker, de mentira: guarda lo ultimo
+  let kv = { cambios: [], lista: [] }, posts = 0;   // el /cocina del Worker, de mentira: guarda lo ultimo
   await p.route("http://api.test/**", async (r) => {
     const u = new URL(r.request().url());
     if (u.pathname === "/agenda") return r.fulfill({ json: { generado: new Date().toISOString(), zona: "Europe/Madrid", eventos: [], dia: F.dia } });
     if (u.pathname === "/despensa") return r.fulfill({ json: { texto: F.nota } });
     if (u.pathname === "/hecho") return r.fulfill({ json: { actividades: [] } });
-    if (u.pathname === "/cocina") { const j = r.request().postDataJSON() || {}; kv = { cambios: j.cambios || kv.cambios, lista: j.lista || kv.lista }; return r.fulfill({ json: kv }); }
+    if (u.pathname === "/cocina") { posts++; const j = r.request().postDataJSON() || {}; kv = { cambios: j.cambios || kv.cambios, lista: j.lista || kv.lista }; return r.fulfill({ json: kv }); }
     return r.abort("failed");
   });
   await p.route("https://raw.githubusercontent.com/amenedorubn/cocina/main/recetas/**", async (r) => {
@@ -199,6 +199,61 @@ for (const tema of ["oscuro", "claro"]) {
     await p.evaluate(() => { window.Nativo.es = false; });
     await p.click(".cocSeg button:has-text('Despensa')"); await p.waitForTimeout(300);
     await p.screenshot({ path: `${OUT}esc-tengo.png` });
+    // v2.38: la Cocina de prueba, desde Ajustes. No puede dejar rastro: ni localStorage ni el /cocina del Worker
+    // fuera de la cuenta, lo que cambia solo con el tiempo de verdad: el calendario que se refresca y los
+    // relojes de otra receta que ya estaban en marcha (siguen con la hora real). Una clave nueva sí cuenta.
+    const huella = (antes) => p.evaluate((antes) => {
+      const o = {}, ya = antes ? JSON.parse(antes) : null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k === "copiloto.agenda.v1" || (k.startsWith("copiloto.cocina.modo2.") && (!ya || k in ya))) { o[k] = "(sigue solo)"; continue; }
+        o[k] = localStorage.getItem(k);
+      }
+      return JSON.stringify(o);
+    }, antes || null);
+    await p.click("#ptVolver").catch(() => {}); await p.waitForTimeout(600);
+    const antesLS = await huella(), antesKV = posts;
+    const aAjustes = async () => { await p.click("#hConf"); await p.waitForTimeout(600); };
+    const elige = async (r) => {
+      await p.click("#cfCocPrueba"); await p.waitForTimeout(700);
+      await p.click(`#cprRec [data-r="${r}"]`); await p.waitForTimeout(150);
+    };
+    await aAjustes();
+    await p.$eval("#cfCocPrueba", (e) => e.scrollIntoView({ block: "center" })); await p.waitForTimeout(300);
+    await foto("prueba-ajustes");
+    await elige("pasta"); await foto("prueba-elegir");
+    await p.click("#cprGo"); await p.waitForTimeout(500); await foto("prueba-plan");
+    await toca("hCocina"); await toca("cocMenos\"][data-k=\"fuegos"); await toca("cocMenos\"][data-k=\"fuegos"); await toca("cocMenos\"][data-k=\"fuegos");
+    await foto("prueba-micocina"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300);
+    await foto("prueba-plan-1fuego");
+    await toca("hCocina"); await toca("cocDefecto"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300);
+    await toca("cEmpieza"); await toca("cHecho"); await p.clock.runFor(4000); await p.waitForTimeout(300);
+    await foto("prueba-ahora");                                               // x10: 4 s son 40 s de cocina
+    await toca("simVel\"][data-v=\"30"); await p.clock.runFor(4000); await p.waitForTimeout(300);
+    await foto("prueba-x30");
+    await toca("simTarde"); await p.clock.runFor(1200); await p.waitForTimeout(300);
+    await foto("prueba-tarde");
+    for (let i = 0; i < 600 && await p.$("#cocPaso [data-a=cHecho]"); i++) {
+      if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); }
+      if (i === 40) await foto("prueba-mientras");
+    }
+    await p.waitForTimeout(300); await foto("prueba-fin");
+    await toca("sinApuntar"); await p.waitForTimeout(800); await foto("prueba-vuelta");   // Terminar: de vuelta a Ajustes
+    await elige("albondigas"); await p.click("#cprGo"); await p.waitForTimeout(500);
+    await toca("cEmpieza"); await toca("cHecho"); await toca("simVel\"][data-v=\"30");
+    for (let i = 0; i < 80; i++) { if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); } }
+    await foto("prueba-albondigas");
+    await toca("simFin"); await p.waitForTimeout(800);
+    await elige("errores"); await p.click("#cprGo"); await p.waitForTimeout(500); await foto("prueba-errores");
+    await toca("simFin"); await p.waitForTimeout(800);
+    await p.click("#hojaX").catch(() => {}); await p.waitForTimeout(400);
+    const despuesLS = await huella(antesLS);
+    if (despuesLS !== antesLS || posts !== antesKV) {
+      errores++; console.log("LA PRUEBA HA DEJADO RASTRO", posts - antesKV, "envíos");
+      const a = JSON.parse(antesLS), d = JSON.parse(despuesLS);
+      for (const k of new Set([...Object.keys(a), ...Object.keys(d)])) if (a[k] !== d[k]) console.log("  cambia", k, String(a[k]).slice(0, 80), "->", String(d[k]).slice(0, 80));
+    }
+    else console.log("prueba: sin rastro (localStorage y Worker iguales)");
     console.log("\nKV:", kv.cambios.length, "cambios,", kv.lista.length, "en la lista");
   }
   await p.close();
