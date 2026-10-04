@@ -112,6 +112,8 @@ no van en fila, sino por carriles:
 Capturas: `node scripts/capturas-cocina.mjs` saca `carril-plan`, `carril-agua`, `carril-manos`, `carril-tarde`,
 `carril-espera`, `carril-pasta`, `carril-fin`, `carril-error` y `carril-micocina` con la pasta de ejemplo.
 
+**Lo que entra en casa (v2.46.1)** solo se junta con lo que es lo mismo: misma clave, plural o un nombre que solo añade una palabra («pan de molde» = «pan de molde integral»). Lo parecido no se junta («proteína de cookies» ≠ «proteína whey de chocolate»; umbral 0,8 de `Receta.mismo`). Sin nota ni recuento, cualquier cosa apuntada ya es punto de partida (`Despensa.hayBase`).
+
 ## Cocina de prueba (v2.38; una sola desde la v2.43)
 
 **Desde la v2.43 hay una sola fila en Ajustes, «Cocina de prueba»**. Abre la pestaña Cocina entera con datos de ejemplo

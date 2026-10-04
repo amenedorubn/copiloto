@@ -648,7 +648,7 @@ function sincroniza() {
 function ahoraOpts() { var t = Date.now(); return { hoy: isoDe(t), ahora: hmDe(t), ahoraMs: t }; }
 function estado(dia) {
   var o = ahoraOpts(), Rs = comidasDe(dia), D = NOTA && NOTA.texto ? Dp().despensa(NOTA.texto) : null, CB = cambios();
-  var hayBase = !!D || vigentes(CB).some(function (cb) { return cb.tipo === "inventario"; });
+  var hayBase = Dp().hayBase(D, CB);
   return { o: o, Rs: Rs, D: D, CB: CB, hayBase: hayBase, H: hayBase ? Dp().casa(D, CB, Rs, o) : null };
 }
 

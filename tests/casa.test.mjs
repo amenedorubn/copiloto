@@ -55,3 +55,32 @@ test("fracciones: lleno, ¾, ½ y ¼ del paquete o de lo que hay; sin gramos, na
   assert.deepEqual(Dp.fracciones({ n: 300, ud: "g" }, { n: 500, ud: "g" }).map((f) => f.c.n), [500, 380, 250, 130]);
   assert.deepEqual(Dp.fracciones({ n: 3, ud: "lata" }), []);
 });
+
+/* Bug v2.46: «proteína de cookies» añadida 3 veces no salía. Causas: (1) al entrar algo en casa se juntaba con
+   lo más parecido que hubiera, por poco que se pareciera («Proteína whey de chocolate», 0,7); (2) sin nota ni
+   recuento no había punto de partida y Casa no enseñaba nada de lo añadido.                                   */
+test("bug: lo que entra no se junta con algo solo parecido (escáner, a mano y por nombre)", () => {
+  const t0 = Date.parse("2026-10-05T10:00:00"), o2 = { ahoraMs: t0 + 5000 };
+  const D = Dp.despensa("DESPENSA EN VIVO — última actualización: 01/10/2026\n\## DESPENSA SECA\nProteína whey de chocolate, tomate");
+  const vias = [
+    { id: "esc", t: t0, tipo: "compra", items: ["500 g de proteína de cookies"], zona: "Despensa dulce", codigo: "8400000000002" },   // escáner
+    { id: "man", t: t0, tipo: "compra", items: ["proteína de cookies"], zona: "Despensa dulce" },                                  // Añadir a mano
+    { id: "nom", t: t0, tipo: "hay", items: ["Proteína de cookies"] }                                                              // por nombre (Me queda / cuánto)
+  ];
+  for (const cb of vias) {
+    const H = Dp.casa(D, [cb], [], o2), n = H.todos.map((x) => x.nombre);
+    assert.ok(n.includes("Proteína de cookies"), cb.id + ": " + n.join(", "));
+    assert.ok(n.includes("Proteína whey de chocolate"), cb.id + ": la otra sigue");
+  }
+  // y lo que sí es lo mismo se sigue juntando: plural, mayúsculas
+  const H2 = Dp.casa(D, [{ id: "x", t: t0, tipo: "compra", items: ["2 tomates"] }], [], o2);
+  assert.equal(H2.todos.filter((x) => /tomate/i.test(x.nombre)).length, 1);
+});
+
+test("bug: sin nota ni recuento, lo que añades ya cuenta como punto de partida", () => {
+  const t0 = Date.parse("2026-10-05T10:00:00");
+  assert.equal(Dp.hayBase(null, []), false);
+  assert.equal(Dp.hayBase(null, [{ id: "a", t: t0, tipo: "compra", items: ["proteína de cookies"] }]), true);
+  assert.equal(Dp.hayBase(null, [{ id: "a", t: t0, tipo: "compra", items: ["x"], borrado: true }]), false);
+  assert.deepEqual(Dp.casa(null, [{ id: "a", t: t0, tipo: "compra", items: ["proteína de cookies"] }], [], { ahoraMs: t0 + 1 }).todos.map((x) => x.nombre), ["Proteína de cookies"]);
+});

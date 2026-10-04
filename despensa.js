@@ -219,6 +219,11 @@ var ENVASE = { lata: 1, bote: 1, bolsa: 1, brick: 1, tarro: 1, paquete: 1, blist
 function sumaC(a, b) { return a && b && a.ud === b.ud ? { n: Math.round((a.n + b.n) * 100) / 100, ud: a.ud } : null; }
 function textoIng(x) { return typeof x === "string" ? x : (x && (x.txt || x.nombre)) || ""; }
 
+var ENTRA_MIN = 0.8;   // «pan de molde» = «pan de molde integral» (0,85); «proteína de cookies» ≠ «proteína whey de chocolate» (0,7)
+// hay punto de partida: la nota, un recuento o, desde la v2.46.1, cualquier cosa apuntada (empezar de cero vale)
+function hayBase(D, cambios) {
+  return !!D || vivos(cambios).some(function (cb) { return /^(inventario|compra|hay|acaba)$/.test(cb.tipo); });
+}
 function motor(D, cambios, comidas, opts) {
   var RC = Rc(), S = [], CB = vivos(cambios), now = opts.ahoraMs;
   var especias = {};
@@ -234,7 +239,11 @@ function motor(D, cambios, comidas, opts) {
         if (A.join(" ") === ks) p = 1.02;
         else if (!entraAlgo && A.every(function (w) { return B.indexOf(w) >= 0; })) p = 0.6 + 0.3 * A.length / B.length;
         else p = 0;
-      } else p = s.g.clave && s.g.clave === g.clave ? 1.01 : RC.mismo(g, s.g);
+      } else {
+        p = s.g.clave && s.g.clave === g.clave ? 1.01 : RC.mismo(g, s.g);
+        // v2.46.1: lo que ENTRA solo se junta con lo mismo (no con lo parecido: «proteína de cookies» no es la whey)
+        if (entraAlgo && p < ENTRA_MIN) p = 0;
+      }
       if (s.estado === "no") p -= 0.001;
       if (p > pm) { pm = p; mejor = s; }
     });
@@ -380,7 +389,7 @@ function motor(D, cambios, comidas, opts) {
       else if (cb.tipo === "acaba") its.forEach(function (x) { var s = busca(RC.ingrediente(x)); if (s) fuera(s); });
       else if (cb.tipo === "hay") its.forEach(function (x) {
         // "Me queda" o "Cuánto hay: 3 rebanadas": la cantidad, si la dices, es la que hay ahora
-        var g = RC.ingrediente(x), s = busca(g, true);
+        var g = RC.ingrediente(x), s = busca(g, true, true);
         if (!s) entra(x, null, null, "seguro");
         else {
           if (g.c) s.c = { n: g.c.n, ud: g.c.ud }; else if (s.estado === "no") s.c = null;
@@ -669,7 +678,7 @@ function textoClaude(H, opts) {
   return L.join("\n").replace(/\n+$/, "") + "\n";
 }
 
-return { ZONAS: ZONAS6, PASILLOS: PASILLOS, pasilloDe: pasilloDe, porPasillo: porPasillo, porConfirmar: porConfirmar, tuppers: tuppers, MAX_TUPPERS: MAX_TUPPERS, fracciones: fracciones, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
+return { ZONAS: ZONAS6, hayBase: hayBase, PASILLOS: PASILLOS, pasilloDe: pasilloDe, porPasillo: porPasillo, porConfirmar: porConfirmar, tuppers: tuppers, MAX_TUPPERS: MAX_TUPPERS, fracciones: fracciones, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
   estadoComida: estadoComida, queToca: queToca, faltan: faltan, origenDe: origenDe, paraTxt: paraTxt, textoClaude: textoClaude,
   isoDe: isoDe, msDe: msDe, diaLargo: diaLargo, diaCorto: diaCorto };
 });
