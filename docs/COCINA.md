@@ -69,13 +69,13 @@ no van en fila, sino por carriles:
 - El plan se rehace cada segundo con lo que ya ha pasado: si picas 2 min más, la pasta entra 2 min más tarde
   («Plan rehecho: a la mesa a las 14:11 (antes 14:10)»). Al acabar su espera, un carril pita una vez y dice
   «Agua: listo»; cuando toca la siguiente acción, pita y la dice.
-- Cuenta con lo que hay en la cocina (`Carriles.COCINA`, se guarda en `copiloto.cocina.micocina.v1`): 4 fuegos,
+- Cuenta con **Mi cocina** (botón en el plan; `Carriles.COCINA` por defecto, se guarda en `copiloto.cocina.micocina.v1`): 4 fuegos,
   1 sartén, 2 ollas, horno, micro, air fryer, picadora y batidora. Un carril tiene su fuego y su recipiente desde su
   primer paso con ellos hasta el último.
 - Las recetas JSON de Copiloto Cocina y las comidas sin carriles siguen con el paso a paso de siempre.
 
 Capturas: `node scripts/capturas-cocina.mjs` saca `carril-plan`, `carril-agua`, `carril-manos`, `carril-tarde`,
-`carril-espera`, `carril-pasta`, `carril-fin` y `carril-error` con la pasta de ejemplo.
+`carril-espera`, `carril-pasta`, `carril-fin`, `carril-error` y `carril-micocina` con la pasta de ejemplo.
 
 ## El paso a paso
 

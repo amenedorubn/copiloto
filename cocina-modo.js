@@ -1234,7 +1234,8 @@ function hoja(ahora) {
   if (!V.hoja) return "";
   var M0 = V.M0, S = V.S, h = '<div class="cpVelo" data-a="cierraHoja"></div>';
   var x = '<button class="cpX" data-a="cierraHoja" aria-label="Cerrar">' + svg("cerrar") + '</button>';
-  if (V.hoja === "pasos") {
+  if (V.hoja === "cocina") h += hojaCocina(x);
+  else if (V.hoja === "pasos") {
     var hechos = M0.pasos.filter(function (P, j) { return S.hechos[j] && !P.auto; }).length;
     h += '<div class="cpHoja" role="dialog" aria-label="Pasos"><div class="cpHojaCab"><div><h3>' + totalNum(M0) + ' pasos</h3><small>' + hechos + (hechos === 1 ? " hecho" : " hechos") +
       ' · ' + quedaHtml(ahora).replace(/<[^>]+>/g, "") + '</small></div>' + x + '</div><div class="cpHojaCuerpo">' +
@@ -1314,6 +1315,23 @@ function vozCarril() {
   var ii = ingsDe(x);
   return limpiaVoz(x.txt + (ii.length ? ". " + ii.join(", ") : "")) + ".";
 }
+var COSAS_COCINA = [["fuegos", "Fuegos", "fuego", "fuegos"], ["sarten", "Sartenes", "sartén", "sartenes"], ["olla", "Ollas", "olla", "ollas"],
+  ["horno", "Horno", "horno", "hornos"], ["micro", "Microondas", "micro", "micros"], ["airfryer", "Air fryer", "air fryer", "air fryers"],
+  ["picadora", "Picadora", "picadora", "picadoras"], ["batidora", "Batidora", "batidora", "batidoras"], ["tazas", "Tazas", "taza", "tazas"]];
+function cocinaTxt(c) {
+  return COSAS_COCINA.slice(0, 6).map(function (x) { var n = c[x[0]] | 0; return n + " " + (n === 1 ? x[2] : x[3]); }).join(" · ");
+}
+function hojaCocina(x) {
+  var c = V.cocina, notas = (Ca() && Ca().COCINA.notas) || {};
+  return '<div class="cpHoja" role="dialog" aria-label="Mi cocina"><div class="cpHojaCab"><div><h3>Mi cocina</h3><small>El plan cuenta con esto. No dice qué va en qué fuego.</small></div>' + x + '</div><div class="cpHojaCuerpo">' +
+    COSAS_COCINA.map(function (k) {
+      var n = c[k[0]] | 0;
+      return '<div class="ccFila"><span class="t"><b>' + esc(k[1]) + '</b>' + (notas[k[0]] ? '<small>' + esc(notas[k[0]]) + '</small>' : "") + '</span>' +
+        '<button class="cpAnt" style="width:48px;height:48px;padding:0" data-a="cocMenos" data-k="' + k[0] + '" aria-label="Uno menos"' + (n ? "" : " disabled") + '>−</button>' +
+        '<b style="width:28px;text-align:center;font-size:20px">' + n + '</b>' +
+        '<button class="cpAnt" style="width:48px;height:48px;padding:0" data-a="cocMas" data-k="' + k[0] + '" aria-label="Uno más">+</button></div>';
+    }).join("") + '</div><button class="cpCero" data-a="cocDefecto">Volver a lo de siempre</button></div>';
+}
 function planHtml(ahora) {
   var M0 = V.M0, pl = V.pl, P = pl.P, ex = Ca().explica(M0.carr, P), h = '<div class="cpCuerpo cc">';
   h += '<p class="ccCap" style="margin-top:4px">Así va a ir · ' + minTxt(pl.total) + '</p>' + gantt(pl, false);
@@ -1323,6 +1341,8 @@ function planHtml(ahora) {
   });
   h += '<p class="ccTxt">' + fr.join(" ") + '</p>';
   if (pl.P.lineal > pl.total + 60) h += '<p class="ccTxt mu">En una sola línea serían ' + minTxt(pl.P.lineal) + '.</p>';
+  h += '<button class="ccFila" data-a="hCocina" style="margin-top:12px;border-top:0;background:var(--sf);border-radius:16px;padding:6px 14px">' + svg("cooking-pot") +
+    '<span class="t"><b>Mi cocina</b><small>' + esc(cocinaTxt(V.cocina)) + '</small></span>' + svg("der") + '</button>';
   var pr = M0.carr.problemas;
   if (pr.length) h += '<div class="ccAviso" role="alert">' + svg("warning-circle") + '<div>' + pr.map(function (p) { return '<p>' + esc(p.texto) + '</p>'; }).join("") + '</div></div>';
   var P0 = M0.pasos[0];
@@ -1469,6 +1489,12 @@ function accion(a, b) {
       if (r.saltados.length) ponToast("Saltados " + lista(r.saltados.map(function (j) { return M0.pasos[j].auto ? "Antes" : numDe(M0, j); })),
         function () { deshacer(S, r.antes, Date.now()); });
       cambia(true); return;
+    case "hCocina": V.hoja = "cocina"; pinta(false); return;
+    case "cocMas": case "cocMenos":
+      k = b.getAttribute("data-k");
+      V.cocina[k] = Math.max(0, Math.min(9, (V.cocina[k] | 0) + (a === "cocMas" ? 1 : -1)));
+      escribe(MI_COCINA, V.cocina); pinta(false); return;
+    case "cocDefecto": escribe(MI_COCINA, null); V.cocina = miCocina(null); pinta(false); return;
     case "cEmpieza":
       S.carr = { ini: ahora, hechas: {}, empezo: {}, fin: {}, mesa0: ahora + (V.pl ? V.pl.total : 0) * 1000 }; S.t = ahora; V.pant = "carril"; V.hoja = null;
       cambia(true); return;

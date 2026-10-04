@@ -141,6 +141,7 @@ for (const tema of ["oscuro", "claro"]) {
     const foto = (n) => p.screenshot({ path: `${OUT}${n}.png` });
     if (await abreUid("c8")) {
       await p.waitForTimeout(400); await foto("carril-plan");
+      await toca("hCocina"); await foto("carril-micocina"); await p.evaluate(() => window.CocinaModo.atras()); await p.waitForTimeout(300);
       await toca("cEmpieza"); await foto("carril-agua");
       await toca("cHecho"); await pasa(100); await foto("carril-manos");        // 1:40: picas mientras el agua se calienta
       await pasa(200); await foto("carril-tarde");                              // 5:00: picar lleva 2 min más: se rehace el plan
