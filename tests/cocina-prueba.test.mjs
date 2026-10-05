@@ -7,8 +7,8 @@ import { createRequire } from "node:module";
 const req = createRequire(import.meta.url);
 const P = req("../cocina-prueba.js"), R = req("../receta.js"), C = req("../carriles.js"), Modo = req("../cocina-modo.js");
 
-test("prueba: tres recetas, y la pasta y las albóndigas se entienden sin avisos", () => {
-  assert.deepEqual(P.RECETAS.map((r) => r.id), ["pasta", "albondigas", "errores"]);
+test("prueba: cuatro recetas, y la pasta y las albóndigas se entienden sin avisos", () => {
+  assert.deepEqual(P.RECETAS.map((r) => r.id), ["pasta", "albondigas", "errores", "curry"]);
   for (const id of ["pasta", "albondigas"]) {
     const r = R.leer(P.evento(id));
     assert.deepEqual(r.problemas.filter((p) => p.tipo === "carril"), [], id);
@@ -42,4 +42,14 @@ test("casa de prueba: los datos de ejemplo enseñan todo lo de «Por confirmar»
   assert.ok(PC.some((x) => x.tipo === "compra"), "lo marcado en Comprar");
   assert.ok(PC.some((x) => x.tipo === "duda"), "los huevos sin confirmar");
   assert.equal(Dp.tuppers(H), 3);
+});
+
+test("prueba: el curry del formato nuevo pasa el linter, con 2 y con 3 raciones", () => {
+  const r = R.leer(P.evento("curry"));
+  assert.equal(r.v3, true);
+  assert.deepEqual(r.lint.errores, []);
+  assert.deepEqual(R.escala(r, 3).lint.errores, []);
+  const M0 = Modo.normaliza({ comida: r });
+  assert.equal(M0.carr.tareas.length, r.pasos.filter((p) => !p.auto).length, "ninguna tarea se queda fuera del plan");
+  M0.pasos.filter((P) => !P.auto).forEach((P) => assert.ok(P.dur > 0, P.titulo));
 });

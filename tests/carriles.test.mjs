@@ -198,3 +198,11 @@ test("modo: Hecho en el agua pone su reloj, picas y, si tardas, la pasta se muev
   }
   assert.ok(Modo.todoHecho(M0, S, ahora + 3600e3));
 });
+
+test("v2.58: una tarea de manos hecha antes de tiempo deja las manos libres desde que la marcas", () => {
+  const R = req("../receta.js"), C = req("../carriles.js");
+  const r = R.leer({ uid: "m", titulo: "M", texto: "1 RACIÓN · 10 min\n\nCARRIL A\n1. Pica la cebolla, 5 min (manos)\n2. Pica el ajo, 2 min (manos)\n\nCARRIL B\n1. Corta el pan, 3 min (manos)\n" });
+  const M = C.modelo(r), a1 = M.tareas[0], b1 = M.tareas.find((x) => x.carril === "b");
+  const P = C.planifica(M, null, { [a1.id]: { ini: 0, fin: 10 } }, 10);
+  assert.ok(P.ini[b1.id] <= 15, "el pan no espera a los 5 min de la cebolla: " + P.ini[b1.id]);
+});

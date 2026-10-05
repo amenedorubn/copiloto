@@ -40,9 +40,10 @@ function modelo(R) {
   var lanes = R.carriles.filter(function (c) { return c.id !== "union"; });
   pasos.forEach(function (p, k) {
     if (!p.carril || p.dur_s == null) return;
-    var T = { id: "t" + k, k: k, carril: p.carril, n: p.nCarril, txt: p.titulo, dur: p.dur_s, manos: Math.min(p.manos_s, p.dur_s),
+    // v2.58: el texto entero del paso (el titulo se corta en el primer ":" y se perdia lo que va detras)
+    var T = { id: "t" + k, k: k, carril: p.carril, n: p.nCarril, txt: p.detalle || p.titulo, dur: p.dur_s, manos: Math.min(p.manos_s, p.dur_s),
               aguanta: p.aguanta_s == null ? null : p.aguanta_s, fuego: !!p.fuego, rec: p.rec || null, aparato: p.aparato || null,
-              tras: [], trasCarril: (p.tras || []).slice(), supuesto: !!p.tiempoSupuesto };
+              tras: [], trasCarril: (p.tras || []).slice(), supuesto: !!p.tiempoSupuesto, despues: p.tipo === "despues" };
     (porCarril[T.carril] = porCarril[T.carril] || []).push(T);
     tareas.push(T);
   });
@@ -125,7 +126,8 @@ function pase(M, cocina, fijos, desde, rel) {
   Object.keys(fijos).forEach(function (id) { if (porId[id]) { ini[id] = fijos[id].ini; fin[id] = fijos[id].fin; puesto[id] = true; } });
 
   function manosLibres(a, b, sin) {
-    return !T.some(function (x) { return puesto[x.id] && x.id !== sin && x.manos > 0 && ini[x.id] < b && a < ini[x.id] + x.manos; });
+    // v2.58: lo que ya hiciste (fijo) ocupa las manos hasta que acabó, no lo que decía la receta
+    return !T.some(function (x) { return puesto[x.id] && x.id !== sin && x.manos > 0 && ini[x.id] < b && a < ini[x.id] + Math.min(x.manos, fin[x.id] - ini[x.id]); });
   }
   // un carril sujeta un fuego o un recipiente desde su primer paso con el hasta que acaba el ultimo
   function sujetan(r, valor, t, sin) {
@@ -151,12 +153,15 @@ function pase(M, cocina, fijos, desde, rel) {
     if (x.sujeta_rec && !yaLoTiene(x, "rec") && sujetan("rec", x.sujeta_rec, a, x.carril) >= capacidad(cocina, x.sujeta_rec)) return false;
     return true;
   }
+  // v2.58: lo que solo pide un momento de manos y luego espera (poner el agua a hervir) va antes que
+  // una tarea larga de manos: así la espera corre mientras cortas
+  function arranca(x) { return x.manos <= 60 && x.dur - x.manos >= 120 && !(rel[x.id] > 0) ? 1 : 0; }
   function pon(x, a) { ini[x.id] = a; fin[x.id] = a + x.dur; puesto[x.id] = true; }
 
   var t = Math.ceil(desde / PASO_S) * PASO_S, quedan = T.filter(function (x) { return !puesto[x.id]; });
   while (quedan.length && t < desde + MAX_S) {
     var listas = quedan.filter(function (x) { return (rel[x.id] || 0) <= t && x.tras.every(function (d) { return puesto[d] && fin[d] <= t; }); })
-      .sort(function (a, b) { return resto[b.id] - resto[a.id] || a.manos - b.manos || T.indexOf(a) - T.indexOf(b); });
+      .sort(function (a, b) { return arranca(b) - arranca(a) || resto[b.id] - resto[a.id] || a.manos - b.manos || T.indexOf(a) - T.indexOf(b); });
     listas.forEach(function (x) { if (!puesto[x.id] && cabe(x, t)) pon(x, t); });
     quedan = quedan.filter(function (x) { return !puesto[x.id]; });
     t += PASO_S;

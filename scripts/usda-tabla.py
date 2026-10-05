@@ -3,7 +3,7 @@
 import csv, json, re, sys, io
 # uso: python scripts/usda-tabla.py <carpeta de FoodData_Central_sr_legacy_food_csv_2018-04>
 #   (el zip: https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip)
-D = sys.argv[1].rstrip('/\') + '/'
+D = sys.argv[1].rstrip('/\\') + '/'
 OUT = __import__('os').path.join(__import__('os').path.dirname(__file__), '..', 'nutri-tabla.js')
 
 # (clave = regex sobre el nombre normalizado, nombre, descripcion SR Legacy (regex ^...$), gramos por unidad o None)
@@ -43,7 +43,9 @@ A = [
   (r"champinon|seta", "Champiñones", r"Mushrooms, white, raw", 18),
   (r"guisante", "Guisantes", r"Peas, green, raw", None),
   (r"garbanzo", "Garbanzos cocidos", r"Chickpeas \(garbanzo beans, bengal gram\), mature seeds, canned, drained, rinsed in tap water", None),
+  (r"lentejas? (cocidas?|de bote|en conserva)|bote de lentejas", "Lentejas cocidas", r"Lentils, mature seeds, cooked, boiled, without salt", None),
   (r"lenteja", "Lentejas (secas)", r"Lentils, raw", None),
+  (r"pistacho", "Pistachos", r"Nuts, pistachio nuts, raw", None),
   (r"arroz.*microondas|arroz cocido|arroz vasito", "Arroz cocido", r"Rice, white, long-grain, regular, enriched, cooked", 125),
   (r"arroz", "Arroz (crudo)", r"Rice, white, long-grain, regular, raw, unenriched", None),
   (r"pasta|macarron|rigatoni|espagueti|fideo|penne|tallarin", "Pasta (seca)", r"Pasta, dry, unenriched", None),
@@ -70,6 +72,7 @@ A = [
   (r"mozzarella", "Mozzarella", r"Cheese, mozzarella, whole milk", 125),
   (r"queso", "Queso curado", r"Cheese, cheddar \(Includes.*", None),
   (r"nata", "Nata", r"Cream, fluid, heavy whipping", None),
+  (r"proteina|whey", "Proteína en polvo (suero)", r"Beverages, Whey protein powder isolate", None),   # antes que cacahuete: "proteína de cacahuete" es proteína
   (r"mantequilla de cacahuete|crema de cacahuete", "Crema de cacahuete", r"Peanut butter, smooth style, without salt", None),
   (r"mantequilla", "Mantequilla", r"Butter, without salt", None),
   (r"aceite|aove", "Aceite de oliva", r"Oil, olive, salad or cooking", None),
@@ -82,7 +85,6 @@ A = [
   (r"tahini|tahin", "Tahini", r"Seeds, sesame butter, tahini, from roasted and toasted kernels \(most common type\)", None),
   (r"hummus", "Hummus", r"Hummus, commercial", None),
   (r"tofu", "Tofu", r"Tofu, firm, prepared with calcium sulfate and magnesium chloride \(nigari\)", None),
-  (r"proteina|whey", "Proteína en polvo (suero)", r"Beverages, Whey protein powder isolate", None),
 ]
 N = {"kcal": 1008, "prot": 1003, "hc": 1005, "grasa": 1004, "fibra": 1079, "vitC": 1162, "folato": 1190, "hierro": 1089,
      "magnesio": 1090, "potasio": 1092, "b12": 1178, "vitD": 1114, "sodio": 1093, "calcio": 1087, "azucar": 2000}

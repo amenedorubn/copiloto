@@ -419,6 +419,8 @@ function corto(g) {
     var v1 = ver.split(" ")[0], vp = pluralDe(v1);
     return vp !== v1 && norm(g.nombre || "").split(" ").indexOf(norm(vp)) >= 0 ? vp + ver.slice(v1.length) : ver;
   }
+  // v2.58: lo que sale de un paso lleva el nombre como lo escribiste: solo la primera palabra cambia de numero
+  if (g.desdePaso) return ingTxt(nom, g.c, "");
   if (g.c.ud === "ud") {
     if (g.c.n > 1) { var p = nom.split(" de "); p[0] = p[0].split(" ").map(pluralDe).join(" "); nom = p.join(" de "); }
     return cantTxt(g.c) + " " + nom;
@@ -444,14 +446,14 @@ function verboAviso(t) {
   return "Sigue";
 }
 function tiempo(txt) {
-  var s = String(txt || ""), dur = 0, rango = false, avisos = [], prev = null, m;
+  var s = String(txt || ""), dur = 0, rango = false, avisos = [], prev = null, m, suelto = null;
   T_RE.lastIndex = 0;
   while ((m = T_RE.exec(s))) {
     var antes = s.charAt(m.index - 1);
     if (/[\d:/]/.test(antes)) continue;                       // "12:30", "14/09"
     if (prev) {
       var entre = s.slice(prev, m.index), mas = !!m[4], une = /agit|vuelta|remov|remueve|gira/i.test(entre);
-      if (!mas && !une) break;                                // otro tiempo suelto u otra forma ("o microondas")
+      if (!mas && !une) { suelto = m[0].trim(); break; }   // otro tiempo suelto u otra forma ("o microondas")
       avisos.push({ a_los_s: dur, texto: verboAviso(entre) });
     }
     var lo = segDe(m[1], m[3]), hi = m[2] ? segDe(m[2], m[3]) : lo;
@@ -473,12 +475,102 @@ function tiempo(txt) {
   avisos.forEach(function (a) { a.voz = a.texto + "."; });
   var r = { duracion_s: dur, avisos: avisos };
   if (rango) r.hasta_s = dur;
+  if (suelto) r.suelto = suelto;
   return r;
 }
+// 180 -> "3 min", 20 -> "20 s", 90 -> "1 min 30 s"
+function fmtS(s) { s = Math.round(s || 0); if (s < 60) return s + " s"; var m = Math.floor(s / 60), r = s % 60; return m + " min" + (r ? " " + r + " s" : ""); }
 // "hasta que dore", "la yema aún blanda", "del tamaño de una nuez": como se ve cuando esta
 function pistaDe(txt) {
   var m = String(txt || "").match(/(hasta que [^.,:;(]+|cuando [^.,:;(]+|(?:(?:la|el) \S+ )?a[uú]n (?:algo )?[a-záéíóúñ]+|para que (?:se )?(?:dore|espese|cuaje|funda|evapore)[^.,:;]*|del tama[nñ]o de [^.,:;]+)/i);
   return m ? m[1].trim() : null;
+}
+
+// "a fuego medio", "Baja a fuego bajo", "Apaga el fuego" -> "Fuego medio", "Fuego apagado" (null si no lo dice)
+var FUEGO_RE = /\bfuego\s+(muy\s+)?(medio[- ]bajo|medio[- ]alto|bajo|medio|fuerte|alto|m[aá]ximo|vivo|suave|m[ií]nimo)\b|\b(apaga(?:r)?\s+el\s+fuego|fuego\s+apagado|sin\s+fuego|fuera\s+del\s+fuego)\b/i;
+function fuegoDe(txt) {
+  var m = String(txt || "").match(FUEGO_RE);
+  if (!m) return null;
+  if (m[3]) return "Fuego apagado";
+  return "Fuego " + (m[1] ? "muy " : "") + m[2].toLowerCase().replace(" ", "-");
+}
+
+/* --------------------- formato v3 (v2.58): Cooklang en español ---------------------
+   Dentro de cada paso (ver docs/RECETAS-CALENDARIO.md):
+     @pollo{250 g}(en dados)  ingrediente con la cantidad de ESTE paso (y su corte)
+     @tomate triturado{400 g} varias palabras: hasta la llave
+     @&pollo{250 g}           el mismo de antes (ya contado): sale en el paso, no suma
+     @sal{=1 pizca}           cantidad fija: no cambia al escalar
+     @sal                     una palabra y sin cantidad
+     ~{5 min}, ~huevo{10 min} el reloj del paso
+     #sartén, #olla{}         el recipiente
+     → hasta que dore         como sabes que ya esta
+   cook(linea, f) -> {t: el texto para leer ("Añade 250 g de pollo, 5 min"), toks, relojes,
+   recs, senal, raros: [lo que parece una marca y no se entiende]}. f escala las cantidades. */
+var COOK_RE = /@(&)?([^@~#{}\n→]+?)\{([^}]*)\}(?:\(([^)]*)\))?|@(&)?([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)(?:\(([^)]*)\))?|~([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]*)\{([^}]*)\}|#([^@~#{}\n→]+?)\{\}|#([A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]+)/g;
+function esV3(texto) { return /@&?[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]|~[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]*\{/.test(String(texto || "")); }
+function escalaC(c, f) {
+  if (!c || f === 1) return c;
+  var x = {}; for (var k in c) x[k] = c[k];
+  x.n = redondea(x.n * f); if (x.min != null) x.min = redondea(x.min * f);
+  return x;
+}
+// "250 g" / "250%g" / "2" / "=1 pizca" / "al gusto" -> {c, txt, fijo}
+function cantTok(q) {
+  var s = String(q || "").replace(/%/g, " ").replace(/\s+/g, " ").trim(), fijo = false;
+  if (/^=/.test(s)) { fijo = true; s = s.replace(/^=\s*/, ""); }
+  if (!s) return { c: null, txt: "", fijo: fijo };
+  var c = cantidad(s + " x");
+  if (c && !/^x?$/.test(c.resto.trim())) c = null;
+  if (c) delete c.resto;
+  return { c: c, txt: c ? "" : s, fijo: fijo };
+}
+// lo que se lee en el paso: "250 g de pollo", "2 huevos", "sal al gusto"
+function ingTxt(nombre, c, txt) {
+  if (c && c.n != null) {
+    if (c.ud === "ud") {
+      var w = nombre.split(" "), p = c.n > 1 && !/s$/.test(w[0]) ? pluralDe(w[0]) : w[0];
+      return cantTxt(c) + " " + [p].concat(w.slice(1)).join(" ");
+    }
+    return cantTxt(c) + " de " + nombre;
+  }
+  return txt ? nombre + " " + txt : nombre;
+}
+function cook(l, f) {
+  f = f > 0 ? f : 1;
+  var toks = [], relojes = [], recs = [], raros = [], senal = null;
+  var s = String(l || ""), fl = s.match(/\s*(?:→|->)\s*(.*)$/);
+  if (fl) {
+    s = s.slice(0, fl.index);
+    senal = fl[1].replace(/[.;]+$/, "").trim() || null;
+    if (!senal) raros.push("«→» sin nada detrás: falta cómo se ve cuando ya está");
+  }
+  var t = s.replace(COOK_RE, function (x, r1, n1, q1, p1, r2, n2, p2, nt, qt, nr1, nr2) {
+    if (n1 != null || n2 != null) {
+      var nombre = String(n1 != null ? n1 : n2).trim(), q = cantTok(n1 != null ? q1 : ""), ref = !!(r1 || r2);
+      var c = q.fijo ? q.c : escalaC(q.c, f), prep = String((n1 != null ? p1 : p2) || "").trim() || null, eq = null;
+      // "(~400 g)": lo que pesa (para la nutricion y la compra), no un corte
+      if (prep && /^~?\s*\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|cl)$/i.test(prep)) { eq = cantidad(prep); if (eq) { delete eq.resto; eq = q.fijo ? eq : escalaC(eq, f); } prep = null; }
+      if (q.txt && (/[\d@~{#]/.test(q.txt) || q.txt.split(" ").length > 3)) raros.push("«@" + nombre + "{" + (n1 != null ? q1 : "") + "}»: la cantidad no se entiende (pon «250 g», «2», «1 cda» o «al gusto»)");
+      toks.push({ nombre: nombre, c: c, txt: q.txt, fijo: q.fijo, ref: ref, prep: prep, equiv: eq });
+      return ingTxt(nombre, c, q.txt) + (eq ? " (" + cantTxt(eq) + ")" : "") + (prep ? " " + prep : "");
+    }
+    if (qt != null) {
+      var tq = String(qt).replace(/%/g, " ").replace(/\s+/g, " ").trim(), seg = tiempo(tq).duracion_s;
+      if (!seg) raros.push("«~{" + qt + "}»: no es un tiempo (pon «~{5 min}» o «~{20 s}»)");
+      relojes.push({ nombre: nt || "", s: seg, txt: tq });
+      return tq;
+    }
+    var rec = String(nr1 != null ? nr1 : nr2).trim();
+    recs.push(rec);
+    return rec;
+  });
+  // lo que queda con @, ~, # o llaves no se ha entendido: se dice
+  var resto = t.match(/[@#{}][^\s,.;]*|~(?![\d½¼¾])[^\s,.;]*/g);
+  if (resto) resto.forEach(function (x) { raros.push("«" + x + "»: no se entiende (ingrediente: «@nombre{cantidad}», reloj: «~{5 min}»)"); });
+  // los parentesis que escribiste tu (sin los de los @ingredientes): los que no son marcas se avisan
+  var sueltos = (s.replace(COOK_RE, " ").match(/\([^)]*\)/g) || []).filter(function (x) { return !/^\(\s*(manos|espera|no espera|tras\s+[^)]+)\s*\)$/i.test(x); });
+  return { t: t.replace(/\s+([,.;])/g, "$1").replace(/\s{2,}/g, " ").trim(), toks: toks, relojes: relojes, recs: recs, senal: senal, raros: raros, sueltos: sueltos };
 }
 
 /* ------------------------------ apartados ------------------------------
@@ -488,7 +580,7 @@ function pistaDe(txt) {
 var CABS = [
   ["carril", /^carril\b/],
   ["juntar", /^al juntar\b/],
-  ["prep", /^(antes de empezar|antes de nada|mise en place|preparativos|prepara antes)/],
+  ["prep", /^(antes de empezar|antes de nada|mise en place|preparativos|prepara antes|preparar\b)/],
   ["paralelo", /^(en paralelo|mientras)\b/],
   ["despues", /^(al terminar|despues|al acabar|al llegar a casa|luego)\b/],
   ["planB", /^(plan b|si no te convence|si no hay|si falla)\b/],
@@ -546,6 +638,7 @@ function paso(txt, tipo, grupo) {
     tipo: mientras && tipo === "paso" ? "paralelo" : tipo, checklist: [], auto: false
   };
   if (x.hasta_s) p.hasta_s = x.hasta_s;
+  if (x.suelto) p.tiempoSuelto = x.suelto;
   if (mientras) p.mientras = true;
   var rep = t.match(/\bsalen (\d+)(?:\s*[-–]\s*(\d+))?/i);
   if (rep) p.repetir = rep[2] ? { n: +rep[2], min: +rep[1] } : { n: +rep[1] };
@@ -586,7 +679,7 @@ function clasifica(R, pasos) {
   var C = {}, ids = R.carriles.map(function (c) { C[c.id] = c; return c.id; });
   function prob(p, txt) { R.problemas.push({ tipo: "carril", carril: p.carril, n: p.nCarril, texto: txt }); }
   function donde(p) { return (p.carril === "union" ? "AL JUNTAR" : "CARRIL " + C[p.carril].nombre.toUpperCase()) + ", paso " + p.nCarril; }
-  var enFuego = {}, sinRec = {};
+  var enFuego = {}, sinRec = {}, nivel = {};
   pasos.forEach(function (p) {
     if (!p.carril) {
       if (!p.auto && (p.tipo === "paso" || p.tipo === "paralelo"))
@@ -601,6 +694,9 @@ function clasifica(R, pasos) {
     // en un carril que ya esta al fuego, "Tomate, 8 min" sigue al fuego
     if (!espera && !manosV && p.duracion_s && enFuego[p.carril]) espera = true;
     var fuego = !aparato && espera && (!!rec || !!enFuego[p.carril] || /\b(fuego|hierv|herv|sofri|sofre|dora|rehoga|saltea|frie|frei)/.test(n));
+    // el fuego que no se dice sigue como en el paso de antes del carril
+    if (p.fuegoTxt) nivel[p.carril] = p.fuegoTxt;
+    else if (fuego && nivel[p.carril] && nivel[p.carril] !== "Fuego apagado") { p.fuegoTxt = nivel[p.carril]; p.fuegoSigue = true; }
     if (fuego) {
       if (!rec && !sinRec[p.carril]) { sinRec[p.carril] = 1; prob(p, (p.carril === "union" ? "AL JUNTAR" : "CARRIL " + cl.nombre.toUpperCase()) + ": no dice si va en la sartén o en una olla. Escríbelo en el apartado: «CARRIL " + cl.nombre.toUpperCase() + " (sartén)»."); }
       enFuego[p.carril] = rec || true;
@@ -610,7 +706,7 @@ function clasifica(R, pasos) {
       if (espera) { dur = SIN_TIEMPO_S; p.tiempoSupuesto = true; prob(p, donde(p) + " («" + (p.origen || p.titulo) + "»): no dice cuántos minutos. Uso 5 min."); }
       else dur = MANOS_SIN_TIEMPO_S;
     }
-    p.dur_s = dur;
+    p.dur_s = dur; p.espera = !!espera;
     p.manos_s = espera ? Math.min(dur, recDe(n) || aparato ? 30 : 15) : dur;
     p.aguanta_s = mk.noEspera ? 30 : null;
     p.fuego = !!fuego; p.rec = fuego || (espera && cl.rec) || /\b(sarten|olla|pota|cazo|cacerola|cazuela)\b/.test(n) ? rec : null; p.aparato = aparato;
@@ -627,6 +723,16 @@ function clasifica(R, pasos) {
   });
 }
 
+// v2.58: ¿el paso espera solo (cuece, se hornea, al micro) o es todo de manos (cortar, montar)?
+function esperaDe(p) {
+  var n = norm(p.detalle), mk = p.marcas || {};
+  if (mk.espera) return true;
+  if (mk.manos) return false;
+  var ap = aparatoDe(n), iM = n.search(VERBO_MANOS), iE = n.search(VERBO_ESPERA);
+  if (ap && ap !== "picadora" && ap !== "batidora") return true;
+  if (p.fuegoTxt && p.fuegoTxt !== "Fuego apagado") return true;
+  return iE >= 0 && (iM < 0 || iE < iM);
+}
 // "Las nueces NO van dentro", "Si queda muy espeso...": un consejo, no un paso
 function esConsejo(t) {
   t = limpia(t).replace(/^\d{1,2}[.)]\s+/, "");
@@ -693,12 +799,16 @@ function pelaTxt(g) {
 
 /* ------------------------------ el evento ------------------------------
    ev = {uid, fuente, fecha, hora, fin, titulo, texto} -> Receta            */
-function leer(ev) {
-  ev = ev || {};
+/* op = {raciones: n}: la misma receta para n raciones (solo el formato v3, que lleva las cantidades
+   dentro de cada paso: las de una receta vieja escritas en el texto del paso no se pueden escalar). */
+function leer(ev, op) {
+  ev = ev || {}; op = op || {};
   var rawT = String(ev.titulo || ""), texto = sinHtml(ev.texto || ""), T = partirTitulo(rawT), nt = norm(sinEmoji(rawT));
   var R = { uid: ev.uid || "", fecha: ev.fecha || "", hora: ev.hora || "", fin: ev.fin || "", titulo: T.titulo, sub: T.sub,
     etiqueta: T.etiqueta, tipo: "comida", raciones: null, minutos: null, resumen: [], receta: null, ingredientes: [],
-    grupos: [], pasos: [], notas: [], planB: [], problemas: [], acaba: [], mult: 1, lista: [], minutos_calc: null };
+    grupos: [], pasos: [], notas: [], planB: [], problemas: [], acaba: [], mult: 1, lista: [], minutos_calc: null,
+    v3: esV3(texto), porRacion: null, ignorado: [], factor: 1, raciones0: null };
+  Object.defineProperty(R, "ev", { value: { uid: ev.uid, fuente: ev.fuente, fecha: ev.fecha, hora: ev.hora, fin: ev.fin, titulo: ev.titulo, texto: ev.texto }, enumerable: false });
   var id = texto.match(/(?:receta\s*[:=]\s*|[?&]id=)([a-z0-9-]{3,60})/i);
   if (id) R.receta = id[1].toLowerCase();
   var compra = /\u{1F6D2}/u.test(rawT) || /^compra\b/.test(nt);
@@ -713,6 +823,22 @@ function leer(ev) {
   if (mi) R.minutos = +mi[1];
   var ta = (primera + " " + rawT).match(/(\d+)\s*tarros\b/i);
   if (ta) R.mult = +ta[1];
+  // "POR RACIÓN · 610 kcal · 52 g proteína" (su propia linea, o en la primera)
+  L = L.filter(function (l) {
+    if (!/^por raci[oó]n\s*[·:,\-–]/i.test(l) || !/kcal|prote/i.test(l)) return true;
+    porRacionDe(l); return false;
+  });
+  if (!R.porRacion && /kcal/i.test(primera)) porRacionDe(primera);
+  function porRacionDe(l) {
+    var k = l.match(/(\d+(?:[.,]\d+)?)\s*kcal/i), p = l.match(/(\d+(?:[.,]\d+)?)\s*g\s*(?:de\s+)?prote/i);
+    R.porRacion = { kcal: k ? numero(k[1]) : null, prot: p ? numero(p[1]) : null, txt: l };
+  }
+  // escalar: todas las cantidades por f (las de los pasos y las de la lista); los tiempos no cambian
+  R.raciones0 = R.raciones;
+  if (op.raciones > 0 && R.raciones && R.v3 && op.raciones !== R.raciones) { R.factor = op.raciones / R.raciones; R.raciones = op.raciones; }
+  // el formato v3: cada linea se lee ya con sus cantidades ("@pollo{250 g}" -> "250 g de pollo")
+  var COOKS = R.v3 ? L.map(function (l) { return cook(l, R.factor); }) : null, cookAct = null;
+  if (COOKS) L = COOKS.map(function (c) { return c.t; });
 
   var sec = { t: null }, hayNum = false, vistos = false, pasos = [], tips = [], reparto = null;
   function grupo(nombre, mult, extra) {
@@ -733,12 +859,13 @@ function leer(ev) {
   function mete(p, r) {
     p._r = r; p._i = pasos.length; pasos.push(p); vistos = true;
     if (sec.carril) { p.carril = sec.carril; p.nCarril = ++sec.n; }
+    if (cookAct) { p.cook = cookAct; if (cookAct.senal) p.pista = cookAct.senal; }
     return p;
   }
-  // un paso de un carril: primero se quitan las marcas "(manos)", "(no espera)", "(tras SALSA)"
+  // un paso: primero se quitan las marcas "(manos)", "(no espera)", "(tras SALSA)" (fuera de un carril
+  // tambien: si la receta no tiene carriles, se avisa de que no sirven)
   function pasoL(l, tipo) {
-    if (!sec.carril) return paso(l, tipo, sec.grupoPaso);
-    var mk = marcas(l), p = paso(mk.t, "paso", sec.grupoPaso);
+    var mk = marcas(l), p = paso(mk.t, sec.carril ? "paso" : tipo, sec.grupoPaso);
     p.marcas = mk.m; p.origen = limpia(l).replace(/^\d{1,2}[.)]\s+/, "");
     return p;
   }
@@ -806,6 +933,7 @@ function leer(ev) {
 
   L.forEach(function (l, i) {
     var sig = L[i + 1];
+    cookAct = COOKS ? COOKS[i] : null;
     if (compra) return lineaCompra(l, sig);
     var h = cabecera(l, sig);
     if (h) return abreSec(h);
@@ -838,13 +966,14 @@ function leer(ev) {
     if (!st && tieneCant(cuerpo) && norm(cuerpo).split(" ").length <= 8) return meteIngs(ings(cuerpo));
     R.notas.push(cuerpo);
   });
+  cookAct = null;
   if (reparto) {
     var rp = mete(paso("Reparto", "despues", "Reparto"), ORDEN.despues);
     rp.detalle = reparto.join("\n"); rp.checklist = reparto.slice(); rp.consejo = reparto.nota || null;
   }
 
   // que es el evento
-  var nIng = R.ingredientes.length, ntx = norm(texto);
+  var nIng = R.ingredientes.length + (COOKS ? COOKS.reduce(function (a, c) { return a + c.toks.length; }, 0) : 0), ntx = norm(texto);
   if (compra) R.tipo = "compra";
   else if (!nIng && (/^(saca|pasa|descongela)\b/.test(nt) || /❄/.test(rawT))) R.tipo = "aviso";
   else if (!nIng && (/\b(comida|cena|desayuno|almuerzo|merienda) fuera\b/.test(nt) || /nada que preparar|comes fuera|\bcomes con\b/.test(ntx))) R.tipo = "fuera";
@@ -852,9 +981,58 @@ function leer(ev) {
 
   // los pasos en su orden: preparar, en paralelo, los pasos, y lo de despues
   pasos.sort(function (a, b) { return a._r - b._r || a._i - b._i; });
+
+  // v3: la lista (si la hay) se escala; los ingredientes de los pasos se enlazan con ella, o la forman
+  var ING = R.ingredientes, nLista = ING.length;
+  if (R.factor !== 1) ING.forEach(function (g) { g.c = escalaC(g.c, R.factor); g.equiv = escalaC(g.equiv, R.factor); });
+  R.sumas = [];
+  if (R.v3) pasos.forEach(function (p) {
+    if (!p.cook) return;
+    p.ingPaso = [];
+    p.cook.toks.forEach(function (tk) {
+      var gT = ingrediente(tk.nombre + (tk.prep ? ", " + tk.prep : "")), best = -1, bv = 0;
+      ING.forEach(function (g, k) { var v = mismo(g, gT); if (v > bv) { bv = v; best = k; } });
+      if (bv < 0.7) {
+        gT.c = tk.ref ? null : tk.c; gT.desdePaso = true; gT.ver = mayus1(tk.nombre).replace(/\baove\b/i, "AOVE");
+        if (tk.txt && !tk.c && BASICO_TXT.test(norm(tk.txt))) gT.basico = true;
+        if (nLista) R.ignorado.push({ tipo: "fuera-lista", texto: "«@" + tk.nombre + "» no está en INGREDIENTES." });
+        ING.push(gT); best = ING.length - 1;
+      }
+      p.ingPaso.push({ i: best, nombre: tk.nombre, c: tk.c, txt: tk.txt, ref: tk.ref, prep: tk.prep, fijo: tk.fijo, equiv: tk.equiv || null,
+                       ver: mayus1(ingTxt(tk.nombre, tk.c, tk.txt)) });
+    });
+    p.usa = p.ingPaso.map(function (x) { return x.i; }).filter(function (k, j, a) { return a.indexOf(k) === j; }).sort(function (a, b) { return a - b; });
+  });
+  // cuanto suman los pasos de cada ingrediente (sin las referencias "@&")
+  if (R.v3) ING.forEach(function (g, k) {
+    var s = { n: 0, ud: null, mezcla: false, conCant: false, refs: 0 };
+    pasos.forEach(function (p) {
+      (p.ingPaso || []).forEach(function (x) {
+        if (x.i !== k) return;
+        if (x.ref) { s.refs++; return; }
+        if (x.c && x.c.n != null) {
+          if (s.ud && s.ud !== x.c.ud) s.mezcla = true;
+          else { s.ud = x.c.ud; s.n = redondea(s.n + x.c.n); }
+          s.conCant = true;
+        } else if (x.txt) s.conCant = true;
+      });
+    });
+    R.sumas[k] = s;
+    if (g.desdePaso && s.ud && !s.mezcla) {
+      g.c = { n: s.n, ud: s.ud };
+      // "@garbanzos cocidos{1 bote}(~400 g)": lo que pesa cada uno, para el total
+      var eq = null;
+      pasos.forEach(function (p) { (p.ingPaso || []).forEach(function (x) { if (!eq && x.i === k && !x.ref && x.equiv && x.c && x.c.n > 0) eq = { n: x.equiv.n / x.c.n, ud: x.equiv.ud, aprox: x.equiv.aprox }; }); });
+      if (eq) g.equiv = { n: redondea(eq.n * s.n), ud: eq.ud, aprox: eq.aprox };
+    }
+    // la linea, como se leeria en una lista (para el origen en Comprar): "500 g de solomillos de pollo, en dados de 2 cm"
+    if (g.desdePaso) g.txt = mayus1(corto(g)) + (g.prep ? ", " + g.prep : "");
+  });
+
   // lo que usa cada paso: por el alimento, otra forma de llamarlo o el nombre del grupo ("Monta la caprese")
-  var ING = R.ingredientes, cubre = ING.map(function () { return false; });
+  var cubre = ING.map(function () { return false; });
   pasos.forEach(function (p) {
+    if (R.v3) { (p.usa || []).forEach(function (k) { cubre[k] = true; }); if (!p.ingPaso) p.usa = []; return; }
     var todo = norm(p.detalle).match(/\bcon todo\b(?: menos ([^.]*))?/);
     var w = palabrasDe(todo && todo[1] ? norm(p.detalle).replace(todo[1], "") : p.detalle), usa = [];
     ING.forEach(function (g, k) { if (clavesDe(g).some(function (c) { return w.indexOf(c) >= 0; })) usa.push(k); });
@@ -897,9 +1075,28 @@ function leer(ev) {
     mejor.consejo = mejor.consejo ? mejor.consejo + " " + x.txt : x.txt;
   });
 
-  // los carriles: cuanto dura cada paso, cuanto ocupa las manos, fuego, recipiente y lo que falla
-  if (R.carriles && R.tipo === "comida") clasifica(R, pasos);
-  else delete R.carriles;
+  // el fuego de cada paso, dicho en el paso ("a fuego medio", "Apaga el fuego")
+  pasos.forEach(function (p) { p.fuegoTxt = fuegoDe(p.detalle); p.espera = esperaDe(p); });
+  // v2.58: con carriles, lo de preparar es un carril mas (se ve en el plan, con su tiempo, y vale
+  // "(tras PREPARAR)") y lo de AL TERMINAR va detras de juntar. Antes se quedaba fuera sin decirlo.
+  if (R.carriles && R.tipo === "comida") {
+    var enCarril = function (L, id, nombre) {
+      if (!L.length) return;
+      if (!R.carriles.some(function (c) { return c.id === id; })) R.carriles.push({ id: id, nombre: nombre, rec: null, n: 0 });
+      L.forEach(function (p) { p.carril = id; });
+      var n = 0; pasos.forEach(function (p) { if (p.carril === id) p.nCarril = ++n; });
+    };
+    enCarril(pasos.filter(function (p) { return !p.carril && !p.auto && p.tipo === "prep"; }), "preparar", "Preparar");
+    enCarril(pasos.filter(function (p) { return !p.carril && !p.auto && p.tipo === "despues"; }), "union", "Al terminar");
+    clasifica(R, pasos);
+  } else {
+    delete R.carriles;
+    pasos.forEach(function (p) {
+      var m = p.marcas;
+      if (m && (m.manos || m.espera || m.noEspera || m.tras.length))
+        R.ignorado.push({ tipo: "marca", texto: "«" + (p.origen || p.titulo) + "»: las marcas (manos), (espera), (no espera) y (tras …) solo valen en una receta con carriles." });
+    });
+  }
 
   // lo que se acaba hoy: "Se acaban el pavo y las espinacas."
   var sa = (primera + " " + R.notas.join(" ")).match(/se acaban?\s+([^.:;]+)/i);
@@ -928,7 +1125,7 @@ function leer(ev) {
     });
     var vistas = {};
     reales.forEach(function (p) {
-      if (p.tipo === "despues") return;
+      if (p.tipo === "despues" || R.v3) return;
       var t = p.detalle.replace(/del tama[nñ]o de [^.,;]+/i, "");
       palabrasDe(t).forEach(function (w) {
         if (COMIDA.indexOf(w) < 0 || vistas[w]) return;
@@ -943,17 +1140,19 @@ function leer(ev) {
   // paso 0 automatico: saca, corta y prepara, ten a mano
   if (R.tipo === "comida" && ING.length >= 2) {
     var saca = [], corta = [], mano = [];
+    // v3 con su apartado PREPARAR: los cortes ya son pasos (con su tiempo); aqui no se repiten
+    var hayPrep = R.v3 && reales.some(function (p) { return p.tipo === "prep" || p.carril === "preparar"; });
     ING.forEach(function (g, k) {
       var txt = corto(g);
       if (g.basico) { if (!mano.some(function (x) { return ING[x.ing].clave === g.clave; })) mano.push({ txt: txt, ing: k }); return; }
       var ex = [], crudo = !/congelad|trocead|en polvo/.test(norm(g.txt)) && !(g.c && /^(cda|cdta)$/.test(g.c.ud));
-      if (PELAR.test(g.base) && crudo && !(g.prep && /pelad/i.test(g.prep)) && (!g.hecho || /cocid/.test(g.base))) ex.push(pelaTxt(g));
+      if (PELAR.test(g.base) && crudo && !hayPrep && !(g.prep && /pelad/i.test(g.prep)) && (!g.hecho || /cocid/.test(g.base))) ex.push(pelaTxt(g));
       if (g.abre || (g.c && /^(lata|bote)$/.test(g.c.ud))) ex.push(/\bbote\b/.test(norm(g.txt)) || (g.c && g.c.ud === "bote") ? "abre el bote" : "abre la lata");
-      if (g.prep && CORTA.test(g.prep)) ex.push(g.prep);
+      if (g.prep && CORTA.test(g.prep) && !hayPrep) ex.push(g.prep);
       if (ex.length) corta.push({ txt: txt + " · " + ex.join(", "), ing: k });
       else {
         var dos = g.grupo && ING.some(function (o, j) { return j !== k && o.clave === g.clave && o.grupo !== g.grupo; });
-        saca.push({ txt: txt + (g.prep ? " · " + g.prep : "") + (dos ? " · " + g.grupo.toLowerCase() : ""), ing: k });
+        saca.push({ txt: txt + (g.prep && !hayPrep ? " · " + g.prep : "") + (dos ? " · " + g.grupo.toLowerCase() : ""), ing: k });
       }
     });
     if (reales.length || corta.length) {
@@ -970,6 +1169,34 @@ function leer(ev) {
     if (R.minutos && !R.carriles && seg > R.minutos * 60 * 1.2 + 60)
       R.problemas.push({ tipo: "tiempo", texto: "Los pasos suman ~" + R.minutos_calc + " min y el plan dice " + R.minutos + "." });
   }
+  // v2.58: nada se ignora en silencio. Lo que el texto dice y Copiloto no usa, se apunta
+  pasos.forEach(function (p) {
+    if (p.auto) return;
+    var d = donde(p);
+    (p.cook ? p.cook.raros : []).forEach(function (x) { R.ignorado.push({ tipo: "token", paso: p, texto: d + ": " + x + "." }); });
+    var par = p.cook ? p.cook.sueltos : String(p.detalle || "").match(/\([^)]*\)/g);
+    if (par) par.forEach(function (x) {
+      R.ignorado.push({ tipo: "parentesis", paso: p, texto: d + ": «" + x + "» no es una marca ni el corte de un @ingrediente; se lee como texto." });
+    });
+    var alt = String(p.detalle || "").match(/(?:,\s*|\s)(o\s+(?:lo que|seg[uú]n|si\s|bien\s|en el micro|al micro|microondas|en la sart[eé]n|al horno)[^.;]*)/i);
+    if (alt) R.ignorado.push({ tipo: "alternativa", paso: p, texto: d + ": «" + alt[1].trim() + "» es otra forma; Copiloto usa " +
+      (p.duracion_s ? fmtS(p.duracion_s) : "la primera") + "." });
+    if (p.tiempoSuelto) R.ignorado.push({ tipo: "tiempo", paso: p, texto: d + ": «" + p.tiempoSuelto + "» es un segundo tiempo; cuenta solo el primero." });
+  });
+  function donde(p) {
+    if (p.tipo === "despues" && p.carril === "union") return "AL TERMINAR, paso " + (pasos.filter(function (q) { return q.carril === "union" && q.tipo === "despues"; }).indexOf(p) + 1);
+    if (p.tipo === "prep" && p.carril === "preparar") return "PREPARAR, paso " + p.nCarril;
+    if (p.carril) {
+      var c = (R.carriles || []).filter(function (x) { return x.id === p.carril; })[0];
+      return (p.carril === "union" ? (c ? c.nombre.toUpperCase() : "AL JUNTAR") : "CARRIL " + (c ? c.nombre.toUpperCase() : p.carril.toUpperCase())) + ", paso " + p.nCarril;
+    }
+    var grupo = function (q) { return q.tipo === "prep" ? "prep" : q.tipo === "despues" ? "despues" : "paso"; };
+    var n = pasos.filter(function (q) { return !q.auto && grupo(q) === grupo(p); }).indexOf(p) + 1;
+    return (p.tipo === "prep" ? "PREPARAR" : p.tipo === "despues" ? "AL TERMINAR" : "Paso") + " " + n;
+  }
+  pasos.forEach(function (p) { if (!p.auto) p.donde = donde(p); });
+  R.ignorado.forEach(function (x) { if (x.paso) x.paso = pasos.indexOf(x.paso); });
+
   // voz de los avisos: "Boniato solo: agita."
   pasos.forEach(function (p) {
     var corta = p.titulo.split(/[,:]/)[0].split(" ").slice(0, 4).join(" ");
@@ -977,7 +1204,92 @@ function leer(ev) {
     delete p._r; delete p._i; delete p.linea; delete p.marcas;
   });
   R.pasos = pasos;
+  if (R.tipo === "comida") R.lint = lint(R);
   return R;
+}
+
+/* ------------------------------ el linter (v2.58) ------------------------------
+   lint(R) -> {ok, errores: [E], avisos: [E]}, E = {cod, texto, paso (indice en R.pasos) | null}.
+   Errores (la receta no se puede seguir con el móvil):
+     raciones     no dice cuántas raciones salen
+     por-racion   no dice kcal y proteína por ración
+     sin-tiempo   un paso sin tiempo (aunque sea "20 s")
+     sin-verbo    un paso que no empieza diciendo qué hacer
+     sin-ing      un paso que no dice con qué (ni @ingrediente ni #recipiente)
+     sin-cantidad un ingrediente que no sale en ningún paso con su cantidad
+     suma         la lista dice una cantidad y los pasos suman otra
+     no-se-entiende  palabras o marcas que el parser no usa (nunca en silencio)
+     carril       lo que no cuadra en los carriles ("(tras X)" que no existe...)
+   Avisos: un paso al fuego sin decir a qué fuego; uno que espera sin decir cómo se ve cuando ya está. */
+// los imperativos de cocina (sin tildes). "Córtalo", "échalas", "sofríelos": sin el pronombre de detras
+var VERBOS = ("abre agita agrega alisa anade aparta aplasta apaga aliña alina baja bate bebe calienta coge cocina coloca come comprueba congela " +
+  "corta cubre cuaja cuece cuela da deja derrite descongela desmenuza destapa disuelve distribuye dobla dora echa empana emplata " +
+  "enciende enfria enharina enjuaga enrolla envuelve escurre espera espolvorea exprime extiende filetea forma frie funde gira gratina " +
+  "guarda haz hierve hornea incorpora junta lamina lava lleva llena licua machaca marina mete mezcla mide mira monta mueve parte pasa " +
+  "pela pesa pica pincha pon precalienta prepara programa prueba quita ralla rasca reboza rehoga rellena remueve reparte reposa reserva " +
+  "retira riega sacude saca sala salpimenta salpimienta saltea seca separa sigue sirve sofrie sube sumerge tapa termina templa toma tritura " +
+  "trocea tuesta unta vacia vierte vuelca voltea").split(" ");
+function verboDe(t) {
+  var w = norm(String(t || "").replace(/^\d{1,2}[.)]\s+/, "")).split(" ")[0] || "";
+  if (VERBOS.indexOf(w) >= 0) return w;
+  // pronombres detras: cortalo, echalas, sofrielos, dale, ponselo
+  var m = w.match(/^(.+?)(selos|selas|selo|sela|los|las|lo|la|les|le)$/);
+  return m && VERBOS.indexOf(m[1]) >= 0 ? m[1] : null;
+}
+function lint(R) {
+  var E = [], A = [];
+  function err(cod, texto, k) { E.push({ cod: cod, texto: texto, paso: k == null ? null : k }); }
+  function av(cod, texto, k) { A.push({ cod: cod, texto: texto, paso: k == null ? null : k }); }
+  if (!R || R.tipo !== "comida") return { ok: true, errores: E, avisos: A };
+  if (!R.raciones) err("raciones", "No dice cuántas raciones salen. Primera línea: «2 RACIONES · 45 min».");
+  var pr = R.porRacion;
+  if (!pr || pr.kcal == null || pr.prot == null)
+    err("por-racion", "No dice qué toca por ración. Añade «POR RACIÓN · 610 kcal · 52 g proteína»" + (pr ? " (falta " + [pr.kcal == null ? "kcal" : "", pr.prot == null ? "proteína" : ""].filter(Boolean).join(" y ") + ")" : "") + ".");
+  var P = R.pasos || [], ING = R.ingredientes || [];
+  P.forEach(function (p, k) {
+    if (p.auto) return;
+    var d = p.donde || "Paso", txt = p.origen || p.detalle || p.titulo, cita = "«" + (txt.length > 70 ? txt.slice(0, 68) + "…" : txt) + "»";
+    if (!p.duracion_s) err("sin-tiempo", d + " " + cita + ": no dice cuánto tarda (aunque sea «20 s»).", k);
+    if (!verboDe(p.detalle)) err("sin-verbo", d + " " + cita + ": no empieza diciendo qué hacer (un verbo: «Corta», «Añade», «Pasa»…).", k);
+    var conQue = R.v3 ? (p.ingPaso && p.ingPaso.length) || (p.cook && p.cook.recs.length) : (p.usa && p.usa.length) || /\b(sart[eé]n|olla|cazo|plato|tupper|tarro|vaso|bol|micro|horno|air ?fryer|mochila)\b/i.test(p.detalle);
+    if (!conQue) err("sin-ing", d + " " + cita + ": no dice con qué ingrediente" + (R.v3 ? " (ponlo con «@nombre{cantidad}» o «@&nombre{}» si ya salió)" : "") + ".", k);
+    if (p.fuego && !p.fuegoTxt) av("fuego", d + " " + cita + ": va al fuego y no dice a qué fuego (bajo, medio, fuerte).", k);
+    if (p.duracion_s >= 60 && !p.pista && p.dur_s !== p.manos_s && /\b(fuego|hierv|cuec|sofr|dor|horn|micro|air|tuest|rehog|salte|reduc|cuaj|enfr)/i.test(norm(p.detalle)))
+      av("senal", d + " " + cita + ": no dice cómo se ve cuando ya está (« → hasta que dore»).", k);
+  });
+  // cada ingrediente, en algun paso y con su cantidad
+  ING.forEach(function (g, i) {
+    if (g.hecho && !R.v3) return;
+    var nom = corto(g);
+    if (R.v3) {
+      var s = (R.sumas || [])[i];
+      if (!s || !s.conCant) { err("sin-cantidad", "«" + nom + "»: ningún paso dice cuánto usar (ponlo en su paso: «@" + (g.ver || g.base).toLowerCase() + "{cantidad}»)."); return; }
+      if (s.mezcla) err("suma", "«" + nom + "»: los pasos lo miden en unidades distintas; usa la misma en todos.");
+      else if (!g.desdePaso && g.c && g.c.n != null && s.ud && (s.ud !== g.c.ud || Math.abs(s.n - g.c.n) > Math.max(0.01, g.c.n * 0.01)))
+        err("suma", "«" + nom + "»: la lista dice " + cantTxt(g.c) + " y los pasos suman " + cantTxt({ n: s.n, ud: s.ud }) + ".");
+      return;
+    }
+    if (g.opcional || (g.basico && !g.c)) return;
+    var ks = P.map(function (p, k) { return (!p.auto && p.usa && p.usa.indexOf(i) >= 0) ? k : -1; }).filter(function (k) { return k >= 0; });
+    if (!ks.length) { err("sin-cantidad", "«" + nom + "»: no sale en ningún paso."); return; }
+    var num = g.c ? numTxt(g.c.n) : null, conNum = num && ks.some(function (k) {
+      var t = norm(P[k].detalle), c = clavesDe(g);
+      return c.some(function (w) { return new RegExp("(^|\\s)" + norm(num).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s(?:\\S+\\s){0,4}?(?:de\\s)?" + w).test(t); });
+    });
+    if (!conNum) err("sin-cantidad", "«" + nom + "»: ningún paso dice cuánto usar; está solo en la lista.");
+  });
+  (R.ignorado || []).forEach(function (x) { err("no-se-entiende", x.texto, x.paso == null || x.paso < 0 ? null : x.paso); });
+  (R.problemas || []).forEach(function (x) {
+    if (x.tipo === "carril") err("carril", x.texto);
+    else if (x.tipo === "sin-paso" && !E.some(function (e) { return e.cod === "sin-cantidad" && e.texto.indexOf(corto(ING[x.ing] || {})) >= 0; })) err("sin-cantidad", x.texto);
+  });
+  return { ok: !E.length, errores: E, avisos: A };
+}
+/* La receta para otras raciones, con el linter pasado otra vez. null si no se puede escalar
+   (formato viejo: las cantidades del texto de los pasos no se pueden cambiar). */
+function escala(R, n) {
+  if (!R || !R.ev || !R.v3 || !(R.raciones0 > 0) || !(n > 0)) return null;
+  return leer(R.ev, { raciones: n });
 }
 
 function ingDe(t) { return t && typeof t === "object" ? t : ingrediente(String(t || "")); }
@@ -996,6 +1308,7 @@ return {
   norm: norm, sinHtml: sinHtml, sinEmoji: sinEmoji, cantidad: cantidad, cantidadEntre: cantidadEntre, cantTxt: cantTxt,
   ingrediente: ingrediente, ings: ings, trozos: trozos, base: function (t) { return ingDe(t).base; },
   clave: function (t) { return ingDe(t).clave; }, mismo: mismo, esBasico: esBasico, tiempo: tiempo,
-  pista: pistaDe, cabecera: cabecera, leer: leer, pasosDe: pasosDe, resumenIngs: resumenIngs, corto: corto, titulo: partirTitulo
+  pista: pistaDe, cabecera: cabecera, leer: leer, pasosDe: pasosDe, resumenIngs: resumenIngs, corto: corto, titulo: partirTitulo,
+  cook: cook, esV3: esV3, lint: lint, escala: escala, verbo: verboDe, fuego: fuegoDe, ingTxt: ingTxt, fmtS: fmtS
 };
 });

@@ -376,3 +376,62 @@ test("progreso(q) para la tarjeta de Semana, leyendo lo guardado", () => {
     assert.ok(datos[M.PREF_VIEJO + "r:curry-prueba"], "progreso no borra nada");
   } finally { delete globalThis.localStorage; }
 });
+
+/* ------------------------------ v2.58 ------------------------------ */
+{
+  const req = createRequire(import.meta.url), Rv = req("../receta.js"), Pr = req("../cocina-prueba.js");
+  const curry = () => Rv.leer(Pr.evento("curry"));
+  test("v3: el paso se lee entero, con lo de ESE paso, el fuego y la señal", () => {
+    const M0 = M.normaliza({ comida: curry() });
+    const P = M0.pasos.find((x) => /primera mitad/.test(x.titulo));
+    assert.match(P.titulo, /^Echa la primera mitad, 250 g de pollo, en una sola capa/);
+    assert.equal(P.detalle, "");
+    assert.deepEqual(P.ingPaso.map((x) => x.txt), ["250 g de pollo"]);
+    assert.equal(P.fuego, "Fuego fuerte");
+    assert.equal(P.pista, "dorado por fuera");
+    assert.equal(P.dur, 300);
+    assert.equal(M0.escalable, true); assert.equal(M0.raciones, 2);
+    assert.deepEqual(M0.lint.errores, []);
+  });
+  test("v3: marcar un paso hecho fuera de orden no te mueve; el de ahora, sí", () => {
+    const S = M.nuevoEstado(0);
+    S.actual = 2;
+    M.marcaFuera(S, 10, 6, 1000);
+    assert.equal(S.hechos[6], 1); assert.equal(S.actual, 2);
+    M.marcaFuera(S, 10, 6, 2000);
+    assert.equal(S.hechos[6], undefined, "otra vez: se desmarca");
+    M.marcaFuera(S, 10, 2, 3000);
+    assert.equal(S.hechos[2], 1); assert.equal(S.actual, 3);
+  });
+  test("v3: saltar una tarea de un carril (echaste todo el pollo de una vez) rehace el plan", () => {
+    const M0 = M.normaliza({ comida: curry() }), S = M.nuevoEstado(0), t0 = Date.parse("2026-10-05T13:00:00");
+    S.carr = { ini: t0, hechas: {}, empezo: {}, fin: {} };
+    const pl0 = M.planCarril(M0, S, t0);
+    const dosMitades = M0.carr.tareas.filter((x) => x.carril === "pollo" && x.n >= 3 && x.n <= 4);
+    dosMitades.forEach((x) => M.saltaCarril(S, M0, x.id, t0 + 60e3));
+    const pl1 = M.planCarril(M0, S, t0 + 60e3);
+    assert.ok(pl1.total < pl0.total, "sin la segunda tanda se acaba antes");
+    assert.equal(M.pendientesCarril(M0, S, pl1).some((x) => dosMitades.includes(x)), false);
+    const f = M.fijosDe(M0, S, t0 + 60e3);
+    dosMitades.forEach((x) => assert.equal(f[x.id].ini, f[x.id].fin));
+  });
+  test("v3: hacer una tarea antes de tiempo deja su reloj y el resto sigue en el plan", () => {
+    const M0 = M.normaliza({ comida: curry() }), S = M.nuevoEstado(0), t0 = 1e12;
+    S.carr = { ini: t0, hechas: {}, empezo: {}, fin: {} };
+    const arroz = M0.carr.tareas.find((x) => x.carril === "arroz");
+    const T = M.hechaCarril(S, M0, arroz.id, t0 + 30e3);
+    assert.ok(T && T.dur > 0);
+    const pl = M.planCarril(M0, S, t0 + 31e3);
+    assert.ok(!M.pendientesCarril(M0, S, pl).includes(arroz));
+    assert.ok(pl.m.ahora, "sigue habiendo algo que hacer");
+  });
+  test("v3: escalar desde la pantalla: mismos pasos y cantidades nuevas; una receta vieja no", () => {
+    const q = { comida: curry() }, q3 = M.escalaQ(q, 3);
+    const M2 = M.normaliza(q), M3 = M.normaliza(q3);
+    assert.equal(M3.pasos.length, M2.pasos.length);
+    assert.equal(M3.raciones, 3); assert.equal(M3.raciones0, 2);
+    assert.deepEqual(M3.pasos.find((x) => /primera mitad/.test(x.titulo)).ingPaso.map((x) => x.txt), ["375 g de pollo"]);
+    assert.deepEqual(M3.lint.errores, []);
+    assert.equal(M.escalaQ({ comida: Rv.leer({ uid: "v", titulo: "V", texto: "2 RACIONES · 5 min\n\nINGREDIENTES\n· 2 huevos\n\nPROCESO\n1. Bate los 2 huevos, 1 min" }) }, 3), null);
+  });
+}

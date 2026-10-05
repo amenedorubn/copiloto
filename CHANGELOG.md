@@ -13,6 +13,24 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.58.0] - 2026-10-05
+
+### Añadido
+
+- Cocina · formato v3 de las recetas del calendario (estilo Cooklang, docs/RECETAS-CALENDARIO.md): `@pollo{250 g}(en dados)`, `@&pollo{250 g}` (el mismo de antes), `@sal{=1 pizca}` (no escala), `~{5 min}`, `#sartén` y `→ señal`. La lista de ingredientes sale de los pasos; las recetas viejas se siguen leyendo igual
+- Cocina · linter de recetas al leer cada evento y en `scripts/lint-recetas.mjs`: falla si un ingrediente no sale en ningún paso con su cantidad, si la lista y los pasos no suman lo mismo, si un paso no tiene tiempo, no empieza con un verbo o no dice con qué, si hay palabras o marcas que no se usan (paréntesis sueltos, «o …», un segundo tiempo, marcas de carril sin carriles, `@`/`~{}` mal escritos) o si faltan las raciones y las kcal y la proteína por ración. El script lo repite con 1-4 raciones y compara con la tabla
+- Cocina · paso a paso: en grande y en orden, qué hacer, lo que usa ESE paso con su cantidad, el fuego, el reloj (empieza solo; lo de manos se quita al dar Hecho) y «Ya está cuando…»; al final, lo que viene después. Bloque «Preparar todo antes de empezar» con su tiempo
+- Cocina · fuera de orden: cualquier paso se marca hecho (o se desmarca) sin ir a él; en los carriles, «Hacer otra cosa antes» marca o salta cualquier tarea y el plan se rehace sin adelantar lo que va detrás
+- Cocina · raciones de 1 a 4 (cantidades de los pasos y de la lista, el linter vuelve a pasar) y cuánto toca por ración en Ingredientes
+- Cocina de prueba: el curry en el formato nuevo
+
+### Corregido
+
+- Carriles: el texto de cada tarea ya no se corta en el primer «:» («Baja a fuego medio» perdía la cebolla y el ajo); PREPARAR / ANTES DE EMPEZAR y AL TERMINAR ya no se quedan fuera del plan sin avisar; «a la mesa» no cuenta lo de AL TERMINAR
+- Carriles: una tarea de manos marcada antes de tiempo dejaba las manos ocupadas su tiempo entero y retrasaba lo demás; lo que solo pide un momento de manos y luego espera (poner el agua) va antes que una tarea larga de manos; al acabar el último reloj se termina solo
+- Nutrición: «lentejas cocidas» contaban como lentejas secas (352 kcal/100 g en vez de 116); «proteína de cacahuete» contaba como cacahuetes; un tupper de otra receta («tupper de curry de pollo») contaba como el alimento que nombra. Pistachos y lentejas cocidas, de USDA SR Legacy. `scripts/usda-tabla.py` tenía un error de sintaxis
+- Las comidas del 5 al 9 de octubre del calendario «Comidas», reescritas en el formato nuevo (también en docs/recetas/)
+
 ## [2.57.1] - 2026-10-05
 
 ### Corregido
@@ -790,6 +808,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.58.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.58.0
 [2.57.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.1
 [2.57.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.0
 [2.56.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.2

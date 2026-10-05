@@ -63,7 +63,11 @@ function suma(a, b, f) { CLAVES.forEach(function (k) { if (b[k] != null) a[k] +=
 /* Un ingrediente (de receta.js) -> {n: nutrientes, g, F (fila), fuente} o {sinDatos: motivo}.
    ali = tu alimento (si lo hay): su nutricion de Open Food Facts o la tuya manda en los macros. */
 function deIngrediente(g, ali) {
-  var F = fila(g.base || g.nombre || g.txt || ""), gr = gramos(g.c, F, ali && ali.eq);
+  // v2.58: un tupper o un tarro que hizo otra receta no es el alimento que nombra ("tupper de curry de pollo" no es pollo)
+  if (g.hecho || (g.c && /^(tupper|tarro)$/.test(g.c.ud))) return { sinDatos: "lo hizo otra receta", txt: g.txt };
+  // v2.58: "1 bote (~400 g)": lo que pesa, si la receta lo dice (y no hay uno tuyo con su peso)
+  var eqR = g.equiv && g.c && g.c.n > 0 && /^(g|ml)$/.test(g.equiv.ud) && !/^(g|ml)$/.test(g.c.ud) ? { n: g.equiv.n / g.c.n, ud: g.equiv.ud } : null;
+  var F = fila(g.base || g.nombre || g.txt || ""), gr = gramos(g.c, F, (ali && ali.eq) || eqR);
   if (gr == null) return { sinDatos: g.c ? "cantidad sin peso" : "sin cantidad", txt: g.txt };
   var por100 = null, fuente = null;
   if (ali && ali.nutri && ali.nutri.kcal != null) {

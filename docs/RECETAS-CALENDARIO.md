@@ -1,7 +1,141 @@
 # Cómo escribir una comida en el calendario «Comidas»
 
 Para la Claude que planea las comidas. Copiloto lee cada evento y lo convierte en lista de la compra,
-despensa y paso a paso. Si el texto sigue estas reglas, no se pierde nada (como el boniato sin cortar).
+despensa y paso a paso. **Desde la v2.58 cada paso se basta solo**: lo que hay que hacer, con qué, cuánto,
+a qué fuego, cuánto tarda y cómo se sabe que ya está, todo en el mismo paso. Así se cocina con el móvil
+sin volver a la lista de ingredientes ni preguntar a nadie.
+
+## Formato v3 (el que hay que usar)
+
+Se inspira en [Cooklang](https://cooklang.org/docs/spec/): el ingrediente y el reloj van **dentro del paso**,
+con su cantidad. Copiloto los enlaza solo y saca de ahí la lista de ingredientes (no hace falta escribirla
+aparte, y así nunca se desincroniza).
+
+| Se escribe | Qué es | Se lee |
+|---|---|---|
+| `@pollo{250 g}` | ingrediente con la cantidad de **este** paso | 250 g de pollo |
+| `@tomate triturado{400 g}` | varias palabras: el nombre llega hasta la llave | 400 g de tomate triturado |
+| `@huevo{2}` | unidades | 2 huevos |
+| `@pimiento{150 g}(en tiras finas)` | con su corte | 150 g de pimiento en tiras finas |
+| `@garbanzos cocidos{1 bote}(~400 g)` | lo que pesa (para la nutrición y la compra) | 1 bote de garbanzos cocidos, ~400 g |
+| `@&pollo{250 g}` | **el mismo de antes**: sale en el paso con su cantidad, pero no se vuelve a sumar | 250 g de pollo |
+| `@sal{=1 pizca}` | cantidad fija: no cambia al escalar | 1 pizca de sal |
+| `@pimienta{al gusto}` | sin número | pimienta al gusto |
+| `250%g`, `20%s` | también vale el `%` de Cooklang | 250 g, 20 s |
+| `~{5 min}`, `~huevo{10 min}` | el reloj del paso (con nombre, opcional) | 5 min |
+| `#sartén`, `#olla{}` | el recipiente o aparato (una palabra, o con `{}`) | sartén |
+| `→ dorado por fuera` | al final: cómo se ve cuando ya está | (sale aparte: «Ya está cuando…») |
+
+### Las reglas
+
+1. **Título**: `Plato` o `Etiqueta · Plato` («COCINAS · Curry de pollo»). Compras: empiezan por «Compra» o 🛒.
+   Recordatorios: empiezan por «Saca…» o «Descongela…», sin ingredientes.
+2. **Primera línea**: `2 RACIONES · 45 min · lo que quieras contar`. El tiempo es el real, cortar incluido.
+3. **Segunda línea**: `POR RACIÓN · 610 kcal · 52 g proteína`. Con la tabla de la app: lo calcula
+   `node scripts/lint-recetas.mjs receta.txt` (no se inventa: si un alimento no tiene datos, lo dice).
+4. **Cada paso**, numerado, en este orden: **verbo** + **ingrediente con cantidad** + **fuego** (si va al fuego) +
+   **tiempo** + **señal**:
+   `6. Baja a fuego medio y echa @cebolla{2 cdas} y @ajo{1 cdta}, ~{3 min} removiendo → la cebolla, transparente`
+   - Empieza por un **verbo** en imperativo: Corta, Echa, Pasa, Calienta, Baja, Sirve… («Córtalo» vale).
+     «La primera mitad del pollo, 5 min» no vale: no dice qué hacer.
+   - **Todo** paso lleva su `~{tiempo}`, aunque sea `~{20 s}`. Sin tiempo, el plan no puede calcular nada.
+   - Lo que **espera** (cocer, dorar, hornear) dice cómo se ve cuando ya está: `→ hasta que dore`.
+   - El **fuego**: «a fuego bajo / medio / medio-alto / fuerte», «Baja a fuego medio», «Apaga el fuego».
+     En un carril, si no lo dice, sigue como en el paso de antes.
+   - Una acción por paso. Si se hace en tandas, **una tanda por paso** con su cantidad: `@&pollo{250 g}`.
+5. Un ingrediente se **cuenta una vez** (su primera aparición con cantidad, normalmente al cortarlo en
+   `PREPARAR`). Las demás veces, `@&nombre{cantidad}`: así el paso dice cuánto echar y la lista no se dobla.
+6. **`PREPARAR`**: los cortes, pelados y mezclas, cada uno con su tiempo (`Corta @pimiento{150 g}(en tiras), ~{2 min}`).
+   Sale como el bloque «Preparar todo antes de empezar», con el tiempo total.
+7. Apartados, en MAYÚSCULAS y solos en su línea: `PREPARAR`, `PROCESO` (o carriles), `AL JUNTAR`,
+   `AL TERMINAR`, `NOTAS`, `PLAN B`. La lista `INGREDIENTES` ya **no hace falta**; si se pone, tiene que
+   cuadrar con los pasos (el linter compara las sumas).
+8. **Nada de paréntesis sueltos** en los pasos: solo el corte de un `@ingrediente(...)` y las marcas de carril.
+   Las segundas formas («, o lo que ponga el envase», «o 2-3 min al micro») van en `NOTAS` o en `PLAN B`.
+9. Los consejos, en `NOTAS`, nunca detrás de un paso.
+
+### Carriles (varias cosas a la vez)
+
+Igual que antes (ver «Recetas con carriles» más abajo): `CARRIL NOMBRE (sartén)`, pasos numerados y marcas
+`(manos)`, `(espera)`, `(no espera)`, `(tras NOMBRE)`. Desde la v2.58:
+
+- `PREPARAR` es un carril más: se ve en el plan con su tiempo y vale `(tras PREPARAR)`.
+- `AL TERMINAR` va detrás de `AL JUNTAR` (enfriar el tupper, guardarlo): antes se quedaba fuera del plan sin avisar.
+- Las marcas solo valen con carriles; en una receta con `PROCESO` el linter avisa de que no sirven.
+
+### El linter
+
+Copiloto lo pasa **al leer cada evento** y lo enseña en el paso a paso («3 cosas que la receta no dice bien»);
+la receta se puede seguir igual con lo que entiende. Para revisar antes de guardar:
+
+```
+node scripts/lint-recetas.mjs docs/recetas/*.txt      # un .txt por evento: título, línea en blanco, descripción
+```
+
+Falla, con el paso y la frase, si:
+
+| Código | Qué falla |
+|---|---|
+| `sin-cantidad` | un ingrediente no aparece en ningún paso con su cantidad |
+| `suma` | la lista `INGREDIENTES` dice una cantidad y los pasos suman otra |
+| `sin-tiempo` | un paso no tiene tiempo (aunque sea «20 s») |
+| `sin-verbo` | un paso no empieza diciendo qué hacer |
+| `sin-ing` | un paso no dice con qué ingrediente (ni `@…` ni `#…`) |
+| `no-se-entiende` | palabras o marcas que el parser no usa: `@` o `~{}` mal escritos, paréntesis sueltos, «o …» (otra forma), un segundo tiempo, marcas de carril sin carriles, `→` vacío |
+| `carril` | `(tras X)` que no es ningún carril, un carril al fuego sin sartén ni olla… |
+| `raciones` / `por-racion` | faltan las raciones o las kcal y la proteína por ración |
+
+Y avisa (sin fallar) de un paso al fuego sin nivel de fuego y de uno que espera sin señal de «ya está».
+El script, además, vuelve a pasar el linter con 1, 2, 3 y 4 raciones y compara `POR RACIÓN` con la tabla (±10 %).
+
+### Raciones
+
+En el paso a paso (al empezar y en Ingredientes) se elige **1, 2, 3 o 4 raciones**: todas las cantidades de los
+pasos y de la lista se multiplican (las fijas `{=…}` no) y los tiempos no cambian. Ingredientes enseña también
+**cuánto toca por ración**. Las recetas viejas no se escalan: sus cantidades van en el texto.
+
+### Ejemplo (el curry del 5 de octubre)
+
+```
+🍽️ COCINAS · Curry de solomillos y garbanzos con arroz (2 raciones)
+
+2 RACIONES · 45 min · 1 la comes hoy y 1 va a la NEVERA para el jueves.
+POR RACIÓN · 847 kcal · 80 g proteína
+
+PREPARAR
+1. Corta @solomillos de pollo{500 g}(en dados de 2 cm) y quita el tendón blanco, ~{5 min} (manos) → dados iguales, sin tendón
+2. Seca @&pollo{500 g} con papel de cocina y salpiméntalo con @sal{=1 pizca} y @pimienta{=1 pizca}, ~{1 min} (manos)
+3. Corta @pimiento tricolor{150 g}(en tiras finas), ~{2 min} (manos)
+
+CARRIL POLLO (sartén)
+1. Calienta @AOVE{1 cda} en la #sartén a fuego fuerte, ~{2 min} (tras PREPARAR) → humea un poco
+2. Echa la primera mitad, @&pollo{250 g}, en una sola capa, ~{5 min}, vuelta a los 2 → dorado por fuera
+3. Pasa @&pollo{250 g} dorado a un #plato, ~{20 s} (manos)
+…
+```
+
+Entero en [docs/recetas/2026-10-05-1300-curry.txt](recetas/2026-10-05-1300-curry.txt). Las comidas de la semana
+del 5 al 11 de octubre, ya en este formato, están en [docs/recetas/](recetas/).
+
+### De dónde sale (mirado el 5/10/2026)
+
+- **Cooklang** ([spec](https://cooklang.org/docs/spec/); `cooklang/cooklang-rs`, último commit 3/10/2026): `@ingrediente{cant%ud}`,
+  `~{tiempo}`, `#utensilio`, referencias `@&` y cantidades fijas `=`. **Lo imito**: el ingrediente y el reloj van dentro
+  del paso, así el enlace ingrediente → paso es automático y la lista sale de los pasos.
+- **Mealie** (`mealie-recipes/mealie`, commit 5/10/2026): cada paso guarda `ingredient_references` hacia la lista. El vínculo
+  sí; la lista aparte no (es lo que se desincroniza).
+- **Tandoor** (`TandoorRecipes/recipes`, commit 3/10/2026): cada `Step` tiene sus `ingredients` y su `time`, y escala raciones.
+  **Lo imito**: tiempo y cantidades por paso; raciones que escalan los pasos.
+- **KitchenOwl** (`TomBursch/kitchenowl`, commit 26/9/2026): tiempo y raciones solo de la receta; pasos en texto libre. Es lo
+  que falló el lunes: no se imita.
+- **schema.org/HowToStep**: `text`, `supply`/`tool`, `timeRequired` y `HowToTip` aparte. **Lo imito**: cada paso con su tiempo
+  y los consejos fuera de los pasos (en `NOTAS`).
+- NYT Cooking, Kitchen Stories y Paprika: apps cerradas; no he podido comprobar cómo modelan su modo cocina, así que no los
+  uso como fuente.
+
+## Formato anterior (se sigue leyendo)
+
+Los eventos viejos se leen como siempre: nada se rompe. El linter dice lo que les falta para el formato nuevo.
 
 1. **Título**: `Plato` o `Etiqueta · Plato` («Tupper · Guiso de carne»). Compras: empiezan por «Compra» o 🛒.
    Recordatorios: empiezan por «Saca…» o «Descongela…», sin ingredientes.
@@ -52,7 +186,7 @@ acaba justo cuando se junta todo. Las recetas sin carriles siguen con `PROCESO`,
 8. Lo que tiene la cocina lo sabe Copiloto («Mi cocina»: 4 fuegos, 1 sartén, 2 ollas, horno, micro, air fryer):
    no hace falta decir en qué fuego va cada cosa.
 
-Si algo no se entiende, Copiloto lo dice antes de empezar con el carril y el paso:
+Si algo no se entiende, Copiloto lo dice antes de empezar con el carril y el paso (y el linter lo cuenta):
 «CARRIL POLLO, paso 1 («Dora el pollo hasta que esté hecho»): no dice cuántos minutos. Uso 5 min.»,
 «CARRIL SALSA: no dice si va en la sartén o en una olla», «CARRIL POLLO, paso 2: «(tras VERDURAS)» no es ningún carril».
 
