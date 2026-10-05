@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.57.1] - 2026-10-05
+
+### Corregido
+
+- Cocina: las recetas con carriles se pueden empezar de 0 desde el plan y los carriles (con Deshacer); al abrir una dejada hace más de 10 min sale Seguir / Empezar de 0, y si la receta se ha editado empieza de cero sin arrastrar tareas ni relojes viejos
+
 ## [2.57.0] - 2026-10-05
 
 ### Añadido
@@ -784,6 +790,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.57.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.1
 [2.57.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.0
 [2.56.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.2
 [2.56.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.1
