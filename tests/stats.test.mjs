@@ -107,3 +107,20 @@ test("el peso que toca: el nombre del plan en Hevy, y subir 5 lb si la ultima ve
   assert.equal(S.pesoQueToca(A, "Fondos sentado", 10, "2026-09-28").sube, false, "10/10/9: repetir");
   assert.equal(S.pesoQueToca(A, "Curl predicador", 10, "2026-09-28"), null, "sin historial: nada");
 });
+
+test("resumenGym: lo hecho en Hevy por ejercicio, sin calentamientos (datos ficticios)", () => {
+  const a = gym("2026-09-01", [
+    { titulo: "Press de ejemplo", sets: [{ tipo: "warmup", kg: 20, reps: 8 }, { tipo: "normal", kg: 40, reps: 10 }, { tipo: "normal", kg: 40, reps: 10 }, { tipo: "normal", kg: 40, reps: 9 }] },
+    { titulo: "Remo de prueba", sets: [{ tipo: "normal", kg: 30, reps: 12 }, { tipo: "normal", kg: 35, reps: 10 }] },
+    { titulo: "Plancha ficticia", sets: [{ tipo: "normal", seg: 45 }, { tipo: "normal", seg: 45 }] },
+    { titulo: "Solo calentar", sets: [{ tipo: "warmup", kg: 10, reps: 10 }] }
+  ]);
+  assert.deepEqual(S.resumenGym(a), [
+    { nombre: "Press de ejemplo", series: 3, reps: "10/10/9", kg: 40, kgMax: 40 },
+    { nombre: "Remo de prueba", series: 2, reps: "12/10", kg: null, kgMax: 35 },
+    { nombre: "Plancha ficticia", series: 2, reps: "45 s", kg: null, kgMax: null }
+  ]);
+  assert.deepEqual(S.resumenGym(null), [], "sin sesión: nada (la tarjeta dice «Sin registro»)");
+  assert.deepEqual(S.resumenGym(run("2026-09-01", 5, 30)), [], "una carrera no es gimnasio");
+  assert.deepEqual(S.resumenGym({ ...a, ejercicios: undefined }), []);
+});

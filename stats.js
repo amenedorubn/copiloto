@@ -183,7 +183,24 @@
     return null;
   }
 
-  return { mas: mas, lunes: lunes, esRun: esRun, esGym: esGym, esCinta: esCinta, bloque: bloque, semanas: semanas,
+  /* v2.56.2 · lo que se hizo en una sesion de gimnasio, por ejercicio y sin calentamientos, para la
+     tarjeta del dia cuando el evento no trae ejercicios: series, reps de cada serie ("10/10/9") y el peso
+     (kg si fue el mismo en todas; si cambio, kgMax con el mayor). Sin sesion o sin ejercicios: [].   */
+  function resumenGym(a) {
+    if (!a || !esGym(a)) return [];
+    return (a.ejercicios || []).map(function (e) {
+      var S = (e.sets || []).filter(function (x) { return x.tipo !== "warmup"; });
+      if (!S.length) return null;
+      var kgs = S.map(function (x) { return x.kg || 0; }).filter(Boolean);
+      var igual = kgs.length === S.length && kgs.every(function (k) { return k === kgs[0]; });
+      var reps = S.map(function (x) { return x.reps != null ? String(x.reps) : x.seg ? x.seg + " s" : x.m ? x.m + " m" : "?"; });
+      return { nombre: String(e.titulo || "Ejercicio"), series: S.length,
+               reps: reps.every(function (r) { return r === reps[0]; }) ? reps[0] : reps.join("/"),
+               kg: igual ? kgs[0] : null, kgMax: kgs.length ? Math.max.apply(null, kgs) : null };
+    }).filter(Boolean);
+  }
+
+  return { resumenGym: resumenGym, mas: mas, lunes: lunes, esRun: esRun, esGym: esGym, esCinta: esCinta, bloque: bloque, semanas: semanas,
     carga: carga, records: records, e1rm: e1rm, mejorSerie: mejorSerie, ejercicios: ejercicios, anterior: anterior,
     mismoEjercicio: mismoEjercicio, topeReps: topeReps, pesoQueToca: pesoQueToca };
 });

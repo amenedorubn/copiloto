@@ -1,1 +1,1 @@
-{"version":"2.56.1","fecha":"2026-10-05","notas":"Micros: la tarjeta gira de ida y de vuelta en cada toque, con animación. Gimnasio: vuelven los ejercicios a la tarjeta del día con el formato corto del calendario («1️⃣ EJERCICIO · 105 lbs · 3 × 10»)"}
+{"version":"2.56.2","fecha":"2026-10-05","notas":"Gimnasio: los días cuyo evento no trae ejercicios enseñan en la tarjeta lo que hiciste en Hevy (ejercicios, reps y peso); sin sesión guardada dice «Sin registro»"}
