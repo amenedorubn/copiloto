@@ -39,7 +39,19 @@ for (const tema of ["oscuro", "claro"]) {
   for (const s of SUBS) {
     await p.click(`.ntSubs button:has-text('${s}')`); await p.waitForTimeout(400);
     await p.screenshot({ path: `${OUT}${s.toLowerCase()}-${tema}.png` });
-    if (s === "Micros" && await p.$(".ntCobBtn")) { await p.click(".ntCobBtn >> nth=0"); await p.waitForTimeout(800); await p.screenshot({ path: `${OUT}micros-vuelta-${tema}.png` }); await p.click(".ntCruz .cocBtn"); await p.waitForTimeout(300); }
+    if (s === "Micros" && await p.$(".ntCobBtn")) {    // N7: cada toque gira la tarjeta, de ida y de vuelta, con animación
+      const vuelta = () => p.$eval(".ntFlip", (c) => c.classList.contains("vuelta"));
+      const giro = () => p.$eval(".ntFlipIn", (c) => getComputedStyle(c).transform);
+      const toca = async (sel, quiere, foto) => {
+        const antes = await giro(); await p.click(sel); await p.waitForTimeout(120); const medio = await giro(); await p.waitForTimeout(700);
+        if (await vuelta() !== quiere || medio === antes || medio === await giro()) { errores++; console.log("N7 NO GIRA", tema, sel, quiere); }
+        if (foto) await p.screenshot({ path: `${OUT}micros-vuelta-${tema}.png` });
+      };
+      await toca(".ntCobBtn >> nth=0", true, true);
+      await toca(".ntCruz .ntCap", false);
+      await toca(".ntCobBtn >> nth=2", true);
+      await toca(".ntCruz .cocBtn", false);
+    }
     if (process.env.ABAJO) { await p.evaluate(() => { const c = document.getElementById("ptCuerpo"); c.scrollTop = 700; }); await p.waitForTimeout(150);
       await p.screenshot({ path: `${OUT}${s.toLowerCase()}-abajo-${tema}.png` }); await p.evaluate(() => { document.getElementById("ptCuerpo").scrollTop = 0; }); }
   }

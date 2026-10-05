@@ -817,7 +817,7 @@ function red1(x) { return Math.round(x * 10) / 10; }
    El bloque #copiloto, cuando existe, manda siempre sobre esto.
    =========================================================================== */
 
-function autoPlan(txt, titulo, lugar) {
+export function autoPlan(txt, titulo, lugar) {
   const ctx = (titulo || "") + " \n " + (lugar || "");
   return leeCinta(txt, ctx, titulo) || leeGym(txt, ctx, titulo) || leeFuera(txt, ctx, titulo);
 }
@@ -880,9 +880,14 @@ function leeCinta(txt, ctx, titulo) {
 
 /* ------------------------------ gimnasio ------------------------------ */
 /* Cabecera de ejercicio:  1️⃣ JALON AL PECHO (MAQUINA) · descanso 2:00
-   Series:                 Serie 1 — 87,5 lbs × 10 reps                   */
+   Series:                 Serie 1 — 87,5 lbs × 10 reps
+   O todo en una linea (desde el 5-oct):
+                           1️⃣ PRESS DE PECHO (MAQUINA) · 105 lbs · 3 × 10 · descanso 2:30
+   Si trae las dos cosas, mandan las lineas "Serie N".                    */
 
 const RE_EJERCICIO = /^(?:[0-9]️?⃣|\d{1,2}[.)])\s*(.+)$/;
+const RE_PESO_EJ = /^(\d+(?:[.,]\d+)?)\s*(lbs?|kg|kilos?)$/i;
+const RE_SERIES_EJ = /^(\d{1,2})\s*[×xX*]\s*(\d{1,3}(?:\s*[-–]\s*\d{1,3})?)(?:\s*reps)?$/i;
 const RE_SERIE = /^Serie\s+\d+\s*[—–\-:]\s*([\d]+(?:[.,]\d+)?)\s*(lbs|kg|kilos?)?\s*[×xX*]\s*(\d{1,3}(?:\s*[-–]\s*\d{1,3})?)\s*reps/i;
 
 function rutinaDe(ctx) {
@@ -904,6 +909,7 @@ function leeGym(txt, ctx, titulo) {
 
     const ms = linea.match(RE_SERIE);
     if (ms && act) {
+      if (act.compacto) { act.detalle = []; act.compacto = false; }
       act.detalle.push({
         peso: dec(ms[1]),
         reps: ms[3].replace(/\s+/g, "")
@@ -919,6 +925,15 @@ function leeGym(txt, ctx, titulo) {
       if (!nombre || nombre.length > 70) { act = null; continue; }
       const md = resto.match(/descanso\s*(\d{1,2}):(\d{2})/i);
       act = { nombre, descanso: md ? mmss(md[1], md[2]) : 90, unidad: "kg", detalle: [] };
+      // la forma corta: "· 105 lbs · 3 × 10 ·" en la misma cabecera
+      const trozos = resto.split(/\s*[·•]\s*/).slice(1);
+      let peso = null, n = 0, reps = null;
+      for (const t of trozos) {
+        const mp = t.match(RE_PESO_EJ), mn = t.match(RE_SERIES_EJ);
+        if (mp && peso == null) { peso = dec(mp[1]); if (/lb/i.test(mp[2])) act.unidad = "lbs"; }
+        else if (mn && !n) { n = +mn[1]; reps = mn[2].replace(/\s+/g, ""); }
+      }
+      if (n > 0) { for (let i = 0; i < n; i++) act.detalle.push({ peso, reps }); act.compacto = true; }
       ejercicios.push(act);
     }
   }

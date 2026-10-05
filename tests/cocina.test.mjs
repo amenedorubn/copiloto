@@ -87,3 +87,14 @@ test("una comida que es una receta de Copiloto Cocina: por su id o por el titulo
   assert.equal(C.recetaDe(C.comida({ titulo: "Curry de pollo con arroz" }), idx).id, "curry-pollo", "por el titulo");
   assert.equal(C.recetaDe(C.comida({ titulo: "Tortilla francesa" }), idx), null);
 });
+
+test("N7: la tarjeta de Micros gira de ida y de vuelta en cada toque, sobre el mismo nodo", () => {
+  const cls = new Set(["ntFlip"]);
+  const caja = { classList: { contains: (c) => cls.has(c), toggle: (c, v) => (v ? cls.add(c) : cls.delete(c)) } };
+  assert.equal(C.giraTarjeta(caja), true, "primer toque: al mapa de calor");
+  assert.ok(cls.has("vuelta"));
+  assert.equal(C.giraTarjeta(caja), false, "segundo toque: vuelve a la media");
+  assert.ok(!cls.has("vuelta"));
+  assert.equal(C.giraTarjeta(caja), true, "y otra vez, sin quedarse atascada");
+  assert.equal(C.giraTarjeta(caja), false);
+});

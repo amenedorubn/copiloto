@@ -231,7 +231,15 @@ function nutriTxt(nu) {
 }
 function esCodigo(c) { return /^\d{8}$|^\d{12,14}$/.test(String(c || "").trim()); }
 
-var API = { comida: comida, comidasDe: comidasDe, recetaDe: recetaDe, queGrande: queGrande, avisosComida: avisosComida,
+/* N7 · la tarjeta que se da la vuelta: cada toque la gira (ida y vuelta) sobre el mismo nodo, sin repintar,
+   para que la transición CSS se vea en los dos sentidos. Devuelve si queda del revés.                     */
+function giraTarjeta(caja) {
+  var v = !caja.classList.contains("vuelta");
+  caja.classList.toggle("vuelta", v);
+  return v;
+}
+
+var API = { comida: comida, giraTarjeta: giraTarjeta, comidasDe: comidasDe, recetaDe: recetaDe, queGrande: queGrande, avisosComida: avisosComida,
   pasosGuia: pasosGuia, mezcla: mezcla, vigentes: vigentes, productoOFF: productoOFF, nutriTxt: nutriTxt, esCodigo: esCodigo,
   OFF_URL: OFF_URL, RECETAS_URL: RECETAS_URL, K: { recetas: K_RECETAS, cambios: K_CAMBIOS, nota: K_NOTA, lista: K_LISTA, alimentos: K_ALIM } };
 
@@ -603,7 +611,7 @@ CSS +=
   ".ntFaseF svg{width:16px;height:16px;color:var(--mu)}.ntFaseF[aria-expanded=true] svg{transform:rotate(90deg)}.ntFaseP{padding:0 0 8px 26px}" +
   ".ntCap.ac{color:var(--coc)}" +
   ".ntFrase{font-size:18px;margin-top:16px}.ntMu{font-size:12px;font-weight:600;color:var(--mu)}" +
-  ".ntFlip{perspective:1200px;margin-top:12px}.ntFlipIn{position:relative;transition:transform .55s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d;display:grid}" +
+  ".ntFlip{perspective:1200px;margin-top:12px;cursor:pointer}.ntFlipIn{position:relative;transition:transform .55s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d;display:grid}" +
   ".ntFlip.vuelta .ntFlipIn{transform:rotateY(180deg)}.ntCara,.ntCruz{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;margin-top:0}" +
   ".ntCruz{transform:rotateY(180deg)}.ntFlip:not(.vuelta) .ntCruz{pointer-events:none}.ntFlip.vuelta .ntCara{pointer-events:none}" +
   ".ntCobBtn{width:100%;background:none;color:var(--fg);padding:0!important;border-radius:0!important;text-align:left;display:block}" +
@@ -1888,7 +1896,7 @@ function vistaEntreno(w, E) {
 }
 /* N7 · Micros (B; al tocar se da la vuelta a la A): cobertura media de 4 semanas de cada micro (% del mínimo, con
    lo de suplementos aparte) y, por detrás, el mapa de calor de 8 semanas. «Con suplementos» o «Solo comida».    */
-var NFLIP = false, NFLIPANIM = false, NSOLO = false;
+var NFLIP = false, NSOLO = false;
 var MICROS_V = ["vitC", "folato", "fibra", "hierro", "magnesio", "potasio", "calcio", "b12", "vitD", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];
 function vistaMicros(w, E) {
   var N = Nu(), G = raiz.NutriGraficas, F = fuentesNu(E);
@@ -1898,26 +1906,26 @@ function vistaMicros(w, E) {
   w.appendChild(ch);
   var D = N.diasDesde(N.masDias(E.o.hoy, -27), 28, F), W = N.semanas(N.lunes(E.o.hoy), 8, F);
   if (!D.some(function (r) { return r.conDatos; })) { w.appendChild(el("p", "cocVacio", "Sin datos en las 4 últimas semanas: no hay comidas en el calendario ni nada registrado.")); return; }
-  var caja = el("div", "ntFlip" + (NFLIP && !NFLIPANIM ? " vuelta" : "")), dentro = el("div", "ntFlipIn");
+  // un toque en cualquier sitio de la tarjeta la gira, de ida y de vuelta, con animación (sin repintar)
+  var caja = el("div", "ntFlip" + (NFLIP ? " vuelta" : "")), dentro = el("div", "ntFlipIn");
+  caja.addEventListener("click", function () { NFLIP = giraTarjeta(caja); });
   // cara: cobertura de 4 semanas
   var cara = el("div", "ntCara ntCaja", '<p class="ntCap" style="margin:0">% del mínimo · media de 4 semanas</p>');
   MICROS_V.forEach(function (k) {
     var c = N.cobertura(D, k), tot = c.total == null ? null : NSOLO ? c.total - c.supl : c.total;
     var b = el("button", "ntCobBtn", G.cobertura({ nombre: N.NOMBRE[k], total: tot, supl: NSOLO ? 0 : c.supl }));
     b.setAttribute("aria-label", N.NOMBRE[k] + ": " + (tot == null ? "sin datos" : Math.round(tot) + " %") + ". Toca para ver las semanas");
-    b.addEventListener("click", function () { NFLIP = true; NFLIPANIM = true; pinta(); });
     cara.appendChild(b);
   });
-  cara.appendChild(el("p", "ntNota", "La raya: el mínimo (100 %). " + (NSOLO ? "Solo lo de la comida." : "Más claro: lo de suplementos («Supl.»).") + " Toca una fila para ver las semanas."));
+  cara.appendChild(el("p", "ntNota", "La raya: el mínimo (100 %). " + (NSOLO ? "Solo lo de la comida." : "Más claro: lo de suplementos («Supl.»).") + " Toca la tarjeta para ver las semanas; otra vez, para volver."));
   // cruz: el mapa de calor de 8 semanas
   var cols = W.map(function (S) { return corta(S.lunes); });
   var filas = MICROS_V.map(function (k) { return { nombre: N.NOMBRE[k].replace("Vitamina ", "Vit. "), celdas: W.map(function (S) { var c = N.cobertura(S.dias, k); return c.total == null ? null : NSOLO ? c.total - c.supl : c.total; }) }; });
   var cruz = el("div", "ntCruz ntCaja", '<p class="ntCap" style="margin:0">% del mínimo por semana · ' + (NSOLO ? "solo comida" : "con suplementos") + '</p>' + G.calor(cols, filas) +
     '<p class="ntNota">Media de cada semana (días con datos). «s/d»: semana sin datos.</p>');
-  var v = el("button", "cocBtn", "Volver a la media"); v.addEventListener("click", function () { NFLIP = false; NFLIPANIM = false; pinta(); });
+  var v = el("button", "cocBtn", "Volver a la media"); v.setAttribute("aria-label", "Volver a la media. Toca la tarjeta para girarla");
   cruz.appendChild(v);
   dentro.appendChild(cara); dentro.appendChild(cruz); caja.appendChild(dentro); w.appendChild(caja);
-  if (NFLIP && NFLIPANIM) { NFLIPANIM = false; setTimeout(function () { caja.classList.add("vuelta"); }, 30); }
 }
 function tablaNutri(D, obj) {
   var N = Nu(), w = el("div", "ntTabla"), filas = N.PRIORIDAD.concat(["kcal", "prot", "grasa"]), mas = ["hierro", "magnesio", "potasio", "b12", "vitD", "calcio", "vitA", "vitE", "b6", "zinc", "yodo", "epadha"];

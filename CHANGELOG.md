@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.56.1] - 2026-10-05
+
+### Corregido
+
+- Micros: la tarjeta gira de ida y de vuelta en cada toque, con animación. Gimnasio: vuelven los ejercicios a la tarjeta del día con el formato corto del calendario («1. EJERCICIO · 50 lbs · 3 × 10»)
+
 ## [2.56.0] - 2026-10-04
 
 ### Añadido
@@ -766,6 +772,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.56.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.1
 [2.56.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.0
 [2.55.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.55.0
 [2.54.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.54.0
