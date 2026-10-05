@@ -4,6 +4,8 @@
            (J: receta de Copiloto Cocina; R: Receta.leer de una comida del calendario)
      ctx = {marca(tipo), atrasManual(), repinta(), alTerminar(info)}
            info = {uid, titulo, id, gastado: [txt] | null}  (null = salir sin apuntar)
+           casa(i, M0) -> {estado, txt, para, zona, usos, enLista} y aCompra(i, M0) -> {txt}
+           (v2.57: la ficha de casa de un ingrediente; los pone cocina.js)
    - Los relojes no son del paso: llevan su hora de fin (ms), siguen al cambiar de
      paso, al cerrar y al volver a abrir, y puede haber varios a la vez.
    - Mirar otro paso (la barra, Pasos, Luego, un reloj o deslizar) no cambia el
@@ -781,6 +783,34 @@ var CSS =
   R0 + ".cpGrupo.ir span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
   R0 + ".cpGrupo.ir svg{width:14px;height:14px}" +
   R0 + ".cpFilaI{display:flex;align-items:center;gap:6px;border-top:1px solid var(--ln)}" +
+  /* v2.57: el ingrediente: casilla y nombre (abre su ficha de casa) */
+  R0 + ".cpIngW{display:flex;align-items:stretch;max-width:100%;min-width:0}" +
+  R0 + ".cpIngC{width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;flex:none}" +
+  R0 + ".cpIngT{flex:1 1 auto;min-width:0;min-height:48px;display:flex;align-items:center;gap:8px;padding:8px 10px 8px 0;text-align:left;font-size:17px;font-weight:600;line-height:1.3}" +
+  R0 + ".cpIngT .cpTx{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}" + R0 + ".cpIngT b{font-weight:800}" + R0 + ".cpIngT em{color:var(--mu)}" +
+  R0 + ".cpIngT small{display:block;font-size:14px;font-weight:600;color:var(--mu);margin-top:1px}" +
+  R0 + ".cpIr{display:flex;color:var(--mu);flex:none}" + R0 + ".cpIr svg{width:16px;height:16px}" +
+  R0 + ".cpIngW.on .cpTx{color:var(--mu);text-decoration:line-through;text-decoration-thickness:1.5px}" +
+  R0 + ".cpIngW.pill{border-radius:14px;background:var(--sf2)}" + R0 + ".cpIngW.pill.on{background:var(--sf)}" +
+  R0 + ".cpIngW.fila{border-top:1px solid var(--ln);margin-left:-12px}" + R0 + ".cpChecks li:first-child .cpIngW.fila{border-top:0}" +
+  R0 + ".cpIngW.fila .cpIngT{min-height:52px;line-height:1.35}" +
+  R0 + ".cpIngT.solo{padding:8px 12px 8px 14px;border-radius:14px;background:var(--sf2)}" + R0 + ".ccIngs{margin-top:10px}" +
+  R0 + ".cpIngW.hojaI{flex:1;margin-left:-12px}" + R0 + ".cpIngW.hojaI .cpIngT{min-height:58px}" +
+  R0 + ".cpIngW.hojaI .cpIngT>b{white-space:nowrap;text-align:right}" +
+  /* v2.57: la ficha de casa */
+  R0 + ".cpFichaI .cpHojaCuerpo{max-height:46vh}" +
+  R0 + ".cpFiEst{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:16px;background:var(--sf2);font-size:19px;line-height:1.3}" +
+  R0 + ".cpFiEst svg{width:26px;height:26px;margin-top:1px;color:var(--mu)}" + R0 + ".cpFiEst.ok svg{color:#f4f5f7}" +
+  R0 + ".cpFiEst span{min-width:0;overflow-wrap:anywhere}" + R0 + ".cpFiEst b{font-weight:800}" +
+  R0 + ".cpFiEst small{display:block;margin-top:4px;font-size:15px;font-weight:700;color:var(--mu)}" +
+  R0 + ".cpFiEst.carga svg{animation:cpGira 1.2s linear infinite}" +
+  R0 + ".cpFiNota{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:15px;font-weight:700;color:var(--mu)}" + R0 + ".cpFiNota svg{width:18px;height:18px}" +
+  R0 + ".cpFiTit{margin-top:16px;font-size:13px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--mu)}" +
+  R0 + ".cpFiUsos li{padding:10px 0;border-top:1px solid var(--ln);font-size:16px;font-weight:700;overflow-wrap:anywhere}" + R0 + ".cpFiUsos li:first-child{border-top:0}" +
+  R0 + ".cpFiUsos li.mas{color:var(--mu)}" +
+  R0 + ".cpFiBot{display:grid;gap:8px;padding-top:14px;flex:0 0 auto}" + R0 + ".cpFiBot .cpHecho{font-size:18px}" +
+  "@keyframes cpGira{to{transform:rotate(360deg)}}" +
+  "@media (prefers-reduced-motion:reduce){" + R0 + ".cpFiEst.carga svg{animation:none}}" +
   R0 + ".cpIngF{flex:1;min-width:0;min-height:58px;display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:center;padding:8px 0;text-align:left;font-size:17px;font-weight:600;line-height:1.3}" +
   R0 + ".cpIngF .cpTx{min-width:0;overflow-wrap:break-word}" +
   R0 + ".cpIngF b{font-weight:800;white-space:nowrap;text-align:right}" +
@@ -968,7 +998,8 @@ function cierra(desdeAtras, sinRepintar) {
 API.atras = function () {
   if (!V) return false;
   if (V.hoja || V.visto != null) {
-    if (V.hoja) V.hoja = null; else V.visto = null;
+    if (V.hoja === "ing" && V.ficha) { V.hoja = V.ficha.prev; V.ficha = null; }
+    else if (V.hoja) V.hoja = null; else V.visto = null;
     pinta(false);
     if (V.ctx.marca) V.ctx.marca("cocina");      // sigue abierto: el siguiente atras tambien es nuestro
     return true;
@@ -1145,9 +1176,17 @@ function ingHtml(I) {
     (I.opcional ? ' <em>(opcional)</em>' : "") + (I.prep ? '<small>' + esc(I.prep) + '</small>' : "") + '</span>';
 }
 function caja(on) { return '<i class="cpCaja">' + (on ? svg("tick") : "") + '</i>'; }
-function fila(clave, html) {
+function fila(clave, html, ing) {
   var on = !!V.S.checks[clave];
+  if (ing != null && V.M0.ings[ing]) return '<li>' + ingBotones('data-a="check" data-c="' + clave + '"', on, ing, '<span class="cpTx">' + html + '</span>', "fila") + '</li>';
   return '<li><button class="cpCheck" data-a="check" data-c="' + clave + '" aria-pressed="' + on + '">' + caja(on) + '<span class="cpTx">' + html + '</span></button></li>';
+}
+/* v2.57: un ingrediente son dos botones: la casilla (marcarlo) y su nombre, que abre su ficha
+   de casa (cuánto hay, si basta, en qué comidas se usa y "Añadir a la compra").            */
+function ingBotones(attrs, on, i, inner, cls) {
+  var nom = V.M0.ings[i] ? V.M0.ings[i].nombre : "";
+  return '<div class="cpIngW' + (cls ? " " + cls : "") + (on ? " on" : "") + '"><button class="cpIngC" ' + attrs + ' aria-pressed="' + on + '" aria-label="' + (on ? "Desmarcar " : "Marcar ") + esc(nom) + '">' + caja(on) + '</button>' +
+    '<button class="cpIngT" data-a="fichaIng" data-i="' + i + '" aria-label="' + esc(nom) + ': qué hay en casa">' + inner + '<span class="cpIr">' + svg("der") + '</span></button></div>';
 }
 // "1 boniato · pélalo, en cubos de 2 cm": lo primero en negrita, lo demas debajo
 function itemHtml(t) {
@@ -1194,14 +1233,14 @@ function paso(ahora) {
   if (P.usa.length && !P.secciones) h += '<ul class="cpUsa">' + P.usa.map(function (i) {
     var I = M0.ings[i]; if (!I) return "";
     var on = !!S.checks["i" + i];
-    return '<li><button class="cpIng" data-a="ing" data-i="' + i + '" aria-pressed="' + on + '">' + caja(on) + ingHtml(I) + '</button></li>';
+    return '<li>' + ingBotones('data-a="ing" data-i="' + i + '"', on, i, ingHtml(I), "pill") + '</li>';
   }).join("") + '</ul>';
   h += relojPaso(P, mirando, ahora);
   if (P.checklist.length && !P.secciones) h += '<ul class="cpChecks">' + P.checklist.map(function (c, j) { return fila("c" + k + "-" + j, negritas(c)); }).join("") + '</ul>';
   if (P.secciones) h += P.secciones.map(function (s, si) {
     var items = s.items || [], hechos = items.filter(function (it, ii) { return S.checks["s" + k + "-" + si + "-" + ii]; }).length;
     return '<div class="cpSec"><h3>' + esc(s.titulo) + '<small>' + hechos + ' de ' + items.length + '</small></h3><ul class="cpChecks">' +
-      items.map(function (it, ii) { return fila("s" + k + "-" + si + "-" + ii, itemHtml(it.txt)); }).join("") + '</ul></div>';
+      items.map(function (it, ii) { return fila("s" + k + "-" + si + "-" + ii, itemHtml(it.txt), it.ing); }).join("") + '</ul></div>';
   }).join("");
   if (P.mientras) h += '<div class="cpPar"><h3>' + (P.soloEsto ? "Solo esto" : "Mientras tanto") + '</h3><p>' + negritas(P.mientras) + '</p></div>';
   if (P.consejo) h += '<div class="cpPar tip"><h3>Consejo</h3><p>' + negritas(P.consejo) + '</p></div>';
@@ -1268,6 +1307,7 @@ function hoja(ahora) {
   var M0 = V.M0, S = V.S, h = '<div class="cpVelo" data-a="cierraHoja"></div>';
   var x = '<button class="cpX" data-a="cierraHoja" aria-label="Cerrar">' + svg("cerrar") + '</button>';
   if (V.hoja === "cocina") h += hojaCocina(x);
+  else if (V.hoja === "ing") h += hojaIng(x);
   else if (V.hoja === "pasos") {
     var hechos = M0.pasos.filter(function (P, j) { return S.hechos[j] && !P.auto; }).length;
     h += '<div class="cpHoja" role="dialog" aria-label="Pasos"><div class="cpHojaCab"><div><h3>' + totalNum(M0) + ' pasos</h3><small>' + hechos + (hechos === 1 ? " hecho" : " hechos") +
@@ -1286,8 +1326,8 @@ function hoja(ahora) {
         return (g.k != null && !M0.carr ? '<button class="cpGrupo ir" data-a="fila" data-k="' + g.k + '"><span>' + esc(g.titulo) + ' · ' + esc(M0.pasos[g.k].titulo) + '</span>' + svg("der") + '</button>'
                             : '<h4 class="cpGrupo">' + esc(g.titulo) + '</h4>') + g.items.map(function (i) {
           var I = M0.ings[i], marc = !!S.checks["i" + i], k = g.k != null ? -1 : primerUso(M0, i);
-          return '<div class="cpFilaI"><button class="cpIngF" data-a="ing" data-i="' + i + '" aria-pressed="' + marc + '">' + caja(marc) +
-            '<span class="cpTx">' + esc(I.nombre) + (I.opcional ? " (opcional)" : "") + (I.prep ? '<small>' + esc(I.prep) + '</small>' : "") + '</span><b>' + esc(I.cant) + '</b></button>' +
+          return '<div class="cpFilaI">' + ingBotones('data-a="ing" data-i="' + i + '"', marc, i,
+            '<span class="cpTx">' + esc(I.nombre) + (I.opcional ? " (opcional)" : "") + (I.prep ? '<small>' + esc(I.prep) + '</small>' : "") + '</span><b>' + esc(I.cant) + '</b>', "hojaI") +
             (k >= 0 && !M0.carr ? '<button class="cpBadge" data-a="fila" data-k="' + k + '"><span>' + (M0.pasos[k].auto ? "Antes" : "Paso " + numDe(M0, k)) + '</span></button>' : "") + '</div>';
         }).join("");
       }).join("") + '</div></div>';
@@ -1304,6 +1344,34 @@ function hoja(ahora) {
       '</div></div></div>';
   }
   return h;
+}
+
+/* v2.57: la ficha de casa de un ingrediente, dentro del paso a paso (los relojes siguen) */
+var EST_ING = { basta: ["tick", "ok"], hay: ["tick", "ok"], basico: ["tick", "ok"], falta: ["warning-circle", "mal"], no: ["warning-circle", "mal"],
+  dudoso: ["warning-circle", "mal"], "?": ["warning-circle", ""], cargando: ["reloj", "carga"], error: ["warning-circle", ""] };
+function infoIng(i) {
+  if (!V.ctx.casa) return { estado: "error", txt: "Aquí no se puede mirar lo que hay en casa." };
+  try { return V.ctx.casa(i, V.M0) || { estado: "error", txt: "No se puede leer lo que hay en casa ahora." }; }
+  catch (e) { return { estado: "error", txt: "No se puede leer lo que hay en casa ahora." }; }
+}
+function hojaIng(x) {
+  var F = V.ficha, I = F && V.M0.ings[F.i];
+  if (!I) { V.hoja = null; return ""; }
+  var d = F.info, e = EST_ING[d.estado] || EST_ING["?"], h = '<div class="cpHoja chica cpFichaI" role="dialog" aria-label="' + esc(I.nombre) + ' en casa">';
+  h += '<div class="cpHojaCab"><div><h3>' + esc(d.nombre || I.nombre) + '</h3><small>' + esc(d.para ? "Para esta receta: " + d.para : I.cant ? "Para esta receta: " + I.cant : "Esta receta no dice cuánto") + '</small></div>' + x + '</div>';
+  h += '<div class="cpHojaCuerpo">';
+  h += '<div class="cpFiEst ' + e[1] + '" role="status">' + svg(e[0]) + '<span><b>' + esc(d.txt || "") + '</b>' +
+    (d.zona ? '<small>En casa: ' + esc(d.zona) + '</small>' : d.estado === "no" ? '<small>No está en Casa</small>' : "") + '</span></div>';
+  if (d.enLista) h += '<p class="cpFiNota">' + svg("tick") + '<span>' + esc(d.enLista) + '</span></p>';
+  if (d.usos && d.usos.length) {
+    h += '<h4 class="cpFiTit">También lo usan</h4><ul class="cpFiUsos">' + d.usos.slice(0, 4).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") +
+      (d.usos.length > 4 ? '<li class="mas">Y ' + (d.usos.length - 4) + ' comidas más</li>' : "") + '</ul>';
+  }
+  h += '</div>';
+  var pide = !d.enLista && /^(falta|no|dudoso|\?|error|cargando)$/.test(d.estado) && V.ctx.aCompra;
+  h += '<div class="cpFiBot">' + (pide ? '<button class="cpHecho" data-a="aCompra" data-i="' + F.i + '">Añadir a la compra</button>' : "") +
+    '<button class="cpAnt" data-a="cierraHoja">' + svg("izq") + (F.prev === "ings" ? "Volver a Ingredientes" : "Volver al paso") + '</button></div>';
+  return h + '</div>';
 }
 
 /* ------------------------------- carriles: pantalla ------------------------------- */
@@ -1394,10 +1462,16 @@ function carrilHtml(ahora) {
   if (tarde >= 1) h += '<div class="ccAviso" role="status">' + svg("arrows-clockwise") + '<div><p>Plan rehecho: a la mesa a las ' + hm(pl.mesa) +
     ' (antes ' + hm(S.carr.mesa0) + '). Lo que no espera sigue sin esperar.</p></div></div>';
   if (x) {
-    var ii = ingsDe(x), Px = M0.pasos[x.k];
+    var Px = M0.pasos[x.k];
     h += '<p class="ccCap' + (due ? " ac" : "") + '">' + (due ? "Ahora · tus manos" : 'A las ' + hm(abs(m.cuando)) + ' · en <b data-hasta="' + abs(m.cuando) + '">' + fmt(m.cuando - pl.desde) + '</b>') + '</p>';
     h += '<h2' + (x.txt.length > 60 ? ' class="largo"' : "") + '>' + esc(sinMin(x.txt)) + '</h2>';
-    h += '<p class="ccSub">' + esc(M0.nomCarril[x.carril]) + (ii.length ? " · " + esc(ii.join(" · ")) : "") + '</p>';
+    h += '<p class="ccSub">' + esc(M0.nomCarril[x.carril]) + '</p>';
+    // v2.57: cada ingrediente abre su ficha de casa (el plan y los relojes no se tocan)
+    var iis = (Px && Px.usa || []).filter(function (i) { return M0.ings[i] && !M0.ings[i].basico; });
+    if (iis.length) h += '<ul class="cpUsa ccIngs">' + iis.map(function (i) {
+      var I = M0.ings[i];
+      return '<li><button class="cpIngT solo" data-a="fichaIng" data-i="' + i + '" aria-label="' + esc(I.nombre) + ': qué hay en casa">' + ingHtml(I) + '<span class="cpIr">' + svg("der") + '</span></button></li>';
+    }).join("") + '</ul>';
     if (!due) h += '<p class="ccTxt mu">Hasta entonces, tus manos están libres. Te aviso.</p>';
     if (due && x.manos >= x.dur) {
       var e = S.carr.empezo[x.id] || ahora, fin = e + x.dur * 1000;
@@ -1482,7 +1556,18 @@ function accion(a, b) {
     case "x": if (V.pant === "fin") termina(null); else cierra(false); return;
     case "hIngs": V.hoja = "ings"; pinta(false); return;
     case "hPasos": V.hoja = "pasos"; pinta(false); return;
-    case "cierraHoja": V.hoja = null; pinta(false); return;
+    case "cierraHoja": V.hoja = V.hoja === "ing" && V.ficha ? V.ficha.prev : null; V.ficha = null; pinta(false); return;
+    case "fichaIng":
+      k = +b.getAttribute("data-i");
+      V.ficha = { i: k, prev: V.hoja === "ings" ? "ings" : null, info: infoIng(k) }; V.hoja = "ing"; pinta(false);
+      if (V.ctx.marca) V.ctx.marca("cocina");
+      return;
+    case "aCompra":
+      k = +b.getAttribute("data-i");
+      var r = null; try { r = V.ctx.aCompra(k, M0); } catch (e) { r = null; }
+      if (!r) { V.ficha.info = { estado: "error", nombre: V.ficha.info.nombre, para: V.ficha.info.para, txt: "No se ha podido añadir a la compra. Prueba otra vez." }; pinta(false); return; }
+      ponToast(r.txt); V.hoja = null; V.ficha = null; pinta(false);   // vuelve al paso, tal cual estaba
+      return;
     case "seg": k = +b.getAttribute("data-k"); mira(k); return;
     case "fila": k = +b.getAttribute("data-k"); V.hoja = null; mira(k); return;
     case "mira": mira(+b.getAttribute("data-k")); return;

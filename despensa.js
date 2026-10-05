@@ -578,7 +578,7 @@ function faltan(D, cambios, comidas, opts) {
 // de donde sale la cantidad de una linea de Comprar: una frase por linea del plan y la cuenta
 function origenDe(it, hoy) {
   var RC = Rc(), L = (it.lineas || []).map(function (l) {
-    return (l.fecha === hoy ? "hoy" : diaCorto(l.fecha)) + " " + l.fecha.slice(8) + "/" + l.fecha.slice(5, 7) + " · " + l.titulo + " — «" + l.txt + "»" + (l.c ? " → " + RC.cantTxt(l.c) : " (sin cantidad)");
+    return (l.fecha === hoy ? "hoy" : diaCorto(l.fecha)) + " " + l.fecha.slice(8) + "/" + l.fecha.slice(5, 7) + " · " + l.titulo + (l.txt ? " — «" + l.txt + "»" + (l.c ? " → " + RC.cantTxt(l.c) : " (sin cantidad)") : "");
   });
   var tot = (it.total || []).map(function (x) { return RC.cantTxt(x); }).join(" + ");
   if (tot) {
@@ -594,6 +594,99 @@ function origenDe(it, hoy) {
 function paraTxt(it, hoy) {
   return (it.para || []).slice(0, 2).map(function (p) { return p.titulo + " · " + (p.fecha === hoy ? "hoy" : diaCorto(p.fecha)); }).join(", ") +
     ((it.para || []).length > 2 ? " y " + (it.para.length - 2) + " más" : "");
+}
+
+/* ------------------------------ en qué comidas se usa (v2.57) ------------------------------
+   Las comidas que quedan (la de ahora y las próximas, hasta el final del plan, máx. 7 días) y
+   las líneas suyas que piden un alimento. Sirve para Casa ("Se usa en"), para lo apuntado a
+   mano en Comprar y para el paso a paso.                                                    */
+function quedan(comidas, cambios, opts) {
+  opts = opts || {}; if (opts.ahoraMs == null) opts.ahoraMs = Date.now();
+  var hoy = opts.hoy || isoDe(opts.ahoraMs), tope = sumaDias(hoy, 7);
+  return (comidas || []).filter(function (R) {
+    if (R.tipo !== "comida" || R.fecha > tope) return false;
+    var e = estadoComida(R, cambios, opts); return e === "proxima" || e === "ahora";
+  }).sort(porHora);
+}
+// ¿esta línea de una comida es este alimento? (la misma clave, o el mismo con apellidos parecidos)
+function esElMismo(g, h) {
+  if (!g || !h || !h.clave) return false;
+  if (g.clave && g.clave === h.clave) return true;
+  return Rc().mismo(g, h) >= ENTRA_MIN;
+}
+function lineaDe(R, h) { return { uid: R.uid, titulo: R.titulo, fecha: R.fecha, hora: R.hora, txt: h ? h.txt : "", c: h && h.c ? { n: h.c.n, ud: h.c.ud } : null }; }
+// -> [{uid, titulo, fecha, hora, txt, c}] (sin los básicos ni lo que hace el propio plan)
+function usosDe(ing, comidas, cambios, opts) {
+  var g = typeof ing === "string" ? Rc().ingrediente(ing) : ing; if (!g || (!g.clave && !g.base)) return [];
+  var out = [];
+  quedan(comidas, cambios, opts).forEach(function (R) {
+    (R.ingredientes || []).forEach(function (h) {
+      if (h.basico || h.hecho || !esElMismo(g, h)) return;
+      out.push(lineaDe(R, h));
+    });
+  });
+  return out;
+}
+// "jue 08/10 · Tupper curry" (o "hoy 05/10 · …")
+function usoTxt(l, hoy) { return (l.fecha === hoy ? "hoy" : diaCorto(l.fecha)) + " " + l.fecha.slice(8) + "/" + l.fecha.slice(5, 7) + " · " + l.titulo; }
+function usosTxt(L, hoy) {
+  var vistos = {}, out = [];
+  (L || []).forEach(function (l) { var t = usoTxt(l, hoy); if (!vistos[t]) { vistos[t] = 1; out.push(t); } });
+  return out;
+}
+/* Lo apuntado a mano en la lista de la compra, con su comida.
+   lista: [{id, txt, uid?, borrado}]; items: los de faltan() (los del plan).
+   - si coincide con una línea del plan que ya está en Comprar: no se duplica (esa línea lleva mioId);
+   - si dijiste para qué comida (uid) y aún queda: va con esa comida;
+   - si coincide con un ingrediente de las comidas que quedan: va con esas líneas (sus días);
+   - si no: sin día (se puede elegir una comida o dejarlo así).
+   -> items nuevos {k, clave, ver, cant, id, mio: true, lineas, para, asignada: "uid" | "auto" | null}  */
+function conLoMio(items, lista, comidas, cambios, opts) {
+  var RC = Rc(), Q = quedan(comidas, cambios, opts), out = [];
+  (lista || []).forEach(function (x) {
+    if (!x || x.borrado) return;
+    var g = RC.ingrediente(x.txt), k = g.clave;
+    var plan = (items || []).filter(function (i) { return !i.mio && (i.clave === k || esElMismo(g, i.g || RC.ingrediente(i.ver))); })[0];
+    if (plan) { if (!plan.mioId) plan.mioId = x.id; return; }
+    if (out.some(function (i) { return i.clave === k; })) return;
+    var lineas = [], asignada = null, R = x.uid ? Q.filter(function (c) { return c.uid === x.uid; })[0] : null;
+    if (R) {
+      lineas = (R.ingredientes || []).filter(function (h) { return !h.basico && esElMismo(g, h); }).map(function (h) { return lineaDe(R, h); });
+      if (!lineas.length) lineas = [lineaDe(R, null)];             // la comida no lo pide: va con ella, sin línea
+      asignada = "uid";
+    } else {
+      lineas = usosDe(g, Q, cambios, opts);
+      if (lineas.length) asignada = "auto";
+    }
+    var para = [];
+    lineas.forEach(function (l) { if (!para.some(function (p) { return p.uid === l.uid; })) para.push({ uid: l.uid, titulo: l.titulo, fecha: l.fecha, hora: l.hora }); });
+    out.push({ k: "m:" + x.id, clave: k, ver: x.txt, cant: "", id: x.id, mio: true, lineas: lineas, para: para, asignada: asignada, g: g });
+  });
+  return out;
+}
+/* ¿Hay bastante en casa para esta receta? (el paso a paso)
+   need: el Ing de la receta; H: casa() SIN la propia comida (si no, ya la habría gastado).
+   -> {estado: "basta" | "falta" | "no" | "dudoso" | "hay" | "basico" | "?", item, tiene, falta, txt}
+   "hay": está, pero no se sabe cuánto (o en otra medida).                                   */
+function bastaPara(need, H) {
+  var RC = Rc(), g = typeof need === "string" ? RC.ingrediente(need) : need;
+  if (!H) return { estado: "?", txt: "No se sabe lo que hay en casa" };
+  if (g.basico || SIEMPRE.test(g.clave || "")) return { estado: "basico", txt: "Lo de siempre: no se cuenta" };
+  var e = estadoDe(g, H), x = e.item || null, nom = RC.corto({ ver: g.ver || mayus1(g.base), base: g.base, nombre: g.nombre, c: null }).toLowerCase();
+  function faltaTxt(c) { return "Te " + (c && c.n > 1 ? "faltan " : "falta ") + RC.corto({ ver: g.ver || mayus1(g.base), base: g.base, nombre: g.nombre, c: c }); }
+  if (e.estado === "no") return { estado: "no", item: null, falta: g.c || null, txt: g.c ? faltaTxt(g.c) : "No hay " + nom + " en casa" };
+  if (!x) return { estado: "hay", item: null, txt: g.hecho ? "Lo hace el plan antes" : "Es de casa" };
+  if (e.estado === "dudoso") return { estado: "dudoso", item: x, tiene: x.c, txt: "¿Te queda? " + (x.razon || "No se sabe si queda") };
+  if (!x.c) return { estado: "hay", item: x, txt: "Hay " + nom + " (no se sabe cuánto)" };
+  var tc = RC.corto({ ver: x.ver || x.nombre, base: x.g && x.g.base, nombre: x.txt, c: x.c }), tiene = "Tienes " + tc;
+  if (!g.c || x.c.ud !== g.c.ud) {
+    // un envase entero vale para una cucharada; si no, no se puede comparar
+    return { estado: "hay", item: x, tiene: x.c, txt: tiene };
+  }
+  var f = Math.round((g.c.n - x.c.n) * 100) / 100;
+  if (f <= 0) return { estado: "basta", item: x, tiene: x.c, txt: tiene };
+  var fc = { n: contable(g.c.ud) ? Math.ceil(f - 1e-9) : f, ud: g.c.ud };
+  return { estado: "falta", item: x, tiene: x.c, falta: fc, txt: faltaTxt(fc) + " (tienes " + tc + ")" };
 }
 
 /* ------------------------------ Comprar por pasillo (v2.42) ------------------------------
@@ -679,6 +772,6 @@ function textoClaude(H, opts) {
 }
 
 return { ZONAS: ZONAS6, hayBase: hayBase, PASILLOS: PASILLOS, pasilloDe: pasilloDe, porPasillo: porPasillo, porConfirmar: porConfirmar, tuppers: tuppers, MAX_TUPPERS: MAX_TUPPERS, fracciones: fracciones, claveLarga: claveLarga, esPlato: esPlato, despensa: despensa, item: item, partes: partes, zonaPara: zonaPara, zonaSeca: zonaSeca, casa: casa, estadoDe: estadoDe,
-  estadoComida: estadoComida, queToca: queToca, faltan: faltan, origenDe: origenDe, paraTxt: paraTxt, textoClaude: textoClaude,
+  estadoComida: estadoComida, queToca: queToca, faltan: faltan, quedan: quedan, usosDe: usosDe, usoTxt: usoTxt, usosTxt: usosTxt, conLoMio: conLoMio, bastaPara: bastaPara, origenDe: origenDe, paraTxt: paraTxt, textoClaude: textoClaude,
   isoDe: isoDe, msDe: msDe, diaLargo: diaLargo, diaCorto: diaCorto };
 });

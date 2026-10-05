@@ -452,6 +452,16 @@ CSS +=
   ".cocCompra button.cocNom{grid-template-columns:1fr auto!important;gap:6px!important;border-top:0!important;min-width:0}" +
   ".cocOrigen{grid-column:1/-1;padding:0 0 12px 50px}.cocOrigen p{margin:0 0 4px;font-size:12px;font-weight:600;line-height:1.45;color:var(--mu)}" +
   ".cocOrigen p.suma{margin-top:6px;color:var(--fg);font-weight:800}" +
+  /* v2.57: para qué comida es lo apuntado a mano, y en qué comidas se usa lo de casa */
+  ".cocElige{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}" +
+  ".cocElige .cocEligeT{flex-basis:100%;margin:0;font-size:12px;font-weight:800;color:var(--fg)}" +
+  ".cocCompra .cocElige button{display:flex!important;flex:0 1 auto;align-items:center;width:auto!important;max-width:100%;min-height:44px!important;padding:6px 14px!important;border-top:0!important;border-radius:22px!important;background:var(--sf2);color:var(--fg);font-size:13px!important;font-weight:700!important;line-height:1.3;text-align:left;white-space:normal;overflow-wrap:break-word}" +
+  ".cocCompra .cocElige button[aria-pressed=true]{background:var(--fg);color:var(--bg)}" +
+  ".cocUsos{margin-top:10px}.cocUsos ul{margin:4px 0 0;padding:0;list-style:none}" +
+  ".cocUsos li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--ln);font-size:14px;font-weight:700;line-height:1.35}.cocUsos li:first-child{border-top:0}" +
+  ".cocUsos li span{min-width:0;overflow-wrap:anywhere}.cocUsos li em{font-style:normal;color:var(--mu);white-space:nowrap}" +
+  ".cocUsos .cocUsosT{margin:0;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}" +
+  ".cocUsos .cocUsosV{margin:0;font-size:13px;font-weight:600;color:var(--mu)}" +
   ".cocCompra button{grid-template-columns:28px 1fr auto!important}" +
   ".cocCompra button em{font-style:normal;font-size:14px;font-weight:700;color:var(--mu);white-space:nowrap;padding-left:8px}" +
   ".cocDia{margin:14px 0 2px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}.cocDia:first-child{margin-top:0}" +
@@ -674,13 +684,20 @@ function desapunta(id) {                     // desmarcar: queda borrado (asi ta
   var L = conId(cambios()); L.forEach(function (x) { if (x.id === id) { x.borrado = true; x.tb = Date.now(); } });
   guarda(K_CAMBIOS, L); subeLuego();
 }
-// lo que apuntas tu en la lista de la compra: [{id, t, txt, borrado}]
+// lo que apuntas tu en la lista de la compra: [{id, t, txt, uid?, borrado}] (uid: la comida para la que es, v2.57)
 function lista() { return lee(K_LISTA, []); }
-function aLista(txt) {
-  txt = String(txt || "").replace(/\s+/g, " ").trim(); if (!txt) return;
+function aLista(txt, uid) {
+  txt = String(txt || "").replace(/\s+/g, " ").trim(); if (!txt) return null;
   var L = lista(), k = Rc().ingrediente(txt).clave;
-  if (L.some(function (x) { return !x.borrado && Rc().ingrediente(x.txt).clave === k; })) return;
-  L.push({ id: nuevoId(), t: Date.now(), txt: mayus1(txt) }); guarda(K_LISTA, L.slice(-300)); subeLuego();
+  var ya = L.filter(function (x) { return !x.borrado && Rc().ingrediente(x.txt).clave === k; })[0];
+  if (ya) { if (uid && !ya.uid) { ya.uid = uid; guarda(K_LISTA, L); subeLuego(); } return ya; }
+  var x = { id: nuevoId(), t: Date.now(), txt: mayus1(txt) }; if (uid) x.uid = uid;
+  L.push(x); guarda(K_LISTA, L.slice(-300)); subeLuego(); return x;
+}
+// la comida de algo apuntado a mano (null: sin asignar)
+function asignaLista(id, uid) {
+  var L = lista(); L.forEach(function (x) { if (x.id === id) { if (uid) x.uid = uid; else delete x.uid; x.t = Date.now(); } });
+  guarda(K_LISTA, L); subeLuego();
 }
 // tus alimentos (alimentos.js): con tu nombre; se suben con lo demas
 function alimentos() { return lee(K_ALIM, []); }
@@ -855,12 +872,53 @@ function modoDe(R) {
   return null;
 }
 function numPasos(q) { return q.receta ? (q.receta.pasos || []).length : (q.pasos || pasosDe(q.comida)).length; }
+/* v2.57: un ingrediente del paso a paso en casa. casaIng -> {estado, txt, para, zona, usos, enLista, lista}
+   estado: "basta" | "falta" | "no" | "dudoso" | "hay" | "basico" | "?" | "cargando" | "error"
+   Casa se mira SIN esta comida: al empezar, la comida ya gasta lo suyo y diría que falta.   */
+function ingModo(M0, i) {
+  var I = M0 && M0.ings[i]; if (!I) return null;
+  if (!M0.J && M0.R && M0.R.ingredientes && M0.R.ingredientes[i]) return M0.R.ingredientes[i];
+  var cant = I.cant && I.num ? I.cant + (I.c && I.c.ud !== "ud" ? " de " : " ") : "";
+  return Rc().ingrediente(cant + I.nombre);
+}
+function casaIng(base, i, M0) {
+  var g = ingModo(M0, i); if (!g) return { estado: "error", txt: "No se encuentra este ingrediente." };
+  var para = g.c ? Rc().corto(g) : null, uid = M0.R && M0.R.uid;
+  var E = estado(base.dia || (CTX && CTX.dia) || []);
+  var out = { para: para, nombre: mayus1(g.ver || g.base || M0.ings[i].nombre), uid: uid || null };
+  if (!E.hayBase) {
+    var err = NOTA && (NOTA.error || NOTA.sinRed);
+    out.estado = err ? "error" : "cargando";
+    out.txt = err ? (NOTA.sinRed ? "Sin conexión: no se puede leer lo que hay en casa." : "No se puede leer lo que hay en casa ahora.") : "Leyendo lo que tienes en casa…";
+  } else {
+    var H = Dp().casa(E.D, E.CB, E.Rs.filter(function (R) { return !uid || R.uid !== uid; }), E.o), b = Dp().bastaPara(g, H);
+    out.estado = b.estado; out.txt = b.txt; out.zona = b.item ? b.item.zona : null; out.falta = b.falta || null;
+  }
+  out.usos = Dp().usosTxt(Dp().usosDe(g, E.Rs, E.CB, E.o).filter(function (l) { return l.uid !== uid; }), E.o.hoy);
+  // ¿ya va en Comprar? (lo apuntado o una línea del plan del mismo alimento)
+  var LC = listaCompra(E), en = LC.items.filter(function (it) { return it.clave === g.clave || (it.g && Rc().mismo(g, it.g) >= 0.8); })[0];
+  if (!en && LC.carro.some(function (cb) { return cb.lista && Rc().ingrediente((cb.items || [])[0] || "").clave === g.clave; })) out.enLista = "En el carro";
+  else if (en) out.enLista = "Ya está en Comprar" + (en.para && en.para.length ? " · " + Dp().usosTxt(en.para, E.o.hoy)[0] : "");
+  return out;
+}
+// "Añadir a la compra" desde el paso a paso: lo que falta (o el ingrediente), con esta comida
+function aCompraIng(base, i, M0) {
+  var g = ingModo(M0, i); if (!g) return null;
+  var E = estado(base.dia || (CTX && CTX.dia) || []), uid = M0.R && M0.R.uid, b = null;
+  try { if (E.hayBase) b = Dp().bastaPara(g, Dp().casa(E.D, E.CB, E.Rs.filter(function (R) { return !uid || R.uid !== uid; }), E.o)); } catch (e) {}
+  var c = b && b.falta ? b.falta : g.c, txt = c ? Rc().corto({ ver: g.ver || mayus1(g.base), base: g.base, nombre: g.nombre, c: c }) : (g.ver || mayus1(g.base) || M0.ings[i].nombre);
+  aLista(txt, uid || null);
+  if (enTab()) pinta();
+  var R = uid && E.Rs.filter(function (x) { return x.uid === uid; })[0];
+  return { txt: "A la compra: " + mayus1(txt) + (R ? " · " + Dp().usoTxt(R, E.o.hoy) : "") };
+}
 function ctxModo(base) {
   base = base || CTX || {};
+  var casa = function (i, M0) { return casaIng(base, i, M0); }, aCompra = function (i, M0) { return aCompraIng(base, i, M0); };
   if (CAJA) return { marca: base.marca, atrasManual: base.atrasManual, prueba: { vel: 1 },   // el paso a paso de la prueba tampoco guarda nada
-                     repinta: function () { if (enTab()) pinta(); } };
+                     repinta: function () { if (enTab()) pinta(); }, casa: casa, aCompra: aCompra };
   return {
-    marca: base.marca, atrasManual: base.atrasManual,
+    marca: base.marca, atrasManual: base.atrasManual, casa: casa, aCompra: aCompra,
     repinta: function () { if (enTab()) pinta(); if (base.repinta && base !== CTX) base.repinta(); },
     // al acabar: lo gastado (o "hecha" sin gastar nada) para que Tengo y Comprar lo sepan
     alTerminar: function (info) {
@@ -1019,12 +1077,9 @@ function listaCompra(E) {
   var carro = vivos.filter(function (cb) { return cb.tipo === "compra" && cb.lista && !cb.fin && Date.now() - cb.t < 12 * 3600e3; });
   var enCarro = {}; carro.forEach(function (cb) { enCarro[cb.lista] = 1; });
   if (F) F.items.forEach(function (it) { if (!enCarro[it.k]) items.push(it); });
-  lista().forEach(function (x) {
-    if (x.borrado || enCarro["m:" + x.id]) return;
-    var k = Rc().ingrediente(x.txt).clave;
-    if (items.some(function (i) { return i.clave === k; })) return;
-    items.push({ k: "m:" + x.id, clave: k, ver: x.txt, cant: "", id: x.id, mio: true });
-  });
+  // v2.57: lo apuntado a mano va con su comida (o con la que lo usa); igual que una línea del plan, no se duplica
+  var mios = lista().filter(function (x) { return !x.borrado && !enCarro["m:" + x.id]; });
+  Dp().conLoMio(F ? F.items : [], mios, E.Rs, E.CB, E.o).forEach(function (it) { items.push(it); });
   return { items: items, carro: carro, F: F, n: items.length };
 }
 // la proxima ida al super (opcional; la de un dia que ya paso no cuenta)
@@ -1049,6 +1104,8 @@ function filaCompra(it, o) {
   tk.addEventListener("click", function () {       // al carro: ya esta en casa (con la cantidad de la receta, hasta Terminar compra)
     apunta({ tipo: "compra", items: [conSuCant(it)], zona: Dp().zonaPara(it.ver), lista: it.k, pide: it.cant || "" });
     if (it.mio) deLista(it.id);
+    if (it.mioId) deLista(it.mioId);                // lo que apuntaste igual que esta línea del plan
+
     pinta();
   });
   li.appendChild(tk);
@@ -1068,10 +1125,33 @@ function filaCompra(it, o) {
     li.appendChild(q);
   }
   if (ORIGEN === it.k) {                            // un toque mas adentro: de que platos sale y la cuenta
-    var lineas = it.mio ? ["Lo apuntaste tú: no sale de ninguna comida."] : Dp().origenDe(it, o.hoy);
-    li.appendChild(el("div", "cocOrigen", lineas.map(function (t, i) { return "<p" + (i === lineas.length - 1 && !it.mio ? ' class="suma"' : "") + ">" + esc(t) + "</p>"; }).join("")));
+    var lineas = Dp().origenDe(it, o.hoy), suma = !it.mio && lineas.length > (it.lineas || []).length;
+    if (it.mio) lineas.push(it.asignada === "uid" ? "Lo apuntaste tú para esta comida." : it.asignada ? "Lo apuntaste tú: coincide con lo que pide esta comida." : "Lo apuntaste tú: aún no va con ninguna comida.");
+    else if (it.mioId) lineas.push("También lo apuntaste tú: va en esta línea.");
+    var org = el("div", "cocOrigen", lineas.map(function (t, i) { return "<p" + (suma && i === (it.lineas || []).length ? ' class="suma"' : "") + ">" + esc(t) + "</p>"; }).join(""));
+    if (it.mio && it.asignada !== "auto") org.appendChild(eligeComida(it, o));
+    li.appendChild(org);
   }
   return li;
+}
+// v2.57: para qué comida es lo apuntado a mano (las que quedan) o sin asignar
+function eligeComida(it, o) {
+  var E = estado(CTX && CTX.dia || []), Q = Dp().quedan(E.Rs, E.CB, E.o), w = el("div", "cocElige");
+  w.appendChild(el("p", "cocEligeT", Q.length ? "¿Para qué comida?" : "No quedan comidas en el plan: se queda sin día."));
+  var actual = it.asignada === "uid" && it.para && it.para[0] ? it.para[0].uid : null;
+  Q.slice(0, 8).concat([null]).forEach(function (R) {
+    if (!R && !Q.length) return;
+    var b = el("button", "", esc(R ? Dp().usoTxt(R, o.hoy) : "Sin asignar")); b.type = "button";
+    b.setAttribute("aria-pressed", String((R ? R.uid : null) === actual));
+    b.addEventListener("click", function () {
+      asignaLista(it.id, R ? R.uid : null);
+      aviso(R ? "Va con " + Dp().usoTxt(R, o.hoy) + "." : "Sin asignar: sale como «Sin día».");
+      pinta();
+    });
+    w.appendChild(b);
+  });
+  if (Q.length > 8) w.appendChild(el("p", "cocEligeT", "Y " + (Q.length - 8) + " más adelante."));
+  return w;
 }
 function compra(E, LC) {
   var s = el("section", "cocSec cocComprar"), n = LC.items.length, F = LC.F, o = E.o;
@@ -1531,6 +1611,7 @@ function hojaItem(x) {
     m.addEventListener("click", function () { apunta({ tipo: "hay", items: [x.nombre] }); TOCADO = null; pinta(); });
     h.appendChild(m);
   }
+  h.appendChild(usosCasa(x));
   // cuanto queda ahora (lo que digas es lo que hay)
   h.appendChild(formCant("cocCantIt", x.c ? "Cuánto queda (ahora " + Rc().cantTxt(x.c) + ")" : "Cuánto queda (p. ej. 200 g)", function (q) {
     apunta({ tipo: "hay", items: [conCant(q, x.nombre)] }); TOCADO = null; aviso("Apuntado: " + conCant(q, x.nombre) + ".");
@@ -1554,6 +1635,18 @@ function hojaItem(x) {
   c.addEventListener("click", function () { TOCADO = null; pinta(); });
   fila.appendChild(a); fila.appendChild(l); fila.appendChild(c); h.appendChild(fila);
   return h;
+}
+// v2.57: en qué comidas y días se usa lo de casa ("jue 08/10 · Tupper curry · 200 g")
+function usosCasa(x) {
+  var w = el("div", "cocUsos"), L = [];
+  try { var E = estado(CTX && CTX.dia || []); L = Dp().usosDe(x.g || x.nombre, E.Rs, E.CB, E.o); var hoy = E.o.hoy; }
+  catch (e) { w.appendChild(el("p", "cocUsosV", "No se ha podido mirar en qué comidas se usa.")); return w; }
+  if (!L.length) { w.appendChild(el("p", "cocUsosV", "Ninguna de las comidas que quedan lo usa.")); return w; }
+  w.appendChild(el("p", "cocUsosT", "Se usa en"));
+  var ul = w.appendChild(el("ul"));
+  L.slice(0, 5).forEach(function (l) { ul.appendChild(el("li", "", '<span>' + esc(Dp().usoTxt(l, hoy)) + '</span>' + (l.c ? '<em>' + esc(Rc().cantTxt(l.c)) + '</em>' : ""))); });
+  if (L.length > 5) w.appendChild(el("p", "cocUsosV", "Y " + (L.length - 5) + " más."));
+  return w;
 }
 // Recuento: todo lo que hay, dictado o pegado, por zonas. Pasa a ser el punto de partida.
 function recuento(s, E) {

@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.57.0] - 2026-10-05
+
+### Añadido
+
+- Cocina: lo de Comprar y Casa dice en qué comidas y días se usa; lo apuntado a mano va con la comida que lo pide (o con la que elijas, o sin día) sin duplicar la línea del plan; en el paso a paso cada ingrediente abre su ficha de casa (si basta para la receta) con «Añadir a la compra», y se vuelve al paso con los relojes y carriles como estaban
+
 ## [2.56.2] - 2026-10-05
 
 ### Corregido
@@ -778,6 +784,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.57.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.0
 [2.56.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.2
 [2.56.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.1
 [2.56.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.56.0
