@@ -925,6 +925,7 @@ function ctxModo(base) {
       if (!info || info.guia) return;
       if (info.gastado && info.gastado.length) apunta({ tipo: "gasto", uid: info.uid || null, de: info.titulo, items: info.gastado });
       else if (info.uid) apunta({ tipo: "hecho", uid: info.uid });
+      if (info.comido && info.R) { try { apuntaComido(info.R); } catch (e) {} }
     }
   };
 }
@@ -1740,8 +1741,8 @@ function nutri(E, LC) {
   if (NPERFIL || !perfil) s.appendChild(hojaPerfil(perfil, !perfil));
   if (NSEMANA && perfil) s.appendChild(hojaSemana(fecha, semanas, perfil, tipo));
   // el dia: planificado (calendario) + registrado (tu)
-  var comidas = E.Rs.filter(function (R) { return R.fecha === fecha && R.tipo === "comida" && Dp().estadoComida(R, E.CB, o) !== "saltada"; });
   var regs = registro().filter(function (x) { return x.fecha === fecha; });
+  var comidas = E.Rs.filter(function (R) { return R.fecha === fecha && R.tipo === "comida" && Dp().estadoComida(R, E.CB, o) !== "saltada" && !comidoDe(R, regs); });
   var SPd = suplementos().map(function (sp) { return N.deSuplemento(sp, aliDe(sp.nombre), tipo || "gimnasio"); }).filter(function (x) { return x.tomas > 0 || x.sinFicha; });
   var D = N.dia(comidas, regs, function (n) { return aliDe(n); }, SPd);
   s.appendChild(el("p", "ntQue", '<b>Planificado</b> sale del calendario (' + comidas.length + (comidas.length === 1 ? " comida" : " comidas") + '). <b>Registrado</b> es lo que apuntas tú (' + regs.length +
@@ -1779,7 +1780,7 @@ function nutri(E, LC) {
 function fuentesNu(E) {
   var N = Nu(), o = E.o;
   return {
-    comidas: function (f) { return E.Rs.filter(function (R) { return R.fecha === f && R.tipo === "comida" && Dp().estadoComida(R, E.CB, o) !== "saltada"; }); },
+    comidas: function (f) { var regs = registro().filter(function (x) { return x.fecha === f; }); return E.Rs.filter(function (R) { return R.fecha === f && R.tipo === "comida" && Dp().estadoComida(R, E.CB, o) !== "saltada" && !comidoDe(R, regs); }); },
     registro: function (f) { return registro().filter(function (x) { return x.fecha === f; }); },
     supl: function (f, tipo) { return suplementos().map(function (sp) { return N.deSuplemento(sp, aliDe(sp.nombre), tipo || "gimnasio"); }).filter(function (x) { return x.tomas > 0 || x.sinFicha; }); },
     aliDe: function (n) { return aliDe(n); }, perfil: lee(K_PERFIL, null), semanas: lee(K_SEMANAS, {}), tipo: CTX.tipoDia || null
@@ -2148,6 +2149,21 @@ function formSupl(sp) {
     aviso("Guardado: " + x.nombre + "."); pinta();
   });
   return f;
+}
+/* v2.59 · lo que cocinas en el paso a paso y te comes, a Nutrición: 1 ración de esa comida en su día.
+   Con sus nutrientes de la tabla y, si la receta dice POR RACIÓN, sus kcal y proteína. Esa comida deja de
+   contar como Planificado ese día (va en Registrado): no se cuenta dos veces. Se borra como cualquier otro. */
+function comidoDe(R, regs) { return !!(R && R.uid && (regs || registro()).some(function (x) { return x.uid === R.uid && x.fecha === R.fecha; })); }
+function apuntaComido(R) {
+  var N = Nu(), x = N.deComida(R, function (n) { return aliDe(n); }), n = {}, k, pr = R.porRacion || {};
+  for (k in x.n) n[k] = x.n[k];
+  if (pr.kcal != null) n.kcal = pr.kcal;
+  if (pr.prot != null) n.prot = pr.prot;
+  var fecha = R.fecha || new Date().toISOString().slice(0, 10);
+  var L = registro().filter(function (y) { return !(y.uid === R.uid && y.fecha === fecha); });
+  L.push({ id: nuevoId(), t: Date.now(), fecha: fecha, txt: (R.titulo || "Comida") + " · 1 ración", uid: R.uid || null, deComida: true,
+           n: n, sinDatos: x.sinDatos || [], estimado: false, micros: true });
+  guarda(K_REG, L.slice(-1500));
 }
 function apuntaReg(x) { x.id = nuevoId(); x.t = Date.now(); var L = registro(); L.push(x); guarda(K_REG, L.slice(-1500)); pinta(); }
 // tus datos: solo en este movil

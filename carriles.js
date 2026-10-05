@@ -47,9 +47,16 @@ function modelo(R) {
     (porCarril[T.carril] = porCarril[T.carril] || []).push(T);
     tareas.push(T);
   });
+  // v2.59: una receta v3 trae sus dependencias calculadas (receta.js, dependencias): por ingrediente
+  var conDeps = pasos.some(function (p) { return p.deps; });
+  if (conDeps) {
+    var idDe = {}; tareas.forEach(function (T) { idDe[T.k] = T.id; });
+    tareas.forEach(function (T) { T.tras = (pasos[T.k].deps || []).map(function (k) { return idDe[k]; }).filter(Boolean); T.trasCarril = []; });
+    Object.keys(porCarril).forEach(function (c) { ult[c] = porCarril[c][porCarril[c].length - 1]; });
+  }
   // dentro de un carril, en orden; "(tras SALSA)" espera al ultimo paso de SALSA. Lo que va detras
   // de algo que no espera (escurrir la pasta) tampoco espera
-  Object.keys(porCarril).forEach(function (c) {
+  if (!conDeps) Object.keys(porCarril).forEach(function (c) {
     porCarril[c].forEach(function (T, i) {
       if (!i) return;
       var A = porCarril[c][i - 1];
@@ -64,7 +71,7 @@ function modelo(R) {
   });
   // AL JUNTAR: su primer paso espera a todos los carriles
   var U = porCarril.union || [];
-  if (U.length) lanes.forEach(function (c) { if (ult[c.id]) U[0].tras.push(ult[c.id].id); });
+  if (U.length && !conDeps) lanes.forEach(function (c) { if (ult[c.id]) U[0].tras.push(ult[c.id].id); });
   // un ciclo de "(tras ...)" no se puede cocinar: se quita lo que lo cierra
   var estado = {}, porId = {};
   tareas.forEach(function (T) { porId[T.id] = T; });
@@ -112,6 +119,55 @@ function planifica(M, cocina, fijos, desde) {
     if (Q.total > P0.total + 60) break;          // retrasar no puede alargar la comida
     P = Q;
   }
+  return empuja(M, cocina, P, fijos, desde);
+}
+/* v2.59 · lo que no espera (al fuego, la pasta, el arroz del micro) se empuja hacia delante, de una
+   en una y empezando por lo último, hasta acabar justo cuando lo usa el paso siguiente, si las manos, los
+   aparatos y los fuegos lo permiten. Nunca alarga la comida: solo mueve dentro del hueco que hay. */
+function empuja(M, cocina, P, fijos, desde) {
+  var T = M.tareas, sig = {}, ini = P.ini, fin = P.fin;
+  T.forEach(function (x) { x.tras.forEach(function (d) { (sig[d] = sig[d] || []).push(x.id); }); });
+  function manosOk(x, a) {
+    var b = a + Math.min(x.manos, x.dur);
+    return !T.some(function (y) { return y.id !== x.id && y.manos > 0 && ini[y.id] < b && a < ini[y.id] + Math.min(y.manos, fin[y.id] - ini[y.id]); });
+  }
+  function aparatoOk(x, a) {
+    if (!x.aparato) return true;
+    return T.filter(function (y) { return y.id !== x.id && y.aparato === x.aparato && ini[y.id] < a + x.dur && a < fin[y.id]; }).length < capacidad(cocina, x.aparato);
+  }
+  function fuegosOk(x, a) {
+    if (!x.fuego) return true;
+    var lanes = {}, i0 = ini[x.id], f0 = fin[x.id]; ini[x.id] = a; fin[x.id] = a + x.dur;
+    var ok = true;
+    // cuantos carriles tienen fuego en cada momento en que cambia algo
+    var cortes = T.filter(function (y) { return y.fuego; }).map(function (y) { return ini[y.id]; });
+    cortes.forEach(function (c) {
+      lanes = {};
+      T.forEach(function (y) {
+        if (!y.sujeta_fuego) return;
+        var L = T.filter(function (z) { return z.carril === y.carril && z.sujeta_fuego; });
+        var a0 = Math.min.apply(null, L.map(function (z) { return ini[z.id]; })), b0 = Math.max.apply(null, L.map(function (z) { return fin[z.id]; }));
+        if (a0 <= c && c < b0) lanes[y.carril] = 1;
+      });
+      if (Object.keys(lanes).length > capacidad(cocina, "fuegos")) ok = false;
+    });
+    ini[x.id] = i0; fin[x.id] = f0;
+    return ok;
+  }
+  for (var vuelta = 0; vuelta < 4; vuelta++) {
+    var movido = false;
+    T.slice().sort(function (a, b) { return fin[b.id] - fin[a.id]; }).forEach(function (x) {
+      if (x.aguanta == null || fijos[x.id] || !sig[x.id]) return;
+      var lim = Math.min.apply(null, sig[x.id].map(function (s) { return ini[s]; }));
+      if (lim - fin[x.id] <= x.aguanta) return;
+      var desdeX = Math.max(desde, Math.max.apply(null, [0].concat(x.tras.map(function (d) { return fin[d]; }))));
+      // el hueco: lo mas tarde posible, bajando de 5 en 5 s si algo no cabe
+      for (var a = Math.floor((lim - x.dur) / PASO_S) * PASO_S; a > ini[x.id] && a >= desdeX; a -= PASO_S) {
+        if (manosOk(x, a) && aparatoOk(x, a) && fuegosOk(x, a)) { ini[x.id] = a; fin[x.id] = a + x.dur; movido = true; break; }
+      }
+    });
+    if (!movido) break;
+  }
   return P;
 }
 function pase(M, cocina, fijos, desde, rel) {
@@ -155,14 +211,34 @@ function pase(M, cocina, fijos, desde, rel) {
   }
   // v2.58: lo que solo pide un momento de manos y luego espera (poner el agua a hervir) va antes que
   // una tarea larga de manos: así la espera corre mientras cortas
-  function arranca(x) { return x.manos <= 60 && x.dur - x.manos >= 120 && !(rel[x.id] > 0) ? 1 : 0; }
+  function arranca(x) { return x.manos <= 60 && x.dur - x.manos >= 120 && x.aguanta == null && !(rel[x.id] > 0) ? 1 : 0; }
+  // v2.59: lo que no espera (la cebolla al fuego) no empieza si lo siguiente de su mismo recipiente aún no
+  // tiene listo lo que le falta (el pimiento sin cortar): se quemaría esperando
+  function aTiempo(x, t) {
+    if (x.aguanta == null || !sig[x.id]) return true;
+    return sig[x.id].every(function (sid) {
+      var y = porId[sid]; if (y.carril !== x.carril || y.n !== x.n + 1) return true;   // solo el siguiente de su recipiente
+      return y.tras.every(function (d) { return d === x.id || (puesto[d] && fin[d] <= t + x.dur + x.aguanta); });
+    });
+  }
   function pon(x, a) { ini[x.id] = a; fin[x.id] = a + x.dur; puesto[x.id] = true; }
 
   var t = Math.ceil(desde / PASO_S) * PASO_S, quedan = T.filter(function (x) { return !puesto[x.id]; });
   while (quedan.length && t < desde + MAX_S) {
     var listas = quedan.filter(function (x) { return (rel[x.id] || 0) <= t && x.tras.every(function (d) { return puesto[d] && fin[d] <= t; }); })
       .sort(function (a, b) { return arranca(b) - arranca(a) || resto[b.id] - resto[a.id] || a.manos - b.manos || T.indexOf(a) - T.indexOf(b); });
-    listas.forEach(function (x) { if (!puesto[x.id] && cabe(x, t)) pon(x, t); });
+    // v2.59: no te pongas con algo largo de manos si lo que más corre está a punto de poder hacerse
+    var pronto = quedan.filter(function (y) { return listas.indexOf(y) < 0 && y.tras.every(function (d) { return puesto[d]; }); })
+      .map(function (y) { return { y: y, r: Math.max(rel[y.id] || 0, Math.max.apply(null, [0].concat(y.tras.map(function (d) { return fin[d]; })))) }; });
+    listas.forEach(function (x) {
+      if (puesto[x.id] || !cabe(x, t) || !aTiempo(x, t)) return;
+      // ...o si lo que espera detrás de algo que no espera (la cebolla ya al fuego) llegaría tarde
+      if (x.manos > 30 && pronto.some(function (o) {
+        var urge = o.y.tras.some(function (d) { return porId[d].aguanta != null && porId[d].carril === o.y.carril; });
+        return o.r > t && o.r < t + x.manos - 15 && (urge || resto[o.y.id] > resto[x.id]);
+      })) return;
+      pon(x, t);
+    });
     quedan = quedan.filter(function (x) { return !puesto[x.id]; });
     t += PASO_S;
   }

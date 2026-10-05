@@ -13,6 +13,19 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.59.0] - 2026-10-05
+
+### Añadido
+
+- Cocina · el plan sale de la receta, no del orden del texto: cada paso espera solo a lo que usa (el pimiento se corta mientras se dora el pollo, no antes de poner el aceite); en un recipiente, en su orden; lo de PREPARAR, cuando hace falta. Las recetas v3 sin carriles escritos se planifican igual (un carril por recipiente)
+- Cocina · lo que está al fuego no espera: acaba justo cuando lo necesita lo siguiente (el arroz del micro sale al servir, el aceite no humea esperando) y no empieza si a lo siguiente le falta algo por cortar
+- Cocina · pantalla de cocinar nueva: Ahora en grande, En marcha (los relojes, compactos) y El plan entero con hora, recipiente, tiempo y estado; tocar un paso abre su ficha (ingredientes con cantidad, fuego, señal, qué va antes) con Ya lo he hecho, Saltar o Deshacer
+- Nutrición · al terminar una comida en el paso a paso, «Apuntar 1 ración en Nutrición» (activado): sus kcal y proteína (POR RACIÓN o la tabla) y los nutrientes de la tabla van a Registrado de ese día, y esa comida deja de contar como Planificado
+
+### Corregido
+
+- Carriles: con lo hecho fuera de orden el plan podía bloquearse; avisos de Hecho en una línea
+
 ## [2.58.0] - 2026-10-05
 
 ### Añadido
@@ -808,6 +821,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.59.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.59.0
 [2.58.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.58.0
 [2.57.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.1
 [2.57.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.0

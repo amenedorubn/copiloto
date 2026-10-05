@@ -54,6 +54,26 @@ aparte, y así nunca se desincroniza).
    Las segundas formas («, o lo que ponga el envase», «o 2-3 min al micro») van en `NOTAS` o en `PLAN B`.
 9. Los consejos, en `NOTAS`, nunca detrás de un paso.
 
+### Cómo planifica Copiloto (v2.59)
+
+El orden **no lo pone el texto**: lo ponen los ingredientes. Copiloto lee qué usa cada paso y deduce lo que
+tiene que ir antes:
+
+- un paso espera solo al último paso anterior que tocó **el mismo ingrediente** (cortar el pimiento va antes de
+  echarlo, no antes de poner el pollo al fuego); la sal, el aceite y el agua no cuentan;
+- en un mismo recipiente (sartén, olla, cazo, micro, air fryer, horno) los pasos van en el orden escrito;
+- lo de `PREPARAR` se hace **cuando hace falta**, y si se puede mientras algo se cuece;
+- lo que está **al fuego no espera**: se pone para acabar justo cuando lo necesita el paso siguiente (el aceite no
+  humea esperando, el arroz del micro sale caliente al servir) y no empieza si lo siguiente no tiene listo lo suyo;
+- `AL JUNTAR` y los pasos de servir esperan a todo; `AL TERMINAR` va detrás.
+
+Sin apartados `CARRIL`, una receta v3 se planifica igual: un carril por recipiente, `PREPARAR` y «Montar»
+(lo de manos). `(tras PREPARAR)` ya no hace falta.
+
+En el paso a paso se ve **todo el plan** con sus horas; tocar un paso lo abre entero y permite hacerlo antes,
+saltarlo o deshacerlo. Al terminar, **1 ración se apunta en Nutrición** de ese día (con `POR RACIÓN` o la tabla) y
+esa comida deja de contar como planificada para no sumarla dos veces.
+
 ### Carriles (varias cosas a la vez)
 
 Igual que antes (ver «Recetas con carriles» más abajo): `CARRIL NOMBRE (sartén)`, pasos numerados y marcas
@@ -108,7 +128,7 @@ PREPARAR
 3. Corta @pimiento tricolor{150 g}(en tiras finas), ~{2 min} (manos)
 
 CARRIL POLLO (sartén)
-1. Calienta @AOVE{1 cda} en la #sartén a fuego fuerte, ~{2 min} (tras PREPARAR) → humea un poco
+1. Calienta @AOVE{1 cda} en la #sartén a fuego fuerte, ~{2 min} → humea un poco
 2. Echa la primera mitad, @&pollo{250 g}, en una sola capa, ~{5 min}, vuelta a los 2 → dorado por fuera
 3. Pasa @&pollo{250 g} dorado a un #plato, ~{20 s} (manos)
 …

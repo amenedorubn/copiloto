@@ -67,11 +67,18 @@ test("con carriles, PREPARAR es un carril y AL TERMINAR va detrás de juntar (an
   assert.ok(R.pasos.some((p) => p.tipo === "despues" && p.carril === "union" && /enfriar/.test(p.detalle)));
   const M = Carriles.modelo(R), P = Carriles.planifica(M);
   assert.equal(M.tareas.length, R.pasos.filter((p) => !p.auto).length, "todas las tareas en el plan");
-  // "(tras PREPARAR)" ya vale; el huevo, al fuego mientras cortas
-  const sarten = M.tareas.find((x) => x.carril === "pollo" && x.n === 1), ultPrep = M.tareas.filter((x) => x.carril === "preparar").pop();
-  assert.ok(P.ini[sarten.id] >= P.fin[ultPrep.id]);
-  const huevo = M.tareas.find((x) => x.carril === "huevo" && x.n === 1);
-  assert.equal(P.ini[huevo.id], 0);
+  // v2.59: el orden lo ponen los ingredientes. El pimiento se corta con el pollo ya en la sartén
+  // (no antes de poner el aceite), y se echa después de cortarlo
+  const t = (re) => M.tareas.find((x) => re.test(x.txt));
+  const cortaPim = t(/^Corta 150 g de pimiento/), echaPollo = t(/^Echa la primera mitad/), echaPim = t(/^Echa las tiras/), aceite = t(/^Calienta 1 cda de AOVE/);
+  assert.ok(P.ini[cortaPim.id] >= P.ini[echaPollo.id], "el pimiento se corta mientras se dora el pollo");
+  assert.ok(P.fin[cortaPim.id] <= P.ini[echaPim.id], "y antes de echarlo");
+  assert.ok(P.ini[echaPollo.id] - P.fin[aceite.id] <= 60, "el aceite no espera humeando");
+  // lo que no espera (el arroz del micro) acaba justo cuando se sirve
+  const arroz = t(/^Calienta 1 bolsa de arroz/), sirve = t(/^Sirve tu plato/);
+  assert.ok(P.ini[sirve.id] - P.fin[arroz.id] <= 60, "el arroz, caliente al servir");
+  // mejor que todo en fila
+  assert.ok(P.total < P.lineal - 15 * 60);
   // el texto del carril es el paso entero, no el titulo cortado en ":"
   assert.match(M.tareas.find((x) => x.carril === "union" && x.n === 1).txt, /arroz de microondas con la mitad del curry/);
 });
@@ -162,5 +169,22 @@ test("las recetas migradas en docs/recetas pasan todas el linter", async () => {
   L.forEach((f) => {
     const r = revisa(eventoDeTxt(readFileSync(new URL(f, dir), "utf8")));
     if (r.R.tipo === "comida") assert.deepEqual(r.errores, [], f);
+  });
+});
+test("v2.59: una receta sin carriles escritos se planifica igual: cada recipiente, su carril; las lentejas no se queman", () => {
+  const des = eventoDeTxt(readFileSync(new URL("../docs/recetas/2026-10-05-0845-desayuno.txt", import.meta.url), "utf8"));
+  const R = Receta.leer(des);
+  assert.equal(R.sintetico, true);
+  assert.deepEqual(R.carriles.map((c) => c.id).sort(), ["montar", "preparar", "sarten"]);
+  const M = Carriles.modelo(R), P = Carriles.planifica(M);
+  const tuesta = M.tareas.find((x) => /^Tuesta/.test(x.txt)), monta = M.tareas.find((x) => /^Pon sobre el pan/.test(x.txt));
+  assert.ok(P.fin[tuesta.id] <= P.ini[monta.id], "el pan se monta después de tostarlo");
+  assert.ok(P.total < P.lineal, "a la vez se tarda menos que en fila");
+  // lentejas: la cebolla al fuego no espera a que peles el boniato
+  const L = Receta.leer(eventoDeTxt(readFileSync(new URL("../docs/recetas/2026-10-06-1300-lentejas.txt", import.meta.url), "utf8")));
+  const ML = Carriles.modelo(L), PL = Carriles.planifica(ML);
+  ML.tareas.filter((x) => x.aguanta != null && x.carril === "lentejas").forEach((x) => {
+    const y = ML.tareas.find((z) => z.carril === x.carril && z.n === x.n + 1);
+    if (y) assert.ok(PL.ini[y.id] - PL.fin[x.id] <= 90, x.txt + " espera " + (PL.ini[y.id] - PL.fin[x.id]) + " s al fuego");
   });
 });

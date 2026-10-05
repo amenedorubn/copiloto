@@ -587,7 +587,7 @@ function planCarril(M0, S, ahora, cocina) {
   var hechas = C ? C.hechas : {};
   // v2.58: si hiciste algo fuera de orden, lo que quedaba antes en su carril sigue yendo antes que lo de despues
   var MM = M0.carr, cambia = false, T2 = MM.tareas.map(function (x) {
-    if (hechas[x.id]) return x;
+    if (hechas[x.id] || x.carril === "preparar" || x.carril === "montar") return x;
     var antes = MM.tareas.filter(function (y) { return y.carril === x.carril && y.n < x.n && !hechas[y.id] && x.tras.indexOf(y.id) < 0; }).map(function (y) { return y.id; });
     if (!antes.length) return x;
     cambia = true; var c = {}, k; for (k in x) c[k] = x[k]; c.tras = x.tras.concat(antes); return c;
@@ -627,6 +627,16 @@ function saltaCarril(S, M0, tid, ahora) {
   S.hechos[x.k] = 1; S.t = ahora;
   return true;
 }
+// v2.59 · deshacer una tarea hecha o saltada: vuelve a quedar por hacer, sin su reloj
+function deshazCarril(S, M0, tid, ahora) {
+  var x = tareaDe(M0, tid); if (!x || !S.carr) return false;
+  delete S.carr.hechas[tid]; delete S.carr.empezo[tid];
+  if (S.carr.saltadas) delete S.carr.saltadas[tid];
+  if (S.carr.fin) delete S.carr.fin[tid];
+  S.timers = S.timers.filter(function (T) { return T.paso !== x.k; });
+  delete S.hechos[x.k]; S.t = ahora;
+  return true;
+}
 // las tareas que quedan, en el orden del plan (para hacer una fuera de orden)
 function pendientesCarril(M0, S, pl) {
   var h = (S.carr && S.carr.hechas) || {};
@@ -641,7 +651,7 @@ function todoHecho(M0, S, ahora) {
 var API = {
   // puras
   miCocina: miCocina, fijosDe: fijosDe, planCarril: planCarril, hechaCarril: hechaCarril, todoHecho: todoHecho,
-  saltaCarril: saltaCarril, pendientesCarril: pendientesCarril, marcaFuera: marcaFuera, escalaQ: escalaQ,
+  saltaCarril: saltaCarril, deshazCarril: deshazCarril, pendientesCarril: pendientesCarril, marcaFuera: marcaFuera, escalaQ: escalaQ,
   idDe: idDe, normaliza: normaliza, numDe: numDe, totalNum: totalNum, nomPaso: nomPaso, nombreReloj: nombreReloj,
   nuevoEstado: nuevoEstado, restante: restante, relojDe: relojDe, empieza: empieza, pausa: pausa, masUno: masUno, para: para,
   sonando: sonando, revisa: revisa, siguiente: siguiente, hecho: hecho, anterior: anterior, seguirDesde: seguirDesde,
@@ -850,7 +860,7 @@ var CSS =
   R0 + ".cpAlarma button,#cocPasoAviso button{height:52px;border-radius:26px;background:rgba(20,11,4,.16);font-size:16px;font-weight:800;text-align:center}" +
   R0 + ".cpAlarma button:first-child,#cocPasoAviso button:first-child{background:#140b04;color:#fff}" +
   R0 + ".cpToast{position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:6;background:#2b2e34;color:#f4f5f7;border-radius:16px;min-height:56px;padding:6px 6px 6px 16px;display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;line-height:1.3;box-shadow:0 10px 28px rgba(0,0,0,.5);animation:cpEntra .2s ease-out}" +
-  R0 + ".cpToast span{flex:1;min-width:0}" +
+  R0 + ".cpToast span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
   R0 + ".cpToast.aviso{background:var(--ca);color:#140b04;font-size:18px;font-weight:800}" + R0 + ".cpToast.aviso svg{width:22px;height:22px}" +
   R0 + ".cpToast button{height:48px;padding:0 14px;border-radius:12px;color:var(--ca);font-size:16px;font-weight:800}" +
   /* hojas */
@@ -971,6 +981,28 @@ var CSS =
   R0 + ".ccLey i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}" +
   R0 + ".ccCap{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:28px 0 6px}" +
   R0 + ".ccCap.ac{color:var(--ca)}" +
+  // v2.59: la pantalla de cocinar: Ahora, En marcha y El plan entero
+  R0 + ".ccLin{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:2px;font-size:14px;font-weight:800}" + R0 + ".ccLin span{color:var(--mu);font-weight:700}" +
+  R0 + ".ccBarraT{height:4px;border-radius:2px;background:var(--sf2);margin:8px 0 0}" + R0 + ".ccBarraT i{display:block;height:100%;border-radius:2px;background:var(--ca)}" +
+  R0 + ".ccAhora{margin-top:14px;padding:14px 16px 16px;border-radius:22px;background:var(--sf)}" + R0 + ".ccAhora.ya{box-shadow:inset 0 0 0 2px var(--ca)}" +
+  R0 + ".ccAhora .ccCap{margin:0 0 8px;display:flex;align-items:center;gap:6px}" + R0 + ".ccCap svg{width:16px;height:16px;flex:none}" +
+  R0 + ".ccPlan{background:var(--sf);border-radius:18px;padding:2px 12px}" +
+  R0 + ".ccPl{width:100%;display:grid;grid-template-columns:44px 20px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:60px;padding:10px 0;border-top:1px solid var(--ln);text-align:left}" +
+  R0 + ".ccPlan>:first-child{border-top:0}" + R0 + ".ccPl .h{font-size:14px;font-weight:800;color:var(--mu);font-variant-numeric:tabular-nums}" +
+  R0 + ".ccPl>svg{width:20px;height:20px;color:var(--mu)}" + R0 + ".ccPl .t b{display:block;font-size:16px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}" +
+  R0 + ".ccPl .t small{display:block;font-size:13px;font-weight:600;color:var(--mu);margin-top:2px}" +
+  R0 + ".ccPl em{font-style:normal;font-size:14px;font-weight:800;color:var(--mu);white-space:nowrap}" + R0 + ".ccPl em svg{width:18px;height:18px}" +
+  R0 + ".ccPl.ahora{box-shadow:inset 3px 0 0 var(--ca);padding-left:9px;margin-left:-12px;width:calc(100% + 12px)}" + R0 + ".ccPl.ahora em{color:var(--ca)}" +
+  R0 + ".ccPl.marcha em b{color:var(--ca);font-size:16px}" + R0 + ".ccPl.marcha>svg{color:var(--ca)}" +
+  R0 + ".ccPl.ya .t b," + R0 + ".ccPl.saltada .t b{color:var(--mu);text-decoration:line-through;text-decoration-thickness:1.5px}" +
+  R0 + ".ccPlVer{width:100%;min-height:48px;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--mu);text-align:left}" +
+  R0 + ".ccPlVer svg{width:18px;height:18px}" + R0 + ".ccPlVer span{flex:1}" + R0 + ".ccPlVer em{font-style:normal;color:#f4f5f7;font-weight:800}" +
+  R0 + ".ccHojaTxt{font-size:22px;font-weight:800;line-height:1.25;margin:4px 0 4px;overflow-wrap:break-word}" +
+  R0 + ".cpHojaCab h3{display:flex;align-items:center;gap:8px}" + R0 + ".cpHojaCab h3 svg{width:22px;height:22px;flex:none;color:var(--ca)}" +
+  R0 + ".ccChips{display:grid;grid-template-columns:1fr 1fr;gap:8px}" +
+  R0 + ".ccChip{min-height:56px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 12px;border-radius:16px;background:var(--sf2);text-align:left}" +
+  R0 + ".ccChip svg{width:20px;height:20px;color:var(--ca)}" + R0 + ".ccChip span{font-size:14px;font-weight:700;line-height:1.25;color:#dfe2e6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}" +
+  R0 + ".ccChip b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}" + R0 + ".ccChip.listo{box-shadow:inset 0 0 0 2px var(--ca)}" + R0 + ".ccChip.listo b{color:var(--ca);font-size:15px}" +
   R0 + ".ccSub{font-size:17px;line-height:1.5;font-weight:600;color:#dfe2e6;margin-top:2px}" +
   R0 + ".ccProg{display:flex;align-items:center;gap:12px;margin-top:12px}" + R0 + ".ccProg .cpBarra{flex:1;margin:0}" + R0 + ".ccProg .cpBarra i{background:#f4f5f7}" +
   R0 + ".ccProg b{font-size:30px;font-weight:800;letter-spacing:-.02em}" +
@@ -1466,6 +1498,10 @@ function final(ahora) {
   if (rep && rep.taper) h += '<div class="cpPar"><h3>El táper</h3><p>' + negritas(rep.taper) + '</p></div>';
   var corren = V.S.timers.filter(function (T) { return restante(T, ahora) > 0; });
   if (corren.length) h += '<div class="cpPar tip"><h3>Sigue en marcha</h3><p>' + corren.map(function (T) { return esc(T.nombre); }).join(", ") + ': te aviso al acabar.</p></div>';
+  // v2.59: lo comido, a Nutrición (1 ración, con lo que dice la receta o la tabla)
+  var nr = racionNutri(M0);
+  if (nr) h += '<h3 class="cpFinTit">¿Te lo has comido?</h3><ul class="cpChecks"><li><button class="cpCheck cpGasto" data-a="comido" aria-pressed="' + !!V.comido + '">' + caja(V.comido) +
+    '<span class="cpTx">Apuntar 1 ración en Nutrición' + (M0.R.fecha ? ' del ' + esc(M0.R.fecha.slice(8) + "/" + M0.R.fecha.slice(5, 7)) : "") + '<small>' + esc(nr.txt) + (V.prueba ? " · simulación: no se apunta" : "") + '</small></span></button></li></ul>';
   if (V.gasto && V.gasto.length) {
     h += '<h3 class="cpFinTit">¿Qué has gastado?</h3><p class="cpFinSub">Quita lo que no hayas usado.</p><ul class="cpChecks">' +
       V.gasto.map(function (g, j) { return '<li><button class="cpCheck cpGasto" data-a="gasto" data-g="' + j + '" aria-pressed="' + !!g.on + '">' + caja(g.on) + '<span class="cpTx">' + esc(g.txt) + '</span></button></li>'; }).join("") + '</ul>';
@@ -1473,8 +1509,8 @@ function final(ahora) {
   h += '</div></div>';
   var n = V.gasto ? V.gasto.filter(function (g) { return g.on; }).length : 0;
   h += V.gasto && V.gasto.length
-    ? '<div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="apunta"' + (n ? "" : " disabled") + '>Apuntar lo gastado</button><button class="cpAnt" data-a="sinApuntar">Salir sin apuntar</button></div>'
-    : '<div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="sinApuntar">' + (V.prueba ? "Terminar" : "Salir") + '</button></div>';
+    ? '<div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="apunta"' + (n ? "" : " disabled") + '>Apuntar' + (nr && V.comido ? " todo" : " lo gastado") + '</button><button class="cpAnt" data-a="sinApuntar">' + (nr && V.comido ? "Solo la comida, sin lo gastado" : "Salir sin apuntar") + '</button></div>'
+    : '<div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="sinApuntar">' + (V.prueba ? "Terminar" : nr && V.comido ? "Apuntar y salir" : "Salir") + '</button></div>';
   return h;
 }
 function alarma(ahora) {
@@ -1507,15 +1543,8 @@ function hoja(ahora) {
       (L.avisos.length ? '<h4 class="cpGrupo">Mejor si lo dice</h4><ul class="cpLintL mu">' + L.avisos.map(function (e) { return '<li><p>' + esc(e.texto) + '</p></li>'; }).join("") + '</ul>' : "") +
       '<p class="cpFiNota">Formato: docs/RECETAS-CALENDARIO.md</p></div></div>';
   }
-  else if (V.hoja === "tareas") {
-    var pend = M0.carr && V.pl ? pendientesCarril(M0, S, V.pl) : [];
-    h += '<div class="cpHoja" role="dialog" aria-label="Tareas que quedan"><div class="cpHojaCab"><div><h3>' + (pend.length ? pend.length + (pend.length === 1 ? " tarea queda" : " tareas quedan") : "No queda nada") +
-      '</h3><small>Hecho: ya lo has hecho. Saltar: ya no hace falta.</small></div>' + x + '</div><div class="cpHojaCuerpo">' +
-      (pend.length ? pend.map(function (y) {
-        return '<div class="ccTarea"><span class="t"><b>' + esc(sinMin(y.txt)) + '</b><small>' + esc(M0.nomCarril[y.carril] || "") + ' · ' + hm(V.pl.base + V.pl.P.ini[y.id] * 1000) + (y.dur ? " · " + fmtMin(y.dur) : "") + '</small></span>' +
-          '<button class="cpAnt" data-a="tSalta" data-t="' + y.id + '">Saltar</button><button class="cpAnt hecha" data-a="tHecho" data-t="' + y.id + '">' + svg("tick") + 'Hecho</button></div>';
-      }).join("") : '<p class="cpFiNota">' + svg("tick") + '<span>Todo está hecho o en marcha.</span></p>') + '</div></div>';
-  }
+  else if (/^t:/.test(V.hoja)) h += hojaTarea(x);
+
   else if (V.hoja === "ing") h += hojaIng(x);
   else if (V.hoja === "cero") {
     var nt = S.timers.length, nh = S.carr ? cuenta(S.carr.hechas) : cuenta(S.hechos);
@@ -1651,93 +1680,135 @@ function hojaCocina(x) {
         '<button class="cpAnt" style="width:48px;height:48px;padding:0" data-a="cocMas" data-k="' + k[0] + '" aria-label="Uno más">+</button></div>';
     }).join("") + '</div><button class="cpCero" data-a="cocDefecto">Volver a lo de siempre</button></div>';
 }
-function planHtml(ahora) {
-  var M0 = V.M0, pl = V.pl, P = pl.P, ex = Ca().explica(M0.carr, P), h = '<div class="cpCuerpo cc">';
-  h += '<p class="ccCap" style="margin-top:4px">Así va a ir · ' + minTxt(pl.mesaS) + ' hasta la mesa' + (pl.total > pl.mesaS + 30 ? ' · luego ' + minTxt(pl.total - pl.mesaS) + ' al terminar' : "") + '</p>' + gantt(pl, false);
-  var fr = ex.map(function (e) {
-    if (e.tipo === "empieza") return "Empieza por " + esc(e.carril.toLowerCase()) + ": " + esc(minus1(sinMin(e.T.txt))) + ".";
-    return esc(mayus1(sinMin(e.T.txt))) + " entra a las " + hm(pl.base + e.ini * 1000) + " para acabar justo cuando se junta todo.";
+/* v2.59 · el plan entero, siempre a la vista: cada tarea con su hora, su recipiente, cuánto dura y cómo va
+   (hecha, en marcha con su reloj, ahora, luego). Tocar una abre su ficha con todo lo del paso y, mientras
+   cocinas, "Ya lo he hecho", "Saltar" o "Deshacer": cualquier tarea, en cualquier orden. */
+function estadoTarea(y, ahora) {
+  var S = V.S, C = S.carr, h = C && C.hechas[y.id];
+  if (!h) return V.pl.m.ahora && V.pl.m.ahora.id === y.id ? "ahora" : "luego";
+  if (C.saltadas && C.saltadas[y.id]) return "saltada";
+  var T = relojDe(S, y.k);
+  return T && restante(T, ahora) > 0 ? "marcha" : "ya";
+}
+function infoTarea(y) {
+  var P = V.M0.pasos[y.k] || {}, d = [V.M0.nomCarril[y.carril] || ""];
+  if (y.dur) d.push(minTxt(y.dur) === "0 min" ? y.dur + " s" : fmtMin(y.dur));
+  if (P.fuego) d.push(P.fuego);
+  return d.filter(Boolean).join(" · ");
+}
+function planLista(ahora, enMarcha) {
+  var M0 = V.M0, pl = V.pl, P = pl.P, L = M0.carr.tareas.slice().sort(function (a, b) { return P.ini[a.id] - P.ini[b.id] || a.k - b.k; });
+  var est = {}, nYa = 0;
+  L.forEach(function (y) { est[y.id] = enMarcha ? estadoTarea(y, ahora) : "luego"; if (est[y.id] === "ya" || est[y.id] === "saltada") nYa++; });
+  var h = '<div class="ccPlan">';
+  if (nYa) h += '<button class="ccPlVer" data-a="verHechas" aria-expanded="' + !!V.verHechas + '">' + svg("tick") + '<span>' + nYa + (nYa === 1 ? " hecha" : " hechas") + '</span><em>' + (V.verHechas ? "Ocultar" : "Ver") + '</em></button>';
+  L.forEach(function (y) {
+    var e = est[y.id]; if ((e === "ya" || e === "saltada") && !V.verHechas) return;
+    var T = e === "marcha" ? relojDe(V.S, y.k) : null;
+    var fin = e === "ya" || e === "saltada" ? (e === "saltada" ? "Saltada" : svg("tick")) : T ? '<b data-r="' + T.id + '">' + fmt(restante(T, ahora)) + '</b>' : e === "ahora" ? "Ahora" : "";
+    h += '<button class="ccPl ' + e + '" data-a="tarea" data-t="' + y.id + '"><span class="h">' + hm(pl.base + P.ini[y.id] * 1000) + '</span>' + svg(icoCarril(y.carril)) +
+      '<span class="t"><b>' + esc(sinMin(y.txt)) + '</b><small>' + esc(infoTarea(y)) + '</small></span><em>' + fin + '</em></button>';
   });
-  h += '<p class="ccTxt">' + fr.join(" ") + '</p>';
-  if (pl.P.lineal > pl.total + 60) h += '<p class="ccTxt mu">En una sola línea serían ' + minTxt(pl.P.lineal) + '.</p>';
-  h += '<button class="ccFila" data-a="hCocina" style="margin-top:12px;border-top:0;background:var(--sf);border-radius:16px;padding:6px 14px">' + svg("cooking-pot") +
-    '<span class="t"><b>Mi cocina</b><small>' + esc(cocinaTxt(V.cocina)) + '</small></span>' + svg("der") + '</button>';
-  // v2.58: lo que la receta no dice bien (el linter; los fallos de carriles van dentro) y las raciones
+  return h + '</div>';
+}
+function planHtml(ahora) {
+  var M0 = V.M0, pl = V.pl, P = pl.P, h = '<div class="cpCuerpo cc">';
+  h += '<p class="ccCap" style="margin-top:4px">Así va a ir · ' + minTxt(pl.mesaS) + ' hasta la mesa</p>' + gantt(pl, false);
+  var prep = M0.carr.tareas.filter(function (x) { return x.carril === "preparar"; }), tp = prep.reduce(function (a, x) { return a + x.dur; }, 0);
+  var frases = [];
+  if (pl.P.lineal > pl.total + 60) frases.push("Haciendo varias cosas a la vez: " + minTxt(pl.mesaS) + " en vez de " + minTxt(pl.P.lineal) + ".");
+  if (prep.length) frases.push("Los cortes y mezclas (" + minTxt(tp) + ") van cuando hacen falta, casi todos mientras algo se cuece.");
+  if (pl.total > pl.mesaS + 30) frases.push("Después de comer, " + minTxt(pl.total - pl.mesaS) + " más (" + minus1(sinMin(M0.carr.tareas.filter(function (x) { return x.despues; })[0].txt).split(/[,:]/)[0]) + ").");
+  if (frases.length) h += '<p class="ccTxt">' + esc(frases.join(" ")) + '</p>';
   var pr = M0.carr.problemas;
   if (M0.lint) h += '<div style="margin-top:12px">' + lintTodo() + '</div>';
   else if (pr.length) h += '<div class="ccAviso" role="alert">' + svg("warning-circle") + '<div>' + pr.map(function (p) { return '<p>' + esc(p.texto) + '</p>'; }).join("") + '</div></div>';
   h += racHtml();
-  var prep = M0.carr.tareas.filter(function (x) { return x.carril === "preparar"; });
-  if (prep.length) h += '<div class="cpSec"><h3>Preparar todo antes de empezar<small>' + fmtMin(prep.reduce(function (a, x) { return a + x.dur; }, 0)) + '</small></h3><ul class="cpPrep">' +
-    prep.map(function (x) { return '<li><span>' + esc(sinMin(x.txt)) + '</span><b>' + fmtMin(x.dur) + '</b></li>'; }).join("") + '</ul></div>';
+  h += '<p class="ccCap">El plan · ' + M0.carr.tareas.length + ' pasos</p>' + planLista(ahora, false);
   var P0 = M0.pasos[0];
-  if (P0 && P0.auto && P0.secciones) h += P0.secciones.map(function (s, si) {
-    var items = s.items || [], hechos = items.filter(function (it, ii) { return V.S.checks["s0-" + si + "-" + ii]; }).length;
+  if (P0 && P0.auto && P0.secciones) h += P0.secciones.filter(function (s) { return s.titulo !== "Corta y prepara" || !prep.length; }).map(function (s) {
+    var si = P0.secciones.indexOf(s), items = s.items || [], hechos = items.filter(function (it, ii) { return V.S.checks["s0-" + si + "-" + ii]; }).length;
     return '<div class="cpSec"><h3>' + esc(s.titulo) + '<small>' + hechos + ' de ' + items.length + '</small></h3><ul class="cpChecks">' +
       items.map(function (it, ii) { return fila("s0-" + si + "-" + ii, itemHtml(it.txt)); }).join("") + '</ul></div>';
   }).join("");
+  h += '<button class="ccFila" data-a="hCocina" style="margin-top:16px;border-top:0;background:var(--sf);border-radius:16px;padding:6px 14px">' + svg("cooking-pot") +
+    '<span class="t"><b>Mi cocina</b><small>' + esc(cocinaTxt(V.cocina)) + '</small></span>' + svg("der") + '</button>';
   h += '</div><div class="cpDock pila">' + toast() + '<button class="cpHecho" data-a="cEmpieza">' + svg("play") + 'Empezar · a la mesa ' + hm(pl.mesa) + '</button></div>';
   return h;
 }
+// lo de un paso (su ficha y la tarjeta de Ahora): ingredientes con cantidad, fuego, señal
+function ingsTarea(Px) {
+  var M0 = V.M0;
+  if (Px && Px.ingPaso && Px.ingPaso.length) return '<ul class="cpUsa ccIngs">' + Px.ingPaso.map(function (y) {
+    if (!M0.ings[y.i]) return "";
+    return '<li><button class="cpIngT solo" data-a="fichaIng" data-i="' + y.i + '" aria-label="' + esc(y.txt) + ': qué hay en casa"><span class="cpTx"><b>' + esc(y.txt) + '</b>' + (y.prep ? '<small>' + esc(y.prep) + '</small>' : "") + '</span><span class="cpIr">' + svg("der") + '</span></button></li>';
+  }).join("") + '</ul>';
+  var iis = (Px && Px.usa || []).filter(function (i) { return M0.ings[i] && !M0.ings[i].basico; });
+  if (!iis.length) return "";
+  return '<h3 class="cpTitS">Usa · cantidad de toda la receta</h3><ul class="cpUsa ccIngs">' + iis.map(function (i) {
+    var I = M0.ings[i];
+    return '<li><button class="cpIngT solo" data-a="fichaIng" data-i="' + i + '" aria-label="' + esc(I.nombre) + ': qué hay en casa">' + ingHtml(I) + '<span class="cpIr">' + svg("der") + '</span></button></li>';
+  }).join("") + '</ul>';
+}
 function carrilHtml(ahora) {
-  var M0 = V.M0, S = V.S, pl = V.pl, P = pl.P, m = pl.m, x = m.ahora, h = '<div class="cpCuerpo cc">' + gantt(pl, true);
+  var M0 = V.M0, S = V.S, pl = V.pl, m = pl.m, x = m.ahora, h = '<div class="cpCuerpo cc">';
   var due = x && m.cuando <= pl.desde + 15, abs = function (s) { return pl.base + s * 1000; };
+  var hechas = M0.carr.tareas.filter(function (y) { return S.carr.hechas[y.id]; }).length, tot = M0.carr.tareas.length;
+  h += '<div class="ccLin"><b>' + hechas + ' de ' + tot + '</b><span>quedan ~' + minTxt(Math.max(0, pl.mesaS - pl.desde)) + ' hasta la mesa</span></div>' +
+    '<div class="ccBarraT"><i style="width:' + Math.round(hechas / Math.max(1, tot) * 100) + '%"></i></div>';
   var tarde = S.carr.mesa0 ? Math.round((pl.mesa - S.carr.mesa0) / 60e3) : 0;
-  if (tarde >= 1) h += '<div class="ccAviso" role="status">' + svg("arrows-clockwise") + '<div><p>Plan rehecho: a la mesa a las ' + hm(pl.mesa) +
-    ' (antes ' + hm(S.carr.mesa0) + '). Lo que no espera sigue sin esperar.</p></div></div>';
+  if (tarde >= 1) h += '<div class="ccAviso" role="status">' + svg("arrows-clockwise") + '<div><p>Plan rehecho: a la mesa a las ' + hm(pl.mesa) + ' (antes ' + hm(S.carr.mesa0) + ').</p></div></div>';
+  // 1. AHORA: lo que hacen tus manos, en grande
+  h += '<section class="ccAhora' + (due ? " ya" : "") + '" aria-label="Ahora">';
   if (x) {
     var Px = M0.pasos[x.k];
-    h += '<p class="ccCap' + (due ? " ac" : "") + '">' + (due ? "Ahora · tus manos" : 'A las ' + hm(abs(m.cuando)) + ' · en <b data-hasta="' + abs(m.cuando) + '">' + fmt(m.cuando - pl.desde) + '</b>') + '</p>';
-    h += '<h2' + (x.txt.length > 60 ? ' class="largo"' : "") + '>' + esc(sinMin(x.txt)) + '</h2>';
-    h += '<p class="ccSub">' + esc(M0.nomCarril[x.carril]) + '</p>';
-    if (Px) h += lintPaso(Px);
-    // v2.58: lo de ESTE paso con su cantidad (v2.57: cada uno abre su ficha de casa)
-    if (Px && Px.ingPaso && Px.ingPaso.length) h += '<h3 class="cpTitS">Para este paso</h3><ul class="cpUsa ccIngs">' + Px.ingPaso.map(function (y) {
-      var I = M0.ings[y.i]; if (!I) return "";
-      return '<li><button class="cpIngT solo" data-a="fichaIng" data-i="' + y.i + '" aria-label="' + esc(y.txt) + ': qué hay en casa"><span class="cpTx"><b>' + esc(y.txt) + '</b>' + (y.prep ? '<small>' + esc(y.prep) + '</small>' : "") + '</span><span class="cpIr">' + svg("der") + '</span></button></li>';
-    }).join("") + '</ul>';
-    else {
-      var iis = (Px && Px.usa || []).filter(function (i) { return M0.ings[i] && !M0.ings[i].basico; });
-      if (iis.length) h += '<h3 class="cpTitS">Usa · cantidad de toda la receta</h3><ul class="cpUsa ccIngs">' + iis.map(function (i) {
-        var I = M0.ings[i];
-        return '<li><button class="cpIngT solo" data-a="fichaIng" data-i="' + i + '" aria-label="' + esc(I.nombre) + ': qué hay en casa">' + ingHtml(I) + '<span class="cpIr">' + svg("der") + '</span></button></li>';
-      }).join("") + '</ul>';
-    }
-    if (Px) h += fuegoHtml(Px);
-    if (!due) h += '<p class="ccTxt mu">Hasta entonces, tus manos están libres. Te aviso.</p>';
+    h += '<p class="ccCap' + (due ? " ac" : "") + '">' + svg(icoCarril(x.carril)) + esc(M0.nomCarril[x.carril] || "") + ' · ' + (due ? "ahora" : 'a las ' + hm(abs(m.cuando)) + ' · en <b data-hasta="' + abs(m.cuando) + '">' + fmt(m.cuando - pl.desde) + '</b>') + '</p>';
+    h += '<h2' + (x.txt.length > 70 ? ' class="largo"' : "") + '>' + esc(sinMin(x.txt)) + '</h2>';
+    if (Px) h += lintPaso(Px) + ingsTarea(Px) + fuegoHtml(Px);
     if (due && x.manos >= x.dur) {
       var e = S.carr.empezo[x.id] || ahora, fin = e + x.dur * 1000;
       h += '<div class="ccProg"><div class="cpBarra"><i data-desde="' + e + '" data-dur="' + x.dur * 1000 + '" style="width:' + Math.min(100, (ahora - e) / (x.dur * 10)) + '%"></i></div><b data-hasta="' + fin + '">' + fmt(Math.max(0, (fin - ahora) / 1000)) + '</b></div>';
-    }
-    if (x.aguanta != null && due) h += '<p class="ccTxt mu">No espera: así acaba justo cuando se junta todo.</p>';
+    } else if (x.dur > x.manos) h += '<p class="ccTxt mu">Al tocar Hecho empieza su reloj de ' + fmtMin(x.dur - x.manos) + '.</p>';
+    if (!due) h += '<p class="ccTxt mu">Hasta entonces no hay nada que hacer. Te aviso.</p>';
     if (Px) h += listoHtml(Px);
-  } else {
-    h += '<p class="ccCap">Ahora</p><h2>Nada que hacer</h2><p class="ccSub">Te aviso cuando toque.</p>';
-  }
-  // lo que espera: relojes de los carriles, y lo que ya esta y espera a su siguiente paso
-  var filas = S.timers.filter(function (T) { return T.carril; }).map(function (T) {
+  } else h += '<p class="ccCap">Ahora</p><h2>Nada que hacer</h2><p class="ccTxt mu">Esperando a lo que está en marcha. Te aviso.</p>';
+  h += '</section>';
+  // 2. EN MARCHA: los relojes, compactos (el detalle está en El plan)
+  var chips = S.timers.filter(function (T) { return T.carril; }).map(function (T) {
     var t = M0.carr.tareas.filter(function (y) { return y.k === T.paso; })[0]; if (!t) return "";
-    var r = restante(T, ahora);
-    if (r <= 0) {
-      var sigue = M0.carr.tareas.some(function (y) { return y.carril === t.carril && y.n > t.n && !S.carr.hechas[y.id]; });
-      if (!sigue) return "";
-      return '<button class="ccFila" data-a="chip" data-t="' + T.id + '">' + svg(icoCarril(t.carril)) + '<span class="t"><b>' + esc(M0.nomCarril[t.carril]) + '</b><small>' + esc(sinMin(t.txt)) + ': listo' + (t.fuego ? ", a fuego bajo hasta que toque" : "") + '</small></span><span class="r">—</span></button>';
-    }
-    return '<button class="ccFila" data-a="chip" data-t="' + T.id + '">' + svg(icoCarril(t.carril)) + '<span class="t"><b>' + esc(M0.nomCarril[t.carril]) + '</b><small>' + esc(sinMin(t.txt)) + '</small></span><span class="r" data-r="' + T.id + '">' + fmt(r) + '</span></button>';
+    var r = restante(T, ahora), P2 = M0.pasos[t.k], qu = P2 && P2.ingPaso && P2.ingPaso[0] ? M0.ings[P2.ingPaso[0].i] : null;
+    if (r <= 0 && !M0.carr.tareas.some(function (y) { return y.carril === t.carril && y.n > t.n && !S.carr.hechas[y.id]; })) return "";
+    var nom = (M0.nomCarril[t.carril] || "") + (qu && norm(qu.nombre) !== norm(M0.nomCarril[t.carril] || "") ? " · " + minus1(qu.nombre) : "");
+    return '<button class="ccChip' + (r <= 0 ? " listo" : "") + '" data-a="tarea" data-t="' + t.id + '">' + svg(icoCarril(t.carril)) + '<span>' + esc(nom) + '</span>' +
+      (r > 0 ? '<b data-r="' + T.id + '">' + fmt(r) + '</b>' : '<b>Listo</b>') + '</button>';
   }).filter(Boolean);
-  if (filas.length) h += '<p class="ccCap">Mientras</p><div class="ccLista">' + filas.join("") + '</div>';
-  var luego = due ? m.luego : (x ? m.luego : []);
-  if (luego.length) h += '<p class="ccCap">Después</p><div class="ccLista">' + luego.slice(0, 3).map(function (y) {
-    return '<div class="ccFila"><span class="h">' + hm(abs(P.ini[y.id])) + '</span><span class="t"><b>' + esc(sinMin(y.txt)) + (y.dur > y.manos ? " · " + minTxt(y.dur) : "") + '</b><small>' + esc(M0.nomCarril[y.carril]) +
-      (y.aguanta != null ? " · no espera: a esta hora acaba justo al juntar" : "") + '</small></span></div>';
-  }).join("") + '</div>';
-  h += '<button class="ccFila" data-a="hTareas" style="margin-top:14px;border-top:0;background:var(--sf);border-radius:16px;padding:6px 14px">' + svg("hand") +
-    '<span class="t"><b>Hacer otra cosa antes</b><small>Marca cualquier tarea hecha o sáltala; el plan se rehace.</small></span>' + svg("der") + '</button>';
+  if (chips.length) h += '<p class="ccCap">En marcha</p><div class="ccChips">' + chips.join("") + '</div>';
+  // 3. EL PLAN: todo, con su hora; tocar = ver el paso y hacerlo cuando quieras
+  h += '<p class="ccCap">El plan</p><p class="ccTxt mu" style="margin:0 0 8px">Toca cualquier paso para verlo entero o hacerlo antes.</p>' + planLista(ahora, true);
   h += '</div>';
-  var etq = !x ? "Esperando" : due ? (x.manos < x.dur ? "Hecho · " + minTxt(x.dur - x.manos) : "Hecho") : "Hacerlo ya";
+  var etq = !x ? "Esperando" : due ? (x.manos < x.dur ? "Hecho · reloj de " + minTxt(x.dur - x.manos) : "Hecho") : "Hacerlo ya";
   h += '<div class="cpDock">' + toast() + '<button class="cpAnt" data-a="hIngs">Ingredientes</button>' +
     '<button class="cpHecho ' + (due ? "blanco" : "tenue") + '" data-a="cHecho"' + (x ? ' data-t="' + x.id + '"' : " disabled") + '>' + (x ? svg("tick") : "") + esc(etq) + '</button></div>';
   return h;
+}
+// la ficha de una tarea: todo lo del paso y, cocinando, hacerla, saltarla o deshacerla
+function hojaTarea(x0) {
+  var M0 = V.M0, S = V.S, y = tareaDe(M0, V.hoja.slice(2)); if (!y) { V.hoja = null; return ""; }
+  var Px = M0.pasos[y.k], P = V.pl.P, cocinando = V.pant === "carril" && S.carr, e = cocinando ? estadoTarea(y, ya()) : "luego";
+  var h = '<div class="cpHoja" role="dialog" aria-label="Paso"><div class="cpHojaCab"><div><h3>' + svg(icoCarril(y.carril)) + esc(M0.nomCarril[y.carril] || "") + '</h3><small>' +
+    esc((e === "ya" ? "Hecha" : e === "saltada" ? "Saltada" : e === "marcha" ? "En marcha" : "A las " + hm(V.pl.base + P.ini[y.id] * 1000)) + (y.dur ? " · " + fmtMin(y.dur) : "")) + '</small></div>' + x0 + '</div><div class="cpHojaCuerpo">';
+  h += '<p class="ccHojaTxt">' + esc(sinMin(y.txt)) + '</p>';
+  if (Px) h += lintPaso(Px) + ingsTarea(Px) + fuegoHtml(Px) + listoHtml(Px);
+  var antes = y.tras.map(function (d) { return tareaDe(M0, d); }).filter(function (z) { return z && !(S.carr && S.carr.hechas[z.id]); });
+  if (antes.length && e !== "ya") h += '<p class="ccTxt mu">Antes: ' + esc(antes.map(function (z) { return sinMin(z.txt).split(/[,:]/)[0]; }).join(" · ")) + '.</p>';
+  h += '</div>';
+  if (cocinando) {
+    h += '<div class="cpFiBot">' + (e === "ya" || e === "saltada" || e === "marcha"
+      ? '<button class="cpAnt" data-a="tDeshaz" data-t="' + y.id + '">' + svg("arrows-clockwise") + 'Deshacer: aún no está hecho</button>'
+      : '<button class="cpHecho" data-a="tHecho" data-t="' + y.id + '">' + svg("tick") + (y.dur > y.manos ? "Hecho · reloj de " + minTxt(y.dur - y.manos) : "Ya lo he hecho") + '</button>' +
+        '<button class="cpAnt" data-a="tSalta" data-t="' + y.id + '">Saltar: no hace falta</button>') + '</div>';
+  }
+  return h + '</div>';
 }
 
 /* ------------------------------- tocar ------------------------------- */
@@ -1844,7 +1915,14 @@ function accion(a, b) {
       autoReloj(ahora); cambia(true); return;
     case "hCocina": V.hoja = "cocina"; pinta(false); return;
     case "hLint": V.hoja = "lint"; pinta(false); return;
-    case "hTareas": V.hoja = "tareas"; pinta(false); return;
+    case "tarea": V.hoja = "t:" + b.getAttribute("data-t"); pinta(false); return;
+    case "verHechas": V.verHechas = !V.verHechas; pinta(false); return;
+    case "tDeshaz":
+      id = b.getAttribute("data-t"); T = tareaDe(M0, id); if (!T || !S.carr) return;
+      var antesD = copia(S);
+      deshazCarril(S, M0, id, ahora);
+      ponToast("Deshecho: " + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesD).forEach(function (x) { S[x] = antesD[x]; }); S.t = ya(); });
+      V.hoja = null; V.ultPlan = 0; cambia(false); return;
     case "hechoFuera":
       k = V.visto; if (k == null) return;
       var antesF = copia(S), eraHecho = !!S.hechos[k];
@@ -1859,7 +1937,7 @@ function accion(a, b) {
       var antesT = copia(S);
       if (a === "tHecho") hechaCarril(S, M0, id, ahora); else saltaCarril(S, M0, id, ahora);
       var plT = planCarril(M0, S, ahora, V.cocina); S.carr.mesa0 = plT.mesa;
-      ponToast((a === "tHecho" ? "Hecho: " : "Saltado: ") + sinMin(T.txt), function () { Object.keys(antesT).forEach(function (x) { S[x] = antesT[x]; }); S.t = ya(); });
+      ponToast((a === "tHecho" ? "Hecho: " : "Saltado: ") + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesT).forEach(function (x) { S[x] = antesT[x]; }); S.t = ya(); });
       V.hoja = null; V.ultPlan = 0;
       if (todoHecho(M0, S, ahora)) { aFin(ahora); return; }
       cambia(true); return;
@@ -1887,7 +1965,7 @@ function accion(a, b) {
       hechaCarril(S, M0, id, ahora);
       // el aviso de "plan rehecho" ya se ha visto: cuenta desde aqui
       var pl2 = planCarril(M0, S, ahora, V.cocina); S.carr.mesa0 = pl2.mesa;
-      ponToast("Hecho: " + T.txt, function () { Object.keys(antesC).forEach(function (x) { S[x] = antesC[x]; }); S.t = ya(); });
+      ponToast("Hecho: " + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesC).forEach(function (x) { S[x] = antesC[x]; }); S.t = ya(); });
       if (todoHecho(M0, S, ahora)) { aFin(ahora); return; }
       cambia(true); return;
     case "hCero": V.hoja = "cero"; pinta(false); if (V.ctx.marca) V.ctx.marca("cocina"); return;
@@ -1899,6 +1977,7 @@ function accion(a, b) {
       cambia(V.pant !== "plan"); return;
     case "sigue": V.pant = M0.carr && S.carr && S.carr.ini ? "carril" : "paso"; S.t = ahora; cambia(true); return;
     case "deshacer": if (V.toast && V.toast.fn) V.toast.fn(); V.toast = null; cambia(false); return;
+    case "comido": V.comido = !V.comido; pinta(false); return;
     case "gasto": k = +b.getAttribute("data-g"); if (V.gasto[k]) V.gasto[k].on = !V.gasto[k].on; pinta(false); return;
     case "apunta": termina(V.gasto.filter(function (g) { return g.on; }).map(function (g) { return g.txt; })); return;
     case "sinApuntar": termina(null); return;
@@ -1906,6 +1985,16 @@ function accion(a, b) {
 }
 // v2.58: lo de manos (cortar, montar) acaba cuando dices Hecho: su reloj se quita. Lo que cuece sigue
 function quitaManos(S, P) { if (P && !P.espera) S.timers = S.timers.filter(function (T) { return T.paso !== P.k; }); }
+// v2.59: lo de una ración, para apuntarlo: lo que dice la receta (POR RACIÓN) o, si no, la tabla de la app
+function racionNutri(M0) {
+  var R = M0 && M0.R; if (!R || M0.J || M0.G) return null;
+  var pr = R.porRacion, k = pr && pr.kcal, p = pr && pr.prot;
+  if ((k == null || p == null) && typeof window !== "undefined" && window.Nutricion) {
+    try { var x = window.Nutricion.deComida(R); if (k == null && x.n.kcal > 0) k = Math.round(x.n.kcal); if (p == null && x.n.prot > 0) p = Math.round(x.n.prot); } catch (e) {}
+  }
+  if (k == null && p == null) return null;
+  return { kcal: k, prot: p, txt: [k != null ? k + " kcal" : "", p != null ? p + " g de proteína" : ""].filter(Boolean).join(" · ") };
+}
 // v2.58: el reloj del paso en el que estás empieza solo si el paso tiene tiempo
 function autoReloj(ahora) {
   if (!V || V.pant !== "paso" || V.visto != null) return;
@@ -1927,7 +2016,7 @@ function guardaOtro(id) { if (id && VIVOS[id] && (!V || id !== V.id)) guarda(id,
 function aFin(ahora) {
   V.pant = "fin"; V.hoja = null; V.visto = null;
   if (V.M0.carr) V.S.timers = V.S.timers.filter(function (T) { return !T.carril || restante(T, ahora) > 0; });
-  V.gasto = V.prueba ? [] : gastadoDe(V.M0); V.toast = null;          // los relojes que siguen ya salen en su tarjeta
+  V.gasto = V.prueba ? [] : gastadoDe(V.M0); V.toast = null; V.comido = true;          // los relojes que siguen ya salen en su tarjeta
   guarda(V.id, V.S);
   di(V.M0.G ? (/noche/i.test(V.M0.titulo) ? "Hecho. Buenas noches." : "Hecho.") : "Hecho. Buen provecho.");
   pinta(false);
@@ -1937,6 +2026,7 @@ function termina(gastado, desdeAtras) {
   var info = { uid: M0.R ? M0.R.uid : M0.G ? M0.G.uid : null, titulo: M0.titulo, id: M0.J ? M0.J.id : (M0.R && M0.R.receta) || null,
                gastado: gastado && gastado.length ? gastado : null };
   if (M0.G) info.guia = true;
+  if (M0.R && !M0.G && V.comido && racionNutri(M0)) { info.comido = true; info.R = M0.R; }
   if (ctx.alTerminar && !V.prueba) { try { ctx.alTerminar(info); } catch (e) {} }
   V.pant = "fin";
   cierra(!!desdeAtras);

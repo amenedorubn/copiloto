@@ -733,6 +733,46 @@ function esperaDe(p) {
   if (p.fuegoTxt && p.fuegoTxt !== "Fuego apagado") return true;
   return iE >= 0 && (iM < 0 || iE < iM);
 }
+/* v2.59 · el orden de una receta v3 sale de lo que usa cada paso, no de cómo está escrita:
+   - un paso espera al último paso anterior que tocó el mismo ingrediente (cortar el pimiento va antes
+     de echarlo, pero no antes de poner el pollo al fuego); la sal, el aceite o el agua no cuentan;
+   - en un carril de un recipiente (sartén, olla...) los pasos van en su orden; PREPARAR y «Montar» no:
+     cada corte o mezcla se hace cuando haga falta, y mientras algo se cuece si se puede;
+   - AL JUNTAR espera al final de todos los carriles; servir espera a todo lo anterior; AL TERMINAR va detrás;
+   - "(tras X)" sigue valiendo ("(tras PREPARAR)" ya no hace falta: lo deciden los ingredientes);
+   - lo que está al fuego no espera (aguanta 60 s): se pone para acabar cuando lo necesita el siguiente.
+   Deja en cada paso p.deps = [indices en pasos].                                                         */
+var SIRVE = /^(sirve|emplata|reparte|come)$/;
+function dependencias(R, pasos) {
+  var ING = R.ingredientes, L = pasos.filter(function (p) { return !p.auto && p.carril; });
+  var libres = { preparar: 1, montar: 1 };
+  function menciona(p) {
+    var m = {};
+    (p.ingPaso || []).forEach(function (x) { m[x.i] = 1; });
+    var w = palabrasDe(p.detalle);
+    ING.forEach(function (g, k) { if (clavesDe(g).some(function (c) { return w.indexOf(c) >= 0; })) m[k] = 1; });
+    return Object.keys(m).map(Number).filter(function (k) { var g = ING[k]; return g && !g.basico && !/^(agua|hielo)\b/.test(g.base); });
+  }
+  var M = L.map(menciona);
+  L.forEach(function (p, j) {
+    var d = [], add = function (q) { if (q && q !== p && d.indexOf(q) < 0) d.push(q); };
+    // lo que usa: el ultimo paso de antes que tocó lo mismo
+    M[j].forEach(function (k) { for (var i = j - 1; i >= 0; i--) if (M[i].indexOf(k) >= 0) { add(L[i]); break; } });
+    // su recipiente, en orden
+    if (!libres[p.carril]) for (var i = j - 1; i >= 0; i--) if (L[i].carril === p.carril) { add(L[i]); break; }
+    // juntar: espera a todos los carriles; servir, a todo lo de antes; AL TERMINAR, a lo último
+    var primeroUnion = p.carril === "union" && !L.slice(0, j).some(function (q) { return q.carril === "union"; });
+    if (primeroUnion || SIRVE.test(verboDe(p.detalle) || "")) L.slice(0, j).forEach(function (q) { if (q.tipo !== "despues") add(q); });
+    if (p.tipo === "despues" && j > 0) add(L[j - 1]);
+    (p.tras || []).forEach(function (c) {
+      if (c === "preparar") return;
+      var ult = L.filter(function (q) { return q.carril === c; }).pop(); add(ult);
+    });
+    p._deps = d;          // pasos; se pasan a indices al final (cuando ya esta "Antes de empezar" delante)
+    // al fuego no espera: acaba cuando lo necesita lo siguiente (la marca "(espera)" lo deja esperar)
+    if (p.fuego && p.aguanta_s == null && !(p.marcas && p.marcas.espera)) p.aguanta_s = 60;
+  });
+}
 // "Las nueces NO van dentro", "Si queda muy espeso...": un consejo, no un paso
 function esConsejo(t) {
   t = limpia(t).replace(/^\d{1,2}[.)]\s+/, "");
@@ -1079,6 +1119,28 @@ function leer(ev, op) {
   pasos.forEach(function (p) { p.fuegoTxt = fuegoDe(p.detalle); p.espera = esperaDe(p); });
   // v2.58: con carriles, lo de preparar es un carril mas (se ve en el plan, con su tiempo, y vale
   // "(tras PREPARAR)") y lo de AL TERMINAR va detras de juntar. Antes se quedaba fuera sin decirlo.
+  // v2.59: una receta v3 sin carriles escritos se planifica igual: un carril por recipiente (sartén,
+  // olla, micro, air fryer, horno), PREPARAR, «Montar» para lo de manos y AL TERMINAR detrás. El orden
+  // no lo pone el texto: lo ponen los ingredientes (ver dependencias, más abajo).
+  var realesV3 = pasos.filter(function (p) { return !p.auto; });
+  if (!R.carriles && R.v3 && R.tipo === "comida" && realesV3.length >= 2) {
+    var NOMS = { sarten: ["Sartén", "sartén"], olla: ["Olla", "olla"], micro: ["Micro", null], airfryer: ["Air fryer", null], horno: ["Horno", null] };
+    R.carriles = []; R.sintetico = true;
+    var alFuego = null;      // el ultimo recipiente al fuego: "Echa el pavo, 1 min" sigue en la sartén
+    realesV3.forEach(function (p) {
+      if (p.tipo === "prep" || p.tipo === "despues") return;
+      var n = norm(p.detalle), id = recDe(n) || aparatoDe(n);
+      if (id && !NOMS[id]) id = null;
+      if (!id && p.cook) p.cook.recs.forEach(function (r) { var x = recDe(norm(r)) || aparatoDe(norm(r)); if (!id && x && NOMS[x]) id = x; });
+      if (!id && alFuego && (fuegoDe(p.detalle) || /^(echa|anade|agrega|baja|sube|apaga|remueve|vierte|da|dale|cuece|dora|sofrie|saltea|rehoga|gira|voltea|enciende)$/.test(verboDe(p.detalle) || ""))) id = alFuego;
+      if (id === "sarten" || id === "olla") alFuego = id;
+      id = id || "montar";
+      if (!R.carriles.some(function (c) { return c.id === id; }))
+        R.carriles.push({ id: id, nombre: id === "montar" ? "Montar" : NOMS[id][0], rec: id === "montar" ? null : NOMS[id][1], n: 0 });
+      p.carril = id;
+    });
+    R.carriles.forEach(function (c) { var k = 0; pasos.forEach(function (p) { if (p.carril === c.id) p.nCarril = ++k; }); });
+  }
   if (R.carriles && R.tipo === "comida") {
     var enCarril = function (L, id, nombre) {
       if (!L.length) return;
@@ -1089,6 +1151,7 @@ function leer(ev, op) {
     enCarril(pasos.filter(function (p) { return !p.carril && !p.auto && p.tipo === "prep"; }), "preparar", "Preparar");
     enCarril(pasos.filter(function (p) { return !p.carril && !p.auto && p.tipo === "despues"; }), "union", "Al terminar");
     clasifica(R, pasos);
+    if (R.v3) dependencias(R, pasos);
   } else {
     delete R.carriles;
     pasos.forEach(function (p) {
@@ -1201,6 +1264,7 @@ function leer(ev, op) {
   pasos.forEach(function (p) {
     var corta = p.titulo.split(/[,:]/)[0].split(" ").slice(0, 4).join(" ");
     p.avisos.forEach(function (a) { a.voz = corta + ": " + a.texto.charAt(0).toLowerCase() + a.texto.slice(1) + "."; });
+    if (p._deps) { p.deps = p._deps.map(function (q) { return pasos.indexOf(q); }).filter(function (k) { return k >= 0; }).sort(function (a, b) { return a - b; }); delete p._deps; }
     delete p._r; delete p._i; delete p.linea; delete p.marcas;
   });
   R.pasos = pasos;
