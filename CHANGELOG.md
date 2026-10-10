@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.61.1] - 2026-10-10
+
+### Corregido
+
+- Ensayo general del 11/10 sin gel: se quitan los avisos del km 6,8 y del km 7 (sin agua a mano no se toma)
+
 ## [2.61.0] - 2026-10-10
 
 ### Añadido
@@ -848,6 +854,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.61.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.1
 [2.61.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.0
 [2.60.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.60.0
 [2.59.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.59.0
