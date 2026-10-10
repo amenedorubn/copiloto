@@ -21,6 +21,12 @@ Los resúmenes salen de los mensajes de commit de cada versión.
 - Copiloto GPS · empezar antes de la salida (20 m detrás) o llegar por otro camino que sustituye al principio (por el paseo y entrar en el km 0,4) cuenta lo corrido desde Empezar; ir andando desde casa hasta la salida sigue sin contar, y arrancar a mitad de ruta sigue siendo «ese es mi km»
 - Copiloto GPS · botón «Paso el km 7» debajo de la tarjeta, a la derecha: al pasar un cartel de km, tocarlo pone la distancia en ese km justo (el más cercano a lo que marca la app). Lo que viene después se mide desde ahí. Tocarlo otra vez en 6 s lo deshace
 - Las cuestas, los avisos de terreno y el punto del plan en el mapa siguen el punto de la ruta, aunque lleves metros de más
+- Copiloto GPS · en el mapa se dibuja lo que corres de verdad (línea azul): solo con GPS bueno y suavizado, así que sigue si vas por el otro lado de la calle pero no el baile del GPS. Es solo dibujo, los km no salen de ahí
+- Copiloto GPS · vista satélite (botón del globo, debajo del zoom): imágenes de Esri debajo de la ruta, un poco oscurecidas. Se recuerda entre entrenos; sin red, el mapa de siempre
+
+### Cambiado
+
+- Copiloto GPS · la ruta ya no se cambia sola a otra de tus rutas: va siempre la que eliges
 
 ## [2.59.0] - 2026-10-05
 

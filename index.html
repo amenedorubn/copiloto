@@ -607,6 +607,14 @@
   #appGPS #mapCard{position:absolute;inset:0;border:0;border-radius:0;padding:0;margin:0;background:#101318}
   #appGPS #mapCard #mapa{width:100%;height:100%;border-radius:0;background:#101318}
   #appGPS #bFull{display:none}
+  #fondo image{opacity:.72}
+  #appGPS #zoomBtns #bSat{display:flex;align-items:center;justify-content:center}
+  #appGPS #zoomBtns #bSat svg{width:20px;height:20px}
+  #appGPS #zoomBtns #bSat.on{background:#2d82dc;border-color:#2d82dc}
+  #mapAttr{position:absolute;right:10px;bottom:calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 232px);
+    z-index:4;font-size:9px;font-weight:600;color:rgba(255,255,255,.75);background:rgba(0,0,0,.45);
+    padding:2px 6px;border-radius:6px;pointer-events:none}
+  #mapAttr[hidden]{display:none}
   #appGPS #zoomBtns{top:46%;right:10px;flex-direction:column;transform:translateY(-50%)}
   #appGPS #zoomBtns button{width:40px;height:40px;border-radius:12px;background:rgba(21,23,27,.9);color:#f4f5f7;
     font-size:16px;border:1px solid rgba(255,255,255,.08)}
@@ -1081,7 +1089,9 @@
     <button id="bMas" aria-label="Acercar">+</button>
     <button id="bMenos" aria-label="Alejar">−</button>
     <button id="bCentro" title="Centrar" aria-label="Centrar">◎</button>
+    <button id="bSat" title="Satélite" aria-label="Vista satélite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9s1.3-6.4 3.8-9z"/></svg></button>
   </div>
+  <div id="mapAttr" hidden>Imágenes © Esri, Maxar, Earthstar Geographics</div>
 </div>
 
 <section class="gPanel" id="gTop">
@@ -1419,8 +1429,10 @@ function dibujaMapa(off){
     s+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" class="kmp" r="2.6" fill="#7d858f"/>'; }
   s+='<line id="unir" stroke="#f0a500" stroke-width="1.6" stroke-dasharray="3 3" opacity="0"/>';
   s+='<circle id="planDot" r="6" fill="#f0a500" opacity="0"/>';
+  s+='<path id="traza" fill="none" stroke="#7fd3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>';
   s+='<circle id="yoDot" r="7.5" fill="#fff" stroke="#111418" stroke-width="2.5" opacity="0"/>';
-  $("mapa").innerHTML='<g id="capa">'+s+'</g>';   // el grupo es lo que se gira
+  $("mapa").innerHTML='<g id="capa"><g id="fondo"></g>'+s+'</g>';   // el grupo es lo que se gira
+  pintaFondo(true); pintaTraza(true);
 }
 dibujaMapa(0);
 
@@ -2371,6 +2383,7 @@ function onPos(pos){
       rumboGPS=rumboEntre(proj(anclaRumbo[0],anclaRumbo[1]),proj(p[0],p[1])); anclaRumbo=p; }
   }
   if(acc<=35) apuntaRastro(p);
+  apuntaTraza(p,acc);
   // ventana de busqueda: crece con el tiempo sin señal, por si el movil se ha dormido
   var margen = sAbs===null ? TOTAL : Math.min(TOTAL,300+(ahora-tPrev)/1000*8);
   var r = acc>150 ? null
@@ -2761,7 +2774,78 @@ var ROT=0;                            // grados que esta girado el mapa (tu rumb
 var autoEncaje=true;                  // encajar salida + yo hasta que toques el zoom
 var rumboGPS=null, anclaRumbo=null;   // rumbo sacado del GPS cuando no voy por la ruta
 function aplicaVB(){ $("mapa").setAttribute("viewBox",
-  VB.x.toFixed(1)+" "+VB.y.toFixed(1)+" "+VB.w.toFixed(1)+" "+VB.h.toFixed(1)); escalar(); }
+  VB.x.toFixed(1)+" "+VB.y.toFixed(1)+" "+VB.w.toFixed(1)+" "+VB.h.toFixed(1)); escalar(); pintaFondo(false); }
+
+/* ---------- vista satelite ----------
+   Teselas de Esri World Imagery debajo de la ruta, en la misma proyeccion
+   que el mapa (a escala de ciudad, mercator y la del mapa coinciden). Solo
+   se piden las que se ven (con el mapa girado, el circulo que cubre la
+   vista) y al zoom de la pantalla. Se oscurecen para que la ruta destaque.
+   Sin red no hay fondo y el mapa sigue igual que siempre.               */
+var SAT=false; try{ SAT=localStorage.getItem("copiloto.mapa.sat")==="1"; }catch(e){}
+var TESELAS={};
+function t2lon(x,z){ return x/Math.pow(2,z)*360-180; }
+function t2lat(y,z){ var n=Math.PI-2*Math.PI*y/Math.pow(2,z); return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))); }
+function lon2t(lon,z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
+function lat2t(lat,z){ var r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); }
+function deProj(X,Y){ return [ (y0+y1)/2-(Y-SZ/2)/esc, ((X-SZ/2)/esc+(x0+x1)/2)/la0 ]; }
+function pintaFondo(nuevo){
+  var g=$("fondo"), at=$("mapAttr"), bs=$("bSat");
+  if(at) at.hidden=!SAT;
+  if(bs) bs.classList.toggle("on",!!SAT);
+  if(!g) return;
+  if(nuevo || !SAT){ TESELAS={}; g.innerHTML=""; }
+  if(!SAT || !VB) return;
+  var sv=$("mapa"), cw=sv.clientWidth||sv.getBoundingClientRect().width||360;
+  var cx=VB.x+VB.w/2, cy=VB.y+VB.h/2, r=Math.hypot(VB.w,VB.h)/2;
+  var a=deProj(cx-r,cy-r), b=deProj(cx+r,cy+r);          // a: arriba a la izquierda (norte, oeste)
+  var mpp=VB.w*MPU/cw/Math.min(2,window.devicePixelRatio||1), latc=(a[0]+b[0])/2;
+  var z=Math.round(Math.log(156543.03*Math.cos(latc*Math.PI/180)/Math.max(0.05,mpp))/Math.LN2);
+  z=Math.max(3,Math.min(19,z));
+  var X0,X1,Y0,Y1;
+  for(;;){ X0=lon2t(a[1],z); X1=lon2t(b[1],z); Y0=lat2t(a[0],z); Y1=lat2t(b[0],z);
+    if((X1-X0+1)*(Y1-Y0+1)<=42 || z<=3) break; z--; }
+  var NS="http://www.w3.org/2000/svg", quedan={};
+  for(var x=X0;x<=X1;x++) for(var y=Y0;y<=Y1;y++){
+    var k=z+"/"+y+"/"+x; quedan[k]=1;
+    if(TESELAS[k]) continue;
+    var p=proj(t2lat(y,z),t2lon(x,z)), q=proj(t2lat(y+1,z),t2lon(x+1,z));
+    var im=document.createElementNS(NS,"image");
+    im.setAttribute("href","https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+k);
+    im.setAttribute("x",p[0]); im.setAttribute("y",p[1]);
+    im.setAttribute("width",(q[0]-p[0])*1.004); im.setAttribute("height",(q[1]-p[1])*1.004);  // sin rayas entre teselas
+    im.setAttribute("preserveAspectRatio","none");
+    g.appendChild(im); TESELAS[k]=im;
+  }
+  for(var k2 in TESELAS) if(!quedan[k2]){ TESELAS[k2].remove(); delete TESELAS[k2]; }
+}
+$("bSat").addEventListener("click",function(e){ e.stopPropagation();
+  SAT=!SAT; try{ localStorage.setItem("copiloto.mapa.sat",SAT?"1":"0"); }catch(er){}
+  pintaFondo(true); });
+
+/* ---------- lo que corro de verdad, dibujado ----------
+   Solo fixes buenos (precision de 20 m o mejor) y la media de los 5 ultimos,
+   cada 8 m: sigue por donde vas (5 m a la izquierda de la ruta, por el otro
+   lado de la calle) sin el baile del GPS. Es solo dibujo: los km salen de
+   la ruta y los rodeos, no de esta linea.                                */
+var TRAZA=[], trazaBuf=[], trazaD="";
+function apuntaTraza(p,acc){
+  if(!corriendo || pausado || !(acc<=20)) return;
+  trazaBuf.push(p); if(trazaBuf.length>5) trazaBuf.shift();
+  var m=[0,0]; trazaBuf.forEach(function(b){ m[0]+=b[0]/trazaBuf.length; m[1]+=b[1]/trazaBuf.length; });
+  var u=TRAZA[TRAZA.length-1];
+  if(u && distGPS(u,m)<8) return;
+  TRAZA.push(m); if(TRAZA.length>8000) TRAZA.shift();
+  var q=proj(m[0],m[1]);
+  trazaD+=(trazaD?"L":"M")+q[0].toFixed(1)+" "+q[1].toFixed(1);
+  var t=$("traza"); if(t) t.setAttribute("d",trazaD);
+}
+function borraTraza(){ TRAZA=[]; trazaBuf=[]; trazaD=""; var t=$("traza"); if(t) t.removeAttribute("d"); }
+function pintaTraza(){
+  if(!TRAZA) return;
+  trazaD=TRAZA.map(function(m,i){ var q=proj(m[0],m[1]); return (i?"L":"M")+q[0].toFixed(1)+" "+q[1].toFixed(1); }).join("");
+  var t=$("traza"); if(t){ if(trazaD) t.setAttribute("d",trazaD); else t.removeAttribute("d"); }
+}
 function escalar(){                 // todo a tamaño constante en pantalla
   var sv=$("mapa"), cw=sv.clientWidth||sv.getBoundingClientRect().width||360;
   var ch=sv.clientHeight||sv.getBoundingClientRect().height||cw;
@@ -2773,6 +2857,7 @@ function escalar(){                 // todo a tamaño constante en pantalla
   if(yo){yo.setAttribute("r",(9*u).toFixed(2));yo.setAttribute("stroke-width",(3*u).toFixed(2));}
   if(pd)pd.setAttribute("r",(8*u).toFixed(2));
   if(st)st.setAttribute("r",(6*u).toFixed(2));
+  var tz=$("traza"); if(tz) tz.setAttribute("stroke-width",(3.2*u).toFixed(2));
   if(un){un.setAttribute("stroke-width",(2*u).toFixed(2));
          un.setAttribute("stroke-dasharray",(3*u).toFixed(2)+" "+(3*u).toFixed(2));}
   var ks=document.querySelectorAll(".kmp");
@@ -2884,7 +2969,7 @@ $("empezar").addEventListener("click",function(){
                   avisoBloque=false; medHecho=0; tMed=0; ultPos=null; ajusteSeg=0; corriendo=true;
                   // el km 0 es donde estoy ahora, no el principio de la ruta
                   saltos=0; tPlanIni=0; sIni=null; romaDicho=false;
-                  preM=0; preAncla=null; preSalida=distInicio;
+                  preM=0; preAncla=null; preSalida=distInicio; borraTraza();
                   if(enRuta && sAbs!==null && !antesDeSalida()) yaHablo=arranca(sAbs); }
   else { t0=Date.now()-pausaEn; pausado=false; ponPausa(false); }
   $("probar").style.display="none";
@@ -2981,7 +3066,7 @@ function reinicia(){
   dist=0; buf=[]; kmHecho=0; tKm=0; dKm=0; avisoBloque=false; medHecho=0; tMed=0; ultPos=null; ajusteSeg=0;
   sIni=null; saltos=0; tPlanIni=0; romaDicho=false; reiniciaExtra(); $("resumen").hidden=true;
   OFF=0; sMax=sUlt=null; atras=false; fuera=null; preM=0; preAncla=null; kmMarcado=0; deshaceKm=null;
-  tramoDicho=-1; dibujaMapa(0); escalar();
+  borraTraza(); tramoDicho=-1; dibujaMapa(0); escalar();
   if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}
   paraSim();
   try{if(wakeLock)wakeLock.release();}catch(e){}
@@ -3063,7 +3148,7 @@ function cargaRuta(pts, plan, fc, ele){
   corriendo=false; pausado=false; dist=0; buf=[]; kmHecho=0; tKm=0; dKm=0;
   avisoBloque=false; medHecho=0; tMed=0; ultPos=null; ajusteSeg=0;
   sIni=null; sAbs=null; sAct=null; saltos=0; tPlanIni=0; romaDicho=false; tramoDicho=-1;
-  OFF=0; sMax=sUlt=null; atras=false; fuera=null; preM=0; preAncla=null; kmMarcado=0; deshaceKm=null;
+  OFF=0; sMax=sUlt=null; atras=false; fuera=null; preM=0; preAncla=null; kmMarcado=0; deshaceKm=null; borraTraza();
   rutaCargada=true;                   // antes de dibujar: el mapa se colorea por el plan nuevo
   preparaTerreno();
   MPU=calcMPU();
@@ -3310,7 +3395,9 @@ function encajaEn(c,trozo){
   }
   return { media:suma/trozo.length, sube:sube, baja:baja, s:sPrev };
 }
+var CAMBIA_RUTA=false;   // apagado: la ruta es la que eliges tu, nunca se cambia sola
 function miraOtraRuta(){
+  if(!CAMBIA_RUTA) return false;
   if(CANDS.length<2 || RASTRO.length<14 || sIni===null) return false;
   var ahora=Date.now(); if(ahora-ultMira<4000) return false; ultMira=ahora;
   var trozo=RASTRO.slice(-15), cur=null, i;
