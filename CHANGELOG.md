@@ -13,6 +13,18 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.61.0] - 2026-10-10
+
+### Añadido
+
+- Copiloto GPS · la línea azul de lo que corres se guarda en el móvil (IndexedDB) y vuelve entera si Android cierra la app a mitad. Empezar de cero la pisa y «Terminar y reiniciar» la borra
+- Plan fijado del ENSAYO GENERAL (domingo 11/10, A Coruña): km 0-1 a 6'45" con la bajada frenada, km 1-7 crucero a 6'25"-6'35" (FC < 148), km 7-12 BLOQUE a 5'12" (el del test del 27-09, que salió verde; FC 160-172), km 12-16 suave a 6'40"-7'00". Gel en el km 7 con aviso 200 m antes. Resumen con el tiempo del bloque
+- Plan fijado de la MEDIA MARATÓN DE ROMA (domingo 18/10): km 0-5 a 5'15", km 5-15 a 5'10", km 15 a meta a 5'10" (o lo que quede). Los tiempos de paso cuadran con la tabla de carteles: 26:15 · 52:05 · 1:17:55 · 1:43:45 · meta 1:49:25. Mismo ritmo en cuesta y en llano: la altimetría del GPX de Roma está inflada
+
+### Corregido
+
+- El ensayo salía con el km 1-7 en rojo (como si fuera el bloque) y el km 7-12 a 6'40"-7'00": la línea «km 7-12 ..... RITMO ROMA» del evento no lleva ritmo escrito y se saltaba
+
 ## [2.60.0] - 2026-10-10
 
 ### Añadido
@@ -836,6 +848,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.61.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.0
 [2.60.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.60.0
 [2.59.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.59.0
 [2.58.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.58.0
