@@ -13,6 +13,13 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.64.1] - 2026-10-10
+
+### Corregido
+
+- La tarjeta de HOY ponía «4.999999999999999 a 5'12"» en el ensayo (12,2 − 7,2 con decimales): ahora «5 a 5'12"». Los km con decimales salen con coma también en la ficha
+- En el mapa, un km partido se pinta de dos colores: el rojo del bloque empieza en el 7,2 y no en el 7
+
 ## [2.64.0] - 2026-10-10
 
 ### Añadido
@@ -881,6 +888,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.64.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.64.1
 [2.64.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.64.0
 [2.63.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.63.0
 [2.62.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.62.0
