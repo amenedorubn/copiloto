@@ -13,6 +13,15 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.60.0] - 2026-10-10
+
+### Añadido
+
+- Copiloto GPS · los km son los que corres, no el punto de la ruta: un rodeo (semáforo, vuelta a una manzana) o volver unos metros atrás suman al volver a la ruta; un atajo o un rato sin GPS no restan. En la línea del GPS se ve cuánto llevas sobre la ruta («+120 m sobre la ruta»)
+- Copiloto GPS · empezar antes de la salida (20 m detrás) o llegar por otro camino que sustituye al principio (por el paseo y entrar en el km 0,4) cuenta lo corrido desde Empezar; ir andando desde casa hasta la salida sigue sin contar, y arrancar a mitad de ruta sigue siendo «ese es mi km»
+- Copiloto GPS · botón «Paso el km 7» debajo de la tarjeta, a la derecha: al pasar un cartel de km, tocarlo pone la distancia en ese km justo (el más cercano a lo que marca la app). Lo que viene después se mide desde ahí. Tocarlo otra vez en 6 s lo deshace
+- Las cuestas, los avisos de terreno y el punto del plan en el mapa siguen el punto de la ruta, aunque lleves metros de más
+
 ## [2.59.0] - 2026-10-05
 
 ### Añadido
@@ -821,6 +830,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.60.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.60.0
 [2.59.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.59.0
 [2.58.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.58.0
 [2.57.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.57.1
