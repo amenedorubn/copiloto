@@ -13,6 +13,14 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.64.0] - 2026-10-10
+
+### Añadido
+
+- Copiloto GPS · con metros de antes de la ruta, el plan se completa al llevar de verdad su distancia (16 km), no al llegar al km 16 de la ruta: «16 kilómetros. Plan completado» y el resumen sale solo con el total real
+- Copiloto GPS · la FC objetivo es la del tramo en el que estás (en un km partido, la del trozo que toca)
+- Ensayo general del 11/10 con rango de pulsaciones en todos los tramos: km 0-1 125-145, crucero 138-148, bloque 160-172, final 145-155
+
 ## [2.63.0] - 2026-10-10
 
 ### Añadido
@@ -873,6 +881,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.64.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.64.0
 [2.63.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.63.0
 [2.62.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.62.0
 [2.61.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.2
