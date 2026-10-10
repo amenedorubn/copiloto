@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.63.0] - 2026-10-10
+
+### Añadido
+
+- Copiloto GPS · lo que corres desde Empezar hasta entrar en la ruta cuenta siempre en la distancia, el tiempo y el resumen (antes solo si se parecía a lo que te saltabas de la ruta). El plan sigue el punto de la ruta: si entras en el km 0,386 con 600 m hechos, el bloque sigue empezando en el 7,2 de la ruta. Dale a Empezar cuando empieces a correr
+
 ## [2.62.0] - 2026-10-10
 
 ### Añadido
@@ -867,6 +873,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.63.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.63.0
 [2.62.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.62.0
 [2.61.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.2
 [2.61.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.1
