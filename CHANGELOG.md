@@ -15,9 +15,9 @@ Los resúmenes salen de los mensajes de commit de cada versión.
 
 ## [2.61.2] - 2026-10-10
 
-### Corregido
+### Cambiado
 
-- Ensayo a sub-1:36
+- Ensayo general del 11/10 a 1:35:45 (media por debajo de 6'00"): crucero km 1-7 a 6'05"-6'15" (la FC < 148 sigue mandando) y km 12-16 a 6'25"-6'35". El km 1 (6'45", bajada) y el bloque a 5'12" no cambian
 
 ## [2.61.1] - 2026-10-10
 
