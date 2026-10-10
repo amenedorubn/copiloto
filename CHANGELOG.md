@@ -13,6 +13,13 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.62.0] - 2026-10-10
+
+### Añadido
+
+- Un tramo del plan puede empezar a mitad de km: ese km va partido de 100 en 100 m (ritmo, bandas, tiempo previsto y terreno). En pantalla, el nombre del tramo es el del sitio en el que estás
+- Ensayo general del 11/10: el bloque va del 7,2 al 12,2 de la ruta (del 7,0 al 7,2 hay una rampa de +7 m que ensuciaría el dato; del 7,2 al 12,2 es llano). Aviso de la rampa en el km 7, «Empieza el bloque» en el 7,2 y «Fin del bloque» en el 12,2. El resumen mide el bloque 7,2–12,2. Tiempo previsto 1:35:42
+
 ## [2.61.2] - 2026-10-10
 
 ### Cambiado
@@ -860,6 +867,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.62.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.62.0
 [2.61.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.2
 [2.61.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.1
 [2.61.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.61.0
