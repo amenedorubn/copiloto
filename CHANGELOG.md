@@ -13,6 +13,17 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.66.0] - 2026-10-12
+
+### Cambiado
+
+- «Sin ruta» ya no abre una pantalla aparte: usa la pantalla del GPS de siempre (mapa que te sigue, traza de por donde vas, ritmo actual, ritmo del km, reloj, distancia y voz), sin ruta dibujada ni nada que seguir. El km 0 es donde tocas Empezar y los metros salen del GPS
+- La voz de cada km dice el parcial, si vas rápido o lento para el ritmo del día y lo que llevas; sin metros por delante o por detrás
+
+### Quitado
+
+- La pantalla aparte de la 2.65.0 (`suelta.js`)
+
 ## [2.65.0] - 2026-10-12
 
 ### Añadido
@@ -902,6 +913,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.66.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.66.0
 [2.65.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.65.0
 [2.64.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.64.2
 [2.64.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.64.1
