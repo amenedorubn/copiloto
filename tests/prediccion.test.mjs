@@ -92,3 +92,24 @@ test("salida contenida a 5:15: por detrás del suelo en ámbar, no del 1:50 en r
   assert.equal(e.col, "warn");
   assert.match(e.txt, /por detrás del suelo/);
 });
+
+test("plan de prueba por ritmos: la distancia sale de la ruta", () => {
+  const C = P.resuelve({ distancia: null, ritmos: { objetivos: [430, 410], suelo: 425, ataque: 415 },
+    etiquetas: ["A 7:10", "A 6:50"], nombres: { lento: "7:10", rapido: "6:50" },
+    voz: [{ para: "Para media de 7 10", no: "Media de 7 10 ya no da" }, { para: "Para media de 6 50", no: "Media de 6 50 ya no da" }] }, 6000);
+  assert.equal(C.distancia, 6000);
+  assert.deepEqual(C.objetivos.map(Math.round), [2580, 2460]);
+  assert.equal(Math.round(P.enTabla(C.suelo, 425 * 3)), 3000);
+  const p = P.calcula(3000, 3 * 420, C.distancia, C.objetivos);
+  assert.equal(P.hms(p.llegada), "42:00");
+  assert.equal(P.fraseVoz(p, dp, C.voz), "Vas para 42 justos. Para media de 7 10, 7 20. Para media de 6 50, 6 40.");
+  const v = P.ventanas(3 * 420, C.distancia, C.objetivos, C.suelo, C.ataque);
+  assert.equal(P.estado(3000, v, C.nombres).txt, "Entre suelo y ataque");
+});
+
+test("Roma resuelta igual que antes", () => {
+  const C = P.resuelve({ distancia: D, objetivos: OBJ, suelo: SUELO, ataque: ATAQUE });
+  assert.deepEqual(C.etiquetas, ["Sub 1:50", "Sub 1:45"]);
+  assert.equal(P.fraseVoz(P.calcula(10000, 3116, D, OBJ), dp, C.voz),
+    "Vas para 1 49 34. Para bajar de 1 50, 5 14. Para 1 45, 4 47.");
+});

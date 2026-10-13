@@ -13,6 +13,14 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.68.0] - 2026-10-13
+
+### Añadido
+
+- Prueba general del copiloto de Roma el miércoles 14/10: el rodaje suave de 5-6 km a 6'00"-6'10" con la ruta que se suba, con la misma pantalla, ventanas y voz que Roma pero a ritmo de rodaje («A 6:10» y «A 6:00»; azul entre 6'10" y 6'00" de media, naranja entre 6'07" y 6'03"). La distancia de la predicción es la de la ruta
+- Registro de la salida con objetivos: cada 5 s el Diario guarda km, tiempo, posición y precisión del GPS, ritmo, llegada, margen, ritmos para cada objetivo, ventanas y estado. Va en el informe de Ajustes («Compartir el último informe», archivo _diario.json). Tocar el botón «km» también queda apuntado, con cuánto corrigió
+- Los planes con predicción pueden darse por ritmos (la distancia sale de la ruta) y con sus propias etiquetas y frases de voz
+
 ## [2.67.0] - 2026-10-13
 
 ### Cambiado
@@ -926,6 +934,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.68.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.0
 [2.67.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.67.0
 [2.66.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.66.0
 [2.65.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.65.0
