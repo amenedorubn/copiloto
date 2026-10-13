@@ -15,9 +15,14 @@ Los resúmenes salen de los mensajes de commit de cada versión.
 
 ## [2.68.1] - 2026-10-13
 
+### Cambiado
+
+- La ruta vuelve a ir con sus colores de siempre. Las ventanas de la carrera con objetivos ya no la tapan: son un borde ancho por debajo que asoma a los dos lados (azul el ancho, naranja el estrecho)
+- La salida contenida de Roma y la prueba van en verde, para no confundirse con las ventanas
+
 ### Corregido
 
-- Ruta con sus colores y prueba a la medida de la ruta
+- La prueba del 14/10 esperaba 6 km aunque la ruta midiera 5,5: ahora el plan, las marcas y el resumen miden lo que mida la ruta elegida
 
 ## [2.68.0] - 2026-10-13
 
