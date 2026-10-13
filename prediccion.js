@@ -109,7 +109,7 @@ function hms(s){
 }
 function paceTxt(s){ s = Math.round(s); var m = Math.floor(s / 60), g = s % 60; return m + ":" + (g < 10 ? "0" : "") + g; }
 // 6600 -> "1:50"; 6300 -> "1:45"
-function objTxt(s){ var h = Math.floor(s / 3600), mi = Math.round(s % 3600 / 60); return h + ":" + (mi < 10 ? "0" : "") + mi; }
+function objTxt(s){ var m = Math.round(s / 60), h = Math.floor(m / 60), mi = m % 60; return h + ":" + (mi < 10 ? "0" : "") + mi; }
 
 // la configuracion del plan, lista para usar. Dos formas:
 //   { distancia, objetivos:[s,s], suelo:[[km,s]...], ataque:[[km,s]...] }   (Roma: tiempos)
@@ -127,7 +127,9 @@ function resuelve(X, Dalt){
   var et = X.etiquetas || obj.map(function(o){ return "Sub " + objTxt(o); });
   var nom = X.nombres || { lento: obj[0] != null ? objTxt(obj[0]) : "", rapido: obj[1] != null ? objTxt(obj[1]) : "" };
   var voz = X.voz || null;
-  return { distancia:D, objetivos:obj, suelo:suelo, ataque:ataque, etiquetas:et, nombres:nom, voz:voz, prueba: !!X.prueba };
+  // liebres del mapa: [{t: segundos de llegada, txt}] o, por ritmos, [{r: s/km, txt}]
+  var lie = (X.liebres || []).map(function(l){ return { t: l.r != null ? l.r * km : l.t, txt: l.txt }; });
+  return { distancia:D, objetivos:obj, suelo:suelo, ataque:ataque, etiquetas:et, nombres:nom, voz:voz, liebres:lie, prueba: !!X.prueba };
 }
 
 // para la voz, con sus unidades: "1 hora, 49 minutos y 34 segundos". Con los numeros a

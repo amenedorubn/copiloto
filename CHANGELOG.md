@@ -13,6 +13,17 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.69.0] - 2026-10-13
+
+### Cambiado
+
+- Carrera con objetivos: la ruta va en un solo verde (sin colores por tramo). Encima, el tramo entre las liebres de los objetivos en amarillo-naranja y el de tu plan (entre suelo y ataque) en naranja fuerte. Adiós a los bordes azul y naranja
+- Objetivos de Roma: sub-1:50 = 1:49:59 y sub-1:45 = 1:44:59
+
+### Añadido
+
+- Liebres en el mapa: un punto en la ruta con su etiqueta, donde iría ahora alguien a ritmo constante para cada tiempo. Roma: 1:45, 1:47:30 y 1:50. Prueba del 14/10: 6:00, 6:05 y 6:10 de media. El suelo y el ataque van sin etiqueta (el del suelo cae casi encima del de 1:50): son el tramo naranja fuerte
+
 ## [2.68.2] - 2026-10-13
 
 ### Corregido
@@ -952,6 +963,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.69.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.0
 [2.68.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.2
 [2.68.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.1
 [2.68.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.0
