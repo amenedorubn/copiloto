@@ -13,6 +13,13 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.68.2] - 2026-10-13
+
+### Corregido
+
+- Voz de la carrera con objetivos: ya no dice los ritmos para cada objetivo, solo a dónde llegas («Si sigues así, llegas en 1 hora, 49 minutos y 34 segundos»). Antes los números a secas («1 50») el sintetizador los leía como una hora del día («la 1:50 de la madrugada»)
+- Roma y la prueba del 14/10 ya no llevan rectas al final: las «2-3 rectas cortas» del evento de Roma son del calentamiento, antes de la salida, y la app las tomaba por rectas de después
+
 ## [2.68.1] - 2026-10-13
 
 ### Cambiado
@@ -945,6 +952,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.68.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.2
 [2.68.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.1
 [2.68.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.0
 [2.67.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.67.0

@@ -32,7 +32,7 @@ test("antes del km 1: calculando", () => {
   const p = P.calcula(600, 190, D, OBJ);
   assert.equal(p.listo, false);
   assert.equal(p.ritmos.length, 2);
-  assert.equal(P.fraseVoz(p, dp), "");
+  assert.equal(P.fraseVoz(p), "");
 });
 
 test("km 19 en 1:38:54: 1:45 fuera de alcance (más de 3:30), 1:50 a 5:18", () => {
@@ -78,12 +78,15 @@ test("ventanas y línea de estado", () => {
 });
 
 test("voz", () => {
-  assert.equal(P.fraseVoz(P.calcula(10000, 3116, D, OBJ), dp),
-    "Vas para 1 49 34. Para bajar de 1 50, 5 14. Para 1 45, 4 47.");
-  assert.equal(P.fraseVoz(P.calcula(19000, 5934, D, OBJ), dp),
-    "Vas para 1 49 49. Para bajar de 1 50, 5 18. 1 45 ya no da.");
-  assert.equal(P.tiempoVoz(6600), "1 50 justos");
-  assert.equal(P.tiempoVoz(6305), "1 45 cero 5");
+  assert.equal(P.fraseVoz(P.calcula(10000, 3116, D, OBJ)),
+    "Si sigues así, llegas en 1 hora, 49 minutos y 34 segundos.");
+  assert.equal(P.fraseVoz(P.calcula(600, 190, D, OBJ)), "");
+  assert.equal(P.tiempoVoz(6600), "1 hora y 50 minutos");
+  assert.equal(P.tiempoVoz(6305), "1 hora, 45 minutos y 5 segundos");
+  assert.equal(P.tiempoVoz(2004), "33 minutos y 24 segundos");
+  assert.equal(P.tiempoVoz(3600), "1 hora y 0 minutos");
+  // nunca dos numeros seguidos sin unidad: es lo que el sintetizador lee como una hora del dia
+  for (const s of [6574, 6600, 3601, 2004, 59]) assert.doesNotMatch(P.tiempoVoz(s), /\d+\s+\d+/);
 });
 
 test("salida contenida a 5:15: por detrás del suelo en ámbar, no del 1:50 en rojo", () => {
@@ -102,7 +105,7 @@ test("plan de prueba por ritmos: la distancia sale de la ruta", () => {
   assert.equal(Math.round(P.enTabla(C.suelo, 425 * 3)), 3000);
   const p = P.calcula(3000, 3 * 420, C.distancia, C.objetivos);
   assert.equal(P.hms(p.llegada), "42:00");
-  assert.equal(P.fraseVoz(p, dp, C.voz), "Vas para 42 justos. Para media de 7 10, 7 20. Para media de 6 50, 6 40.");
+  assert.equal(P.fraseVoz(p), "Si sigues así, llegas en 42 minutos.");
   const v = P.ventanas(3 * 420, C.distancia, C.objetivos, C.suelo, C.ataque);
   assert.equal(P.estado(3000, v, C.nombres).txt, "Entre suelo y ataque");
 });
@@ -110,6 +113,5 @@ test("plan de prueba por ritmos: la distancia sale de la ruta", () => {
 test("Roma resuelta igual que antes", () => {
   const C = P.resuelve({ distancia: D, objetivos: OBJ, suelo: SUELO, ataque: ATAQUE });
   assert.deepEqual(C.etiquetas, ["Sub 1:50", "Sub 1:45"]);
-  assert.equal(P.fraseVoz(P.calcula(10000, 3116, D, OBJ), dp, C.voz),
-    "Vas para 1 49 34. Para bajar de 1 50, 5 14. Para 1 45, 4 47.");
+  assert.equal(C.voz, null);
 });

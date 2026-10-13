@@ -126,32 +126,26 @@ function resuelve(X, Dalt){
   } else obj = (X.objetivos || []).slice();
   var et = X.etiquetas || obj.map(function(o){ return "Sub " + objTxt(o); });
   var nom = X.nombres || { lento: obj[0] != null ? objTxt(obj[0]) : "", rapido: obj[1] != null ? objTxt(obj[1]) : "" };
-  var voz = X.voz || obj.map(function(o, i){ var n = objVoz(o); return { para: (i === 0 ? "Para bajar de " : "Para ") + n, no: n + " ya no da" }; });
+  var voz = X.voz || null;
   return { distancia:D, objetivos:obj, suelo:suelo, ataque:ataque, etiquetas:et, nombres:nom, voz:voz, prueba: !!X.prueba };
 }
 
-// para la voz: "1 49 34" (TTS lo lee bien así) y los ritmos con el dicePace de la app
+// para la voz, con sus unidades: "1 hora, 49 minutos y 34 segundos". Con los numeros a
+// secas ("1 49 34", "1 50") el sintetizador lo leia como una HORA del dia ("la 1:50 de la madrugada")
 function tiempoVoz(s){
   s = Math.round(s);
-  var h = Math.floor(s / 3600), mi = Math.floor(s % 3600 / 60), g = s % 60;
-  var p = [];
-  if(h) p.push(String(h));
-  p.push(h ? (mi < 10 ? "cero " + mi : String(mi)) : String(mi));
-  p.push(g === 0 ? "justos" : (g < 10 ? "cero " + g : String(g)));
-  return p.join(" ");
+  var h = Math.floor(s / 3600), mi = Math.floor(s % 3600 / 60), g = s % 60, p = [];
+  if(h) p.push(h === 1 ? "1 hora" : h + " horas");
+  if(mi || h) p.push(mi === 1 ? "1 minuto" : mi + " minutos");
+  if(g) p.push(g === 1 ? "1 segundo" : g + " segundos");
+  if(!p.length) return "0 segundos";
+  return p.length === 1 ? p[0] : p.slice(0, -1).join(", ") + " y " + p[p.length - 1];
 }
-function objVoz(s){ var h = Math.floor(s / 3600), mi = Math.round(s % 3600 / 60); return h + " " + (mi < 10 ? "cero " + mi : mi); }
 
-// lo que se añade al aviso del km: "Vas para 1 49 34. Para bajar de 1 50, 5 14. Para 1 45, 4 47."
-function fraseVoz(p, dicePace, voz){
+// lo que se añade al aviso del km: solo a dónde llegas si sigues así
+function fraseVoz(p){
   if(!p || !p.listo) return "";
-  var f = "Vas para " + tiempoVoz(p.llegada) + ".";
-  p.ritmos.forEach(function(r, i){
-    var o = objVoz(r.objetivo), v = (voz && voz[i]) || { para: (i === 0 ? "Para bajar de " : "Para ") + o, no: o + " ya no da" };
-    if(r.ritmo == null) f += " " + v.no + ".";
-    else f += " " + v.para + ", " + dicePace(r.ritmo) + ".";
-  });
-  return f;
+  return "Si sigues así, llegas en " + tiempoVoz(p.llegada) + ".";
 }
 
 root.Prediccion = { calcula:calcula, colorMargen:colorMargen, fantasma:fantasma, enTabla:enTabla,
