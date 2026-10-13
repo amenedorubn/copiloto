@@ -13,6 +13,19 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.67.0] - 2026-10-13
+
+### Cambiado
+
+- Plan de la media de Roma al del evento (CAMBIO 11-OCT y 13-OCT): km 1-5 a 5'15" fijo sin mirar pulsaciones; desde el km 6 manda la FC con techo 162 (km 6-10), 165 (10-15), 168 (15-18) y 190 (18-meta), y el ritmo solo pone un suelo de 5'12". Antes seguía el plan viejo (5'10" del 5 al 15 y sin pulsaciones)
+- Geles en el km 7 y el 14 (los lee de la sección GELES del evento), con «Gel en 200 metros» antes
+
+### Añadido
+
+- Carrera con objetivos (Roma): la tarjeta de arriba ya no lleva el nombre ni el «Km N». Muestra en una fila el ritmo y la FC del tramo (ritmo fijo / suelo de ritmo y techo FC), y en grande la LLEGADA si sigues a tu ritmo medio (verde con 30 s o más de margen sobre 1:50, ámbar con menos, rojo si te pasas), los segundos de margen y el ritmo que hace falta desde ya para sub-1:50 y sub-1:45. «Calculando…» hasta el km 1; «Fuera de alcance» si exigiría más de 3'30"/km
+- En el mapa, dos ventanas sobre la ruta que avanzan con el reloj: azul entre 1:45 y 1:50 a ritmo constante desde la salida; naranja, encima, entre el SUELO y el ATAQUE de la tabla de carteles. La ruta va en gris para que se vean. La línea de estado habla de ellas («Entre suelo y ataque», «X m por detrás del suelo», «X m por detrás del 1:50»); en la salida contenida se mide contra el suelo, no contra el 1:50
+- Voz: en este modo el aviso de cada km suena en el km X,1 (no se pisa con Huawei Health) y termina con «Vas para 1 49 34. Para bajar de 1 50, 5 14. Para 1 45, 4 47» («1 45 ya no da» si no es posible). La cuenta va en `prediccion.js`, con sus tests
+
 ## [2.66.0] - 2026-10-12
 
 ### Cambiado
@@ -913,6 +926,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.67.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.67.0
 [2.66.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.66.0
 [2.65.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.65.0
 [2.64.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.64.2

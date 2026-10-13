@@ -1,0 +1,94 @@
+// Tests de la prediccion de carrera (media de Roma): llegada, margen, ritmos
+// para cada objetivo, ventanas del mapa y voz.   node --test tests/prediccion.test.mjs
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+
+const P = createRequire(import.meta.url)("../prediccion.js");
+const D = 21097.5, OBJ = [6600, 6300];   // sub-1:50 (manda) y sub-1:45
+const SUELO = [[0, 0], [5, 1575], [10, 3125], [15, 4675], [20, 6225], [21.0975, 6565]];
+const ATAQUE = [[0, 0], [5, 1575], [10, 3115], [15, 4635], [20, 6135], [21.0975, 6465]];
+const dp = (s) => { s = Math.round(s); const m = Math.floor(s / 60), g = s % 60; return m + " " + (g === 0 ? "justos" : g < 10 ? "cero " + g : g); };
+
+test("km 10 en 51:56: llegada 1:49:34, 26 s de margen, 5:14 y 4:47", () => {
+  const p = P.calcula(10000, 3116, D, OBJ);
+  assert.equal(p.listo, true);
+  assert.equal(P.hms(p.llegada), "1:49:34");
+  assert.equal(Math.round(p.margen), 26);
+  assert.equal(P.colorMargen(p.margen), "warn");
+  assert.equal(P.paceTxt(p.ritmos[0].ritmo), "5:14");
+  assert.equal(P.paceTxt(p.ritmos[1].ritmo), "4:47");
+});
+
+test("km 8 en 41:20 a 5:10: llegada 1:49:00, verde", () => {
+  const p = P.calcula(8000, 2480, D, OBJ);
+  assert.equal(P.hms(p.llegada), "1:49:00");
+  assert.equal(P.colorMargen(p.margen), "ok");
+  assert.equal(P.paceTxt(p.ritmos[0].ritmo), "5:15");
+  assert.equal(P.paceTxt(p.ritmos[1].ritmo), "4:52");
+});
+
+test("antes del km 1: calculando", () => {
+  const p = P.calcula(600, 190, D, OBJ);
+  assert.equal(p.listo, false);
+  assert.equal(p.ritmos.length, 2);
+  assert.equal(P.fraseVoz(p, dp), "");
+});
+
+test("km 19 en 1:38:54: 1:45 fuera de alcance (más de 3:30), 1:50 a 5:18", () => {
+  const p = P.calcula(19000, 5934, D, OBJ);
+  assert.equal(p.ritmos[1].ritmo, null);
+  assert.equal(p.ritmos[1].fuera, true);
+  assert.equal(P.paceTxt(p.ritmos[0].ritmo), "5:18");
+  assert.equal(P.colorMargen(p.margen), "warn");
+});
+
+test("3:30 justos todavía da; más rápido ya no", () => {
+  const t = 6300 - 210 * 2;               // quedan 2 km y faltan 420 s para 1:45
+  assert.equal(P.calcula(D - 2000, t, D, OBJ).ritmos[1].fuera, false);
+  assert.equal(P.calcula(D - 2000, t + 5, D, OBJ).ritmos[1].fuera, true);
+});
+
+test("pasado de 1:50: rojo y sin ritmo", () => {
+  const p = P.calcula(20000, 6650, D, OBJ);
+  assert.equal(P.colorMargen(p.margen), "bad");
+  assert.equal(p.ritmos[0].ritmo, null);
+});
+
+test("fantasma a ritmo constante y tabla de carteles", () => {
+  assert.equal(Math.round(P.fantasma(6600, 6600, D)), Math.round(D));
+  assert.equal(Math.round(P.fantasma(3300, 6600, D)), Math.round(D / 2));
+  assert.equal(P.enTabla(SUELO, 1575), 5000);
+  assert.equal(Math.round(P.enTabla(SUELO, 3125)), 10000);
+  assert.equal(Math.round(P.enTabla(ATAQUE, 3115)), 10000);
+  assert.equal(Math.round(P.enTabla(SUELO, 99999)), 21098);
+});
+
+test("ventanas y línea de estado", () => {
+  const v = P.ventanas(3116, D, OBJ, SUELO, ATAQUE);
+  assert.ok(v.azul[0] < v.naranja[0] && v.naranja[1] < v.azul[1]);
+  assert.equal(P.estado(10000, v).txt, "Entre suelo y ataque");
+  assert.equal(P.estado(9980, v).col, "ok");
+  const v15 = P.ventanas(4732, D, OBJ, SUELO, ATAQUE);
+  const e = P.estado(15000, v15);
+  assert.equal(e.col, "bad");
+  assert.match(e.txt, /^1[23]0 m por detrás del 1:50$/);
+  assert.equal(P.estado(v15.lento + 20, v15).col, "warn");
+  assert.match(P.estado(v15.rapido + 100, v15).txt, /por delante del 1:45/);
+});
+
+test("voz", () => {
+  assert.equal(P.fraseVoz(P.calcula(10000, 3116, D, OBJ), dp),
+    "Vas para 1 49 34. Para bajar de 1 50, 5 14. Para 1 45, 4 47.");
+  assert.equal(P.fraseVoz(P.calcula(19000, 5934, D, OBJ), dp),
+    "Vas para 1 49 49. Para bajar de 1 50, 5 18. 1 45 ya no da.");
+  assert.equal(P.tiempoVoz(6600), "1 50 justos");
+  assert.equal(P.tiempoVoz(6305), "1 45 cero 5");
+});
+
+test("salida contenida a 5:15: por detrás del suelo en ámbar, no del 1:50 en rojo", () => {
+  const v = P.ventanas(200, D, OBJ, SUELO, ATAQUE);   // a 5:15 justos irías por el 634
+  const e = P.estado(600, v);
+  assert.equal(e.col, "warn");
+  assert.match(e.txt, /por detrás del suelo/);
+});
