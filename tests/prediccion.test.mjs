@@ -72,9 +72,9 @@ test("ventanas y línea de estado", () => {
   const v15 = P.ventanas(4732, D, OBJ, SUELO, ATAQUE);
   const e = P.estado(15000, v15);
   assert.equal(e.col, "bad");
-  assert.match(e.txt, /^1[23]0 m por detrás del sub 1:50$/);
+  assert.match(e.txt, /^1[23]0 m por detrás de sub 1:50$/);
   assert.equal(P.estado(v15.lento + 20, v15).col, "warn");
-  assert.match(P.estado(v15.rapido + 100, v15).txt, /por delante del sub 1:45/);
+  assert.match(P.estado(v15.rapido + 100, v15).txt, /por delante de sub 1:45/);
 });
 
 test("voz", () => {
@@ -122,7 +122,7 @@ test("voz: los objetivos en palabras, nunca como una hora", () => {
   assert.deepEqual(C.nombresVoz, { lento: "sub uno cincuenta", rapido: "sub uno cuarenta y cinco" });
   const v = P.ventanas(4732, D, C.objetivos, SUELO, ATAQUE);
   const tv = P.estado(15000, v, C.nombresVoz).txt;
-  assert.match(tv, /m por detrás del sub uno cincuenta$/);
+  assert.match(tv, /m por detrás de sub uno cincuenta$/);
   assert.doesNotMatch(tv, /\d[:\s]\d\d/);
   assert.equal(P.objPalabras(2580), "cuarenta y tres");
   assert.equal(P.objPalabras(6450), "uno cuarenta y ocho");

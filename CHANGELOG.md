@@ -17,7 +17,7 @@ Los resúmenes salen de los mensajes de commit de cada versión.
 
 ### Corregido
 
-- Voz: «60 metros por delante del 1:50» se oía como «la 1:50 de la madrugada». Ahora dice los objetivos en palabras: «por delante del sub uno cincuenta», «por detrás del sub uno cuarenta y cinco» (en la prueba, «la media de seis diez»). En pantalla pone «sub 1:50» y «sub 1:45»
+- Voz: «60 metros por delante del 1:50» se oía como «la 1:50 de la madrugada». Ahora dice los objetivos en palabras: «por delante de sub uno cincuenta», «por detrás de sub uno cuarenta y cinco» (en la prueba, «de la media de seis diez»). En pantalla pone «sub 1:50» y «sub 1:45»
 - Voz: «metros» con todas las letras en la línea de estado
 
 ## [2.69.0] - 2026-10-13

@@ -88,7 +88,7 @@ function estado(me, v, nombres){
   if(v.naranja && me >= v.naranja[0] - TOL && me <= v.naranja[1] + TOL)
     return { txt:"Entre suelo y ataque", col:"ok" };
   if(v.rapido != null && me > v.rapido + TOL)
-    return { txt: m(me - v.rapido) + " m por delante del " + rapido, col:"ok" };
+    return { txt: m(me - v.rapido) + " m por delante de " + rapido, col:"ok" };
   if(v.naranja && me > v.naranja[1])
     return { txt: m(me - v.naranja[1]) + " m por delante del ataque", col:"ok" };
   if(v.lento != null && me >= v.lento - TOL)
@@ -97,7 +97,7 @@ function estado(me, v, nombres){
   // en la salida contenida (5'15" los 5 primeros km) el suelo va por detrás del 1:50 a ritmo
   // constante: ahí se mide contra el suelo, que es lo que pide el plan, y no se pinta de rojo
   if(v.naranja && v.naranja[0] < v.lento) return { txt: m(v.naranja[0] - me) + " m por detrás del suelo", col:"warn" };
-  if(v.lento != null) return { txt: m(v.lento - me) + " m por detrás del " + lento, col:"bad" };
+  if(v.lento != null) return { txt: m(v.lento - me) + " m por detrás de " + lento, col:"bad" };
   return { txt:"", col:"dim" };
 }
 
