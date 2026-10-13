@@ -82,7 +82,7 @@ function ventanas(t, D, objetivos, suelo, ataque){
 // la linea de estado: dónde estás respecto a las ventanas (me en metros)
 function estado(me, v, nombres){
   nombres = nombres || {};
-  var lento = nombres.lento || "1:50", rapido = nombres.rapido || "1:45";
+  var lento = nombres.lento || "sub 1:50", rapido = nombres.rapido || "sub 1:45";
   var m = function(x){ return Math.round(Math.abs(x) / 10) * 10; };
   var TOL = 5;
   if(v.naranja && me >= v.naranja[0] - TOL && me <= v.naranja[1] + TOL)
@@ -108,6 +108,15 @@ function hms(s){
   return (h ? h + ":" + (mi < 10 ? "0" : "") : "") + mi + ":" + (g < 10 ? "0" : "") + g;
 }
 function paceTxt(s){ s = Math.round(s); var m = Math.floor(s / 60), g = s % 60; return m + ":" + (g < 10 ? "0" : "") + g; }
+// numeros en palabras (0-99), para la voz
+var UN=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince",
+        "dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco",
+        "veintiséis","veintisiete","veintiocho","veintinueve"];
+var DEC=["","","","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
+function palabras(n){ n=Math.round(n); if(n<30) return UN[n]; var d=Math.floor(n/10), u=n%10; return DEC[d]+(u ? " y "+UN[u] : ""); }
+// 6599 -> "uno cincuenta"; 6299 -> "uno cuarenta y cinco"; 2580 -> "cuarenta y tres"
+function objPalabras(s){ var m=Math.round(s/60), h=Math.floor(m/60), mi=m%60;
+  return h ? palabras(h)+(mi ? " "+palabras(mi) : "") : palabras(mi); }
 // 6600 -> "1:50"; 6300 -> "1:45"
 function objTxt(s){ var m = Math.round(s / 60), h = Math.floor(m / 60), mi = m % 60; return h + ":" + (mi < 10 ? "0" : "") + mi; }
 
@@ -125,11 +134,13 @@ function resuelve(X, Dalt){
     if(R.ataque) ataque = [[0,0],[km, R.ataque * km]];
   } else obj = (X.objetivos || []).slice();
   var et = X.etiquetas || obj.map(function(o){ return "Sub " + objTxt(o); });
-  var nom = X.nombres || { lento: obj[0] != null ? objTxt(obj[0]) : "", rapido: obj[1] != null ? objTxt(obj[1]) : "" };
+  var nom = X.nombres || { lento: obj[0] != null ? "sub " + objTxt(obj[0]) : "", rapido: obj[1] != null ? "sub " + objTxt(obj[1]) : "" };
+  // en la voz, en palabras: "1:50" o "1 50" el sintetizador lo lee como una hora del dia
+  var nomVoz = X.nombresVoz || { lento: obj[0] != null ? "sub " + objPalabras(obj[0]) : "", rapido: obj[1] != null ? "sub " + objPalabras(obj[1]) : "" };
   var voz = X.voz || null;
   // liebres del mapa: [{t: segundos de llegada, txt}] o, por ritmos, [{r: s/km, txt}]
   var lie = (X.liebres || []).map(function(l){ return { t: l.r != null ? l.r * km : l.t, txt: l.txt }; });
-  return { distancia:D, objetivos:obj, suelo:suelo, ataque:ataque, etiquetas:et, nombres:nom, voz:voz, liebres:lie, prueba: !!X.prueba };
+  return { distancia:D, objetivos:obj, suelo:suelo, ataque:ataque, etiquetas:et, nombres:nom, nombresVoz:nomVoz, voz:voz, liebres:lie, prueba: !!X.prueba };
 }
 
 // para la voz, con sus unidades: "1 hora, 49 minutos y 34 segundos". Con los numeros a
@@ -152,6 +163,6 @@ function fraseVoz(p){
 
 root.Prediccion = { calcula:calcula, colorMargen:colorMargen, fantasma:fantasma, enTabla:enTabla,
   ventanas:ventanas, estado:estado, hms:hms, paceTxt:paceTxt, objTxt:objTxt, tiempoVoz:tiempoVoz,
-  fraseVoz:fraseVoz, resuelve:resuelve, MIN_KM:MIN_KM, MIN_RITMO:MIN_RITMO };
+  fraseVoz:fraseVoz, resuelve:resuelve, objPalabras:objPalabras, MIN_KM:MIN_KM, MIN_RITMO:MIN_RITMO };
 if(typeof module !== "undefined" && module.exports) module.exports = root.Prediccion;
 })(typeof window !== "undefined" ? window : globalThis);

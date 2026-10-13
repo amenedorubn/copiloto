@@ -13,6 +13,13 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.69.1] - 2026-10-13
+
+### Corregido
+
+- Voz: «60 metros por delante del 1:50» se oía como «la 1:50 de la madrugada». Ahora dice los objetivos en palabras: «por delante del sub uno cincuenta», «por detrás del sub uno cuarenta y cinco» (en la prueba, «la media de seis diez»). En pantalla pone «sub 1:50» y «sub 1:45»
+- Voz: «metros» con todas las letras en la línea de estado
+
 ## [2.69.0] - 2026-10-13
 
 ### Cambiado
@@ -963,6 +970,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.69.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.1
 [2.69.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.0
 [2.68.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.2
 [2.68.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.1
