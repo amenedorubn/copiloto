@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.70.1] - 2026-10-14
+
+### Corregido
+
+- Si la app se cierra o el móvil se reinicia a mitad de carrera y la vuelves a abrir, ya no canta los km del hueco con parciales falsos («Kilómetro 4, 10 05», «Kilómetro 5, 0 19»): espera a que el GPS te vuelva a enganchar y sigue desde donde estás, con el parcial del km en curso a tu ritmo medio. El reloj y los km ya se recuperaban bien (probado con 2 y 10 minutos con el móvil apagado)
+
 ## [2.70.0] - 2026-10-14
 
 ### Añadido
@@ -986,6 +992,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.70.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.70.1
 [2.70.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.70.0
 [2.69.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.2
 [2.69.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.1
