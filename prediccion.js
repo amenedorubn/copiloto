@@ -157,7 +157,7 @@ function tiempoVoz(s){
 
 // lo que se añade al aviso del km: solo a dónde llegas si sigues así
 function fraseVoz(p){
-  if(!p || !p.listo) return "";
+  if(!p || !p.listo || p.fin) return "";        // pasada la meta ya no hay marca que prever
   return "Marca prevista: " + tiempoVoz(p.llegada) + ".";
 }
 

@@ -13,6 +13,16 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.71.0] - 2026-10-14
+
+### Añadido
+
+- Prueba final del copiloto el viernes 16/10: la activación de 4 km a 6'40"-7'00" con la ruta de siempre, como Roma (Empezar = km 0, botón «SALIDA 0», liebres 6:40, 6:50 y 7:00, voz en el X,1). Las rectas, después, como siempre
+
+### Corregido
+
+- Pasada la meta, la voz del último km ya no dice «X metros por delante de…» ni da «marca prevista», y la línea de estado pone «Meta». En Roma pasaba con el km 21, que suena en el 21,1, pasada la meta del 21,097
+
 ## [2.70.1] - 2026-10-14
 
 ### Corregido
@@ -992,6 +1002,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.71.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.71.0
 [2.70.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.70.1
 [2.70.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.70.0
 [2.69.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.2

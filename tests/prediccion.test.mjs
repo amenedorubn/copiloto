@@ -127,3 +127,8 @@ test("voz: los objetivos en palabras, nunca como una hora", () => {
   assert.equal(P.objPalabras(2580), "cuarenta y tres");
   assert.equal(P.objPalabras(6450), "uno cuarenta y ocho");
 });
+
+test("pasada la meta, la voz no da marca prevista", () => {
+  assert.equal(P.fraseVoz(P.calcula(4100, 1700, 4000, [1680, 1600])), "");
+  assert.equal(P.fraseVoz(P.calcula(21100, 6550, D, OBJ)), "");
+});
