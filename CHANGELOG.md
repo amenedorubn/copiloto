@@ -13,6 +13,16 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.70.0] - 2026-10-14
+
+### Añadido
+
+- Roma: botón «0» de la salida. Pulsas Empezar en el cajón y, al pisar la línea, tocas el botón (donde sale el de los km, pone «SALIDA 0»): reloj, distancia y plan a cero, y la voz dice «Salida. Reloj a cero». Está hasta que llevas 300 m desde el último cero: si lo tocas antes de tiempo, lo vuelves a tocar en la línea. Queda apuntado en el Diario
+
+### Cambiado
+
+- Voz: «Marca prevista: 1 hora, 49 minutos y 34 segundos» en vez de «Si sigues así, llegas en…», que sonaba a lo que falta
+
 ## [2.69.2] - 2026-10-14
 
 ### Corregido
@@ -976,6 +986,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.70.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.70.0
 [2.69.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.2
 [2.69.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.1
 [2.69.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.0

@@ -158,7 +158,7 @@ function tiempoVoz(s){
 // lo que se añade al aviso del km: solo a dónde llegas si sigues así
 function fraseVoz(p){
   if(!p || !p.listo) return "";
-  return "Si sigues así, llegas en " + tiempoVoz(p.llegada) + ".";
+  return "Marca prevista: " + tiempoVoz(p.llegada) + ".";
 }
 
 root.Prediccion = { calcula:calcula, colorMargen:colorMargen, fantasma:fantasma, enTabla:enTabla,

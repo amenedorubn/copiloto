@@ -79,7 +79,7 @@ test("ventanas y línea de estado", () => {
 
 test("voz", () => {
   assert.equal(P.fraseVoz(P.calcula(10000, 3116, D, OBJ)),
-    "Si sigues así, llegas en 1 hora, 49 minutos y 34 segundos.");
+    "Marca prevista: 1 hora, 49 minutos y 34 segundos.");
   assert.equal(P.fraseVoz(P.calcula(600, 190, D, OBJ)), "");
   assert.equal(P.tiempoVoz(6600), "1 hora y 50 minutos");
   assert.equal(P.tiempoVoz(6305), "1 hora, 45 minutos y 5 segundos");
@@ -105,7 +105,7 @@ test("plan de prueba por ritmos: la distancia sale de la ruta", () => {
   assert.equal(Math.round(P.enTabla(C.suelo, 425 * 3)), 3000);
   const p = P.calcula(3000, 3 * 420, C.distancia, C.objetivos);
   assert.equal(P.hms(p.llegada), "42:00");
-  assert.equal(P.fraseVoz(p), "Si sigues así, llegas en 42 minutos.");
+  assert.equal(P.fraseVoz(p), "Marca prevista: 42 minutos.");
   const v = P.ventanas(3 * 420, C.distancia, C.objetivos, C.suelo, C.ataque);
   assert.equal(P.estado(3000, v, C.nombres).txt, "Entre suelo y ataque");
 });
