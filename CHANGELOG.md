@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.69.2] - 2026-10-14
+
+### Corregido
+
+- Roma: al pulsar Empezar, el km 0 es donde estás y el reloj arranca en 0, aunque el GPS te enganche unos metros (o km) más allá en la ruta. Antes, esos metros se daban por hechos a ritmo de plan y el reloj ya salía con su tiempo: en la prueba del 14/10 el GPS enganchó en el km 2,65 y el reloj empezó en 16:09, la voz cantaba los km antes de tiempo y la llegada contaba 16 minutos no corridos. Queda apuntado en el Diario («cero»)
+
 ## [2.69.1] - 2026-10-13
 
 ### Corregido
@@ -970,6 +976,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.69.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.2
 [2.69.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.1
 [2.69.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.69.0
 [2.68.2]: https://github.com/amenedorubn/copiloto/releases/tag/v2.68.2
