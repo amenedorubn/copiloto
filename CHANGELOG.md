@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.73.0] - 2026-10-25
+
+### Añadido
+
+- «Hecho» no es «Ya está»: lo que se cuece queda en marcha (tarjeta «Cociendo» o barra encima) y avisa cada minuto hasta «Ya está»; lo que depende de ello espera. El botón dice lo que acabas de hacer («Echado · empieza el reloj (5 min)»). Voz: «centímetro y medio» y la señal como «Listo si …»
+
 ## [2.72.1] - 2026-10-25
 
 ### Corregido
@@ -1014,6 +1020,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.73.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.73.0
 [2.72.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.72.1
 [2.72.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.72.0
 [2.71.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.71.0

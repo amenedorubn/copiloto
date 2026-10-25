@@ -109,6 +109,17 @@ no van en fila, sino por carriles:
   primer paso con ellos hasta el último.
 - Las recetas JSON de Copiloto Cocina y las comidas sin carriles siguen con el paso a paso de siempre.
 
+**«Hecho» no es «Ya está» (v2.73).** Echar las lentejas no es terminarlas. El botón de un paso que espera (cuece,
+dora, al micro) dice lo que acabas de hacer, «Echado · empieza el reloj (5 min)» (o «Empezar reloj · 5 min» si el
+verbo no da para más), y la voz: «Reloj de 5 minutos. Te aviso para ver si la salsa espesa». Ese paso **no cuenta
+como hecho**: queda en marcha (`S.carr.cuece`). Si tus manos tienen otra cosa, esa va en la tarjeta grande y lo que
+se cuece justo encima, en una barra con su nombre, el reloj, «Listo si …», «+1 min» y «Ya está». Si no, lo que se
+cuece **es** la tarjeta grande («Lentejas · cociendo», cuenta atrás grande): nunca «Nada que hacer» con algo al fuego.
+Al sonar: pitido y «Lentejas: mira si la salsa espesa», y otra vez cada minuto hasta «Ya está» o «+1 min». Lo que
+depende de él (el siguiente paso del carril, AL JUNTAR) no empieza hasta «Ya está»; el plan se rehace igual que si
+vas tarde. Los avisos a mitad («vuelta a los 2») siguen. En el paso a paso sin carriles es igual (`S.cuece`): el
+reloj de lo que espera empieza con el botón, pasas a lo siguiente y lo que se cuece va encima hasta «Ya está».
+
 Capturas: `node scripts/capturas-cocina.mjs` saca `carril-plan`, `carril-agua`, `carril-manos`, `carril-tarde`,
 `carril-espera`, `carril-pasta`, `carril-fin`, `carril-error` y `carril-micocina` con la pasta de ejemplo.
 

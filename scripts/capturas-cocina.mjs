@@ -191,8 +191,10 @@ for (const tema of ["oscuro", "claro"]) {
         await pasa(15);
       }
       await foto("carril-pasta");
-      for (let i = 0; i < 400 && await p.$("#cocPaso [data-a=cHecho]"); i++) {  // y el resto, a su hora
-        if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else await pasa(15);
+      for (let i = 0; i < 400 && await p.$("#cocPaso .cpDock [data-a=cHecho], #cocPaso .cpDock [data-a=cYa]"); i++) {  // y el resto, a su hora
+        // v2.73: lo que se cuece no está hecho hasta «Ya está» (al sonar su reloj)
+        if (await p.$("#cocPaso .cpDock [data-a=cYa]")) { if (await p.$("#cocPaso .cpReloj.fin")) await toca("cYa"); else await pasa(15); }
+        else if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else await pasa(15);
       }
       await p.waitForTimeout(300); await foto("carril-fin");
       await p.click("#cocPaso [data-a=sinApuntar]").catch(() => {}); await p.waitForTimeout(400);
@@ -280,8 +282,9 @@ for (const tema of ["oscuro", "claro"]) {
       await toca("simVel\"][data-v=\"30"); await p.clock.runFor(4000); await p.waitForTimeout(300);
       await toca("simTarde"); await p.clock.runFor(1200); await p.waitForTimeout(300);
       await foto("prueba-tarde");
-      for (let i = 0; i < 600 && await p.$("#cocPaso [data-a=cHecho]"); i++) {
-        if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); }
+      for (let i = 0; i < 600 && await p.$("#cocPaso .cpDock [data-a=cHecho], #cocPaso .cpDock [data-a=cYa]"); i++) {
+        if (await p.$("#cocPaso .cpDock [data-a=cYa]")) { if (await p.$("#cocPaso .cpReloj.fin")) await toca("cYa"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); } }
+        else if (await p.$("#cocPaso .ccCap.ac")) await toca("cHecho"); else { await p.clock.runFor(1000); await p.waitForTimeout(60); }
       }
       await p.waitForTimeout(300); await foto("prueba-fin");
       await toca("sinApuntar"); await p.waitForTimeout(600);

@@ -237,7 +237,7 @@ aparte, y así nunca se desincroniza).
 | `250%g`, `20%s` | también vale el `%` de Cooklang | 250 g, 20 s |
 | `~{5 min}`, `~huevo{10 min}` | el reloj del paso (con nombre, opcional) | 5 min |
 | `#sartén`, `#olla{}` | el recipiente o aparato (una palabra, o con `{}`) | sartén |
-| `→ dorado por fuera` | al final: cómo se ve cuando ya está | (sale aparte: «Ya está cuando…») |
+| `→ dorado por fuera` | al final: cómo se ve cuando ya está | (sale aparte: «Listo si…») |
 
 Sus reglas son las de la v4 con las marcas: `~{tiempo}` en todo paso, `@&nombre{cantidad}` para lo que ya salió,
 `@ingrediente(corte)` como único paréntesis permitido y `#recipiente`.

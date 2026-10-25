@@ -55,7 +55,7 @@ var UDS = [
   [/tazas?/, "taza", "tazas", true],
   [/scoops?/, "scoop", "scoops", false]
 ];
-var UD_RE = new RegExp("(" + NUM + "(?:\\s*[-–]\\s*" + NUM + ")?)\\s*(" + UDS.map(function (u) { return u[0].source; }).join("|") + ")\\.?(?![" + L + "])", "g");
+var UD_RE = new RegExp("(" + NUM + "(?:\\s*[-–]\\s*" + NUM + ")?)\\s*(" + UDS.map(function (u) { return u[0].source; }).join("|") + ")(?:\\.(?!\\s+[A-ZÁÉÍÓÚÑ]|\\s*$))?(?![" + L + "])", "g");
 function ud(w) { for (var i = 0; i < UDS.length; i++) if (new RegExp("^(?:" + UDS[i][0].source + ")$", "i").test(w)) return UDS[i]; return null; }
 function valor(t) {
   t = String(t).trim();
@@ -79,6 +79,48 @@ function siguiente(s, i) { var m = s.slice(i).match(new RegExp("^\\s*(?:de\\s+)?
 // lo de entre parentesis que solo dice de donde sale: fuera
 var ORIGEN = /^\s*(?:(?:el|la|lo|los|las)\s+)?(?:de casa|de la nevera|del congelador|de la bolsa|del bote|del tarro|de ayer|de anoche|de hoy|del? (?:domingo|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|mediod[ií]a)|descongelad[oa]s?|que (?:ya )?(?:quedan?|sobran?|tienes)|lo que queda|(?:el|la) (?:primer[oa]|segund[oa]|otr[oa])\b|sobrante)/i;
 var SIGLAS = { OK: 1, TV: 1, PC: 1, UV: 1 };
+var PALABRA_N = { 2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis", 7: "siete", 8: "ocho", 9: "nueve", 10: "diez", 11: "once", 12: "doce" };
+
+/* v2.73 · la señal de «ya está», siempre en indicativo detrás de «Listo si …»:
+     «la salsa espesa», «humea un poco», «se separa en láminas» -> tal cual (sujeto + verbo, o verbo);
+     «dorado por fuera», «blandas y doradas», «al dente», «cocidos» -> «está / están …» (concuerda con lo
+     primero que dice). «hasta que esté dorado» (lo de antes) -> «está dorado».                            */
+var ADJ = /^(blanc|tiern|crujient|calient|suelt|jugos|transparent|firm|cremos|espes|líquid|liquid|tibi|frí|fri|templad|cuajad|hech|frit|abiert|cubiert|puest|rot|list|dorad|blandit|bland|tostad|caramelizad|reducid|fundid|derretid|cocid|hervid|pochad|sellad|gratinad|esponjos|brillant|homogéne|homogene|lis|uniform|opac|rosad|tostadit)(o|a|e|os|as|es)?$/i;
+var NO_ADJ = /^(dados?|cubos?|tiras?|rodajas?|trozos?|l[aá]minas?|crema|sin|ya|no|nada|todo|todos|todas|toda)$/i;
+var SUBJ = { "esté": "está", "este": "está", "estén": "están", "esten": "están", dore: "dora", doren: "doran", espese: "espesa", cuaje: "cuaja", cuajen: "cuajan",
+  hierva: "hierve", burbujee: "burbujea", humee: "humea", reduzca: "reduce", funda: "funde", ablande: "ablanda", ablanden: "ablandan", evapore: "evapora",
+  quede: "queda", queden: "quedan", suelte: "suelta", cambie: "cambia", empiece: "empieza", cueza: "cuece", rompa: "rompe", tome: "toma", brille: "brilla",
+  pierda: "pierde", pierdan: "pierden", absorba: "absorbe", huela: "huele", crezca: "crece", suba: "sube", baje: "baja", se: "se" };
+function listoSi(senal) {
+  var s = String(senal || "").replace(/[.;]+$/, "").replace(/\s+/g, " ").trim();
+  if (!s) return "";
+  // «hasta que la salsa espese» (las recetas de antes): sin «hasta que» y en indicativo
+  if (/^(?:hasta que|cuando)\s+/i.test(s)) s = s.replace(/^(?:hasta que|cuando)\s+/i, "").replace(new RegExp("(^|\\s)(" + Object.keys(SUBJ).join("|") + ")(?=[\\s,.;]|$)", "i"), function (x, a, w) { return a + SUBJ[w.toLowerCase()]; });
+  if (!/^[A-ZÁÉÍÓÚÑ]{2,}\b/.test(s)) s = s.charAt(0).toLowerCase() + s.slice(1);
+  var w = (s.match(new RegExp("^[" + L + "]+")) || [""])[0];
+  if (/^sin$/i.test(w)) return "está " + s;
+  if (/^(al dente|en su punto|a punto)\b/i.test(s)) return "está " + s;
+  if (!NO_ADJ.test(w) && esAdj(w)) return (/s$/i.test(w) ? "están " : "está ") + s;
+  // «rodajas finas», «crema con trocitos» -> «quedan rodajas finas», «queda crema con trocitos»
+  if (/^(dados|cubos|tiras|rodajas|trozos|l[aá]minas|crema)$/i.test(w)) return (/s$/i.test(w) ? "quedan " : "queda ") + s;
+  // «la cebolla, transparente», «el hielo picado del todo» -> «la cebolla está transparente», «el hielo está picado…»
+  var sj = s.match(new RegExp("^((?:el|la|los|las) [" + L + "]+),? ([" + L + "]+)(.*)$", "i"));
+  if (sj && esAdj(sj[2]) && !/^espesa?n?$/i.test(sj[2])) return sj[1] + (/s$/i.test(sj[1]) ? " están " : " está ") + sj[2] + sj[3];
+  return s;
+}
+function esAdj(w) { return ADJ.test(w) || /^[a-záéíóúñ]+(ad|id)(o|a|os|as)$/i.test(w); }
+// «Listo si la salsa espesa» (la pantalla) / «Te aviso para ver si …» y «Lentejas: mira si …» (la voz)
+function listoTxt(senal) { var x = listoSi(senal); return x ? "Listo si " + x : ""; }
+function vozReloj(seg, senal) {
+  // desde 2 min, en minutos redondos («Reloj de 3 minutos», no «2 minutos 45 segundos»)
+  var m = Math.round(seg / 60), t = seg >= 120 ? m + " min" : seg < 60 ? Math.round(seg) + " s" : (seg % 60 ? Math.floor(seg / 60) + " min " + Math.round(seg % 60) + " s" : m + " min");
+  var x = listoSi(senal);
+  return paraVoz("Reloj de " + t + ". " + (x ? "Te aviso para ver si " + x + "." : "Te aviso."));
+}
+function vozMira(nombre, senal) {
+  var x = listoSi(senal);
+  return paraVoz((nombre ? nombre + ": " : "") + (x ? "mira si " + x + "." : "tiempo. Mira si ya está."));
+}
 
 function paraVoz(texto) {
   var t = String(texto == null ? "" : texto);
@@ -94,8 +136,8 @@ function paraVoz(texto) {
   t = t.replace(/^\s*\d{1,2}[.)]\s+/, "");                                            // «3. Corta…»: el número del paso
   t = t.replace(/\(\s*(?:manos|espera|no espera|tras\s+[^)]+)\s*\)/gi, " ");          // marcas de carril
   t = t.replace(/\(([^)]*)\)/g, function (x, d) { return ORIGEN.test(d) ? " " : ", " + d + ", "; });
-  // la señal: «→ dorado por fuera» -> «, hasta que dorado por fuera»
-  t = t.replace(/…/g, "").replace(/[\s.;:,]*(?:→|->)\s*(.*)$/, function (x, s) { s = s.trim(); return s ? (/^(hasta|cuando|que)\b/i.test(s) ? ", " + s : ", hasta que " + s) : ""; });
+  // la señal: «→ dorado por fuera» -> «, listo si está dorado por fuera»
+  t = t.replace(/…/g, "").replace(/[\s.;:,]*(?:→|->)\s*(.*)$/, function (x, s) { s = listoSi(s); return s ? ", listo si " + s : ""; });
   t = t.replace(/[«»“”"„]/g, "").replace(/\s*·\s*/g, ", ").replace(/\s*\+\s*/g, " más ").replace(/(\d)\s*%/g, "$1 por ciento").replace(/&/g, " y ");
   // nombres
   t = t.replace(/\bAOVE\b/gi, "aceite").replace(/\bair\s*fry(?:er)?\b/gi, function (x) { return /er$/i.test(x) ? "air fráyer" : "air fray"; })
@@ -109,7 +151,9 @@ function paraVoz(texto) {
   }).replace(/~/g, "");
   // unidades con su numero: «2 cdas» -> «2 cucharadas», «1 min» -> «1 minuto», «½ cda» -> «½ cucharada»
   t = t.replace(UD_RE, function (x, n, u) {
-    var U = ud(u), rango = /[-–]/.test(n), v = valor(n.split(/[-–]/).pop());
+    var U = ud(u), rango = /[-–]/.test(n), v = valor(n.split(/[-–]/).pop()), me = !rango && n.match(/^(\d+)(?:,5|\s*½)$/);
+    // «1,5 cm» -> «centímetro y medio», «2,5 kg» -> «dos kilos y medio», «1,5 h» -> «hora y media»
+    if (me) return (me[1] === "1" ? U[1] : (PALABRA_N[me[1]] || me[1]) + " " + U[2]) + (U[3] ? " y media" : " y medio");
     return n.replace(/\s*[-–]\s*/, " a ") + " " + (rango || v > 1 ? U[2] : U[1]);
   });
   // fracciones y decimales, segun lo que viene detras
@@ -127,5 +171,5 @@ function paraVoz(texto) {
   return t;
 }
 
-return { paraVoz: paraVoz };
+return { paraVoz: paraVoz, listoSi: listoSi, listoTxt: listoTxt, vozReloj: vozReloj, vozMira: vozMira };
 });

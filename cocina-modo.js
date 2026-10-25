@@ -281,6 +281,14 @@ function Rc() {
     : (typeof module === "object" && typeof require === "function" ? require("./receta.js") : null);
   return RC;
 }
+// v2.73 · el boton dice lo que acabas de hacer: «Echado · empieza el reloj (5 min)»; «Hecho» si acaba con tus manos
+var PARTICIPIO = { echa: "Echado", anade: "Añadido", agrega: "Agregado", pon: "Puesto", mete: "Metido", vierte: "Vertido", incorpora: "Incorporado",
+  coloca: "Colocado", pasa: "Pasado", tapa: "Tapado", enciende: "Encendido", programa: "Programado", sumerge: "Sumergido", vuelca: "Volcado" };
+function etiquetaHecho(txt, espera_s) {
+  if (!(espera_s > 0)) return "Hecho";
+  var v = Rc() && Rc().verbo ? Rc().verbo(txt) : null, p = v && PARTICIPIO[v];
+  return p ? p + " · empieza el reloj (" + fmtMin(espera_s) + ")" : "Empezar reloj · " + fmtMin(espera_s);
+}
 function escalaQ(q, n) {
   var R = q && q.comida;
   if (!R || q.receta || q.guia || q.pasos || !Rc()) return null;
@@ -351,9 +359,9 @@ function revisa(S, ahora) {
 }
 // el siguiente paso sin hacer (ni saltado) despues de "desde"; si no hay, uno de antes; -1 = fin
 function siguiente(S, n, desde) {
-  var k;
-  for (k = desde + 1; k < n; k++) if (!S.hechos[k] && !S.saltados[k]) return k;
-  for (k = 0; k < desde; k++) if (!S.hechos[k] && !S.saltados[k]) return k;
+  var k, c = S.cuece || {};
+  for (k = desde + 1; k < n; k++) if (!S.hechos[k] && !S.saltados[k] && !c[k]) return k;
+  for (k = 0; k < desde; k++) if (!S.hechos[k] && !S.saltados[k] && !c[k]) return k;
   return -1;
 }
 // Hecho: marca el paso, quita su reloj si ya sono (si sigue corriendo, se queda) y pasa al siguiente
@@ -365,6 +373,34 @@ function hecho(S, n, k, ahora) {
   S.t = ahora;
   return s;
 }
+/* v2.73 · «Echado» no es «Ya está». Un paso que espera (cuece, se dora, al micro) no se da por terminado al
+   tocar el boton: empieza (o sigue) su reloj y queda en marcha (S.cuece) mientras haces lo siguiente. Al sonar,
+   avisa cada minuto hasta que dices «Ya está» (yaEsta) o «+1 min». -> el paso al que vas (-1: no queda otro;
+   te quedas en este, que se esta cociendo)                                                                    */
+function echado(S, n, k, ahora, M0) {
+  var P = M0 && M0.pasos[k];
+  if (P && P.dur && !relojDe(S, k)) empieza(S, P, ahora, M0);
+  var T = relojDe(S, k); if (T) { T.cuece = true; T.senal = (P && P.pista) || ""; }
+  S.cuece = S.cuece || {}; S.cuece[k] = ahora; delete S.saltados[k];
+  var s = siguiente(S, n, k);
+  if (s >= 0) S.actual = s;
+  S.t = ahora;
+  return s;
+}
+function yaEsta(S, n, k, ahora) {
+  if (S.cuece) delete S.cuece[k];
+  S.timers = S.timers.filter(function (T) { return T.paso !== k; });
+  S.hechos[k] = 1;
+  var s = siguiente(S, n, k);
+  if (S.actual === k && s >= 0) S.actual = s;
+  else if (s < 0 && cocinando(S).length) S.actual = cocinando(S)[0];
+  S.t = ahora;
+  return s;
+}
+// los pasos en marcha (echados y sin «Ya está»), en orden
+function cocinando(S) { return Object.keys(S.cuece || {}).map(Number).filter(function (k) { return S.cuece[k] && !S.hechos[k]; }).sort(function (a, b) { return a - b; }); }
+// ¿el boton de este paso lo deja en marcha? (espera y tiene tiempo; uno de manos, «Corta… 2 min», no)
+function esperaPaso(P) { return !!(P && !P.auto && P.dur && P.espera); }
 /* v2.58 · marcar (o desmarcar) un paso hecho sin ir a el: lo has hecho antes de tiempo, o lo
    hiciste todo de una vez. No mueve el paso en el que estas, salvo que sea ese: entonces sigue. */
 function marcaFuera(S, n, k, ahora) {
@@ -570,8 +606,15 @@ function fijosDe(M0, S, ahora) {
   var C = S.carr, f = {}; if (!C || !C.ini) return f;
   var s = function (ms) { return Math.max(0, Math.round((ms - C.ini) / 1000)); };
   M0.carr.tareas.forEach(function (x) {
-    var h = C.hechas[x.id], e = C.empezo[x.id];
+    var h = C.hechas[x.id], e = C.empezo[x.id], c = C.cuece && C.cuece[x.id];
     if (h && C.saltadas && C.saltadas[x.id]) { f[x.id] = { ini: s(h), fin: s(h) }; return; }   // v2.58: saltada, no ocupa nada
+    // v2.73: echada y cociéndose: acaba con su reloj; si ya sonó y no has dicho «Ya está», un minuto más cada vez
+    if (c) {
+      if (h) { f[x.id] = { ini: Math.max(0, s(c) - x.manos), fin: Math.max(s(c), s(h)) }; return; }
+      var Tc = relojDe(S, x.k), fc = Tc ? (Tc.pausa != null ? ahora + Tc.pausa * 1000 : Tc.fin) : c + (x.dur - x.manos) * 1000;
+      f[x.id] = { ini: Math.max(0, s(c) - x.manos), fin: fc > ahora ? s(fc) : s(ahora) + 60 };
+      return;
+    }
     if (h) {
       if (x.dur > x.manos) {
         var T = relojDe(S, x.k), finMs = T ? (T.pausa != null ? ahora + T.pausa * 1000 : T.fin) : (C.fin && C.fin[x.id]) || h + (x.dur - x.manos) * 1000;
@@ -584,7 +627,8 @@ function fijosDe(M0, S, ahora) {
 /* -> {P, m, desde, base (ms del segundo 0), total (s), mesa (ms)}. Sin empezar: el plan si empiezas ahora */
 function planCarril(M0, S, ahora, cocina) {
   var C = S.carr && S.carr.ini ? S.carr : null, base = C ? C.ini : ahora, desde = C ? Math.round((ahora - base) / 1000) : 0;
-  var hechas = C ? C.hechas : {};
+  // v2.73: lo que se está cociendo ya no está por hacer con las manos (pero aún no está hecho)
+  var hechas = C ? hechasOCuece(C) : {};
   // v2.58: si hiciste algo fuera de orden, lo que quedaba antes en su carril sigue yendo antes que lo de despues
   var MM = M0.carr, cambia = false, T2 = MM.tareas.map(function (x) {
     if (hechas[x.id] || x.carril === "preparar" || x.carril === "montar") return x;
@@ -596,33 +640,68 @@ function planCarril(M0, S, ahora, cocina) {
   var P = Ca().planifica(MM, cocina, C ? fijosDe(M0, S, ahora) : {}, desde);
   // v2.58: a la mesa es cuando acaba lo de comer; lo de AL TERMINAR (enfriar el tupper) va despues
   var mesaS = Math.max.apply(null, [0].concat(M0.carr.tareas.filter(function (x) { return !x.despues; }).map(function (x) { return P.fin[x.id]; })));
-  return { P: P, m: Ca().momento(MM, P, hechas, desde), desde: desde, base: base, total: P.total, mesaS: mesaS, mesa: base + mesaS * 1000 };
+  var m = Ca().momento(MM, P, hechas, desde);
+  // v2.73: lo que depende de algo que aún se cuece (sin «Ya está») no toca, aunque su reloj esté acabando
+  if (m.ahora && C && C.cuece) m.bloqueada = m.ahora.tras.some(function (d) { return C.cuece[d] && !C.hechas[d]; });
+  return { P: P, m: m, desde: desde, base: base, total: P.total, mesaS: mesaS, mesa: base + mesaS * 1000 };
 }
-// "Hecho" en una tarea: sus manos acaban ahora; si luego espera, empieza su reloj
+// ¿lo de las manos toca ya? (empieza en menos de 15 s y no espera a nada que se cueza)
+function tocaYa(pl) { return !!(pl && pl.m.ahora && pl.m.cuando <= pl.desde + 15 && !pl.m.bloqueada); }
+
+function hechasOCuece(C) {
+  var h = {}, k;
+  for (k in C.hechas) h[k] = C.hechas[k];
+  for (k in (C.cuece || {})) if (C.cuece[k] && !h[k]) h[k] = C.cuece[k];
+  return h;
+}
+function cueceCarril(S, tid) { return !!(S.carr && S.carr.cuece && S.carr.cuece[tid] && !S.carr.hechas[tid]); }
+/* El boton de una tarea: sus manos acaban ahora. Si es de manos (cortar, servir), queda hecha. Si luego espera
+   (v2.73), empieza su reloj y queda EN MARCHA (S.carr.cuece): no está hecha ni empieza lo que depende de ella
+   hasta que dices «Ya está» (yaEstaCarril). */
 function hechaCarril(S, M0, tid, ahora) {
   var x = tareaDe(M0, tid); if (!x || !S.carr) return null;
-  S.carr.hechas[tid] = ahora;
+  if (cueceCarril(S, tid)) { yaEstaCarril(S, M0, tid, ahora); return null; }
   if (x.manos >= x.dur && !S.carr.empezo[tid]) S.carr.empezo[tid] = ahora - x.dur * 1000;
   var T = null;
   if (x.dur > x.manos) {
     var P = M0.pasos[x.k], d = x.dur - x.manos, nom = (M0.nomCarril[x.carril] || "") ;
     T = { id: "c" + x.k + "-" + Math.round(ahora).toString(36), paso: x.k, nombre: nom, pasoTxt: x.txt, dur: d, fin: ahora + d * 1000, pausa: null,
-          avisos: copia((P && P.avisos) || []).filter(function (a) { return a.a_los_s < d; }), avisados: [], finAvisado: false, callado: false, vozFin: "", carril: true };
+          avisos: copia((P && P.avisos) || []).filter(function (a) { return a.a_los_s < d; }), avisados: [], finAvisado: false, callado: false, vozFin: "", carril: true,
+          cuece: true, senal: (P && P.pista) || "" };
     S.timers = S.timers.filter(function (Q) { return Q.paso !== x.k; });
     S.timers.push(T);
     S.carr.fin = S.carr.fin || {}; S.carr.fin[tid] = T.fin;
-  }
+    S.carr.cuece = S.carr.cuece || {}; S.carr.cuece[tid] = ahora;
+  } else { S.carr.hechas[tid] = ahora; S.hechos[x.k] = 1; }
   // la espera de lo anterior de su carril ya no hace falta: el carril sigue
   var antes = M0.carr.tareas.filter(function (y) { return y.carril === x.carril && y.n < x.n; }).map(function (y) { return y.k; });
-  S.timers = S.timers.filter(function (Q) { return !(Q.carril && antes.indexOf(Q.paso) >= 0 && restante(Q, ahora) <= 0); });
-  S.hechos[x.k] = 1; S.t = ahora;
+  S.timers = S.timers.filter(function (Q) { return !(Q.carril && !Q.cuece && antes.indexOf(Q.paso) >= 0 && restante(Q, ahora) <= 0); });
+  S.t = ahora;
   return T;
+}
+// v2.73 · «Ya está»: lo que se cocía está listo. Ahora sí está hecha y lo que depende de ella puede empezar
+function yaEstaCarril(S, M0, tid, ahora) {
+  var x = tareaDe(M0, tid); if (!x || !S.carr) return false;
+  if (!S.carr.cuece || !S.carr.cuece[tid]) { S.carr.cuece = S.carr.cuece || {}; S.carr.cuece[tid] = ahora; }
+  S.carr.hechas[tid] = ahora;
+  S.carr.fin = S.carr.fin || {}; S.carr.fin[tid] = ahora;
+  S.timers = S.timers.filter(function (T) { return T.paso !== x.k; });
+  S.hechos[x.k] = 1; S.t = ahora;
+  return true;
+}
+// lo que se está cociendo (echado, sin «Ya está»), lo que antes acaba primero -> [{y, T, r}]
+function cueceDe(M0, S, ahora) {
+  var C = S.carr; if (!C || !C.cuece || !M0.carr) return [];
+  return M0.carr.tareas.filter(function (y) { return C.cuece[y.id] && !C.hechas[y.id]; }).map(function (y) {
+    var T = relojDe(S, y.k); return { y: y, T: T, r: T ? restante(T, ahora) : 0 };
+  }).sort(function (a, b) { return a.r - b.r; });
 }
 /* v2.58 · saltar una tarea de un carril (ya no hace falta: echaste todo el pollo de una vez).
    Cuenta como hecha en este momento, sin manos ni reloj; el plan se rehace con lo que queda. */
 function saltaCarril(S, M0, tid, ahora) {
   var x = tareaDe(M0, tid); if (!x || !S.carr) return false;
   S.carr.hechas[tid] = ahora; S.carr.saltadas = S.carr.saltadas || {}; S.carr.saltadas[tid] = ahora;
+  if (S.carr.cuece) delete S.carr.cuece[tid];
   S.timers = S.timers.filter(function (T) { return T.paso !== x.k; });
   S.hechos[x.k] = 1; S.t = ahora;
   return true;
@@ -631,6 +710,7 @@ function saltaCarril(S, M0, tid, ahora) {
 function deshazCarril(S, M0, tid, ahora) {
   var x = tareaDe(M0, tid); if (!x || !S.carr) return false;
   delete S.carr.hechas[tid]; delete S.carr.empezo[tid];
+  if (S.carr.cuece) delete S.carr.cuece[tid];
   if (S.carr.saltadas) delete S.carr.saltadas[tid];
   if (S.carr.fin) delete S.carr.fin[tid];
   S.timers = S.timers.filter(function (T) { return T.paso !== x.k; });
@@ -639,7 +719,7 @@ function deshazCarril(S, M0, tid, ahora) {
 }
 // las tareas que quedan, en el orden del plan (para hacer una fuera de orden)
 function pendientesCarril(M0, S, pl) {
-  var h = (S.carr && S.carr.hechas) || {};
+  var h = S.carr ? hechasOCuece(S.carr) : {};
   return M0.carr.tareas.filter(function (x) { return !h[x.id]; }).sort(function (a, b) { return pl.P.ini[a.id] - pl.P.ini[b.id]; });
 }
 function todoHecho(M0, S, ahora) {
@@ -651,8 +731,9 @@ function todoHecho(M0, S, ahora) {
 var API = {
   // puras
   miCocina: miCocina, fijosDe: fijosDe, planCarril: planCarril, hechaCarril: hechaCarril, todoHecho: todoHecho,
+  yaEstaCarril: yaEstaCarril, cueceDe: cueceDe, echado: echado, yaEsta: yaEsta, cocinando: cocinando, esperaPaso: esperaPaso, etiquetaHecho: etiquetaHecho,
   saltaCarril: saltaCarril, deshazCarril: deshazCarril, pendientesCarril: pendientesCarril, marcaFuera: marcaFuera, escalaQ: escalaQ,
-  idDe: idDe, normaliza: normaliza, numDe: numDe, totalNum: totalNum, nomPaso: nomPaso, nombreReloj: nombreReloj,
+  tocaYa: tocaYa, idDe: idDe, normaliza: normaliza, numDe: numDe, totalNum: totalNum, nomPaso: nomPaso, nombreReloj: nombreReloj,
   nuevoEstado: nuevoEstado, restante: restante, relojDe: relojDe, empieza: empieza, pausa: pausa, masUno: masUno, para: para,
   sonando: sonando, revisa: revisa, siguiente: siguiente, hecho: hecho, anterior: anterior, seguirDesde: seguirDesde,
   deshacer: deshacer, reinicia: reinicia, huella: huella, arranque: arranque, cero: cero, CARRIL_SIGUE: CARRIL_SIGUE, quedan: quedan, progresoDe: progresoDe, decide: decide, migra: migra,
@@ -1000,6 +1081,15 @@ var CSS =
   R0 + ".ccHojaTxt{font-size:22px;font-weight:800;line-height:1.25;margin:4px 0 4px;overflow-wrap:break-word}" +
   R0 + ".cpHojaCab h3{display:flex;align-items:center;gap:8px}" + R0 + ".cpHojaCab h3 svg{width:22px;height:22px;flex:none;color:var(--ca)}" +
   R0 + ".ccChips{display:grid;grid-template-columns:1fr 1fr;gap:8px}" +
+  R0 + ".ccCuece{margin-top:10px;display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 12px;border-radius:18px;background:var(--sf2)}" +
+  R0 + ".ccCuece>svg{width:22px;height:22px;color:var(--ca)}" + R0 + ".ccCuece .t{min-width:0}" + R0 + ".ccCuece .t b{display:block;font-size:16px;font-weight:800;color:#f4f5f7}" +
+  R0 + ".ccCuece .t small{display:block;font-size:14px;font-weight:600;color:var(--mu);line-height:1.3}" +
+  R0 + ".ccCuece .r{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}" +
+  R0 + ".ccCuece .b{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}" +
+  R0 + ".ccCuece .b button{height:44px;border-radius:22px;background:rgba(255,255,255,.08);color:#f4f5f7;font-size:16px;font-weight:800}" +
+  R0 + ".ccCuece .b button.ok{background:var(--ca);color:#140b04}" +
+  R0 + ".ccCuece.listo{box-shadow:inset 0 0 0 2px var(--ca)}" + R0 + ".ccCuece.listo .r{color:var(--ca)}" +
+  R0 + ".ccAhora .cpReloj{background:var(--sf2)}" + R0 + ".cpDos button.ok{background:var(--ca);color:#140b04}" +
   R0 + ".ccChip{min-height:56px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 12px;border-radius:16px;background:var(--sf2);text-align:left}" +
   R0 + ".ccChip svg{width:20px;height:20px;color:var(--ca)}" + R0 + ".ccChip span{font-size:14px;font-weight:700;line-height:1.25;color:#dfe2e6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}" +
   R0 + ".ccChip b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}" + R0 + ".ccChip.listo{box-shadow:inset 0 0 0 2px var(--ca)}" + R0 + ".ccChip.listo b{color:var(--ca);font-size:15px}" +
@@ -1188,8 +1278,12 @@ function late() {
   Object.keys(VIVOS).forEach(function (id) {
     var ahora = V && V.id === id ? sim : real;
     var X = VIVOS[id], S = X.S, ev = revisa(S, ahora);
-    if (ev.length) { guarda(id, S); ev.forEach(function (e) { avisa(id, X, e); }); cambio = true; }
+    if (ev.length) { guarda(id, S); ev.forEach(function (e) { e.ahora = ahora; avisa(id, X, e); }); cambio = true; }
     S.timers.forEach(function (T) {
+      // v2.73: lo que se cuece y ya sonó: avisa otra vez cada minuto mientras no digas «Ya está» (o +1 min)
+      if (T.cuece && T.finAvisado && T.pausa == null && restante(T, ahora) <= 0 && ahora - (T.ultAviso || 0) >= 60e3) {
+        T.ultAviso = ahora; pita(2); di(vozMiraDe(T.nombre || T.pasoTxt, T.senal)); guarda(id, S); cambio = true;
+      }
       if (!sonando(T, ahora)) return;
       var u = ALARMA[T.id] || 0, iv = ahora - (T.fin || ahora) < 120e3 ? 5e3 : 30e3;
       if (!u) ALARMA[T.id] = ahora; else if (ahora - u >= iv) { ALARMA[T.id] = ahora; pita(2); }
@@ -1201,9 +1295,9 @@ function late() {
     if (V.toast && real > V.toast.hasta) { V.toast = null; cambio = true; }
     if (V.pant === "carril" && !V.hoja && real - (V.ultPlan || 0) >= 1000) {
       V.ultPlan = real;
-      var antes = V.firma, viejo = V.pl && V.pl.m.ahora && V.pl.m.cuando <= V.pl.desde + 15 ? V.pl.m.ahora.id : null;
+      var antes = V.firma, viejo = tocaYa(V.pl) ? V.pl.m.ahora.id : null;
       V.pl = planCarril(V.M0, V.S, ahora, V.cocina);
-      var nuevo = V.pl.m.ahora && V.pl.m.cuando <= V.pl.desde + 15 ? V.pl.m.ahora.id : null;
+      var nuevo = tocaYa(V.pl) ? V.pl.m.ahora.id : null;
       // v2.58: lo último era esperar un reloj (enfriar el tupper): al acabar, se termina solo
       if (V.S.carr && todoHecho(V.M0, V.S, ahora)) { aFin(ahora); ajustaTick(); return; }
       if (firmaCarril() !== antes) {
@@ -1218,6 +1312,11 @@ function late() {
 }
 function avisa(id, X, e) {
   var T = e.T, varios = X.S.timers.length > 1;
+  if (e.tipo === "fin" && T.cuece) {           // v2.73: algo que se cuece: «Lentejas: mira si la salsa espesa», y cada minuto hasta «Ya está»
+    T.callado = true; T.ultAviso = e.ahora || Date.now(); pita(2); di(vozMiraDe(T.nombre || T.pasoTxt, T.senal));
+    if (V && V.id === id) { V.ultPlan = 0; V.toast = { txt: (T.nombre || "") + ": ¡tiempo! " + (T.senal ? "Mira si " + listoSi(T.senal) + "." : ""), hasta: Date.now() + 10000, aviso: true }; }
+    return;
+  }
   if (e.tipo === "fin" && T.carril) {          // un carril que acaba su espera: un pitido y lo dice; el siguiente paso avisa solo
     T.callado = true; pita(1); di(T.nombre + ": listo."); return;
   }
@@ -1288,13 +1387,15 @@ function bandaPrueba() {
 }
 function marcaEmpezo(ahora) {
   var m = V.pl.m, x = m.ahora;
-  if (V.pant !== "carril" || !x || !V.S.carr || x.manos < x.dur || V.S.carr.empezo[x.id] || m.cuando > V.pl.desde + 15) return;
+  if (V.pant !== "carril" || !x || !V.S.carr || x.manos < x.dur || V.S.carr.empezo[x.id] || !tocaYa(V.pl)) return;
   V.S.carr.empezo[x.id] = ahora; guarda(V.id, V.S);
 }
 // lo que, si cambia, hay que repintar (y avisar si es que ya toca otra cosa)
 function firmaCarril() {
-  var m = V.pl.m, x = m.ahora, due = x && m.cuando <= V.pl.desde + 15;
-  return (x ? x.id : "-") + "|" + (due ? 1 : 0) + "|" + Math.round(V.pl.total / 30) + "|" + V.S.timers.filter(function (T) { return T.carril && restante(T, ya()) > 0; }).length;
+  var m = V.pl.m, x = m.ahora, due = tocaYa(V.pl);
+  var cz = cueceDe(V.M0, V.S, ya());
+  return (x ? x.id : "-") + "|" + (due ? 1 : 0) + "|" + Math.round(V.pl.total / 30) + "|" + V.S.timers.filter(function (T) { return T.carril && restante(T, ya()) > 0; }).length +
+    "|" + cz.length + "|" + cz.filter(function (c) { return c.r <= 0; }).length;
 }
 function arriba() {
   var M0 = V.M0;
@@ -1394,8 +1495,28 @@ function fuegoHtml(P) {
   if (!P.fuego) return "";
   return '<p class="cpFuego">' + svg("flame") + '<span>' + esc(P.fuego) + (P.fuegoSigue ? '<small>sigue igual</small>' : "") + '</span></p>';
 }
+function listoSi(pista) { var X = typeof window !== "undefined" && window.Voz; return X && X.listoSi ? X.listoSi(pista) : String(pista || ""); }
 function listoHtml(P) {
-  return P.pista ? '<p class="cpPista">' + svg("ojo") + '<span><b>Ya está cuando</b>' + esc(mayus1(P.pista)) + '</span></p>' : "";
+  return P.pista ? '<p class="cpPista">' + svg("ojo") + '<span><b>Listo si</b>' + esc(listoSi(P.pista)) + '</span></p>' : "";
+}
+// v2.73 · lo que dice la voz al empezar el reloj de algo que se cuece, y al sonar
+function vozRelojDe(seg, pista) { var X = typeof window !== "undefined" && window.Voz; return X && X.vozReloj ? X.vozReloj(seg, pista) : "Reloj de " + fmtMin(seg) + "."; }
+function vozMiraDe(nombre, pista) { var X = typeof window !== "undefined" && window.Voz; return X && X.vozMira ? X.vozMira(nombre, pista) : nombre + ": tiempo."; }
+// lo que se cuece mientras haces otra cosa: una barra con su nombre, el reloj, la señal, «+1 min» y «Ya está»
+function cueceBarra(nom, ico, T, r, pista, ya, extra) {
+  return '<div class="ccCuece' + (r <= 0 ? " listo" : "") + '"' + (extra || "") + '>' + svg(ico) + '<div class="t"><b>' + esc(nom) + '</b><small>' +
+    esc(r <= 0 ? "¡Tiempo! Mira: " + (pista ? listoSi(pista) : "¿ya está?") : pista ? "Listo si " + listoSi(pista) : "Cociendo") + '</small></div>' +
+    (T ? '<b class="r" data-r="' + T.id + '">' + fmt(r) + '</b>' : "<b></b>") +
+    '<div class="b">' + (T ? '<button data-a="mas" data-t="' + T.id + '">+1 min</button>' : "<span></span>") + '<button class="ok" ' + ya + '>Ya está</button></div></div>';
+}
+// la tarjeta grande de algo que se cuece: cuenta atrás grande, la señal, «+1 min» y «Ya está»
+function cueceGrande(cap, txt, T, r, pista, ya) {
+  var est = T && T.pausa != null ? "pausa" : r <= 0 ? "fin" : "corre";
+  return '<p class="ccCap ac">' + cap + '</p><h2' + (txt.length > 70 ? ' class="largo"' : "") + '>' + esc(txt) + '</h2>' +
+    '<div class="cpReloj ' + est + '">' + (T ? '<div class="cpDig" data-r="' + T.id + '">' + fmt(r) + '</div><div class="cpBarra"><i data-b="' + T.id + '" style="width:' +
+    Math.min(100, Math.max(0, (T.dur - r) / T.dur * 100)) + '%"></i></div>' : "") +
+    '<p class="cpEst">' + esc(r <= 0 ? "¡Tiempo! Mira si " + (pista ? listoSi(pista) : "ya está") + "." : pista ? "Listo si " + listoSi(pista) + "." : "Cociendo.") + '</p>' +
+    '<div class="cpDos">' + (T ? '<button data-a="mas" data-t="' + T.id + '">+1 min</button>' : "<span></span>") + '<button class="ok" ' + ya + '>' + svg("tick") + 'Ya está</button></div></div>';
 }
 function ingsPaso(P, S) {
   if (P.ingPaso && P.ingPaso.length) {
@@ -1439,6 +1560,11 @@ function paso(ahora) {
   }
   var etq = (P.donde ? P.donde.replace(/,?\s*(?:paso\s*)?\d+$/i, "").replace(/^paso$/i, "") : "") || P.grupo || (P.tipo === "prep" && !P.auto ? "Antes de empezar" : "");
   h += '<div class="cpCuerpo' + (mirando ? " mirando" : "") + '">';
+  // v2.73: lo que se cuece mientras haces este paso, encima y bien visible
+  cocinando(S).filter(function (j) { return j !== k; }).forEach(function (j) {
+    var Tj = relojDe(S, j), Pj = M0.pasos[j];
+    h += cueceBarra(nomPaso(M0, j) + " · " + Pj.titulo.split(/[,:]/)[0], "cooking-pot", Tj, Tj ? restante(Tj, ahora) : 0, Pj.pista, 'data-a="yaPaso" data-k="' + j + '"');
+  });
   if (P.auto) h += lintTodo() + racHtml();
   else h += lintPaso(P);
   if (etq || P.tags.length || S.hechos[k]) h += '<div class="cpEtq">' + (etq ? '<em>' + esc(etq) + '</em>' : "") + (S.hechos[k] ? '<span>Hecho</span>' : "") + P.tags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join("") + '</div>';
@@ -1465,8 +1591,9 @@ function paso(ahora) {
     h += '<div class="cpDock mira">' + toast() + '<button class="cpAnt" data-a="seguir">Seguir desde aquí</button><button class="cpHecho azul" data-a="hechoFuera">' +
       (S.hechos[k] ? "Desmarcar hecho" : svg("tick") + "Ya lo he hecho") + '</button></div>';
   } else {
-    var nx = siguiente(S, M0.pasos.length, k), T = relojDe(S, k);
-    var etqH = P.auto ? (nx >= 0 ? "Listo, al paso " + numDe(M0, nx) : "Listo") : nx < 0 ? "Terminar" : "Hecho";
+    var nx = siguiente(S, M0.pasos.length, k), T = relojDe(S, k), enM = !!(S.cuece && S.cuece[k]);
+    var etqH = P.auto ? (nx >= 0 ? "Listo, al paso " + numDe(M0, nx) : "Listo") : enM ? "Ya está" : esperaPaso(P) ? (T ? "Sigue con otra cosa · el reloj sigue" : etiquetaHecho(P.titulo, P.dur))
+      : nx < 0 && !cocinando(S).length ? "Terminar" : "Hecho";
     var tenue = P.dur && !T, suena = T && sonando(T, ahora);
     h += '<div class="cpDock">' + toast() + '<button class="cpAnt" data-a="ant"' + (k === 0 ? " disabled" : "") + '>' + svg("izq") + 'Anterior</button>' +
       '<button class="cpHecho' + (tenue ? " tenue" : "") + (suena ? " suena" : "") + '" data-a="hecho">' + esc(etqH) + (nx >= 0 ? svg("der") : "") + '</button></div>';
@@ -1657,8 +1784,9 @@ function ingsDe(x) {
 }
 function vozCarril() {
   var m = V.pl && V.pl.m, x = m && m.ahora;
-  if (!x || m.cuando > V.pl.desde + 15) return "";
-  var ii = ingsDe(x);
+  if (!x || !tocaYa(V.pl)) return "";
+  // lo que ya dice el paso (la v3 y la v4 llevan la cantidad dentro) no se repite
+  var dice = norm(x.txt), ii = ingsDe(x).filter(function (t) { return dice.indexOf(norm(t).replace(/^[\d.,½¼¾/ ]+(?:[a-z]+ )?/, "")) < 0; });
   return x.txt + (ii.length ? ". " + ii.join(", ") : "") + ".";
 }
 var COSAS_COCINA = [["fuegos", "Fuegos", "fuego", "fuegos"], ["sarten", "Sartenes", "sartén", "sartenes"], ["olla", "Ollas", "olla", "ollas"],
@@ -1683,6 +1811,7 @@ function hojaCocina(x) {
    cocinas, "Ya lo he hecho", "Saltar" o "Deshacer": cualquier tarea, en cualquier orden. */
 function estadoTarea(y, ahora) {
   var S = V.S, C = S.carr, h = C && C.hechas[y.id];
+  if (!h && cueceCarril(S, y.id)) return "marcha";
   if (!h) return V.pl.m.ahora && V.pl.m.ahora.id === y.id ? "ahora" : "luego";
   if (C.saltadas && C.saltadas[y.id]) return "saltada";
   var T = relojDe(S, y.k);
@@ -1703,7 +1832,7 @@ function planLista(ahora, enMarcha) {
   L.forEach(function (y) {
     var e = est[y.id]; if ((e === "ya" || e === "saltada") && !V.verHechas) return;
     var T = e === "marcha" ? relojDe(V.S, y.k) : null;
-    var fin = e === "ya" || e === "saltada" ? (e === "saltada" ? "Saltada" : svg("tick")) : T ? '<b data-r="' + T.id + '">' + fmt(restante(T, ahora)) + '</b>' : e === "ahora" ? "Ahora" : "";
+    var fin = e === "ya" || e === "saltada" ? (e === "saltada" ? "Saltada" : svg("tick")) : T ? (restante(T, ahora) > 0 ? '<b data-r="' + T.id + '">' + fmt(restante(T, ahora)) + '</b>' : "¿Listo?") : e === "marcha" ? "Cociendo" : e === "ahora" ? "Ahora" : "";
     h += '<button class="ccPl ' + e + '" data-a="tarea" data-t="' + y.id + '"><span class="h">' + hm(pl.base + P.ini[y.id] * 1000) + '</span>' + svg(icoCarril(y.carril)) +
       '<span class="t"><b>' + esc(sinMin(y.txt)) + '</b><small>' + esc(infoTarea(y)) + '</small></span><em>' + fin + '</em></button>';
   });
@@ -1750,15 +1879,27 @@ function ingsTarea(Px) {
 }
 function carrilHtml(ahora) {
   var M0 = V.M0, S = V.S, pl = V.pl, m = pl.m, x = m.ahora, h = '<div class="cpCuerpo cc">';
-  var due = x && m.cuando <= pl.desde + 15, abs = function (s) { return pl.base + s * 1000; };
+  var due = tocaYa(pl), abs = function (s) { return pl.base + s * 1000; };
   var hechas = M0.carr.tareas.filter(function (y) { return S.carr.hechas[y.id]; }).length, tot = M0.carr.tareas.length;
   h += '<div class="ccLin"><b>' + hechas + ' de ' + tot + '</b><span>quedan ~' + minTxt(Math.max(0, pl.mesaS - pl.desde)) + ' hasta la mesa</span></div>' +
     '<div class="ccBarraT"><i style="width:' + Math.round(hechas / Math.max(1, tot) * 100) + '%"></i></div>';
   var tarde = S.carr.mesa0 ? Math.round((pl.mesa - S.carr.mesa0) / 60e3) : 0;
   if (tarde >= 1) h += '<div class="ccAviso" role="status">' + svg("arrows-clockwise") + '<div><p>Plan rehecho: a la mesa a las ' + hm(pl.mesa) + ' (antes ' + hm(S.carr.mesa0) + ').</p></div></div>';
-  // 1. AHORA: lo que hacen tus manos, en grande
-  h += '<section class="ccAhora' + (due ? " ya" : "") + '" aria-label="Ahora">';
-  if (x) {
+  // v2.73: lo que se cuece (echado, sin «Ya está»). Si tus manos tienen algo que hacer, va encima en barras;
+  // si no, lo que se cuece es la tarjeta grande (nunca «Nada que hacer» con algo al fuego)
+  var cz = cueceDe(M0, S, ahora), grande = !due && cz.length ? cz[0] : null;
+  var nomCz = function (c) { var P2 = M0.pasos[c.y.k], i0 = P2 && (P2.ingPaso || []).filter(function (z) { return M0.ings[z.i] && !M0.ings[z.i].basico; })[0], qu = i0 ? M0.ings[i0.i] : null;
+    return (M0.nomCarril[c.y.carril] || "") + (qu && norm(qu.nombre) !== norm(M0.nomCarril[c.y.carril] || "") ? " · " + minus1(qu.nombre) : ""); };
+  cz.filter(function (c) { return c !== grande; }).forEach(function (c) {
+    h += cueceBarra(nomCz(c), icoCarril(c.y.carril), c.T, c.r, (M0.pasos[c.y.k] || {}).pista, 'data-a="cYa" data-t="' + c.y.id + '"');
+  });
+  // 1. AHORA: lo que hacen tus manos, en grande (o lo que se cuece, si tus manos no tienen nada)
+  h += '<section class="ccAhora' + (due || grande ? " ya" : "") + '" aria-label="Ahora">';
+  if (grande) {
+    h += cueceGrande(svg(icoCarril(grande.y.carril)) + esc(M0.nomCarril[grande.y.carril] || "") + ' · cociendo', sinMin(grande.y.txt), grande.T, grande.r,
+      (M0.pasos[grande.y.k] || {}).pista, 'data-a="cYa" data-t="' + grande.y.id + '"');
+    if (x) h += '<p class="ccTxt mu">Luego, a las ' + hm(abs(m.cuando)) + ': ' + esc(sinMin(x.txt).split(/[,:]/)[0]) + '.</p>';
+  } else if (x) {
     var Px = M0.pasos[x.k];
     h += '<p class="ccCap' + (due ? " ac" : "") + '">' + svg(icoCarril(x.carril)) + esc(M0.nomCarril[x.carril] || "") + ' · ' + (due ? "ahora" : 'a las ' + hm(abs(m.cuando)) + ' · en <b data-hasta="' + abs(m.cuando) + '">' + fmt(m.cuando - pl.desde) + '</b>') + '</p>';
     h += '<h2' + (x.txt.length > 70 ? ' class="largo"' : "") + '>' + esc(sinMin(x.txt)) + '</h2>';
@@ -1766,13 +1907,13 @@ function carrilHtml(ahora) {
     if (due && x.manos >= x.dur) {
       var e = S.carr.empezo[x.id] || ahora, fin = e + x.dur * 1000;
       h += '<div class="ccProg"><div class="cpBarra"><i data-desde="' + e + '" data-dur="' + x.dur * 1000 + '" style="width:' + Math.min(100, (ahora - e) / (x.dur * 10)) + '%"></i></div><b data-hasta="' + fin + '">' + fmt(Math.max(0, (fin - ahora) / 1000)) + '</b></div>';
-    } else if (x.dur > x.manos) h += '<p class="ccTxt mu">Al tocar Hecho empieza su reloj de ' + fmtMin(x.dur - x.manos) + '.</p>';
+    } else if (x.dur > x.manos) h += '<p class="ccTxt mu">Al tocar el botón empieza su reloj de ' + fmtMin(x.dur - x.manos) + ' y sigue aquí arriba mientras se cocina; no cuenta como hecho hasta que digas «Ya está».</p>';
     if (!due) h += '<p class="ccTxt mu">Hasta entonces no hay nada que hacer. Te aviso.</p>';
     if (Px) h += listoHtml(Px);
-  } else h += '<p class="ccCap">Ahora</p><h2>Nada que hacer</h2><p class="ccTxt mu">Esperando a lo que está en marcha. Te aviso.</p>';
+  } else h += '<p class="ccCap">Ahora</p><h2>Nada que hacer</h2><p class="ccTxt mu">Esperando a lo que está en marcha. Te aviso.</p>';   // sin nada al fuego
   h += '</section>';
   // 2. EN MARCHA: los relojes, compactos (el detalle está en El plan)
-  var chips = S.timers.filter(function (T) { return T.carril; }).map(function (T) {
+  var chips = S.timers.filter(function (T) { return T.carril && !T.cuece; }).map(function (T) {
     var t = M0.carr.tareas.filter(function (y) { return y.k === T.paso; })[0]; if (!t) return "";
     var r = restante(T, ahora), P2 = M0.pasos[t.k], qu = P2 && P2.ingPaso && P2.ingPaso[0] ? M0.ings[P2.ingPaso[0].i] : null;
     if (r <= 0 && !M0.carr.tareas.some(function (y) { return y.carril === t.carril && y.n > t.n && !S.carr.hechas[y.id]; })) return "";
@@ -1784,8 +1925,10 @@ function carrilHtml(ahora) {
   // 3. EL PLAN: todo, con su hora; tocar = ver el paso y hacerlo cuando quieras
   h += '<p class="ccCap">El plan</p><p class="ccTxt mu" style="margin:0 0 8px">Toca cualquier paso para verlo entero o hacerlo antes.</p>' + planLista(ahora, true);
   h += '</div>';
-  var etq = !x ? "Esperando" : due ? (x.manos < x.dur ? "Hecho · reloj de " + minTxt(x.dur - x.manos) : "Hecho") : "Hacerlo ya";
-  h += '<div class="cpDock">' + toast() + '<button class="cpAnt" data-a="hIngs">Ingredientes</button>' +
+  var etq = !x ? "Esperando" : due ? etiquetaHecho(x.txt, x.dur - x.manos) : "Hacerlo ya";
+  if (grande) h += '<div class="cpDock">' + toast() + '<button class="cpAnt" data-a="hIngs">Ingredientes</button>' +
+    '<button class="cpHecho ' + (grande.r <= 0 ? "blanco suena" : "") + '" data-a="cYa" data-t="' + grande.y.id + '">' + svg("tick") + 'Ya está</button></div>';
+  else h += '<div class="cpDock">' + toast() + '<button class="cpAnt" data-a="hIngs">Ingredientes</button>' +
     '<button class="cpHecho ' + (due ? "blanco" : "tenue") + '" data-a="cHecho"' + (x ? ' data-t="' + x.id + '"' : " disabled") + '>' + (x ? svg("tick") : "") + esc(etq) + '</button></div>';
   return h;
 }
@@ -1801,9 +1944,10 @@ function hojaTarea(x0) {
   if (antes.length && e !== "ya") h += '<p class="ccTxt mu">Antes: ' + esc(antes.map(function (z) { return sinMin(z.txt).split(/[,:]/)[0]; }).join(" · ")) + '.</p>';
   h += '</div>';
   if (cocinando) {
-    h += '<div class="cpFiBot">' + (e === "ya" || e === "saltada" || e === "marcha"
+    h += '<div class="cpFiBot">' + (e === "marcha" && cueceCarril(S, y.id) ? '<button class="cpHecho" data-a="cYa" data-t="' + y.id + '">' + svg("tick") + 'Ya está</button>' : "") +
+      (e === "ya" || e === "saltada" || e === "marcha"
       ? '<button class="cpAnt" data-a="tDeshaz" data-t="' + y.id + '">' + svg("arrows-clockwise") + 'Deshacer: aún no está hecho</button>'
-      : '<button class="cpHecho" data-a="tHecho" data-t="' + y.id + '">' + svg("tick") + (y.dur > y.manos ? "Hecho · reloj de " + minTxt(y.dur - y.manos) : "Ya lo he hecho") + '</button>' +
+      : '<button class="cpHecho" data-a="tHecho" data-t="' + y.id + '">' + svg("tick") + (y.dur > y.manos ? etiquetaHecho(y.txt, y.dur - y.manos) : "Ya lo he hecho") + '</button>' +
         '<button class="cpAnt" data-a="tSalta" data-t="' + y.id + '">Saltar: no hace falta</button>') + '</div>';
   }
   return h + '</div>';
@@ -1883,7 +2027,7 @@ function accion(a, b) {
       if (T) di(T.dur >= 60 ? fmtMin(T.dur).replace("min", "minutos").replace(" s", " segundos") + "." : T.dur + " segundos.");
       cambia(false); return;
     case "pausa": T = pausa(SX, b.getAttribute("data-t"), ahora); delete ALARMA[b.getAttribute("data-t")]; guardaOtro(duenio); cambia(false); return;
-    case "mas": T = masUno(SX, b.getAttribute("data-t"), ahora, 60); delete ALARMA[b.getAttribute("data-t")]; guardaOtro(duenio); di("Un minuto más."); cambia(false); return;
+    case "mas": T = masUno(SX, b.getAttribute("data-t"), ahora, 60); delete ALARMA[b.getAttribute("data-t")]; guardaOtro(duenio); di("Un minuto más."); V.ultPlan = 0; cambia(false); return;
     case "parar": para(SX, b.getAttribute("data-t"), ahora); delete ALARMA[b.getAttribute("data-t")]; if (/^reloj:/.test(V.hoja || "")) V.hoja = null; guardaOtro(duenio); cambia(false); return;
     case "aVer":
       id = b.getAttribute("data-t");
@@ -1901,10 +2045,30 @@ function accion(a, b) {
     case "ant": V.visto = null; anterior(S, ahora); cambia(true); return;
     case "hecho":
       V.visto = null;
-      quitaManos(S, M0.pasos[S.actual]);
+      var Ph = M0.pasos[S.actual];
+      // v2.73: lo que se cuece no se da por terminado al tocar el botón: queda en marcha hasta «Ya está»
+      if (S.cuece && S.cuece[S.actual]) { b.setAttribute("data-k", S.actual); return accion("yaPaso", b); }
+      if (esperaPaso(Ph)) {
+        var antesE = copia(S);
+        k = echado(S, n, S.actual, ahora, M0); T = relojDe(S, Ph.k);
+        ponToast("En marcha: " + Ph.titulo.split(/[,:]/)[0], function () { Object.keys(antesE).forEach(function (x) { S[x] = antesE[x]; }); S.t = ya(); });
+        if (k >= 0) autoReloj(ahora);
+        cambia(false);
+        di(vozRelojDe(T ? Math.max(1, restante(T, ahora)) : Ph.dur, Ph.pista) + (k >= 0 ? " " + vozPaso(M0, S.actual) : ""));
+        return;
+      }
+      quitaManos(S, Ph);
       k = hecho(S, n, S.actual, ahora);
-      if (k < 0) { aFin(ahora); return; }
+      if (k < 0) { if (cocinando(S).length) { S.actual = cocinando(S)[0]; cambia(true); return; } aFin(ahora); return; }
       autoReloj(ahora); cambia(true); return;
+    case "yaPaso":
+      k = +b.getAttribute("data-k"); if (!(S.cuece && S.cuece[k])) return;
+      var antesY = copia(S), eraActual = S.actual === k;
+      var sg = yaEsta(S, n, k, ahora);
+      ponToast("Hecho: " + M0.pasos[k].titulo.split(/[,:]/)[0], function () { Object.keys(antesY).forEach(function (x) { S[x] = antesY[x]; }); S.t = ya(); });
+      if (sg < 0 && !cocinando(S).length && siguiente(S, n, -1) < 0) { aFin(ahora); return; }
+      if (eraActual) autoReloj(ahora);
+      cambia(eraActual); return;
     case "seguir":
       k = V.visto; V.visto = null;
       var r = seguirDesde(S, k, ahora);
@@ -1932,12 +2096,13 @@ function accion(a, b) {
       autoReloj(ahora); cambia(false); return;
     case "tHecho": case "tSalta":
       id = b.getAttribute("data-t"); T = tareaDe(M0, id); if (!T || !S.carr) return;
-      var antesT = copia(S);
-      if (a === "tHecho") hechaCarril(S, M0, id, ahora); else saltaCarril(S, M0, id, ahora);
+      var antesT = copia(S), relT = null;
+      if (a === "tHecho") relT = hechaCarril(S, M0, id, ahora); else saltaCarril(S, M0, id, ahora);
       var plT = planCarril(M0, S, ahora, V.cocina); S.carr.mesa0 = plT.mesa;
-      ponToast((a === "tHecho" ? "Hecho: " : "Saltado: ") + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesT).forEach(function (x) { S[x] = antesT[x]; }); S.t = ya(); });
+      ponToast((a === "tSalta" ? "Saltado: " : relT ? "En marcha: " : "Hecho: ") + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesT).forEach(function (x) { S[x] = antesT[x]; }); S.t = ya(); });
       V.hoja = null; V.ultPlan = 0;
       if (todoHecho(M0, S, ahora)) { aFin(ahora); return; }
+      if (relT) { cambia(false); di(vozRelojDe(relT.dur, relT.senal)); return; }
       cambia(true); return;
     case "rac":
       var nr = +b.getAttribute("data-n"); if (!(nr > 0) || nr === M0.raciones) return;
@@ -1959,11 +2124,21 @@ function accion(a, b) {
       cambia(true); return;
     case "cHecho":
       id = b.getAttribute("data-t"); T = tareaDe(M0, id); if (!T || !S.carr) return;
-      var antesC = copia(S);
-      hechaCarril(S, M0, id, ahora);
+      var antesC = copia(S), relC = hechaCarril(S, M0, id, ahora);
       // el aviso de "plan rehecho" ya se ha visto: cuenta desde aqui
       var pl2 = planCarril(M0, S, ahora, V.cocina); S.carr.mesa0 = pl2.mesa;
-      ponToast("Hecho: " + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesC).forEach(function (x) { S[x] = antesC[x]; }); S.t = ya(); });
+      ponToast((relC ? "En marcha: " : "Hecho: ") + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesC).forEach(function (x) { S[x] = antesC[x]; }); S.t = ya(); });
+      if (todoHecho(M0, S, ahora)) { aFin(ahora); return; }
+      // v2.73: echado: no está hecho. Dice su reloj (y, si ya toca, lo siguiente de tus manos)
+      if (relC) { cambia(false); var sigC = vozCarril(); di(vozRelojDe(relC.dur, relC.senal) + (sigC ? " Ahora: " + sigC : "")); return; }
+      cambia(true); return;
+    case "cYa":
+      id = b.getAttribute("data-t"); T = tareaDe(M0, id); if (!T || !S.carr) return;
+      var antesY2 = copia(S);
+      yaEstaCarril(S, M0, id, ahora);
+      var pl3 = planCarril(M0, S, ahora, V.cocina); S.carr.mesa0 = pl3.mesa;
+      ponToast("Listo: " + sinMin(T.txt).split(/[,:]/)[0], function () { Object.keys(antesY2).forEach(function (x) { S[x] = antesY2[x]; }); S.t = ya(); });
+      V.hoja = null; V.ultPlan = 0;
       if (todoHecho(M0, S, ahora)) { aFin(ahora); return; }
       cambia(true); return;
     case "hCero": V.hoja = "cero"; pinta(false); if (V.ctx.marca) V.ctx.marca("cocina"); return;
@@ -1997,7 +2172,7 @@ function racionNutri(M0) {
 function autoReloj(ahora) {
   if (!V || V.pant !== "paso" || V.visto != null) return;
   var S = V.S, P = V.M0.pasos[S.actual];
-  if (!P || !P.dur || S.hechos[S.actual] || relojDe(S, P.k)) return;
+  if (!P || !P.dur || S.hechos[S.actual] || relojDe(S, P.k) || esperaPaso(P) || (S.cuece && S.cuece[S.actual])) return;
   var T = empieza(S, P, ahora, V.M0);
   if (T) di(T.dur >= 60 ? fmtMin(T.dur).replace("min", "minutos").replace(" s", " segundos") + "." : T.dur + " segundos.");
 }

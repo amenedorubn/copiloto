@@ -190,13 +190,20 @@ test("modo: Hecho en el agua pone su reloj, picas y, si tardas, la pasta se muev
   assert.ok(pl.P.ini[tid("agua", 2)] > pasta0, "la pasta entra más tarde");
   assert.ok(!Modo.todoHecho(M0, S, t0 + 300e3));
   let ahora = t0 + 300e3;
-  for (let i = 0; i < 20; i++) {                                           // el resto, cada cosa a su hora
+  for (let i = 0; i < 40; i++) {                                           // el resto, cada cosa a su hora
+    // v2.73: lo que se cuece no está hecho hasta «Ya está» (al sonar su reloj)
+    const listos = Modo.cueceDe(M0, S, ahora).filter((c) => c.r <= 0);
+    if (listos.length) { listos.forEach((c) => Modo.yaEstaCarril(S, M0, c.y.id, ahora)); continue; }
     pl = Modo.planCarril(M0, S, ahora);
-    if (!pl.m.ahora) break;
+    if (!pl.m.ahora) {
+      const prox = Modo.cueceDe(M0, S, ahora)[0];
+      if (!prox) break;
+      ahora += Math.ceil(prox.r) * 1000; continue;
+    }
     ahora = Math.max(ahora, pl.base + pl.m.cuando * 1000);
     Modo.hechaCarril(S, M0, pl.m.ahora.id, ahora);
   }
-  assert.ok(Modo.todoHecho(M0, S, ahora + 3600e3));
+  assert.ok(Modo.todoHecho(M0, S, ahora));
 });
 
 test("v2.58: una tarea de manos hecha antes de tiempo deja las manos libres desde que la marcas", () => {
