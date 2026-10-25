@@ -252,7 +252,19 @@ function giraTarjeta(caja) {
   return v;
 }
 
-var API = { comida: comida, giraTarjeta: giraTarjeta, comidasDe: comidasDe, recetaDe: recetaDe, queGrande: queGrande, avisosComida: avisosComida,
+/* v2.74 · lo que el Worker no puede hacer en sus 10 ms de CPU: el linter completo y el plan con carriles de cada comida
+   del KV, para el conector (receta() lo enseña). Solo las que han cambiado desde la última vez: id + rev.
+   -> {id: {rev, errores, avisos}} | null                                                                               */
+function revisionDe(dia, enviada) {
+  var out = null, C = usa("Carriles", "./carriles.js");
+  (dia || []).forEach(function (ev) {
+    if (!ev || ev.fuente !== "comida" || !ev.uid || !ev.rev || (enviada && enviada[ev.uid] === ev.rev)) return;
+    var R = comida(ev), r = C && C.revisa ? C.revisa(R) : { errores: R.lint ? R.lint.errores.map(function (e) { return e.texto; }) : [], avisos: [] };
+    (out = out || {})[ev.uid] = { rev: ev.rev, errores: r.errores, avisos: r.avisos };
+  });
+  return out;
+}
+var API = { comida: comida, revision: revisionDe, giraTarjeta: giraTarjeta, comidasDe: comidasDe, recetaDe: recetaDe, queGrande: queGrande, avisosComida: avisosComida,
   pasosGuia: pasosGuia, mezcla: mezcla, vigentes: vigentes, productoOFF: productoOFF, nutriTxt: nutriTxt, esCodigo: esCodigo,
   OFF_URL: OFF_URL, RECETAS_URL: RECETAS_URL, K: { recetas: K_RECETAS, cambios: K_CAMBIOS, nota: K_NOTA, lista: K_LISTA, alimentos: K_ALIM } };
 
@@ -721,18 +733,39 @@ function deLista(id) { var L = lista(); L.forEach(function (x) { if (x.id === id
    sube al cambiar algo (1,5 s despues) y se baja al abrir la pestaña. Sin red, espera.   */
 var SUBE = null, subiendo = false;
 function subeLuego() { if (CAJA) return; clearTimeout(SUBE); SUBE = setTimeout(sincroniza, 1500); }
-function sincroniza() {
+/* v2.74 · para el conector: la revisión de las comidas que han cambiado (revisionDe) y lo que hay en casa por zonas */
+var REV_ENVIADA = {}, CASA_ENVIADA = "";
+function paraConector(diaFuera) {
+  var out = {}, dia = diaFuera || (CTX && CTX.dia) || [], rv = revisionDe(dia, REV_ENVIADA);
+  if (rv) out.revision = rv;
+  var E = estado(dia);
+  if (E.H) {
+    var foto = { zonas: E.H.zonas.map(function (z) { return { zona: z.zona, items: z.items.map(function (x) { return { nombre: x.nombre, cant: x.c ? Rc().cantTxt(x.c) : "", duda: !!x.dudoso }; }) }; }),
+                 actualizada: new Date().toISOString().slice(0, 16).replace("T", " ") };
+    var firma = JSON.stringify(foto.zonas);
+    if (firma !== CASA_ENVIADA) { out.casa = foto; out.casaFirma = firma; }
+  }
+  return out;
+}
+function enviadoConector(cuerpo) {
+  Object.keys(cuerpo.revision || {}).forEach(function (id) { REV_ENVIADA[id] = cuerpo.revision[id].rev; });
+  if (cuerpo.casa) CASA_ENVIADA = JSON.stringify(cuerpo.casa.zonas);
+}
+function sincroniza(fuera) {
   if (CAJA) return;
-  var conf = (CTX && CTX.conf) || (MCTX && MCTX.conf);
+  var conf = (CTX && CTX.conf) || (MCTX && MCTX.conf) || (fuera && fuera.conf);
   if (!conf || !conf.url || !conf.key || subiendo || typeof fetch !== "function") return;
   subiendo = true;
   var antes = JSON.stringify([conId(cambios()), lista(), alimentos()]), cuerpo = { cambios: conId(cambios()), lista: lista(), alimentos: alimentos() };
+  // v2.74: para el conector de la Claude del chat: la revisión completa de cada comida y la foto de Casa
+  try { var ex = paraConector(fuera && fuera.dia); if (ex.revision) cuerpo.revision = ex.revision; if (ex.casa) cuerpo.casa = ex.casa; } catch (e) {}
   fetch(conf.url.replace(/\/+$/, "") + "/cocina", { method: "POST", cache: "no-store",
     headers: { "X-Copiloto-Key": conf.key, "Content-Type": "application/json" },
     body: JSON.stringify(cuerpo) })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (j) {
       if (!j || !Array.isArray(j.cambios)) return;
+      enviadoConector(cuerpo);
       var C2 = mezcla(cambios(), j.cambios, 400), L2 = mezcla(lista(), j.lista || [], 300);   // y lo de aqui mientras tanto
       var A2 = Al().mezcla(alimentos(), j.alimentos || []);
       guarda(K_CAMBIOS, C2); guarda(K_LISTA, L2); guarda(K_ALIM, A2);
@@ -787,6 +820,8 @@ API.salPrueba = function () {
   var t = document.getElementById("cocToast"); if (t) t.hidden = true;
 };
 API.enPrueba = function () { return !!CAJA; };
+// v2.74: la app acaba de bajar la agenda (comidas del KV): revisa lo nuevo y súbelo, aunque Cocina no esté abierta
+API.sincroniza = function (conf, dia) { try { sincroniza({ conf: conf, dia: dia }); } catch (e) {} };
 API.pinta = function (c, ctx) {
   if (CAJA && !(ctx && ctx.prueba)) API.salPrueba();   // la Cocina de verdad nunca ve la caja
   ponCSS(); cont = c; CTX = ctx || {}; MCTX = CTX;

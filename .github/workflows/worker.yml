@@ -8,6 +8,10 @@ on:
     paths:
       - "worker/**"
       - ".github/workflows/worker.yml"
+      # v2.74: el conector usa receta.js (y su tabla) y devuelve el bloque de instrucciones del formato
+      - "receta.js"
+      - "nutri-tabla.js"
+      - "docs/RECETAS-CALENDARIO.md"
   workflow_dispatch:
 
 permissions:
@@ -51,12 +55,18 @@ jobs:
           fi
           if [ -n "$id" ]; then
             printf '\n[[kv_namespaces]]\nbinding = "COPILOTO"\nid = "%s"\n' "$id" >> wrangler.toml
-            echo "::notice::KV COPILOTO enganchado ($id)."
+            # v2.74: el OAuth del conector guarda sus tokens en OAUTH_KV: el mismo almacen (sus claves llevan prefijo)
+            printf '\n[[kv_namespaces]]\nbinding = "OAUTH_KV"\nid = "%s"\n' "$id" >> wrangler.toml
+            echo "::notice::KV COPILOTO (y OAUTH_KV) enganchado ($id)."
           else
             echo "::warning::No se ha podido preparar el KV. El Worker se desplegara sin el y Strava no podra conectarse."
             cat lista.txt || true
           fi
           rm -f lista.txt creado.txt
+
+      # v2.74: la libreria del OAuth del conector (@cloudflare/workers-oauth-provider), fijada en package-lock.json
+      - name: Instalar dependencias del Worker
+        run: cd worker && npm ci --no-audit --no-fund
 
       - name: Desplegar el Worker en Cloudflare
         uses: cloudflare/wrangler-action@v3
@@ -80,6 +90,9 @@ jobs:
             case "$cuerpo" in *'"ok":true'*)
               case "$cuerpo" in
                 *'"KV":false'*) echo "::warning::El Worker vive pero se ha quedado sin KV." ;;
+              esac
+              case "$cuerpo" in
+                *'"CONECTOR":false'*) echo "::warning::El conector /mcp no funcionara hasta poner GITHUB_CLIENT_ID y GITHUB_CLIENT_SECRET en el panel de Cloudflare (mira CONECTOR.md)." ;;
               esac
               case "$cuerpo" in
                 *'"APP_KEY":true'*'"ICAL_URL":true'*)

@@ -275,5 +275,27 @@ function explica(M, P) {
   return out;
 }
 
-return { COCINA: COCINA, modelo: modelo, planifica: planifica, momento: momento, explica: explica, capacidad: capacidad };
+/* v2.74 · la revisión completa de una comida, la que manda la app al Worker para el conector (la Claude del chat la
+   ve con receta()): los errores del linter de receta.js y, con el plan, lo caliente que acaba más de 60 s antes de
+   que lo use el paso siguiente (se enfría o se pasa esperando). -> {errores: [txt], avisos: [txt]}                 */
+var CALIENTE = /^(micro|airfryer|horno)$/;
+function revisa(R, cocina) {
+  var out = { errores: [], avisos: [] };
+  if (!R || R.tipo !== "comida") return out;
+  if (R.lint) { R.lint.errores.forEach(function (e) { out.errores.push(e.texto); }); R.lint.avisos.forEach(function (e) { out.avisos.push(e.texto); }); }
+  var M = modelo(R); if (!M) return out;
+  var P = planifica(M, cocina || COCINA);
+  M.tareas.forEach(function (x) {
+    if (!(x.fuego || CALIENTE.test(x.aparato || ""))) return;
+    var sig = M.tareas.filter(function (y) { return y.tras.indexOf(x.id) >= 0; });
+    if (!sig.length) return;
+    var y = sig.reduce(function (a, b) { return P.ini[b.id] < P.ini[a.id] ? b : a; }), gap = P.ini[y.id] - P.fin[x.id];
+    if (gap > 60) out.errores.push("Plan: «" + corta(x.txt) + "» acaba " + Math.round(gap / 60) + " min antes de «" + corta(y.txt) +
+      "» y espera caliente. Ponle «(no espera)» o cambia el orden.");
+  });
+  return out;
+}
+function corta(t) { t = String(t || "").split(/\s·\s|,\s\d/)[0]; return t.length > 50 ? t.slice(0, 48) + "…" : t; }
+
+return { COCINA: COCINA, modelo: modelo, planifica: planifica, momento: momento, explica: explica, capacidad: capacidad, revisa: revisa };
 });

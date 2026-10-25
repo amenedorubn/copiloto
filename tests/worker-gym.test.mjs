@@ -1,9 +1,9 @@
-// El lector de gimnasio del Worker (worker/src/index.js, autoPlan): los ejercicios tienen que salir
+// El lector de gimnasio del Worker (worker/src/app.js, autoPlan): los ejercicios tienen que salir
 // del texto del evento para verse en la tarjeta del día sin abrir las notas. Datos ficticios.
 //   node --test tests/worker-gym.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { autoPlan } from "../worker/src/index.js";
+import { autoPlan } from "../worker/src/app.js";
 
 test("gimnasio en forma corta: «1️⃣ NOMBRE · 50 lbs · 3 × 10 · descanso 2:00» da los ejercicios", () => {
   const txt = [

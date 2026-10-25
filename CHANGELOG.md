@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.74.0] - 2026-10-25
+
+### Añadido
+
+- Conector MCP: la Claude del chat lee y cambia las comidas directamente en Copiloto (menu, receta, guardar_comida, borrar_comida, casa, formato) en el Worker, con OAuth de GitHub; las comidas viven en el KV (se copian una vez del calendario «Comidas», desde hace 7 días) y la app les pasa el linter completo y el plan al sincronizar
+
 ## [2.73.1] - 2026-10-25
 
 ### Corregido
@@ -1026,6 +1032,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.74.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.74.0
 [2.73.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.73.1
 [2.73.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.73.0
 [2.72.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.72.1

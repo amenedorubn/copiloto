@@ -60,15 +60,22 @@ test("huella: cambia al editar los pasos o los carriles, no al abrir otra vez", 
   assert.notEqual(M.huella(M.normaliza({ comida: comida(otro) })), h);
 });
 
-test("huella distinta: estado nuevo, sin carriles ni los relojes de esta receta", () => {
+test("v2.74 · huella distinta con algo a medias: «La receta ha cambiado», sin tocar lo que había", () => {
   const m0 = M0(), S = aMedias(m0, 2 * 60e3);
+  S.huella = "otra";
+  const antes = JSON.stringify(S), a = M.arranque(S, m0, AHORA);
+  assert.equal(a.d, "cambio");
+  assert.equal(a.pant, "cambio");
+  assert.equal(JSON.stringify(a.S), antes, "hasta que digas «Empezar la nueva», nada se pierde");
+  assert.deepEqual(a.quitados, []);
+});
+test("huella distinta sin nada hecho: estado nuevo, sin carriles ni los relojes de esta receta", () => {
+  const m0 = M0(), S = M.nuevoEstado(AHORA - 60e3);
   S.huella = "otra";
   const a = M.arranque(S, m0, AHORA);
   assert.equal(a.d, "nuevo");
-  assert.equal(a.pant, "plan");
   assert.equal(a.S.carr, null);
   assert.deepEqual(a.S.timers, []);
-  assert.deepEqual(a.quitados, ["r1"]);
   assert.equal(a.S.huella, M.huella(m0));
 });
 

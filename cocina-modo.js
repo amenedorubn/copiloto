@@ -476,6 +476,8 @@ function huella(M0) {
 var CARRIL_SIGUE = 10 * 60e3;
 function arranque(S, M0, ahora) {
   var hu = huella(M0), quitados = [], d;
+  // v2.74: la receta ha cambiado (la Claude del chat la ha guardado otra vez) y la tenías a medias: se pregunta
+  if (S && S.huella && S.huella !== hu && hayProgreso(S) && !S.terminado) return { d: "cambio", pant: "cambio", S: S, quitados: [] };
   if (S && S.huella && S.huella !== hu) {
     quitados = (S.timers || []).map(function (T) { return T.id; });
     S = nuevoEstado(ahora); d = "nuevo";
@@ -1218,7 +1220,7 @@ API.abre = function (q, ctx) {
   if (V.ctx.marca) V.ctx.marca("cocina");
   pideCerrojo();
   quitaAvisoFuera();
-  pinta(d !== "retoma" && V.pant !== "plan");
+  pinta(d !== "retoma" && d !== "cambio" && V.pant !== "plan");
   ajustaTick();
   return true;
 };
@@ -1368,6 +1370,7 @@ function pinta(habla) {
   if (V.pant === "plan") h += planHtml(ahora);
   else if (V.pant === "carril") h += carrilHtml(ahora);
   else if (V.pant === "retoma") h += retoma(ahora);
+  else if (V.pant === "cambio") h += cambioHtml();
   else if (V.pant === "fin") h += final(ahora);
   else h += paso(ahora);
   h += alarma(ahora) + hoja(ahora);
@@ -1615,6 +1618,13 @@ function retoma(ahora) {
   return '<div class="cpCuerpo"><div class="cpRetoma"><em>Ibas por</em><h2>' + (P.auto ? "Antes de empezar" : "Paso " + numDe(M0, k) + " de " + totalNum(M0)) + '</h2>' +
     '<p class="cpDet">' + esc(P.titulo) + '</p><p class="cpHace">' + [hTxt, hechos ? hechos + (hechos === 1 ? " paso hecho" : " pasos hechos") : ""].filter(Boolean).join(" · ") + '</p></div></div>' +
     '<div class="cpDock retoma">' + toast() + '<button class="cpAnt" data-a="cero">Empezar de 0</button><button class="cpHecho" data-a="sigue">Seguir' + svg("der") + '</button></div>';
+}
+// v2.74 · la receta ha cambiado mientras la cocinabas: ¿empezar la nueva?
+function cambioHtml() {
+  return '<div class="cpCuerpo"><div class="cpRetoma"><em>Ojo</em><h2>La receta ha cambiado</h2>' +
+    '<p class="cpDet">' + esc(V.M0.titulo) + ' se ha guardado otra vez mientras la cocinabas. Lo que llevabas hecho es de la receta de antes.</p>' +
+    '<p class="cpHace">¿Empezar la nueva?</p></div></div>' +
+    '<div class="cpDock retoma">' + toast() + '<button class="cpAnt" data-a="x">Ahora no</button><button class="cpHecho" data-a="nueva">Empezar la nueva' + svg("der") + '</button></div>';
 }
 function final(ahora) {
   var M0 = V.M0, rep = M0.reparto, h = '<div class="cpCuerpo"><div class="cpFin"><div class="cpFinOk">' + svg("tick") + '</div><h2>¡Hecho!</h2>';
@@ -2148,6 +2158,12 @@ function accion(a, b) {
       V.hoja = null; V.visto = null; V.ficha = null; V.pant = c0.pant; V.ultPlan = 0;
       ponToast("Empezado de 0", function () { deshacer(S, c0.antes, Date.now()); if (V) V.pant = pant0 === "retoma" ? (M0.carr && S.carr && S.carr.ini ? "carril" : "paso") : pant0; });
       cambia(V.pant !== "plan"); return;
+    case "nueva":                                   // v2.74: la receta cambió: de 0 con la nueva (sus relojes, fuera)
+      (S.timers || []).forEach(function (T) { delete ALARMA[T.id]; });
+      var N = nuevoEstado(ahora); Object.keys(S).forEach(function (x) { delete S[x]; }); Object.keys(N).forEach(function (x) { S[x] = N[x]; });
+      S.huella = huella(M0); S.titulo = M0.titulo; S.acento = M0.acento;
+      V.pant = M0.carr ? "plan" : "paso"; V.hoja = null; V.visto = null;
+      cambia(V.pant === "paso"); return;
     case "sigue": V.pant = M0.carr && S.carr && S.carr.ini ? "carril" : "paso"; S.t = ahora; cambia(true); return;
     case "deshacer": if (V.toast && V.toast.fn) V.toast.fn(); V.toast = null; cambia(false); return;
     case "comido": V.comido = !V.comido; pinta(false); return;

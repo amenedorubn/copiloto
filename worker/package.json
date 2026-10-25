@@ -1,0 +1,9 @@
+{
+  "name": "copiloto-api",
+  "private": true,
+  "type": "module",
+  "description": "Worker de Copiloto: agenda, cocina y el conector MCP para la Claude del chat",
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.2.4"
+  }
+}

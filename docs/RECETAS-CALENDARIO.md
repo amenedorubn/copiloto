@@ -1,13 +1,16 @@
 # Cómo escribir una comida en el calendario «Comidas»
 
-Para la Claude que planea las comidas. Copiloto lee cada evento y lo convierte en lista de la compra,
+Para la Claude que planea las comidas. **Desde la v2.74 las comidas viven en Copiloto** (en su Worker) y la Claude
+del chat las lee y las cambia con el conector (ver [CONECTOR.md](../CONECTOR.md)); el calendario «Comidas» ya no
+se lee para recetas. Copiloto convierte cada comida en lista de la compra,
 despensa y paso a paso. **Desde la v2.58 cada paso se basta solo**: lo que hay que hacer, con qué, cuánto,
 a qué fuego, cuánto tarda y cómo se sabe que ya está, todo en el mismo paso. **Desde la v2.72 se escribe como
 una receta normal** (formato v4): se lee bien en Google Calendar y Copiloto entiende lo mismo que con las marcas.
 
 ## Instrucciones para la Claude del calendario
 
-Para copiar tal cual en las instrucciones de la Claude que escribe los eventos:
+Para copiar tal cual en las instrucciones de la Claude que planea las comidas (es también lo que devuelve la
+herramienta `formato()` del conector):
 
 ```
 RECETAS DEL CALENDARIO «COMIDAS» · formato v4 (legible)
@@ -40,8 +43,12 @@ ella ingredientes, cantidades, tiempos, recipientes, fuego, carriles y nutrició
 · Fuego: «a fuego bajo / medio / medio-alto / fuerte», «Baja a fuego medio», «Apaga el fuego».
 · Marcas de carril detrás del tiempo: «· 3 min (manos)», «(no espera)», «(tras PREPARAR)».
 · Consejos y segundas formas («o 2 min al micro»), en NOTAS. Nada de paréntesis sueltos.
-Antes de guardar: node scripts/lint-recetas.mjs receta.txt (tiene que salir ✓).
-Para pasar una receta v3 a este formato: node scripts/v3-a-v4.mjs --escribe receta.txt
+Las comidas viven en Copiloto, no en el calendario. Con el conector «Copiloto»:
+· menu(desde, hasta) para ver qué hay; casa() para saber qué queda en casa.
+· guardar_comida(fecha, hora, título, texto) para crear una (o cambiarla, con su id).
+  Si devuelve errores, uno por línea, arréglalos y vuelve a guardar.
+· Copiloto pasa el linter completo y el plan al sincronizar: míralos con receta(id) y
+  corrige lo que diga (vuelve a guardar con el mismo id).
 ```
 
 ## Formato v4 (el que hay que usar)

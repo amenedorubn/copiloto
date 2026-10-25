@@ -6,3 +6,9 @@ workers_dev = true
 # Los secretos (APP_KEY, ICAL_URL) NO se declaran aqui: se meten a mano desde
 # el panel de Cloudflare (Settings -> Variables and Secrets, tipo "Secret").
 # Un despliegue no los borra: sobreviven a cada push.
+
+# v2.74: formato() del conector devuelve el bloque de instrucciones de docs/RECETAS-CALENDARIO.md
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+fallthrough = true
