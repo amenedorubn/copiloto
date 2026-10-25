@@ -24,13 +24,14 @@ ella ingredientes, cantidades, tiempos, recipientes, fuego, carriles y nutrició
   2. Echa 300 g de boniato y 400 g de tomate triturado a la olla, tapado, a fuego medio-bajo · 15 min → el boniato se pincha sin resistencia
 · Una acción por paso. Todos con tiempo tras « · », aunque sea «· 20 s». Lo que espera
   (cuece, dora, hornea) lleva su señal tras «→».
-· Cantidad delante del nombre: «300 g de boniato», «2 huevos», «½ pimiento rojo»,
-  «1 cda de AOVE», «1 pizca de sal», «pimienta al gusto», «unas gotas de limón»,
-  «unos 30 g de mozzarella». Detrás, si hace falta, el corte («en tiras finas»), lo que
-  pesa «(unos 400 g)» o una nota «(congelada)», «(de casa: el del domingo)».
-· Nombres como en la tabla de la app o en recetas anteriores («pimiento tricolor»,
-  «garbanzos cocidos», «AOVE»). Si el linter dice «no sé qué ingrediente es “X”»,
-  cambia el nombre: no adivina.
+· Cantidad (en número) delante del nombre: «300 g de boniato», «2 huevos», «½ pimiento
+  rojo», «1 cda de AOVE», «1 pizca de sal», «unas gotas de limón», «unos 30 g de
+  mozzarella». El nombre llega hasta la siguiente coma, « y », «(», « en », « con »,
+  « a », « · » o el final: cualquier nombre vale («40 g de guanciale», «1 café»).
+  Detrás, si hace falta, el corte («en tiras finas»), lo que pesa «(unos 400 g)» o una
+  nota «(congelada)», «(de casa: el del domingo)».
+· Lo que se nombra y NO es de esta comida (lo que dejas listo para mañana) va con letra:
+  «Deja en la encimera un plátano y cien gramos de cottage».
 · Lo que ya salió se nombra con artículo y no se vuelve a comprar: «el boniato», «las
   lentejas». Con cantidad, si es la tanda de ese paso: «Echa 250 g de pollo» otra vez.
   Si de verdad es más: «otra pizca de sal», «otros 2 huevos».
@@ -67,24 +68,31 @@ falta: sale de los pasos.
 | `en la sartén`, `al micro`, `en la Ninja`, `a un tupper` | el recipiente: se reconoce solo | `#sartén` |
 | `→ dorado por fuera` | al final: cómo se ve cuando ya está | igual |
 
-### Cómo reconoce los ingredientes
+### Cómo reconoce los ingredientes (v2.73.1: por la forma)
 
-Detrás de cada cantidad Copiloto busca el nombre **más largo** de su diccionario: la tabla de nutrición de la app,
-lo que entiende la despensa, los básicos y sus alias (AOVE, aceite de oliva…), todos los nombres que ya han salido
-en las recetas v3 (`docs/recetas/`) y, en la app, **tus alimentos** (con sus alias) y lo que hay en tu despensa.
-«400 g de tomate triturado» es tomate triturado, no tomate; «2 yogures griegos» es «yogur griego».
+Un ingrediente nuevo se reconoce **por cómo se escribe**, no por un diccionario: una cantidad en número (`300`, `½`,
+`1,5`, `unos 30`, `otra`, `unas gotas de`), la unidad y «de» si las hay (`g`, `ml`, `cda`, `lonchas`, `bote`…) y el
+**nombre hasta la siguiente** coma, « y », «(», « en », « con », « a », « al », « a la », « · », «→» o el final. Tampoco
+entra en el nombre lo que claramente no lo es: «de postre», «por encima», «sin…», «si te apetece» o un gerundio
+(«guardando»). Así «40 g de guanciale», «1 café», «15 g de pasas» o «1 vasito de avena» valen aunque la app no los
+conozca. Un participio suelto al final no es del nombre («2 huevos batidos» son huevos, «250 g de pollo dorado» es
+pollo); un estado sí se queda («mango congelado», «pimiento rojo crudo»: el alimento es el mismo).
 
-Si un nombre no está, **no lo adivina**: el linter dice «no sé qué ingrediente es “X”» (código `no-se-entiende`).
-Se arregla escribiéndolo como en la tabla o en una receta anterior, o añadiéndolo a tus alimentos.
+El diccionario (la tabla de nutrición, la despensa, los básicos y sus alias, los nombres de las recetas de antes y, en
+la app, tus alimentos) solo sirve para dos cosas: alargar el corte a un nombre conocido más largo («1 tupper de
+lentejas con boniato y pimiento») y enlazar las **referencias**. «1 tupper de …» es la comida que hizo otra receta.
 
-Detrás del nombre se leen solos los colores y estados («rojo», «maduro», «congelado», «cocido»…), el corte que
-empieza por «en dados / tiras / rodajas / cubos / lonchas…» y lo que va **pegado** entre paréntesis: lo que pesa
-(`(125 g)`, `(unos 400 g)`) o una nota (`(congelada)`, `(de casa: la otra mitad de ayer)`). «De casa» funciona igual
-que siempre (ver «Cómo sale la lista de la compra»).
+Detrás del nombre se leen el corte que empieza por «en dados / tiras / rodajas / cubos / lonchas…» y lo que va
+**pegado** entre paréntesis: lo que pesa (`(125 g)`, `(unos 400 g)`) o una nota (`(congelada)`, `(de casa: la otra
+mitad de ayer)`). «De casa» funciona igual que siempre, sea el nombre conocido o no (ver «Cómo sale la lista de la
+compra»). Un número con letra («un plátano», «cien gramos de cottage») no es una cantidad: es texto.
 
 Lo que **ya salió** en un paso anterior (en el orden del texto) es la misma cosa: «el boniato», «las lentejas»,
 «del curry» lo enlazan sin cantidad, y «Echa 250 g de pollo» por segunda vez es la tanda de ese paso, como el `@&`
 de la v3: sale en el paso con su cantidad y no se vuelve a comprar. «solomillos de pollo» y luego «pollo» son lo mismo.
+Con artículo delante, una cantidad también es de antes: «con los 2 huevos encima», «2 cdas del agua de cocción».
+Una referencia que no casa con nada de lo que ya salió («sirve las lentejas» sin lentejas antes) es un **aviso** del
+linter (`ref`), no un error.
 
 ### Las reglas
 
@@ -161,11 +169,12 @@ Falla, con el paso y la frase, si:
 | `sin-tiempo` | un paso no tiene tiempo (aunque sea «20 s») |
 | `sin-verbo` | un paso no empieza diciendo qué hacer |
 | `sin-ing` | un paso no dice con qué ingrediente ni en qué recipiente |
-| `no-se-entiende` | lo que el parser no usa: un ingrediente que no conoce («no sé qué ingrediente es “X”»), `@`, `#` o llaves en una v4 (o mal escritos en una v3), paréntesis sueltos, «o …» (otra forma), un segundo tiempo, marcas de carril sin carriles, `→` vacío |
+| `no-se-entiende` | lo que el parser no usa: `@`, `#` o llaves en una v4 (o mal escritos en una v3), paréntesis sueltos, «o …» (otra forma), un segundo tiempo, marcas de carril sin carriles, `→` vacío |
 | `carril` | `(tras X)` que no es ningún carril, un carril al fuego sin sartén ni olla… |
 | `raciones` / `por-racion` | faltan las raciones o las kcal y la proteína por ración |
 
-Y avisa (sin fallar) de un paso al fuego sin nivel de fuego y de uno que espera sin señal de «ya está».
+Y avisa (sin fallar) de un paso al fuego sin nivel de fuego, de uno que espera sin señal de «ya está» y (v4) de una
+referencia sin cantidad que no casa con nada de antes (`ref`).
 El script, además, vuelve a pasar el linter con 1, 2, 3 y 4 raciones y compara `POR RACIÓN` con la tabla (±10 %).
 Los códigos y los mensajes son los mismos en v3 y v4; la pista de cómo arreglarlo se escribe en el formato de la receta.
 
@@ -201,7 +210,7 @@ CARRIL POLLO (sartén)
 Entero en [docs/recetas-v4/2026-10-05-1300-curry.txt](recetas-v4/2026-10-05-1300-curry.txt). Las comidas de la semana
 del 5 al 11 de octubre están en v4 en [docs/recetas-v4/](recetas-v4/) y, como se escribieron, en v3 en
 [docs/recetas/](recetas/): el test `tests/receta-v4.test.mjs` pasa cada v3 a v4 y comprueba que Copiloto saca lo mismo
-(ingredientes, cantidades, tiempos, pasos, carriles y nutrición, con 1 a 4 raciones). Hoy cuadran las 20.
+(ingredientes, cantidades, tiempos, pasos, carriles y nutrición, con 1 a 4 raciones). Hoy cuadran las 20 y las 24 de la semana del 25 al 31 de octubre.
 
 ### Pasar las recetas v3 a v4
 
@@ -211,7 +220,11 @@ node scripts/v3-a-v4.mjs --escribe docs/recetas/*.txt  # encima de cada .txt (so
 node scripts/v3-a-v4.mjs --json eventos.json        # [{id, summary, description}] -> lo mismo con la descripción en v4
 ```
 
-Cada receta se comprueba al pasarla (lo mismo que el test). Si algo no se puede decir igual en v4 (un `@&` antes de
+Cada receta se comprueba al pasarla (lo mismo que el test) y sale **una línea por receta**: `✓` o `✗` con la primera
+razón («ingrediente 3: v3 «mix» (1) de casa, v4 «queso cottage» (100 g)»), y al final «22 de 24 cuadran»; con
+`--detalle`, todas las diferencias. Lo que la v3 dejaba como texto con número («1 plátano» para mañana) el conversor lo
+pasa a letra («un plátano») para que la v4 no lo compre. Las 24 comidas de la semana del 25 al 31 de octubre están en
+[docs/recetas-semana-2510/](recetas-semana-2510/) y el test comprueba que cuadran todas. Si algo no se puede decir igual en v4 (un `@&` antes de
 que el ingrediente salga, una cantidad fija que no es una pizca, un ingrediente detrás del tiempo…) lo dice por
 stderr, y si Copiloto leería otra cosa, «NO CUADRA» con qué, y sale con código 1.
 

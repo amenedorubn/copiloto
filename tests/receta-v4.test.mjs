@@ -44,21 +44,32 @@ test("cook4: lo que ya salió enlaza («el boniato», «250 g de pollo» otra ve
   const d = Receta.cook4("3. Echa las lentejas, 1 pizca de sal y otra pizca de sal · 1 min", 1, ctx);
   assert.deepEqual(tk(d), [["sal", 1, "pizca", true], ["sal", 1, "pizca", false]]);
 });
-test("cook4: un nombre que no está en el diccionario se dice, no se adivina", () => {
-  const c = Receta.cook4("1. Echa 3 g de flurbo y 2 zorrocotones · 1 min");
-  assert.deepEqual(c.toks, []);
-  assert.deepEqual(c.raros.map((x) => x.split(" (")[0]), ["no sé qué ingrediente es “flurbo”", "no sé qué ingrediente es “zorrocotones”"]);
-  // los números que no son comida no se quejan: centímetros, vueltas, minutos, «en una sola capa»
-  assert.deepEqual(Receta.cook4("1. Corta 1 boniato en cubos de 1,5 cm, da 2 vueltas en una sola capa · 3 min, vuelta a los 2").raros, []);
+test("v2.73.1 · cook4: un ingrediente nuevo se reconoce por la forma, no por el diccionario", () => {
+  const ctx = { vistos: [] };
+  const c = Receta.cook4("1. Prepara 1 café (de casa) con 200 ml de leche semi y 40 g de pecorino (de casa: el de Roma) · 2 min", 1, ctx);
+  assert.deepEqual(tk(c), [["café", 1, "ud", false], ["leche semi", 200, "ml", false], ["pecorino", 40, "g", false]]);
+  assert.deepEqual(c.raros, []); assert.deepEqual(c.sueltos, [], "la nota de casa va con su ingrediente");
+  assert.ok(Receta.ingrediente("café, " + c.toks[0].prep).deCasa);
+  // el nombre llega hasta la coma, « y », «(», « en », « con », « a », «·»; lo que no es el nombre se queda fuera
+  const d = Receta.cook4("2. Corta 80 g de guanciale en tiras, 50 g de maíz y 15 g de pasas a la sartén · 2 min", 1, ctx);
+  assert.deepEqual(tk(d), [["guanciale", 80, "g", false], ["maíz", 50, "g", false], ["pasas", 15, "g", false]]);
+  const e = Receta.cook4("3. Pela 2 mandarinas de postre y bate 3 huevos batidos por encima, escurre 100 g de rigatoni guardando 1 vaso del agua · 1 min", 1, ctx);
+  assert.deepEqual(tk(e), [["mandarina", 2, "ud", false], ["huevo", 3, "ud", false], ["rigatoni", 100, "g", false]]);
+  // un nombre largo conocido manda sobre el corte; el tupper es la comida
+  assert.deepEqual(tk(Receta.cook4("4. Calienta 1 tupper de lentejas con boniato y pimiento (de casa) · 3 min")), [["tupper de lentejas con boniato y pimiento", 1, "ud", false]]);
+  assert.deepEqual(tk(Receta.cook4("5. Calienta 1 tupper de mix de 4 (de casa: descongelado) · 4 min")), [["tupper de mix de 4", 1, "ud", false]]);
+  // los números que no son comida no cuentan: centímetros, vueltas, grados, «a los 2»
+  assert.deepEqual(Receta.cook4("6. Corta 1 boniato en cubos de 1,5 cm, da 2 vueltas a 190 °C · 3 min, vuelta a los 2").toks.map((t) => t.nombre), ["boniato"]);
 });
-test("cook4: lo de «cada …:» es lo de cada uno y no suma; tus alimentos entran en el diccionario", () => {
+test("cook4: lo de «cada …:» es lo de cada uno y no suma; lo que lleva artículo es de antes", () => {
   const c = Receta.cook4("1. Echa en cada tarro 1 yogur: 2 yogures griegos (250 g) en total · 30 s");
   assert.deepEqual(tk(c), [["yogur griego", 2, "ud", false]]);
-  assert.ok(Receta.cook4("1. Echa 20 g de kombu seco · 1 min").raros.length);
-  try {
-    Receta.nombres(["Kombu seco", "Alga wakame"]);
-    assert.deepEqual(tk(Receta.cook4("1. Echa 20 g de kombu seco · 1 min")), [["kombu seco", 20, "g", false]]);
-  } finally { Receta.nombres([]); }
+  const ctx = { vistos: [] };
+  Receta.cook4("1. Pon 2 l de agua y 2 huevos en la olla · 8 min", 1, ctx);
+  const d = Receta.cook4("2. Echa 2 cdas del agua a la crema y sirve con los 2 huevos encima · 1 min", 1, ctx);
+  assert.deepEqual(tk(d), [["agua", 2, "cda", true], ["huevo", 2, "ud", true]], "referencias, no compra nueva");
+  // con letra no es compra: «un plátano y cien gramos de cottage» (para mañana)
+  assert.deepEqual(Receta.cook4("3. Deja en la encimera un plátano y cien gramos de cottage · 1 min").toks, []);
 });
 test("cook4: «@», «#» o llaves en una v4 se avisan; los paréntesis sueltos también", () => {
   const c = Receta.cook4("1. Calienta 1 cda de AOVE en la #sartén (con cuidado) · 2 min (manos)");
@@ -109,15 +120,16 @@ test("escala: las cantidades cambian (en el texto también), la pizca no", () =>
   assert.match(E.pasos.find((p) => /^Pela/.test(p.detalle)).detalle, /^Pela 2 boniatos \(unos 600 g\)/);
   assert.deepEqual(E.lint.errores, []);
 });
-test("linter v4: mismos códigos, con la pista escrita en v4", () => {
-  const R = Receta.leer(ev(BASE + "PROCESO\n1. Echa 3 g de flurbo · 1 min\n2. Remueve bien · 1 min\n3. Echa 200 g de pollo"));
+test("linter v4: mismos códigos; una referencia que no casa es aviso, no error", () => {
+  const R = Receta.leer(ev(BASE + "PROCESO\n1. Echa 3 g de flurbo · 1 min\n2. Remueve bien · 1 min\n3. Echa 200 g de pollo\n4. Sirve las lentejas · 1 min"));
   const cods = R.lint.errores.map((e) => e.cod);
-  assert.ok(cods.includes("no-se-entiende"));
+  assert.ok(R.ingredientes.some((g) => g.base === "flurbo"), "un nombre nuevo es un ingrediente");
   assert.ok(cods.includes("sin-ing"));
-  assert.ok(R.lint.errores.some((e) => /no sé qué ingrediente es “flurbo”/.test(e.texto)));
   assert.ok(R.lint.errores.some((e) => e.cod === "sin-ing" && /«300 g de boniato»/.test(e.texto)));
   // el paso 3 no tiene « · tiempo»: sin-tiempo (la receta sigue siendo v4 por los otros pasos)
   assert.ok(cods.includes("sin-tiempo"));
+  assert.ok(!R.lint.errores.some((e) => /no ha salido/.test(e.texto)), "«las lentejas» sin nada antes no es un error…");
+  assert.ok(R.lint.avisos.some((e) => e.cod === "ref" && /las lentejas/.test(e.texto)), "…es un aviso");
 });
 
 /* ------------------------------ v3 -> v4 ------------------------------ */
@@ -160,4 +172,21 @@ test("docs/recetas-v4: son v4, pasan el linter y son lo que sale del conversor",
     assert.deepEqual(revisa(e).errores, [], f);
     assert.equal(e.texto.trim(), convierte(e3.titulo, e3.texto).texto.trim(), f);
   });
+});
+
+test("v2.73.1 · la semana del 25 al 31 de octubre (docs/recetas-semana-2510): las 24, pasadas a v4, cuadran", () => {
+  const dir = new URL("../docs/recetas-semana-2510/", import.meta.url);
+  const fs = readdirSync(dir).filter((f) => f.endsWith(".txt"));
+  assert.equal(fs.length, 24);
+  const malas = [];
+  fs.forEach((f) => {
+    const e = eventoDeTxt(readFileSync(new URL(f, dir), "utf8"));
+    assert.equal(Receta.leer(e).formato, 3, f);
+    assert.deepEqual(revisa(e).errores, [], f + " (v3)");
+    const r = convierte(e.titulo, e.texto);
+    assert.doesNotMatch(r.texto, /[@#{}]|~(?!\d)/, f);
+    if (r.difs.length) malas.push(f + ": " + r.porque);
+    assert.deepEqual(revisa({ ...e, texto: r.texto }).errores, [], f + " (v4)");
+  });
+  assert.deepEqual(malas, []);
 });

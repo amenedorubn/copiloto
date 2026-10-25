@@ -677,11 +677,9 @@ function esV4(texto) {
   return !esV3(t) && /(?:^|\n)[ \t]*\d{1,2}[.)]\s[^\n]*?\s·\s*(\d+(?:[.,]\d+)?|[½¼¾])(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?\s*(segundos?|seg|s|minutos?|min|horas?|h)(?![a-záéíóúñ])/i.test(t);
 }
 var V4_NUM = /^(\d+\/\d+|\d+(?:[.,]\d+)?(?:\s*[½¼¾])?|[½¼¾])(?:\s*[-–]\s*(\d+(?:[.,]\d+)?|[½¼¾]))?(?=\s)/;
-var V4_PALNUM = /^(un|una|uno|medio|media|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce)(?=\s)/i;
 var V4_VAGO = /^(unas\s+(?:pocas\s+)?gotas|un\s+chorrit[oa]|un\s+chorro|un\s+hilo|un\s+poco)\s+de\s+/i;
 var V4_ART = /^(?:de\s+)?(?:el|la|los|las|del|al)\s+/i;
 var V4_TAM = /^\s+(?:grandes?|peque[nñ][oa]s?|median[oa]s?|generos[oa]s?|colmad[oa]s?|ras[oa]s?)(?=\s)/i;
-var V4_ADJ = /^ +(roj[oa]s?|verdes?|amarill[oa]s?|morad[oa]s?|blanc[oa]s?|negr[oa]s?|madur[oa]s?|fresc[oa]s?|crud[oa]s?|cocid[oa]s?|congelad[oa]s?|trocead[oa]s?|integral(?:es)?|natural(?:es)?|grandes?|peque[nñ][oa]s?|median[oa]s?)(?![A-Za-zÁÉÍÓÚÜÑáéíóúüñ])/i;
 var V4_EQ = /^\s*\(\s*((?:unos|unas|~)?\s*\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|cl))\s*\)/i;
 var V4_MARCA = /^\s*\(\s*(?:manos|espera|no espera|tras\s+[^)]+)\s*\)/i;
 var V4_PREP = /^\s+(en\s+(?:dados|daditos|cubos|cubitos|rodajas|tiras|trocitos|trozos|l[aá]minas|lonchas|juliana|gajos|bastones|cuartos|mitades)(?:(?!\s+y\s|\s+e\s)(?:\d[.,]\d|[^,.;·→()]))*)/i;
@@ -696,67 +694,98 @@ function cantTxtV4(c, nombre) {
   var fem = FEM_UD.test(c.ud) || (c.ud === "ud" && /as?$/.test(String(nombre || "").split(" ")[0]));
   return (fem ? "unas " : "unos ") + t.replace(/^~/, "");
 }
-// las palabras (hasta 3) que se quedan sin entender detras de una cantidad
-function palabrasSueltas(s, p) {
-  var m = s.slice(p).match(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: (?!(?:y|o|e|con|en|a|al|para|por|sin|que|se|tapad[oa]|destapad[oa])\b)[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+){0,2}/);
-  return m ? m[0] : "";
+/* v2.73.1 · un ingrediente nuevo se reconoce por la FORMA, no por el diccionario: la cantidad (número, fracción,
+   «unos 30 g», «otra pizca», «unas gotas de»), la unidad y «de» si las hay, y el nombre hasta la siguiente coma,
+   « y », «(», « en », « con », « a », « al », « a la », « · », «→» o el final; tampoco entra lo que claramente no es
+   el nombre («de postre», «por encima», «sin…», un gerundio: «guardando»). Al final se quitan los participios sueltos
+   («2 huevos batidos» -> huevo, «pollo dorado» -> pollo), salvo que el nombre entero ya se conozca («lentejas
+   cocidas»). El diccionario solo sirve para alargar el corte a un nombre conocido más largo («tupper de lentejas
+   con boniato y pimiento») y para las referencias sin cantidad («el boniato», «las lentejas»).                   */
+var V4_CORTE = /\s*(?:[,;:()·→]|->|\.(?:\s|$))|\s+(?:y|e|o|en|con|a|al|a la|a los|a las|de postre|por|para|si|sin|que|encima|sobre|hasta|junto|dentro|entre|recién|bien|tapad[oa]s?|destapad[oa]s?|repartid[oa]s?|[a-záéíóúñ]+(?:ando|iendo))(?![A-Za-zÁÉÍÓÚÜÑáéíóúüñ])/i;
+var V4_NO_EMPIEZA = /^(?:y|e|o|en|con|a|al|de|del|por|para|si|sin|que|se|lo|la|el|los|las|un|una|unos|unas|m[aá]s|cada|todo|toda|todos|todas)(?![A-Za-zÁÉÍÓÚÜÑáéíóúüñ])/i;
+var V4_PARTICIPIO = /^(?:[a-záéíóúñ]+(?:ad|id)[oa]s?|crud[oa]s?)$/i;
+// cómo está el alimento: se queda en el nombre («mango congelado», «pimiento rojo crudo»); el alimento es el mismo
+var V4_ESTADO = /^(?:congelad|descongelad|fresc|crud|madur|abiert|cerrad|enter|nuev|cocid|trocead)[oa]s?$/i;
+var V4_ARTICULO = /(?:^|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ])(?:el|la|los|las|lo|del|al|sus|tus|mis|estos|estas|esos|esas)\s+$/i;
+// el nombre que empieza en s[p] -> {fin, txt, canon} | null
+function nombreForma(s, p, ctx, conRecipiente) {
+  var r = s.slice(p), w = r.match(PAL_RE);
+  if (!w || V4_NO_EMPIEZA.test(r) || V4_NO_ING.test(w[0]) || !conRecipiente && new RegExp("^(?:" + V4_REC.source.replace(/^\(\^\|\[\^[^\]]+\]\)/, "") + ")$", "i").test(w[0])) return null;
+  var corte = r.search(V4_CORTE), txt = (corte < 0 ? r : r.slice(0, corte)).replace(/\s+$/, "");
+  if (!txt) return null;
+  var fin = p + txt.length, conocido = nombreEn(s, p), visto = null;
+  (ctx && ctx.vistos || []).forEach(function (v) { var f = conPalabras(s, p, v.formas[0]); if (f > 0 && (!visto || f > visto.fin)) visto = { fin: f, v: v }; });
+  // un nombre conocido igual o más largo que el corte manda
+  if (visto && visto.fin >= fin && (!conocido || visto.fin >= conocido.fin)) return { fin: visto.fin, txt: s.slice(p, visto.fin), canon: visto.v.nombre };
+  if (conocido && conocido.fin >= fin) return conocido;
+  // los participios sueltos del final no son del nombre: «huevos batidos», «pollo dorado», «pimiento rojo crudo»
+  var pal = txt.split(" "), finCorte = fin;
+  while (pal.length > 1 && V4_PARTICIPIO.test(pal[pal.length - 1]) && !V4_ESTADO.test(pal[pal.length - 1])) pal.pop();
+  txt = pal.join(" "); fin = p + txt.length;
+  if (conocido && conocido.fin === fin) return { fin: fin, txt: conocido.txt, canon: conocido.canon, finCorte: finCorte };
+  return { fin: fin, txt: txt, canon: null, finCorte: finCorte };
 }
-// una mencion que empieza en s[i] -> {ini, fin, tok, escrito, ...} | {fin, raro} | null
+// una mencion que empieza en s[i] -> {ini, fin, tok, escrito, ...} | {fin, aviso} | {fin} | null
 function mencion(s, i, ctx) {
-  var r = s.slice(i), m, p = 0, otro = null, aprox = false, nTxt = null, palNum = false, unid = null;
+  var r = s.slice(i), m, p = 0, otro = null, aprox = false, nTxt = null, implicito = false, unid = null;
   // «unas gotas de limón», «un chorrito de AOVE»: sin numero, no se escala
-  if ((m = r.match(V4_VAGO))) {
-    var nv = nombreEn(s, i + m[0].length);
+  if ((m = r.match(V4_VAGO)) && !/^[\d½¼¾]/.test(r.slice(m[0].length))) {
+    var nv = nombreForma(s, i + m[0].length, ctx);
     if (nv) return conNombre(s, i, ctx, { vago: m[1].toLowerCase().replace(/\s+/g, " "), nm: nv });
   }
   if ((m = r.match(/^(otr[oa]s?)\s+/i))) { otro = m[1]; p = m[0].length; }
   if ((m = r.slice(p).match(/^(?:(?:unos|unas)\s+|~\s*)(?=\d|[½¼¾])/i))) { aprox = true; p += m[0].length; }
-  if ((m = r.slice(p).match(V4_NUM))) nTxt = m[0];
-  else if (!aprox && (m = r.slice(p).match(V4_PALNUM))) { nTxt = m[1]; palNum = true; }
-  if (nTxt != null) p += m[0].length;
-  else if (otro) { nTxt = "1"; palNum = true; }     // «otra pizca de sal», «otro huevo» (sin numero: no se avisa)
+  if ((m = r.slice(p).match(V4_NUM))) { nTxt = m[0]; p += m[0].length; }
+  else if (!otro && (m = r.match(/^una\s+(?=pizca\b)/i))) { nTxt = "1"; p = m[0].length; }      // «una pizca de sal»
+  else if (otro) { nTxt = "1"; implicito = true; }                                            // «otra pizca de sal», «otro huevo»
   if (nTxt != null) {
-    var qIni = i + (otro ? r.match(/^(otr[oa]s?)\s+/i)[0].length : 0), q = p;
-    var sp = r.slice(q).match(/^\s*/); q += sp[0].length;
-    var pu = null, pd = nombreEn(s, i + q), dePos = -1, mu = r.slice(q).match(/^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\.?/), mas = false;
-    var ud = mu && UDS[norm(mu[1]).replace(/ñ/g, "n")];
+    // con artículo delante («los 2 huevos», «2 cdas del agua») es algo de antes, no compra nueva
+    var conArt = !otro && V4_ARTICULO.test(s.slice(0, i)), delArt = false;
+    var q = p + r.slice(p).match(/^\s*/)[0].length, namePos = null, mas = false;
+    var mu = r.slice(q).match(/^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\.?/), ud = mu && UDS[norm(mu[1]).replace(/ñ/g, "n")];
     if (ud) {
       var q2 = q + mu[0].length, t2;
       if ((t2 = r.slice(q2).match(V4_TAM))) q2 += t2[0].length;
       if ((t2 = r.slice(q2).match(/^\s+m[aá]s(?=\s)/i))) { mas = true; q2 += t2[0].length; }
-      if ((t2 = r.slice(q2).match(/^\s+(?:de|del)\s+/i))) { dePos = i + q2 + t2[0].length; pu = nombreEn(s, dePos); }
-      else if ((t2 = r.slice(q2).match(/^\s+/)) && /^(g|ml)$/.test(UDS[norm(mu[1])] || "")) pu = nombreEn(s, i + q2 + t2[0].length);
+      if ((t2 = r.slice(q2).match(/^\s+(?:del|de\s+(?:la|las|los|el))\s+/i))) { delArt = true; namePos = i + q2 + t2[0].length; unid = mu[1]; }
+      else if ((t2 = r.slice(q2).match(/^\s+de\s+/i))) { namePos = i + q2 + t2[0].length; unid = mu[1]; }
+      else if ((t2 = r.slice(q2).match(/^\s+/)) && /^(g|ml|kg|l)$/.test(ud)) { namePos = i + q2 + t2[0].length; unid = mu[1]; }
+      // «1 tupper de mix de 4»: el tupper es la comida (lo hizo otra receta); «1 tarro de overnight oats», un nombre conocido
+      var kU = nombreEn(s, i + q);
+      if (ud === "tupper" || (kU && namePos != null && kU.fin >= (nombreForma(s, namePos, ctx) || { fin: 0 }).fin)) { namePos = i + q; unid = null; delArt = false; }
     }
-    if (pu && (!pd || pu.fin > pd.fin)) { pd = null; unid = mu[1]; } else pu = null;
-    var nm = pu || pd;
-    if (!nm) {
-      if (palNum) return null;
-      if (dePos >= 0) { var x = palabrasSueltas(s, dePos); if (x) return { fin: dePos + x.length, raro: x }; return { fin: dePos }; }
-      if (!ud) {
-        var w = palabrasSueltas(s, i + q), w1 = w.split(" ")[0];
-        if (w1 && !V4_NO_ING.test(w1) && !new RegExp(V4_REC.source, "i").test(w1) && w1.length > 2) return { fin: i + q + w.length, raro: w };
-      }
-      return { fin: i + p };
-    }
+    if (namePos == null) namePos = i + q;
+    var nm = nombreForma(s, namePos, ctx, namePos === i + q && !!ud);
+    if (!nm) return { fin: i + p };          // un número sin nombre detrás: «a los 2», «190 °C», «2 cm», «2 vueltas»
     var qTxt = (aprox ? "~" : "") + nTxt + (unid ? " " + unid : "");
-    return conNombre(s, i, ctx, { qTxt: qTxt, otro: otro || (mas ? "más" : null), qIni: qIni, unid: unid, nm: nm });
+    if (conArt || delArt) {
+      var v0 = vistoDe(ctx.vistos, nm.canon || nm.txt, null) || vistoForma(s, namePos, ctx);
+      if (!v0) return { fin: nm.fin, aviso: "«" + s.slice(i, nm.fin).trim() + "» no ha salido antes con su cantidad; no se enlaza con nada" };
+      return conNombre(s, i, ctx, { qTxt: qTxt, unid: unid, nm: nm, refDe: v0 });
+    }
+    return conNombre(s, i, ctx, { qTxt: qTxt, otro: otro || (mas ? "más" : null), unid: unid, nm: nm, implicito: implicito });
   }
   // «el boniato», «las lentejas»: lo que ya salio, sin cantidad
-  if ((m = r.match(V4_ART)) && ctx.vistos.length) {
-    var pos = i + m[0].length, best = null;
-    ctx.vistos.forEach(function (v) {
-      v.formas.forEach(function (f) {
-        var fin = conPalabras(s, pos, f);
-        if (fin > 0 && (!best || fin > best.fin)) best = { fin: fin, v: v };
-      });
-    });
+  if ((m = r.match(V4_ART))) {
+    var pos = i + m[0].length, best = vistoForma(s, pos, ctx);
     if (best) return { ini: i, fin: best.fin, escrito: s.slice(i, best.fin), desnudo: true,
       tok: { nombre: best.v.nombre, c: null, txt: "", fijo: false, ref: true, prep: null, equiv: null } };
+    var nd = nombreEn(s, pos);
+    if (nd && !new RegExp("^(?:" + V4_REC.source.replace(/^\(\^\|\[\^[^\]]+\]\)/, "") + ")", "i").test(nd.txt))
+      return { fin: nd.fin, aviso: "«" + s.slice(i, nd.fin).trim() + "» no ha salido antes en la receta; no se enlaza con nada" };
   }
   // «pimienta al gusto»
   var ng = LETRA.test(r.charAt(0)) ? nombreEn(s, i) : null;
   if (ng && (m = s.slice(ng.fin).match(/^\s+al\s+gusto\b/i))) return conNombre(s, i, ctx, { gusto: true, nm: ng });
   return null;
+}
+// lo ya salido que empieza en s[pos] (por su nombre, su primera palabra o su alimento) -> {fin, v} | null
+function vistoForma(s, pos, ctx) {
+  var best = null;
+  (ctx.vistos || []).forEach(function (v) {
+    v.formas.forEach(function (f) { var fin = conPalabras(s, pos, f); if (fin > 0 && (!best || fin > best.fin)) best = { fin: fin, v: v }; });
+  });
+  return best;
 }
 // ¿empiezan en s[p] estas palabras (en raiz)? -> fin o -1
 function conPalabras(s, p, w) {
@@ -769,9 +798,10 @@ function conPalabras(s, p, w) {
 }
 // la mencion ya con su nombre: adjetivos, «más», lo que pesa, el corte y si ya salio
 function conNombre(s, i, ctx, o) {
-  var nm = o.nm, q = nm.fin, adj = [], m, eq = null, prep = null, prepPar = false, c = null, txt = "", fijo = false;
-  while ((m = s.slice(q).match(V4_ADJ))) { adj.push(m[1]); q += m[0].length; }
+  var nm = o.nm, q = nm.fin, m, eq = null, prep = null, prepPar = false, c = null, txt = "", fijo = false;
   var nomFin = q;
+  // lo que se quitó del nombre («congeladas») sigue siendo de la mención: su nota «(de casa)» va detrás
+  if (nm.finCorte > q) q = nm.finCorte;
   if ((m = s.slice(q).match(/^\s+m[aá]s\b/i))) { o.otro = o.otro || "más"; q += m[0].length; }
   if ((m = s.slice(q).match(V4_EQ))) { eq = cantidad(m[1].replace(/^(unos|unas)\s*/i, "~")); if (eq) delete eq.resto; q += m[0].length; }
   if ((m = s.slice(q).match(/^\s*\(([^)]*)\)/)) && !V4_MARCA.test(m[0])) { prep = m[1].trim() || null; prepPar = true; q += m[0].length; }
@@ -779,10 +809,9 @@ function conNombre(s, i, ctx, o) {
   if (o.qTxt != null) { var ct = cantTok(o.qTxt); c = ct.c; if (c && c.ud === "pizca") fijo = true; }
   else if (o.gusto) txt = "al gusto";
   else if (o.vago) txt = o.vago;
-  var nombre = nm.canon || nm.txt;
-  if (!nm.canon && c && c.ud === "ud" && c.n > 1) { var w = nombre.split(" "); w[0] = sing(w[0]); nombre = w.join(" "); }
-  if (adj.length) nombre += " " + adj.map(function (a) { return c && c.ud === "ud" && c.n > 1 ? sing(a) : a; }).join(" ").toLowerCase();
-  var v = vistoDe(ctx.vistos, nombre, prep), ref = !!v && !o.otro;
+  var nombre = o.refDe ? o.refDe.nombre : nm.canon || nm.txt;
+  if (!o.refDe && !nm.canon && c && c.ud === "ud" && c.n > 1) { var w = nombre.split(" "); w[0] = sing(w[0]); nombre = w.join(" "); }
+  var v = o.refDe || vistoDe(ctx.vistos, nombre, prep), ref = !!v && !o.otro;
   if (!v) {
     var g = ingrediente(nombre + (prep ? ", " + prep : "")), formas = [palabrasV4(nombre), palabrasV4(nombre).slice(0, 1)];
     if (g.base) formas.push(palabrasV4(g.base));
@@ -803,7 +832,7 @@ function mencionEscalada(x, f) {
 }
 function cook4(l, f, ctx) {
   f = f > 0 ? f : 1; ctx = ctx || { vistos: [] };
-  var toks = [], relojes = [], recs = [], raros = [], senal = null;
+  var toks = [], relojes = [], recs = [], raros = [], avisos = [], senal = null;
   var s = String(l || ""), fl = s.match(/\s*(?:→|->)\s*(.*)$/);
   if (fl) {
     s = s.slice(0, fl.index);
@@ -832,7 +861,7 @@ function cook4(l, f, ctx) {
     if ((AN.test(ch) || ch === "~") && !AN.test(i ? cuerpo.charAt(i - 1) : " ")) {
       var x = mencion(cuerpo, i, ctx);
       if (x) {
-        if (x.raro) raros.push("no sé qué ingrediente es “" + x.raro + "” (escríbelo como en la tabla de nutrición o en la despensa)");
+        if (x.aviso) avisos.push(x.aviso);
         if (x.tok) { spans.push(x); toks.push(x.tok); }
         if (x.fin > i) { i = x.fin; continue; }
       }
@@ -852,7 +881,8 @@ function cook4(l, f, ctx) {
   });
   out += cuerpo.slice(k0);
   var t = pre + out.replace(/[\s,]+$/, "") + (tseg ? ", " + tseg : "");
-  return { t: t.replace(/\s+([,.;])/g, "$1").replace(/\s{2,}/g, " ").trim(), toks: toks, relojes: relojes, recs: recs, senal: senal, raros: raros, sueltos: sueltos };
+  return { t: t.replace(/\s+([,.;])/g, "$1").replace(/\s{2,}/g, " ").trim(), toks: toks, relojes: relojes, recs: recs, senal: senal, raros: raros, sueltos: sueltos, avisos: avisos,
+           spans: spans.map(function (x) { return { ini: pre.length + x.ini, fin: pre.length + x.fin, nuevo: !x.tok.ref }; }) };
 }
 // el plural de un nombre hasta la primera preposicion: "yogur griego" -> "yogures griegos", "dátiles sin hueso" igual
 function plurales(nombre) {
@@ -861,6 +891,41 @@ function plurales(nombre) {
     if (corta || /^(de|del|con|sin|en|a|al|y|para)$/i.test(x)) { corta = true; return x; }
     return /s$/i.test(x) ? x : pluralDe(x);
   }).join(" ");
+}
+// 1 -> "un"/"una", 21 -> "veintiún", 100 -> "cien", 250 -> "doscientos cincuenta" (hasta 999; si no, null)
+var N_UNI = ["", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce", "trece", "catorce", "quince",
+  "dieciséis", "diecisiete", "dieciocho", "diecinueve", "veinte", "veintiún", "veintidós", "veintitrés", "veinticuatro", "veinticinco", "veintiséis",
+  "veintisiete", "veintiocho", "veintinueve"];
+var N_DEC = { 3: "treinta", 4: "cuarenta", 5: "cincuenta", 6: "sesenta", 7: "setenta", 8: "ochenta", 9: "noventa" };
+var N_CEN = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+function numPalabra(n, fem) {
+  if (!(n > 0) || n % 1 || n > 999) return null;
+  var c = Math.floor(n / 100), r = n % 100, t = "";
+  if (c) t = n === 100 ? "cien" : fem ? N_CEN[c].replace(/os$/, "as") : N_CEN[c];
+  if (r) {
+    var x = r < 30 ? N_UNI[r] : N_DEC[Math.floor(r / 10)] + (r % 10 ? " y " + N_UNI[r % 10] : "");
+    if (fem) x = x.replace(/(^|\s)un$/, "$1una").replace(/veintiún$/, "veintiuna");
+    t = (t ? t + " " : "") + x;
+  }
+  return t;
+}
+var UD_PALABRA = { g: ["gramo", "gramos"], kg: ["kilo", "kilos"], ml: ["mililitro", "mililitros"], l: ["litro", "litros"], cda: ["cucharada", "cucharadas"], cdta: ["cucharadita", "cucharaditas"] };
+/* v2.73.1 · lo que en la v3 era texto («Deja en la encimera 1 plátano y 100 g de cottage», para mañana) la v4 lo leería
+   como compra: el número se escribe con letra («un plátano y cien gramos de cottage»), que la v4 no cuenta.         */
+function numerosALetra(txt, antes, avisos, donde) {
+  var L = "A-Za-zÁÉÍÓÚÜÑáéíóúüñ";
+  return txt.replace(new RegExp("(^|[^\\w" + L + "½¼¾~])(\\d+(?:[.,]\\d+)?|[½¼¾])(\\s+)([" + L + "]+)(\\.?)(?=(\\s+(?:del|de\\s+(?:la|las|los|el))\\s)|(\\s+de\\s+[" + L + "])|(\\s+[" + L + "])|)", "g"),
+    function (x, a, n, sp, w, punto, delArt, deNom, otraPal, off) {
+      var hastaAqui = antes + txt.slice(0, off + a.length);
+      if (V4_ARTICULO.test(hastaAqui) || /(?:^|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ])cada\s+[^:]*$/i.test(hastaAqui)) return x;   // «en cada tarro 1 yogur:» ya no suma
+      var ud = UDS[norm(w).replace(/ñ/g, "n")];
+      if (ud) { if (delArt || !(deNom || (otraPal && /^(g|ml|kg|l)$/.test(ud)))) return x; }
+      else if (V4_NO_ING.test(w) || V4_NO_EMPIEZA.test(w) || new RegExp("^(?:" + V4_REC.source.replace(/^\(\^\|\[\^[^\]]+\]\)/, "") + ")$", "i").test(w)) return x;
+      var num = numero(n), fem = ud ? FEM_UD.test(ud) : /as?$/i.test(w), pal = numPalabra(num, fem);
+      if (!pal) { avisos.push(donde + ": «" + n + " " + w + "» es texto en la v3 y la v4 lo leería como ingrediente; escríbelo con letra."); return x; }
+      var uw = ud && UD_PALABRA[ud] ? UD_PALABRA[ud][num > 1 ? 1 : 0] : w;
+      return a + pal + sp + uw + (ud && UD_PALABRA[ud] ? "" : punto);
+    });
 }
 /* v3 -> v4 (scripts/v3-a-v4.mjs): la misma receta, legible. -> {texto, avisos: [lo que no se puede decir igual]}
    Solo cambian las lineas con «@», «~{}» o «#»; las demas se quedan como estan. */
@@ -880,7 +945,7 @@ function aV4(texto) {
         if (!v) vistos.push({ g: ingrediente(nombre + (prep ? ", " + prep : "")), nombre: nombre });
         if (ref && !v) avisos.push(donde + ": «" + x + "» es la primera vez que sale; en la v4 cuenta como compra.");
         // «el @&tarro de overnight oats{1}» -> «el tarro de overnight oats»: ya salio y el articulo lo enlaza
-        if (ref && v && !prep && !eq && /(?:^|\s)(?:el|la|los|las|del|al)\s+$/i.test(todo.slice(0, off))) return nombre;
+        if (ref && v && !prep && !eq && /(?:^|\s)(?:el|la|los|las|del|al)\s+$/i.test(todo.slice(0, off))) return "\u0004" + nombre + "\u0005";
         var c = q.c, t;
         if (q.fijo && !(c && c.ud === "pizca")) avisos.push(donde + ": «" + x + "» es fijo y no es una pizca; en la v4 se escala con las raciones.");
         if (!q.fijo && c && c.ud === "pizca") avisos.push(donde + ": «" + x + "» se escalaba; en la v4 una pizca es fija.");
@@ -893,12 +958,18 @@ function aV4(texto) {
           if (c.n === 1 && !c.aprox && !/^(g|ml)$/.test(c.ud)) t = t.replace(/^1 /, "");
           t = "otr" + (fem ? "a" : "o") + (c.n > 1 ? "s" : "") + " " + t;
         } else if (!ref && v) avisos.push(donde + ": «" + x + "» ya salió; en la v4 sin cantidad no suma.");
-        return t + (eq ? " (" + cantTxtV4(eq) + ")" : "") + (prep ? (/^en\s/i.test(prep) ? " " + prep : " (" + prep + ")") : "");
+        return "\u0004" + t + (eq ? " (" + cantTxtV4(eq) + ")" : "") + (prep ? (/^en\s/i.test(prep) ? " " + prep : " (" + prep + ")") : "") + "\u0005";
       }
       if (qt != null) { relojes++; if (primerReloj < 0) primerReloj = off; return relojes === 1 ? "\u0003" + String(qt).replace(/%/g, " ").replace(/\s+/g, " ").trim() + "\u0003" : String(qt).replace(/%/g, " ").trim(); }
       return String(nr1 != null ? nr1 : nr2).trim();
     });
     s = s.replace(/~\s*(?=\d)/g, "unos ");
+    // el texto libre de antes del tiempo (lo que la v4 lee buscando ingredientes)
+    var cT = s.indexOf("\u0003"), fT = s.search(/\s*(?:→|->)/), hasta = cT >= 0 ? cT : fT >= 0 ? fT : s.length, previo = "";
+    s = s.slice(0, hasta).split(/(\u0004[^\u0005]*\u0005)/).map(function (tr) {
+      var o = /^\u0004/.test(tr) ? tr : numerosALetra(tr, previo, avisos, donde); previo += tr.replace(/[\u0004\u0005]/g, ""); return o;
+    }).join("") + s.slice(hasta);
+    s = s.replace(/[\u0004\u0005]/g, "");
     if (relojes > 1) avisos.push(donde + ": tiene " + relojes + " tiempos; en la v4 va uno, al final.");
     if (!relojes) { if (/^\s*\d{1,2}[.)]\s/.test(l)) avisos.push(donde + ": no tiene tiempo («· 2 min»)."); return s; }
     if (ultIng > primerReloj) avisos.push(donde + ": hay un ingrediente detrás del tiempo; en la v4 el tiempo va al final y lo de detrás no se lee como ingrediente.");
@@ -1585,6 +1656,8 @@ function leer(ev, op) {
     if (p.auto) return;
     var d = donde(p);
     (p.cook ? p.cook.raros : []).forEach(function (x) { R.ignorado.push({ tipo: "token", paso: p, texto: d + ": " + x + "." }); });
+    // v2.73.1: una referencia («las lentejas») que no casa con nada de antes: aviso, no error
+    (p.cook && p.cook.avisos || []).forEach(function (x) { (R.refSueltas = R.refSueltas || []).push({ paso: p, texto: d + ": " + x + "." }); });
     var par = p.cook ? p.cook.sueltos : String(p.detalle || "").match(/\([^)]*\)/g);
     if (par) par.forEach(function (x) {
       R.ignorado.push({ tipo: "parentesis", paso: p, texto: d + ": «" + x + "» no es una marca ni el corte de un @ingrediente; se lee como texto." });
@@ -1607,6 +1680,7 @@ function leer(ev, op) {
   }
   pasos.forEach(function (p) { if (!p.auto) p.donde = donde(p); });
   R.ignorado.forEach(function (x) { if (x.paso) x.paso = pasos.indexOf(x.paso); });
+  (R.refSueltas || []).forEach(function (x) { if (x.paso) x.paso = pasos.indexOf(x.paso); });
 
   // voz de los avisos: "Boniato solo: agita."
   pasos.forEach(function (p) {
@@ -1691,6 +1765,7 @@ function lint(R) {
     if (!conNum) err("sin-cantidad", "«" + nom + "»: ningún paso dice cuánto usar; está solo en la lista.");
   });
   (R.ignorado || []).forEach(function (x) { err("no-se-entiende", x.texto, x.paso == null || x.paso < 0 ? null : x.paso); });
+  (R.refSueltas || []).forEach(function (x) { av("ref", x.texto, x.paso == null || x.paso < 0 ? null : x.paso); });
   (R.problemas || []).forEach(function (x) {
     if (x.tipo === "carril") err("carril", x.texto);
     else if (x.tipo === "sin-paso" && !E.some(function (e) { return e.cod === "sin-cantidad" && e.texto.indexOf(corto(ING[x.ing] || {})) >= 0; })) err("sin-cantidad", x.texto);
