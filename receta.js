@@ -23,8 +23,16 @@
 
 /* ------------------------------- texto ------------------------------- */
 // minusculas, sin tildes ni signos raros (la ñ pierde la tilde: "puñado" -> "punado")
-function norm(s) {
-  return String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+// v2.74: memorizadas (las mismas palabras se repiten miles de veces al leer una receta; el Worker tiene 10 ms de CPU)
+var MEMO_N = new Map(), MEMO_NU = new Map(), MEMO_R = new Map();
+function memo(M, k, fn) {
+  var v = M.get(k); if (v !== undefined) return v;
+  if (M.size > 4000) M.clear();
+  v = fn(k); M.set(k, v); return v;
+}
+function norm(s) { return memo(MEMO_N, String(s == null ? "" : s), norm0); }
+function norm0(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9ñ.,/½¼¾ ]+/g, " ").replace(/\s+/g, " ").trim();
 }
 // Google a veces mete la descripcion con etiquetas y entidades HTML
@@ -181,7 +189,8 @@ function sing(w) {
   return w;
 }
 // raiz para la clave: sin tildes, singular y sin la "e" final tras consonante ("tomate" -> "tomat")
-function raiz(w) {
+function raiz(w) { return memo(MEMO_R, String(w), raiz0); }
+function raiz0(w) {
   w = sing(norm(w));
   return w.length > 3 ? w.replace(/([^aeiou])e$/, "$1") : w;
 }
@@ -210,6 +219,10 @@ var SINON = { aov: "aceit", aove: "aceit", aceite: "aceit", mix: "semilla", bana
 
 // "pollo (el del domingo) en dados" ya sin cantidad -> {base, cabeza, refina, ver}
 function nucleo(t) {
+  var x = memo(MEMO_NU, String(t || ""), nucleo0);
+  return { base: x.base, cabeza: x.cabeza, refina: x.refina.slice(), ver: x.ver };
+}
+function nucleo0(t) {
   var s = String(t || "").replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
   s = s.replace(DONDE, "").replace(/\s+(?:para|al|a la|a los|con|que|o|y|sin|desde|hasta|se|si|tapad[oa])\s.*$/i, "");
   s = s.replace(/[~.;:!?¡¿"“”]+/g, " ").replace(/\s+/g, " ").trim();
