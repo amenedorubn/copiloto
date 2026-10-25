@@ -53,7 +53,20 @@ function sumaMin(h, m) {
 }
 
 /* ------------------------------ las comidas ------------------------------ */
-function comida(ev) { return Rc().leer(ev); }
+function comida(ev) { conocidos4(); return Rc().leer(ev); }
+// v2.72: la receta legible (v4) reconoce también tus alimentos (y sus alias) y lo que hay en la despensa
+var NOM4 = { nota: null, desp: [] };
+function conocidos4() {
+  try {
+    var L = [], tx = NOTA && NOTA.texto || "";
+    Al().vivos(alimentos()).forEach(function (a) { L = L.concat(Al().nombres(a)); });
+    if (tx !== NOM4.nota) {
+      NOM4.nota = tx; NOM4.desp = [];
+      if (tx) Dp().despensa(tx).zonas.forEach(function (z) { z.items.forEach(function (x) { NOM4.desp.push(x.nombre); }); });
+    }
+    Rc().nombres(L.concat(NOM4.desp));          // solo rehace el diccionario si algo ha cambiado
+  } catch (e) { /* sin lo tuyo: la tabla y lo de siempre bastan */ }
+}
 function comidasDe(dia) {
   return (dia || []).filter(function (e) { return e && e.fuente === "comida"; }).map(comida);
 }

@@ -1,1 +1,1 @@
-{"version":"2.71.0","fecha":"2026-10-14","notas":"Prueba final del viernes y nada de liebres pasada la meta"}
+{"version":"2.72.0","fecha":"2026-10-25","notas":"Recetas v4 legibles: el calendario «Comidas» se escribe como una receta normal («Echa 300 g de boniato a la olla · 15 min → …», sin @, ~, # ni llaves) y Copiloto saca de ella lo mismo que de la v3; scripts/v3-a-v4.mjs pasa las recetas viejas y comprueba que cuadran"}

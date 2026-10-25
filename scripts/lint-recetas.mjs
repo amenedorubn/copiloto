@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Linter de recetas del calendario «Comidas» (v2.58). Ver docs/RECETAS-CALENDARIO.md.
+// Linter de recetas del calendario «Comidas» (v2.58; la v4 legible desde la v2.72). Ver docs/RECETAS-CALENDARIO.md.
 //
 //   node scripts/lint-recetas.mjs docs/recetas/*.txt
 //   node scripts/lint-recetas.mjs --json eventos.json       (lista de {titulo, texto} o {summary, description})
@@ -7,7 +7,7 @@
 // Cada .txt: la primera línea es el título del evento, luego una línea en blanco y la descripción.
 // Para cada receta:
 //   - pasa el linter de receta.js (el mismo que corre la app al leer el evento);
-//   - si se puede escalar (formato v3), lo vuelve a pasar con 1, 2, 3 y 4 raciones;
+//   - si se puede escalar (formato v3 o v4), lo vuelve a pasar con 1, 2, 3 y 4 raciones;
 //   - calcula kcal y proteína por ración con la tabla de la app (USDA / tus alimentos no: aquí solo USDA)
 //     y avisa si «POR RACIÓN» dice otra cosa (más de un 10 % de diferencia).
 // Sale con código 1 si alguna receta tiene errores.

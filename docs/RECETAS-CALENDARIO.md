@@ -2,29 +2,89 @@
 
 Para la Claude que planea las comidas. Copiloto lee cada evento y lo convierte en lista de la compra,
 despensa y paso a paso. **Desde la v2.58 cada paso se basta solo**: lo que hay que hacer, con qué, cuánto,
-a qué fuego, cuánto tarda y cómo se sabe que ya está, todo en el mismo paso. Así se cocina con el móvil
-sin volver a la lista de ingredientes ni preguntar a nadie.
+a qué fuego, cuánto tarda y cómo se sabe que ya está, todo en el mismo paso. **Desde la v2.72 se escribe como
+una receta normal** (formato v4): se lee bien en Google Calendar y Copiloto entiende lo mismo que con las marcas.
 
-## Formato v3 (el que hay que usar)
+## Instrucciones para la Claude del calendario
 
-Se inspira en [Cooklang](https://cooklang.org/docs/spec/): el ingrediente y el reloj van **dentro del paso**,
-con su cantidad. Copiloto los enlaza solo y saca de ahí la lista de ingredientes (no hace falta escribirla
-aparte, y así nunca se desincroniza).
+Para copiar tal cual en las instrucciones de la Claude que escribe los eventos:
 
-| Se escribe | Qué es | Se lee |
+```
+RECETAS DEL CALENDARIO «COMIDAS» · formato v4 (legible)
+Escribe cada comida como una receta normal: sin @, ~, # ni llaves. Copiloto saca de
+ella ingredientes, cantidades, tiempos, recipientes, fuego, carriles y nutrición.
+
+· Título: «Plato» o «ETIQUETA · Plato».
+· Línea 1: «2 RACIONES · 45 min · lo que quieras contar».
+· Línea 2: «POR RACIÓN · 610 kcal · 52 g proteína» (lo calcula el linter, no se inventa).
+· Apartados en MAYÚSCULAS, solos en su línea: PREPARAR, CARRIL NOMBRE (sartén / olla /
+  micro / air fryer / horno), AL JUNTAR, AL TERMINAR, NOTAS. Sin carriles: PROCESO.
+· Cada paso, numerado, en este orden: verbo + ingredientes con cantidad + recipiente y
+  fuego + « · tiempo» + «→ cómo se ve cuando ya está»:
+  2. Echa 300 g de boniato y 400 g de tomate triturado a la olla, tapado, a fuego medio-bajo · 15 min → el boniato se pincha sin resistencia
+· Una acción por paso. Todos con tiempo tras « · », aunque sea «· 20 s». Lo que espera
+  (cuece, dora, hornea) lleva su señal tras «→».
+· Cantidad delante del nombre: «300 g de boniato», «2 huevos», «½ pimiento rojo»,
+  «1 cda de AOVE», «1 pizca de sal», «pimienta al gusto», «unas gotas de limón»,
+  «unos 30 g de mozzarella». Detrás, si hace falta, el corte («en tiras finas»), lo que
+  pesa «(unos 400 g)» o una nota «(congelada)», «(de casa: el del domingo)».
+· Nombres como en la tabla de la app o en recetas anteriores («pimiento tricolor»,
+  «garbanzos cocidos», «AOVE»). Si el linter dice «no sé qué ingrediente es “X”»,
+  cambia el nombre: no adivina.
+· Lo que ya salió se nombra con artículo y no se vuelve a comprar: «el boniato», «las
+  lentejas». Con cantidad, si es la tanda de ese paso: «Echa 250 g de pollo» otra vez.
+  Si de verdad es más: «otra pizca de sal», «otros 2 huevos».
+· Lo de cada uno, antes de los dos puntos: «Echa en cada tarro 1 yogur: 2 yogures
+  griegos en total» (solo cuenta lo de después).
+· Fuego: «a fuego bajo / medio / medio-alto / fuerte», «Baja a fuego medio», «Apaga el fuego».
+· Marcas de carril detrás del tiempo: «· 3 min (manos)», «(no espera)», «(tras PREPARAR)».
+· Consejos y segundas formas («o 2 min al micro»), en NOTAS. Nada de paréntesis sueltos.
+Antes de guardar: node scripts/lint-recetas.mjs receta.txt (tiene que salir ✓).
+Para pasar una receta v3 a este formato: node scripts/v3-a-v4.mjs --escribe receta.txt
+```
+
+## Formato v4 (el que hay que usar)
+
+Desde la v2.72 la receta se escribe **como se lee**: sin `@`, `{}`, `~` ni `#`. Así se entiende en Google Calendar
+antes de abrir la app, y Copiloto saca de ella **lo mismo que de una v3**: ingredientes, cantidades, tiempos,
+recipientes, fuego, señal de «ya está», carriles, raciones y nutrición. La lista de ingredientes sigue sin hacer
+falta: sale de los pasos.
+
+| Se escribe | Qué es | En v3 era |
 |---|---|---|
-| `@pollo{250 g}` | ingrediente con la cantidad de **este** paso | 250 g de pollo |
-| `@tomate triturado{400 g}` | varias palabras: el nombre llega hasta la llave | 400 g de tomate triturado |
-| `@huevo{2}` | unidades | 2 huevos |
-| `@pimiento{150 g}(en tiras finas)` | con su corte | 150 g de pimiento en tiras finas |
-| `@garbanzos cocidos{1 bote}(~400 g)` | lo que pesa (para la nutrición y la compra) | 1 bote de garbanzos cocidos, ~400 g |
-| `@&pollo{250 g}` | **el mismo de antes**: sale en el paso con su cantidad, pero no se vuelve a sumar | 250 g de pollo |
-| `@sal{=1 pizca}` | cantidad fija: no cambia al escalar | 1 pizca de sal |
-| `@pimienta{al gusto}` | sin número | pimienta al gusto |
-| `250%g`, `20%s` | también vale el `%` de Cooklang | 250 g, 20 s |
-| `~{5 min}`, `~huevo{10 min}` | el reloj del paso (con nombre, opcional) | 5 min |
-| `#sartén`, `#olla{}` | el recipiente o aparato (una palabra, o con `{}`) | sartén |
-| `→ dorado por fuera` | al final: cómo se ve cuando ya está | (sale aparte: «Ya está cuando…») |
+| `300 g de boniato`, `1 cda de AOVE`, `2 lonchas de pavo` | ingrediente con la cantidad de **este** paso | `@boniato{300 g}` |
+| `2 huevos`, `½ pimiento rojo`, `1 plátano` | unidades | `@huevo{2}` |
+| `150 g de pimiento tricolor en tiras finas` | con su corte («en dados…», «en tiras…», «en rodajas…») | `@pimiento tricolor{150 g}(en tiras finas)` |
+| `1 bote de garbanzos cocidos (unos 400 g)` | lo que pesa (para la nutrición y la compra) | `@garbanzos cocidos{1 bote}(~400 g)` |
+| `2 cdas de cebolla troceada (congelada)`, `½ aguacate (de casa: …)` | una nota del ingrediente, entre paréntesis y pegada a él | `@cebolla troceada{2 cdas}(congelada)` |
+| `unos 30 g de mozzarella` | aproximado | `@mozzarella{~30 g}` |
+| `el boniato`, `las lentejas` | **lo mismo de antes**, sin cantidad: enlaza, no suma | `@&boniato{}` |
+| `250 g de pollo` (otra vez) | **lo mismo de antes**, con la cantidad de esta tanda: no suma | `@&pollo{250 g}` |
+| `otra pizca de sal`, `otros 2 huevos` | ya salió, pero **es más**: suma | `@sal{=1 pizca}` repetido |
+| `1 pizca de sal`, `pimienta al gusto`, `unas gotas de limón` | no cambian al escalar | `@sal{=1 pizca}` |
+| `Echa en cada tarro 1 yogur: 2 yogures griegos en total` | lo de antes de los dos puntos es lo de cada uno: no suma | |
+| `… · 5 min`, `… · 20 s`, `… · 5 min, vuelta a los 2` | el tiempo del paso, **al final** tras « · » | `~{5 min}` |
+| `en la sartén`, `al micro`, `en la Ninja`, `a un tupper` | el recipiente: se reconoce solo | `#sartén` |
+| `→ dorado por fuera` | al final: cómo se ve cuando ya está | igual |
+
+### Cómo reconoce los ingredientes
+
+Detrás de cada cantidad Copiloto busca el nombre **más largo** de su diccionario: la tabla de nutrición de la app,
+lo que entiende la despensa, los básicos y sus alias (AOVE, aceite de oliva…), todos los nombres que ya han salido
+en las recetas v3 (`docs/recetas/`) y, en la app, **tus alimentos** (con sus alias) y lo que hay en tu despensa.
+«400 g de tomate triturado» es tomate triturado, no tomate; «2 yogures griegos» es «yogur griego».
+
+Si un nombre no está, **no lo adivina**: el linter dice «no sé qué ingrediente es “X”» (código `no-se-entiende`).
+Se arregla escribiéndolo como en la tabla o en una receta anterior, o añadiéndolo a tus alimentos.
+
+Detrás del nombre se leen solos los colores y estados («rojo», «maduro», «congelado», «cocido»…), el corte que
+empieza por «en dados / tiras / rodajas / cubos / lonchas…» y lo que va **pegado** entre paréntesis: lo que pesa
+(`(125 g)`, `(unos 400 g)`) o una nota (`(congelada)`, `(de casa: la otra mitad de ayer)`). «De casa» funciona igual
+que siempre (ver «Cómo sale la lista de la compra»).
+
+Lo que **ya salió** en un paso anterior (en el orden del texto) es la misma cosa: «el boniato», «las lentejas»,
+«del curry» lo enlazan sin cantidad, y «Echa 250 g de pollo» por segunda vez es la tanda de ese paso, como el `@&`
+de la v3: sale en el paso con su cantidad y no se vuelve a comprar. «solomillos de pollo» y luego «pollo» son lo mismo.
 
 ### Las reglas
 
@@ -33,26 +93,26 @@ aparte, y así nunca se desincroniza).
 2. **Primera línea**: `2 RACIONES · 45 min · lo que quieras contar`. El tiempo es el real, cortar incluido.
 3. **Segunda línea**: `POR RACIÓN · 610 kcal · 52 g proteína`. Con la tabla de la app: lo calcula
    `node scripts/lint-recetas.mjs receta.txt` (no se inventa: si un alimento no tiene datos, lo dice).
-4. **Cada paso**, numerado, en este orden: **verbo** + **ingrediente con cantidad** + **fuego** (si va al fuego) +
-   **tiempo** + **señal**:
-   `6. Baja a fuego medio y echa @cebolla{2 cdas} y @ajo{1 cdta}, ~{3 min} removiendo → la cebolla, transparente`
+4. **Cada paso**, numerado, en este orden: **verbo** + **ingredientes con cantidad** + **recipiente y fuego** +
+   ` · ` **tiempo** + `→` **señal**:
+   `6. Baja a fuego medio y echa 2 cdas de cebolla troceada (congelada) y 1 cdta de ajo troceado (congelado) · 3 min removiendo → la cebolla, transparente`
    - Empieza por un **verbo** en imperativo: Corta, Echa, Pasa, Calienta, Baja, Sirve… («Córtalo» vale).
-     «La primera mitad del pollo, 5 min» no vale: no dice qué hacer.
-   - **Todo** paso lleva su `~{tiempo}`, aunque sea `~{20 s}`. Sin tiempo, el plan no puede calcular nada.
+   - **Todo** paso lleva su tiempo tras ` · `, aunque sea `· 20 s`. Lo que va detrás del tiempo («, vuelta a los 2»,
+     «removiendo», las marcas de carril) es del tiempo: ahí no se buscan ingredientes.
    - Lo que **espera** (cocer, dorar, hornear) dice cómo se ve cuando ya está: `→ hasta que dore`.
    - El **fuego**: «a fuego bajo / medio / medio-alto / fuerte», «Baja a fuego medio», «Apaga el fuego».
      En un carril, si no lo dice, sigue como en el paso de antes.
-   - Una acción por paso. Si se hace en tandas, **una tanda por paso** con su cantidad: `@&pollo{250 g}`.
-5. Un ingrediente se **cuenta una vez** (su primera aparición con cantidad, normalmente al cortarlo en
-   `PREPARAR`). Las demás veces, `@&nombre{cantidad}`: así el paso dice cuánto echar y la lista no se dobla.
-6. **`PREPARAR`**: los cortes, pelados y mezclas, cada uno con su tiempo (`Corta @pimiento{150 g}(en tiras), ~{2 min}`).
-   Sale como el bloque «Preparar todo antes de empezar», con el tiempo total.
+   - Una acción por paso. Si se hace en tandas, **una tanda por paso** con su cantidad («Echa 250 g de pollo»).
+5. Un ingrediente se **cuenta una vez**: su primera aparición con cantidad, normalmente al cortarlo en `PREPARAR`.
+6. **`PREPARAR`**: los cortes, pelados y mezclas, cada uno con su tiempo (`Corta 150 g de pimiento tricolor en tiras · 2 min`).
 7. Apartados, en MAYÚSCULAS y solos en su línea: `PREPARAR`, `PROCESO` (o carriles), `AL JUNTAR`,
-   `AL TERMINAR`, `NOTAS`, `PLAN B`. La lista `INGREDIENTES` ya **no hace falta**; si se pone, tiene que
-   cuadrar con los pasos (el linter compara las sumas).
-8. **Nada de paréntesis sueltos** en los pasos: solo el corte de un `@ingrediente(...)` y las marcas de carril.
+   `AL TERMINAR`, `NOTAS`, `PLAN B`. La lista `INGREDIENTES` no hace falta; si se pone, tiene que cuadrar con los pasos.
+8. **Nada de paréntesis sueltos** en los pasos: solo los pegados a un ingrediente y las marcas de carril.
    Las segundas formas («, o lo que ponga el envase», «o 2-3 min al micro») van en `NOTAS` o en `PLAN B`.
 9. Los consejos, en `NOTAS`, nunca detrás de un paso.
+
+Copiloto sabe que una receta es v4 cuando no tiene `@` ni `~{}` y sus pasos llevan el tiempo tras ` · `. Las v3 y
+las de antes se siguen leyendo igual.
 
 ### Cómo planifica Copiloto (v2.59)
 
@@ -67,7 +127,7 @@ tiene que ir antes:
   humea esperando, el arroz del micro sale caliente al servir) y no empieza si lo siguiente no tiene listo lo suyo;
 - `AL JUNTAR` y los pasos de servir esperan a todo; `AL TERMINAR` va detrás.
 
-Sin apartados `CARRIL`, una receta v3 se planifica igual: un carril por recipiente, `PREPARAR` y «Montar»
+Sin apartados `CARRIL`, una receta v4 (o v3) se planifica igual: un carril por recipiente, `PREPARAR` y «Montar»
 (lo de manos). `(tras PREPARAR)` ya no hace falta.
 
 En el paso a paso se ve **todo el plan** con sus horas; tocar un paso lo abre entero y permite hacerlo antes,
@@ -89,7 +149,7 @@ Copiloto lo pasa **al leer cada evento** y lo enseña en el paso a paso («3 cos
 la receta se puede seguir igual con lo que entiende. Para revisar antes de guardar:
 
 ```
-node scripts/lint-recetas.mjs docs/recetas/*.txt      # un .txt por evento: título, línea en blanco, descripción
+node scripts/lint-recetas.mjs docs/recetas-v4/*.txt   # un .txt por evento: título, línea en blanco, descripción
 ```
 
 Falla, con el paso y la frase, si:
@@ -100,44 +160,89 @@ Falla, con el paso y la frase, si:
 | `suma` | la lista `INGREDIENTES` dice una cantidad y los pasos suman otra |
 | `sin-tiempo` | un paso no tiene tiempo (aunque sea «20 s») |
 | `sin-verbo` | un paso no empieza diciendo qué hacer |
-| `sin-ing` | un paso no dice con qué ingrediente (ni `@…` ni `#…`) |
-| `no-se-entiende` | palabras o marcas que el parser no usa: `@` o `~{}` mal escritos, paréntesis sueltos, «o …» (otra forma), un segundo tiempo, marcas de carril sin carriles, `→` vacío |
+| `sin-ing` | un paso no dice con qué ingrediente ni en qué recipiente |
+| `no-se-entiende` | lo que el parser no usa: un ingrediente que no conoce («no sé qué ingrediente es “X”»), `@`, `#` o llaves en una v4 (o mal escritos en una v3), paréntesis sueltos, «o …» (otra forma), un segundo tiempo, marcas de carril sin carriles, `→` vacío |
 | `carril` | `(tras X)` que no es ningún carril, un carril al fuego sin sartén ni olla… |
 | `raciones` / `por-racion` | faltan las raciones o las kcal y la proteína por ración |
 
 Y avisa (sin fallar) de un paso al fuego sin nivel de fuego y de uno que espera sin señal de «ya está».
 El script, además, vuelve a pasar el linter con 1, 2, 3 y 4 raciones y compara `POR RACIÓN` con la tabla (±10 %).
+Los códigos y los mensajes son los mismos en v3 y v4; la pista de cómo arreglarlo se escribe en el formato de la receta.
 
 ### Raciones
 
 En el paso a paso (al empezar y en Ingredientes) se elige **1, 2, 3 o 4 raciones**: todas las cantidades de los
-pasos y de la lista se multiplican (las fijas `{=…}` no) y los tiempos no cambian. Ingredientes enseña también
-**cuánto toca por ración**. Las recetas viejas no se escalan: sus cantidades van en el texto.
+pasos y de la lista se multiplican (y el texto del paso cambia con ellas: «300 g de boniato» → «600 g de boniato»);
+«pizca», «al gusto» y «unas gotas» no, y los tiempos tampoco. Ingredientes enseña también **cuánto toca por
+ración**. Las recetas de antes de la v3 no se escalan: sus cantidades van en el texto.
 
 ### Ejemplo (el curry del 5 de octubre)
 
 ```
 🍽️ COCINAS · Curry de solomillos y garbanzos con arroz (2 raciones)
 
-2 RACIONES · 45 min · 1 la comes hoy y 1 va a la NEVERA para el jueves.
+2 RACIONES · 45 min · 1 la comes hoy y 1 va a la NEVERA para el jueves. Se acaban el bote de garbanzos y los 500 g de pollo.
 POR RACIÓN · 847 kcal · 80 g proteína
 
 PREPARAR
-1. Corta @solomillos de pollo{500 g}(en dados de 2 cm) y quita el tendón blanco, ~{5 min} (manos) → dados iguales, sin tendón
-2. Seca @&pollo{500 g} con papel de cocina y salpiméntalo con @sal{=1 pizca} y @pimienta{=1 pizca}, ~{1 min} (manos)
-3. Corta @pimiento tricolor{150 g}(en tiras finas), ~{2 min} (manos)
+1. Corta 500 g de solomillos de pollo en dados de 2 cm y quita el tendón blanco · 5 min (manos) → dados iguales, sin tendón
+2. Seca 500 g de pollo con papel de cocina y salpiméntalo con 1 pizca de sal y 1 pizca de pimienta · 1 min (manos)
+3. Corta 150 g de pimiento tricolor en tiras finas · 2 min (manos)
+4. Escurre y enjuaga 1 bote de garbanzos cocidos (unos 400 g) · 1 min (manos) → ya no hacen espuma
+5. Mezcla en un bol 1 cda de curry tostado, 1 cdta de cúrcuma, 1 cdta de comino y 1 cdta de cilantro molido · 1 min (manos)
 
 CARRIL POLLO (sartén)
-1. Calienta @AOVE{1 cda} en la #sartén a fuego fuerte, ~{2 min} → humea un poco
-2. Echa la primera mitad, @&pollo{250 g}, en una sola capa, ~{5 min}, vuelta a los 2 → dorado por fuera
-3. Pasa @&pollo{250 g} dorado a un #plato, ~{20 s} (manos)
+1. Calienta 1 cda de AOVE en la sartén a fuego fuerte · 2 min (tras PREPARAR) → humea un poco
+2. Echa la primera mitad, 250 g de pollo, en una sola capa · 5 min, vuelta a los 2 → dorado por fuera
+3. Pasa 250 g de pollo dorado a un plato · 20 s (manos)
 …
 ```
 
-Entero en [docs/recetas/2026-10-05-1300-curry.txt](recetas/2026-10-05-1300-curry.txt). Las comidas de la semana
-del 5 al 11 de octubre, ya en este formato, están en [docs/recetas/](recetas/).
+Entero en [docs/recetas-v4/2026-10-05-1300-curry.txt](recetas-v4/2026-10-05-1300-curry.txt). Las comidas de la semana
+del 5 al 11 de octubre están en v4 en [docs/recetas-v4/](recetas-v4/) y, como se escribieron, en v3 en
+[docs/recetas/](recetas/): el test `tests/receta-v4.test.mjs` pasa cada v3 a v4 y comprueba que Copiloto saca lo mismo
+(ingredientes, cantidades, tiempos, pasos, carriles y nutrición, con 1 a 4 raciones). Hoy cuadran las 20.
 
-### De dónde sale (mirado el 5/10/2026)
+### Pasar las recetas v3 a v4
+
+```
+node scripts/v3-a-v4.mjs receta.txt                 # la v4 por la salida
+node scripts/v3-a-v4.mjs --escribe docs/recetas/*.txt  # encima de cada .txt (solo si cuadra)
+node scripts/v3-a-v4.mjs --json eventos.json        # [{id, summary, description}] -> lo mismo con la descripción en v4
+```
+
+Cada receta se comprueba al pasarla (lo mismo que el test). Si algo no se puede decir igual en v4 (un `@&` antes de
+que el ingrediente salga, una cantidad fija que no es una pizca, un ingrediente detrás del tiempo…) lo dice por
+stderr, y si Copiloto leería otra cosa, «NO CUADRA» con qué, y sale con código 1.
+
+## Formato v3 (se sigue leyendo)
+
+El de la v2.58 a la v2.71, inspirado en [Cooklang](https://cooklang.org/docs/spec/): el ingrediente y el reloj van
+**dentro del paso** con marcas. Copiloto lo sigue leyendo igual (y lo escala); para eventos nuevos, la v4.
+
+Se inspira en [Cooklang](https://cooklang.org/docs/spec/): el ingrediente y el reloj van **dentro del paso**,
+con su cantidad. Copiloto los enlaza solo y saca de ahí la lista de ingredientes (no hace falta escribirla
+aparte, y así nunca se desincroniza).
+
+| Se escribe | Qué es | Se lee |
+|---|---|---|
+| `@pollo{250 g}` | ingrediente con la cantidad de **este** paso | 250 g de pollo |
+| `@tomate triturado{400 g}` | varias palabras: el nombre llega hasta la llave | 400 g de tomate triturado |
+| `@huevo{2}` | unidades | 2 huevos |
+| `@pimiento{150 g}(en tiras finas)` | con su corte | 150 g de pimiento en tiras finas |
+| `@garbanzos cocidos{1 bote}(~400 g)` | lo que pesa (para la nutrición y la compra) | 1 bote de garbanzos cocidos, ~400 g |
+| `@&pollo{250 g}` | **el mismo de antes**: sale en el paso con su cantidad, pero no se vuelve a sumar | 250 g de pollo |
+| `@sal{=1 pizca}` | cantidad fija: no cambia al escalar | 1 pizca de sal |
+| `@pimienta{al gusto}` | sin número | pimienta al gusto |
+| `250%g`, `20%s` | también vale el `%` de Cooklang | 250 g, 20 s |
+| `~{5 min}`, `~huevo{10 min}` | el reloj del paso (con nombre, opcional) | 5 min |
+| `#sartén`, `#olla{}` | el recipiente o aparato (una palabra, o con `{}`) | sartén |
+| `→ dorado por fuera` | al final: cómo se ve cuando ya está | (sale aparte: «Ya está cuando…») |
+
+Sus reglas son las de la v4 con las marcas: `~{tiempo}` en todo paso, `@&nombre{cantidad}` para lo que ya salió,
+`@ingrediente(corte)` como único paréntesis permitido y `#recipiente`.
+
+### De dónde sale la v3 (mirado el 5/10/2026)
 
 - **Cooklang** ([spec](https://cooklang.org/docs/spec/); `cooklang/cooklang-rs`, último commit 3/10/2026): `@ingrediente{cant%ud}`,
   `~{tiempo}`, `#utensilio`, referencias `@&` y cantidades fijas `=`. **Lo imito**: el ingrediente y el reloj van dentro
