@@ -1038,7 +1038,9 @@ function ponCSS() {
 }
 
 /* ------------------------------- sonido, voz ------------------------------- */
+// v2.72.1: todo lo que se dice pasa por Voz.paraVoz (voz.js): unidades, fracciones, mayúsculas, notas de origen
 function di(t) {
+  if (window.Voz && Voz.paraVoz) t = Voz.paraVoz(t);
   if (!t || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
   try { var u = new SpeechSynthesisUtterance(t); u.lang = "es-ES"; u.rate = 1.02; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
 }
@@ -1055,18 +1057,14 @@ function pita(n) {
   vibra(n);
 }
 function vibra(n) { try { if (navigator.vibrate) navigator.vibrate(n >= 3 ? [300, 120, 300, 120, 300] : [150, 80, 150]); } catch (e) {} }
-function limpiaVoz(t) {
-  return String(t || "").replace(/\bAOVE\b/g, "aceite").replace(/\bcdas?\b/g, "cucharada").replace(/\bcdtas?\b/g, "cucharadita")
-    .replace(/(\d)\s*min\b/g, "$1 minutos").replace(/(\d)\s*s\b/g, "$1 segundos").replace(/(\d)\s*g\b/g, "$1 gramos").replace(/·/g, ",");
-}
 function vozPaso(M0, k) {
   var P = M0.pasos[k];
   if (P.vozIni) return P.vozIni;
   if (P.auto) return "Antes de empezar. Ten a mano lo de la lista.";
-  var t = (M0.G ? "" : nomPaso(M0, k) + ". ") + limpiaVoz(P.titulo);
+  var t = (M0.G ? "" : nomPaso(M0, k) + ". ") + P.titulo + (P.pista ? " → " + P.pista : "");
   var ings = P.usa.map(function (i) { return M0.ings[i]; }).filter(function (I) { return I && I.num && !I.basico; })
     .map(function (I) { return (I.c ? cantVoz(I.c) : I.cant) + " " + minus1(I.nombre); });
-  if (ings.length) t += ". " + limpiaVoz(ings.join(", "));
+  if (ings.length) t += ". " + ings.join(", ");
   return t + ".";
 }
 
@@ -1661,7 +1659,7 @@ function vozCarril() {
   var m = V.pl && V.pl.m, x = m && m.ahora;
   if (!x || m.cuando > V.pl.desde + 15) return "";
   var ii = ingsDe(x);
-  return limpiaVoz(x.txt + (ii.length ? ". " + ii.join(", ") : "")) + ".";
+  return x.txt + (ii.length ? ". " + ii.join(", ") : "") + ".";
 }
 var COSAS_COCINA = [["fuegos", "Fuegos", "fuego", "fuegos"], ["sarten", "Sartenes", "sartén", "sartenes"], ["olla", "Ollas", "olla", "ollas"],
   ["horno", "Horno", "horno", "hornos"], ["micro", "Microondas", "micro", "micros"], ["airfryer", "Air fryer", "air fryer", "air fryers"],

@@ -2446,7 +2446,9 @@ function cierraEscaner(desdeAtras) {
   if (!desdeAtras && history.state && history.state.pant === "escaner" && MCTX && MCTX.atrasManual) MCTX.atrasManual();
   if (enTab()) pinta();
 }
+// v2.72.1: todo lo que se dice pasa por Voz.paraVoz (voz.js): unidades, fracciones, mayúsculas, notas de origen
 function di(t) {
+  if (window.Voz && Voz.paraVoz) t = Voz.paraVoz(t);
   if (!t || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
   try { var u = new SpeechSynthesisUtterance(t); u.lang = "es-ES"; u.rate = 1.02; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
 }
