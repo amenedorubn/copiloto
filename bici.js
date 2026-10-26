@@ -34,49 +34,98 @@ function u16(b, i) { return b[i] | (b[i + 1] << 8); }
 function s16(b, i) { var v = u16(b, i); return v > 32767 ? v - 65536 : v; }
 function u24(b, i) { return b[i] | (b[i + 1] << 8) | (b[i + 2] << 16); }
 
-/* FTMS · Indoor Bike Data (0x2AD2). Devuelve lo que traiga: {kmh, cad, w}. */
+/* FTMS · Indoor Bike Data (0x2AD2): TODO lo que puede mandar una bici estatica.
+   {kmh, kmhMedia, cad, cadMedia, distBici (m), resist, w, wMedia, kcal, kcalHora,
+    kcalMin, fc, met, tBici (s), tQueda (s)} — solo los campos que traiga.       */
 function leeFTMS(b) {
   if (!b || b.length < 2) return {};
-  var f = u16(b, 0), i = 2, o = {};
-  if (!(f & 1)) { if (i + 2 > b.length) return o; o.kmh = u16(b, i) / 100; i += 2; }  // bit 0 = 0: velocidad
-  if (f & 2) i += 2;                                   // velocidad media
-  if (f & 4) { if (i + 2 > b.length) return o; o.cad = u16(b, i) / 2; i += 2; }
-  if (f & 8) i += 2;                                   // cadencia media
-  if (f & 16) i += 3;                                  // distancia total
-  if (f & 32) i += 2;                                  // resistencia
-  if (f & 64) { if (i + 2 > b.length) return o; o.w = s16(b, i); i += 2; }
+  var f = u16(b, 0), i = 2, o = {}, L = b.length;
+  function hay(n) { return i + n <= L; }
+  if (!(f & 1)) { if (!hay(2)) return o; o.kmh = u16(b, i) / 100; i += 2; }      // bit 0 = 0: velocidad
+  if (f & 2) { if (!hay(2)) return o; o.kmhMedia = u16(b, i) / 100; i += 2; }
+  if (f & 4) { if (!hay(2)) return o; o.cad = u16(b, i) / 2; i += 2; }
+  if (f & 8) { if (!hay(2)) return o; o.cadMedia = u16(b, i) / 2; i += 2; }
+  if (f & 16) { if (!hay(3)) return o; o.distBici = u24(b, i); i += 3; }
+  if (f & 32) { if (!hay(2)) return o; o.resist = s16(b, i); i += 2; }
+  if (f & 64) { if (!hay(2)) return o; o.w = s16(b, i); i += 2; }
+  if (f & 128) { if (!hay(2)) return o; o.wMedia = s16(b, i); i += 2; }
+  if (f & 256) {
+    if (!hay(5)) return o;
+    var tot = u16(b, i), hora = u16(b, i + 2), min = b[i + 4];
+    if (tot !== 0xffff) o.kcal = tot;
+    if (hora !== 0xffff) o.kcalHora = hora;
+    if (min !== 0xff) o.kcalMin = min;
+    i += 5;
+  }
+  if (f & 512) { if (!hay(1)) return o; if (b[i]) o.fc = b[i]; i += 1; }
+  if (f & 1024) { if (!hay(1)) return o; o.met = b[i] / 10; i += 1; }
+  if (f & 2048) { if (!hay(2)) return o; o.tBici = u16(b, i); i += 2; }
+  if (f & 4096) { if (!hay(2)) return o; o.tQueda = u16(b, i); i += 2; }
   return o;
 }
 
-/* Cycling Power Measurement (0x2A63): {w, biela: {rev, t}} (t en 1/1024 s). */
+/* Cycling Power Measurement (0x2A63): todo lo que traiga.
+   {w, balance (% pierna izq.), par (Nm acumulado), rueda {rev, t}, biela {rev, t}
+    (t en 1/1024 s), fuerzaMax/Min (N), parMax/Min (Nm), puntoMuertoArriba/Abajo (º), kj} */
 function leePotencia(b) {
   if (!b || b.length < 4) return {};
-  var f = u16(b, 0), i = 4, o = { w: s16(b, 2) };
-  if (f & 1) i += 1;                                   // balance de pedales
-  if (f & 4) i += 2;                                   // par acumulado
-  if (f & 16) i += 6;                                  // vueltas de rueda
-  if (f & 32) {
-    if (i + 4 > b.length) return o;
-    o.biela = { rev: u16(b, i), t: u16(b, i + 2) };
-  }
+  var f = u16(b, 0), i = 4, o = { w: s16(b, 2) }, L = b.length;
+  function hay(n) { return i + n <= L; }
+  if (f & 1) { if (!hay(1)) return o; o.balance = b[i] / 2; i += 1; }
+  if (f & 4) { if (!hay(2)) return o; o.par = u16(b, i) / 32; i += 2; }
+  if (f & 16) { if (!hay(6)) return o; o.rueda = { rev: u16(b, i) + u16(b, i + 2) * 65536, t: u16(b, i + 4) / 2 }; i += 6; }
+  if (f & 32) { if (!hay(4)) return o; o.biela = { rev: u16(b, i), t: u16(b, i + 2) }; i += 4; }
+  if (f & 64) { if (!hay(4)) return o; o.fuerzaMax = s16(b, i); o.fuerzaMin = s16(b, i + 2); i += 4; }
+  if (f & 128) { if (!hay(4)) return o; o.parMax = s16(b, i) / 32; o.parMin = s16(b, i + 2) / 32; i += 4; }
+  if (f & 256) i += 3;                                       // angulos extremos
+  if (f & 512) { if (!hay(2)) return o; o.puntoMuertoArriba = u16(b, i); i += 2; }
+  if (f & 1024) { if (!hay(2)) return o; o.puntoMuertoAbajo = u16(b, i); i += 2; }
+  if (f & 2048) { if (!hay(2)) return o; o.kj = u16(b, i); i += 2; }
   return o;
 }
 
-/* El lector junta lo que llega y da {w, cad, kmh} al momento. La cadencia de la
-   potencia sale de cuantas vueltas da la biela entre dos medidas; si deja de
-   moverse 3 s, es 0. Si llega FTMS con velocidad, manda esa. */
+/* Lo que se enseña aparte de vatios y cadencia, por orden, si la bici lo manda. */
+var EXTRAS = [
+  ["kmh", "Km/h", function (v) { return v.toFixed(1).replace(".", ","); }],
+  ["resist", "Resistencia", function (v) { return String(v); }],
+  ["fc", "Pulso (bici)", function (v) { return String(v); }],
+  ["kcal", "Kcal (bici)", function (v) { return String(v); }],
+  ["balance", "Pierna izq.", function (v) { return Math.round(v) + " %"; }],
+  ["kj", "kJ (bici)", function (v) { return String(v); }],
+  ["met", "MET", function (v) { return v.toFixed(1).replace(".", ","); }],
+  ["distBici", "Km (bici)", function (v) { return (v / 1000).toFixed(2).replace(".", ","); }]
+];
+var NOMBRES = { kmh: "velocidad", kmhMedia: "velocidad media", cad: "cadencia", cadMedia: "cadencia media", distBici: "distancia",
+  resist: "resistencia", w: "vatios", wMedia: "vatios medios", kcal: "calorías", kcalHora: "kcal/h", kcalMin: "kcal/min",
+  fc: "pulsaciones", met: "MET", tBici: "tiempo", tQueda: "tiempo que queda", balance: "balance de piernas", par: "par",
+  rueda: "vueltas de rueda", biela: "vueltas de biela", fuerzaMax: "fuerza", parMax: "par máximo",
+  puntoMuertoArriba: "punto muerto", kj: "energía" };
+
+/* El lector junta lo que llega y da {w, cad, kmh, ...todo lo demas} al momento. La
+   cadencia de la potencia sale de cuantas vueltas da la biela entre dos medidas; si
+   deja de moverse 3 s, es 0. Si llega FTMS con velocidad o cadencia, manda esa.
+   vistos: que campos ha mandado la bici alguna vez (para contarlo al final).    */
 function Lector() {
-  var biela = null, ultVuelta = -1e15, act = { w: 0, cad: 0, kmh: null, t: 0 }, ftmsCad = -1e15;
+  var biela = null, ultVuelta = -1e15, act = { w: 0, cad: 0, kmh: null, t: 0 }, ftmsCad = -1e15, x = {}, vistos = {};
+  function copia(o) {
+    for (var k in o) if (o[k] != null && k !== "biela" && k !== "rueda") { x[k] = o[k]; vistos[k] = 1; }
+    if (o.biela) vistos.biela = 1; if (o.rueda) vistos.rueda = 1;
+  }
+  function sale(viejo) {
+    var r = { w: viejo ? 0 : act.w, cad: viejo ? 0 : act.cad, kmh: viejo ? null : act.kmh, t: act.t };
+    if (!viejo) for (var k in x) if (!(k in r)) r[k] = x[k];
+    return r;
+  }
   return {
     procesa: function (tipo, bytes, t) {
       t = t || Date.now();
       if (tipo === "ftms") {
-        var f = leeFTMS(bytes);
+        var f = leeFTMS(bytes); copia(f);
         if (f.w != null) act.w = Math.max(0, f.w);
         if (f.kmh != null) act.kmh = f.kmh;
         if (f.cad != null) { act.cad = f.cad; ftmsCad = t; }
       } else if (tipo === "potencia") {
-        var p = leePotencia(bytes);
+        var p = leePotencia(bytes); copia(p);
         if (p.w != null) act.w = Math.max(0, p.w);
         if (p.biela && t - ftmsCad > 3000) {            // con FTMS dando cadencia, manda esa
           if (biela) {
@@ -89,13 +138,10 @@ function Lector() {
       }
       if (t - ultVuelta > 3000 && t - ftmsCad > 3000) act.cad = 0;
       act.t = t;
-      return { w: act.w, cad: act.cad, kmh: act.kmh, t: act.t };
+      return sale(false);
     },
-    ahora: function (t) {
-      t = t || Date.now();
-      var viejo = t - act.t > 4000;                    // sin noticias de la bici: 0
-      return { w: viejo ? 0 : act.w, cad: viejo ? 0 : act.cad, kmh: viejo ? null : act.kmh, t: act.t };
-    }
+    ahora: function (t) { t = t || Date.now(); return sale(t - act.t > 4000); },   // sin noticias 4 s: 0
+    vistos: function () { return Object.keys(vistos); }
   };
 }
 
@@ -201,7 +247,7 @@ function tcx(M, inicioMs, fc) {
   var n = M.length, sw = 0, sc = 0, nc = 0, pts = [], sh = 0, nh = 0, mh = 0;
   if (n && M[0][4]) inicioMs = M[0][4];
   for (var i = 0; i < n; i++) {
-    var m = M[i], ms = m[4] || inicioMs + m[0] * 1000, h = fc ? fc(ms) : null;
+    var m = M[i], ms = m[4] || inicioMs + m[0] * 1000, h = fc ? fc(ms) : (m[5] || null);
     sw += m[1]; if (m[2] > 0) { sc += m[2]; nc++; }
     if (h) { sh += h; nh++; if (h > mh) mh = h; }
     pts.push("<Trackpoint><Time>" + iso(ms) + "</Time><DistanceMeters>" + m[3].toFixed(1) +
@@ -237,16 +283,29 @@ function fcDe(P) {
     return Math.round(b[lo] + (b[hi] - b[lo]) * f);
   };
 }
+/* M = [seg, vatios, cadencia, metros, ms, fc de la bici, km/h de la bici, resistencia, kcal de la bici] */
 function resumenDe(M) {
-  var n = M.length, sw = 0, sc = 0, nc = 0;
-  for (var i = 0; i < n; i++) { sw += M[i][1]; if (M[i][2] > 0) { sc += M[i][2]; nc++; } }
-  return { seg: n ? M[n - 1][0] : 0, km: n ? M[n - 1][3] / 1000 : 0, w: n ? Math.round(sw / n) : 0,
-           kj: Math.round(sw / 1000), cad: nc ? Math.round(sc / nc) : 0 };
+  var n = M.length, sw = 0, sc = 0, nc = 0, wMax = 0, cMax = 0, sh = 0, nh = 0, hMax = 0, kcal = null, w20 = 0;
+  for (var i = 0; i < n; i++) {
+    var m = M[i]; sw += m[1]; if (m[1] > wMax) wMax = m[1];
+    if (m[2] > 0) { sc += m[2]; nc++; if (m[2] > cMax) cMax = m[2]; }
+    if (m[5]) { sh += m[5]; nh++; if (m[5] > hMax) hMax = m[5]; }
+    if (m[8] != null) kcal = m[8];
+  }
+  // mejores 5 min (o lo que haya): potencia media mas alta en una ventana
+  var V = Math.min(300, n), acc = 0;
+  for (i = 0; i < n; i++) { acc += M[i][1]; if (i >= V) acc -= M[i - V][1]; if (i >= V - 1 && V && acc / V > w20) w20 = acc / V; }
+  var r = { seg: n ? M[n - 1][0] : 0, km: n ? M[n - 1][3] / 1000 : 0, w: n ? Math.round(sw / n) : 0,
+            kj: Math.round(sw / 1000), cad: nc ? Math.round(sc / nc) : 0 };
+  r.wMax = Math.round(wMax); r.cadMax = Math.round(cMax); r.w5 = Math.round(w20);
+  r.kcal = kcal != null ? kcal : Math.round(r.kj / 0.24 / 4.184);
+  if (nh) { r.fc = Math.round(sh / nh); r.fcMax = hMax; }
+  return r;
 }
 
 var API = { leeFTMS: leeFTMS, leePotencia: leePotencia, Lector: Lector, velDePotencia: velDePotencia,
             Guia: Guia, margen: margen, anuncio: anuncio, durVoz: durVoz, tcx: tcx, resumenDe: resumenDe, fcDe: fcDe,
-            sesionDe: sesionDe, COLT: COLT };
+            sesionDe: sesionDe, COLT: COLT, EXTRAS: EXTRAS, NOMBRES: NOMBRES };
 if (typeof document === "undefined") return API;
 
 /* ============================== 5 · LA PANTALLA ============================== */
@@ -287,6 +346,13 @@ var CSS = "" +
 ".bkFila i{display:block;font-style:normal;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#8e939b}" +
 ".bkFila b{display:block;font-size:clamp(24px,4.4vh,34px);font-weight:800;margin-top:2px}" +
 ".bkFila b.fuera{color:#ffcf6a}" +
+"#bkMas{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;flex:0 0 auto;margin-top:6px}" +
+"#bkMas>div{background:#111316;border-radius:12px;padding:6px 2px;text-align:center}" +
+"#bkMas i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8e939b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+"#bkMas b{display:block;font-size:18px;font-weight:800;margin-top:1px}" +
+"#bfMas{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}#bfMas>div{background:#15171b;border-radius:12px;padding:8px 2px;text-align:center}" +
+"#bfMas i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8e939b}#bfMas b{display:block;font-size:20px;font-weight:800;margin-top:2px}" +
+"#bfVistos{font-size:12px;font-weight:700;color:#6b7079;line-height:1.35}" +
 ".bkLuego{flex:0 0 auto;background:#15171b;border-radius:16px;padding:10px 14px;margin-top:8px;display:flex;justify-content:space-between;gap:10px;font-size:15px;font-weight:800}" +
 ".bkLuego span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bkLuego em{font-style:normal;color:#8e939b}" +
 "#bkPerfil{height:34px;display:flex;gap:2px;align-items:flex-end;margin-top:8px;position:relative;flex:0 0 auto}" +
@@ -322,6 +388,7 @@ var HTML = "" +
     '<div id="bkBarra"><div id="bkBanda"></div><div id="bkAguja"></div></div>' +
   '</div>' +
   '<div class="bkFila"><div><i>Cadencia</i><b id="bkCad">–</b></div><div><i id="bkQL">Queda</i><b id="bkQ">–</b></div><div><i>Km</i><b id="bkKm">0,0</b></div></div>' +
+  '<div id="bkMas" hidden></div>' +
   '<div class="bkLuego"><span id="bkSig">–</span><em id="bkSigT"></em></div>' +
   '<div id="bkPerfil"></div>' +
   '<div id="bkCtl"><button id="bkPausa">Pausa</button><button id="bkSalta">Saltar</button><button id="bkFinBtn">Terminar</button></div>' +
@@ -330,6 +397,8 @@ var HTML = "" +
   '<div class="tit">Sesión terminada</div>' +
   '<div class="bkFila"><div><i>Tiempo</i><b id="bfT">0:00</b></div><div><i>Km</i><b id="bfK">0</b></div>' +
   '<div><i>Vatios media</i><b id="bfW">0</b></div><div><i>Cadencia media</i><b id="bfC">0</b></div></div>' +
+  '<div id="bfMas"></div>' +
+  '<div id="bfVistos"></div>' +
   '<div class="nota" id="bfNota">–</div>' +
   '<div id="bfJunta">' +
     '<div class="bfPaso" id="bfP1"><b>1</b><div><span id="bfP1T">Junta las pulsaciones del reloj</span><small id="bfP1S">Cuando el Huawei se haya sincronizado con Strava</small></div></div>' +
@@ -490,12 +559,23 @@ function suelta() {
 }
 // modo prueba: vatios alrededor del objetivo (a ratos por debajo o por encima, para oir la voz)
 var simW = 120, simCad = 85;
+// lo que la bici manda aparte de vatios y cadencia, en casillas pequenas (hasta 4)
+function pintaMas(m) {
+  var h = "", n = 0;
+  for (var k = 0; k < EXTRAS.length && n < 4; k++) {
+    var c = EXTRAS[k], v = m[c[0]];
+    if (v == null || (c[0] === "fc" && !v)) continue;
+    h += "<div><i>" + c[1] + "</i><b>" + c[2](v) + "</b></div>"; n++;
+  }
+  var X = E("bkMas"); X.hidden = !n; if (X.innerHTML !== h) X.innerHTML = h;
+}
 function simula(o, t) {
   var obj = o && o.vatios || 150, cad = o && o.cad ? (o.cad[0] + o.cad[1]) / 2 : 85;
   var fase = Math.floor(t / 25) % 4, mete = fase === 1 ? -0.2 : fase === 3 ? 0.18 : 0;
   simW += (obj * (1 + mete) - simW) * 0.25 + (Math.random() - 0.5) * 12;
   simCad += (cad * (1 + mete * 0.5) - simCad) * 0.3 + (Math.random() - 0.5) * 3;
-  return { w: Math.max(0, Math.round(simW)), cad: Math.max(0, Math.round(simCad)), kmh: null };
+  var w = Math.max(0, Math.round(simW));
+  return { w: w, cad: Math.max(0, Math.round(simCad)), kmh: Math.round(velDePotencia(w) * 36) / 10, resist: Math.round(w / 12) };
 }
 
 /* ------------------------------ la sesion ------------------------------ */
@@ -579,6 +659,11 @@ function vistaFin(r) {
   ver("bkFin"); E("appBici").classList.remove("flash");
   E("bfT").textContent = HMS(r.seg); E("bfK").textContent = coma(r.km, 1);
   E("bfW").textContent = r.w; E("bfC").textContent = r.cad || "–";
+  var mas = [["Vatios máx.", r.wMax], ["Mejor 5 min", r.w5 ? r.w5 + " W" : null], ["Cadencia máx.", r.cadMax || null],
+             ["Kcal", r.kcal], ["kJ", r.kj], r.fc ? ["Pulso medio", r.fc + (r.fcMax ? " · " + r.fcMax : "")] : null].filter(function (x) { return x && x[1] != null; });
+  E("bfMas").innerHTML = mas.map(function (x) { return "<div><i>" + x[0] + "</i><b>" + x[1] + "</b></div>"; }).join("");
+  var vs = (estado.vistos || []).map(function (k) { return NOMBRES[k] || k; });
+  E("bfVistos").textContent = vs.length ? "La bici ha mandado: " + vs.join(", ") + "." : "";
   var prueba = estado.fuente === "prueba";
   E("bfNota").textContent = prueba ? "Era una prueba: no se guarda como entreno." : "Guardada en el móvil.";
   E("bfJunta").hidden = prueba;
@@ -638,7 +723,7 @@ function guardaHecha(r) {
   if (estado.fuente === "prueba" || !estado.M.length) return;
   try {
     var L = JSON.parse(localStorage.getItem(LSH) || "[]");
-    L.unshift({ inicio: estado.t0, nombre: S.nombre, resumen: r, M: estado.M });
+    L.unshift({ inicio: estado.t0, nombre: S.nombre, resumen: r, M: estado.M, vistos: estado.vistos || [] });
     localStorage.setItem(LSH, JSON.stringify(L.slice(0, 5)));
   } catch (e) {}
 }
@@ -735,7 +820,9 @@ function pinta() {
     if (!pa) {
       var v = m.kmh != null ? m.kmh / 3.6 : velDePotencia(m.w);
       estado.dist += v * Math.max(1, Math.min(5, s - estado.ultS));
-      estado.M.push([s, m.w, m.cad, Math.round(estado.dist * 10) / 10, ahora()]);
+      estado.M.push([s, m.w, m.cad, Math.round(estado.dist * 10) / 10, ahora(),
+                     m.fc || null, m.kmh != null ? m.kmh : null, m.resist != null ? m.resist : null, m.kcal != null ? m.kcal : null]);
+      if (fuente !== "prueba") estado.vistos = lector.vistos();
       hist.push([s, m.w, m.cad]); if (hist.length > 30) hist.shift();
     }
     estado.ultS = s;
@@ -772,6 +859,7 @@ function pinta() {
   E("bkQL").textContent = b ? "Queda" : "Media W";
   E("bkQ").textContent = b ? MS(Math.ceil(Math.max(0, restB) / 1000)) : String(resumenDe(estado.M).w);
   E("bkKm").textContent = coma(estado.dist / 1000, 1);
+  pintaMas(m);
   E("bkSig").textContent = b ? (sig ? "Luego: " + sig.nombre.toLowerCase() + " · " + sig.vatios + " W" : "Luego: fin de la sesión") : "Bici libre · " + (fuente === "prueba" ? "prueba" : "sin plan");
   E("bkSigT").textContent = sig ? MS(sig.seg) : "";
   if (b) {
@@ -828,9 +916,9 @@ API.abreUltima = function () {
   var h = L[0]; monta();
   S = { id: "hecha", nombre: h.nombre, bloques: [] }; B = [];
   estado = { ses: S, fuente: "hecha", t0: h.inicio, pausaAcum: 0, pausaDesde: 0, bi: 0, bIni: 0, M: h.M, dist: 0,
-             fin: true, tFin: 0, ultS: 0, pulsos: h.pulsos || null, guardado: h.guardado || "" };
+             fin: true, tFin: 0, ultS: 0, pulsos: h.pulsos || null, guardado: h.guardado || "", vistos: h.vistos || [] };
   ["appHoy", "selector"].forEach(function (id) { var x = E(id); if (x) x.hidden = true; });
-  E("appBici").hidden = false; vistaFin(h.resumen);
+  E("appBici").hidden = false; vistaFin(resumenDe(h.M));
   return true;
 };
 API.hechas = function () { try { return JSON.parse(localStorage.getItem(LSH) || "[]"); } catch (e) { return []; } };

@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.77.0] - 2026-10-26
+
+### Añadido
+
+- Bici: lee todo lo que mande la BODY BIKE (velocidad, resistencia, kcal, pulso si lo da, balance de piernas, energía...), lo enseña en marcha en casillas pequeñas y al final (vatios máx., mejor 5 min, cadencia máx., kcal, kJ) y dice qué datos ha mandado la bici. Si la bici da pulsaciones, van al archivo sin reloj. Sin APK nuevo
+
 ## [2.76.0] - 2026-10-26
 
 ### Añadido
@@ -1044,6 +1050,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.77.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.77.0
 [2.76.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.76.0
 [2.75.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.75.0
 [2.74.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.74.0

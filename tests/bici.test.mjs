@@ -11,9 +11,12 @@ test("potencia de ciclismo: vatios y biela", () => {
   // flags 0x20 (vueltas de biela), 167 W, biela 100 vueltas en t=2048 (2 s)
   const b = [0x20, 0x00, ...le(167), ...le(100), ...le(2048)];
   assert.deepEqual(B.leePotencia(b), { w: 167, biela: { rev: 100, t: 2048 } });
+  // todo: balance, par, rueda, biela y energia
+  const t = [0x35, 0x08, ...le(200), 104, ...le(320), ...le(5), ...le(0), ...le(1024), ...le(7), ...le(512), ...le(42)];
+  assert.deepEqual(B.leePotencia(t), { w: 200, balance: 52, par: 10, rueda: { rev: 5, t: 512 }, biela: { rev: 7, t: 512 }, kj: 42 });
   // con balance de pedales (bit 0) la biela va 1 byte mas alla
   const c = [0x21, 0x00, ...le(200), 50, ...le(7), ...le(512)];
-  assert.deepEqual(B.leePotencia(c), { w: 200, biela: { rev: 7, t: 512 } });
+  assert.deepEqual(B.leePotencia(c), { w: 200, balance: 25, biela: { rev: 7, t: 512 } });
 });
 
 test("cadencia de la biela: 3 vueltas en 2 s = 90 rpm, y 0 si para", () => {
@@ -26,12 +29,16 @@ test("cadencia de la biela: 3 vueltas en 2 s = 90 rpm, y 0 si para", () => {
   assert.equal(L.procesa("potencia", [0x20, 0, ...le(150), ...le(15), ...le(488)], 5000).cad, 60);   // 1024 ticks = 1 s
   // sin noticias 5 s: todo a 0
   assert.deepEqual(L.ahora(11000), { w: 0, cad: 0, kmh: null, t: 5000 });
+  assert.deepEqual(L.vistos().sort(), ["biela", "w"]);
 });
 
 test("FTMS: velocidad, cadencia y vatios", () => {
   // flags: bit 2 (cadencia) + bit 6 (potencia); velocidad presente (bit 0 = 0)
   const b = [0x44, 0x00, ...le(3150), ...le(180), ...le(210)];
   assert.deepEqual(B.leeFTMS(b), { kmh: 31.5, cad: 90, w: 210 });
+  // todo lo de una BODY BIKE con FTMS completo: + distancia, resistencia, kcal, pulso y tiempo
+  const full = [0x74, 0x0b, ...le(3150), ...le(180), 0x10, 0x27, 0x00, ...le(8), ...le(210), ...le(95), ...le(600), 30, 142, ...le(1200)];
+  assert.deepEqual(B.leeFTMS(full), { kmh: 31.5, cad: 90, distBici: 10000, resist: 8, w: 210, kcal: 95, kcalHora: 600, kcalMin: 30, fc: 142, tBici: 1200 });
   const L = B.Lector();
   const r = L.procesa("ftms", b, 1000);
   assert.equal(r.kmh, 31.5); assert.equal(r.cad, 90); assert.equal(r.w, 210);
@@ -86,7 +93,12 @@ test("TCX y resumen", () => {
   assert.match(x, /<Id>2026-10-26T16:46:51Z<\/Id>/);
   assert.match(x, /<ns3:Watts>300<\/ns3:Watts>/);
   assert.equal((x.match(/<Trackpoint>/g) || []).length, 3);
-  assert.deepEqual(B.resumenDe(M), { seg: 2, km: 0.0174, w: 200, kj: 1, cad: 90 });
+  const R = B.resumenDe(M);
+  assert.deepEqual([R.seg, R.km, R.w, R.kj, R.cad, R.wMax, R.cadMax, R.w5], [2, 0.0174, 200, 1, 90, 300, 100, 200]);
+  // con pulsaciones de la bici (M[5]) van al resumen y al TCX sin reloj
+  const Mh = [[0, 100, 80, 0, 0, 120], [1, 100, 80, 5, 1000, 130]];
+  assert.equal(B.resumenDe(Mh).fc, 125);
+  assert.match(B.tcx(Mh, 0), /<HeartRateBpm><Value>130<\/Value>/);
 });
 
 test("Worker: el plan de bici del calendario", async () => {
