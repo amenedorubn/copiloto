@@ -26,6 +26,7 @@ La web (la de GitHub Pages) va **dentro** del APK con Capacitor 8: la app arranc
 - `AvisoReceiver.java` / `ArranqueReceiver.java`: los avisos de Cocina (el tupper la noche antes, la avena al salir) como notificación con AlarmManager; vuelven tras reiniciar. Ver docs/COCINA.md.
 - Escáner de Cocina (`escanea`): el de Google Play Services (`play-services-code-scanner`), sin
   permiso de cámara; el manifest le pide a Play Services que lo baje al instalar (`barcode_ui`).
+- `BiciBle.java`: **la bici de spinning** (BODY BIKE) por Bluetooth. Busca un aparato con potencia de ciclismo (0x1818), FTMS (0x1826) o que se llame «BODY BIKE», se conecta, se suscribe a sus medidas y las pasa **en bruto** a la web (eventos `bici`, `biciEstado`, `biciVista`); las lee `bici.js`, que se prueba con node. Si se cae, reintenta sola. Permisos: Android 12+ «Dispositivos cercanos» (buscar y conectar); antes, ubicación.
 - `MainActivity.java`: el gesto de atrás lo decide la web (`window.atrasApp`): con un entreno en marcha no sale nunca.
 - `nativo.js` (raíz del repo): conecta todo esto con la web. En el navegador no hace nada.
 

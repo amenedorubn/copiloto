@@ -30,7 +30,7 @@ Más notas.
 
 | Campo | Obligatorio | Qué es |
 |---|---|---|
-| `tipo` | sí | `"cinta"`, `"fuera"` o `"gym"` |
+| `tipo` | sí | `"cinta"`, `"fuera"`, `"gym"` o `"bici"` |
 | `nombre` | no | Nombre que sale en grande. Si falta, se usa el título del evento |
 
 ---
@@ -152,6 +152,55 @@ Cada ejercicio:
 > El copiloto de gimnasio (series, descansos, historial) llega en la **fase 3**.
 
 ---
+
+
+---
+
+## `tipo: "bici"`
+
+La bici de spinning (BODY BIKE). Copiloto se conecta a la bici por Bluetooth,
+lee vatios y cadencia y te guía con la voz bloque a bloque.
+
+| Campo | Obligatorio | Qué es |
+|---|---|---|
+| `bloques` | sí | Lista, en orden, de lo que hay que hacer |
+
+Cada bloque:
+
+| Campo | Obligatorio | Qué es |
+|---|---|---|
+| `tipo` | sí | `calentar`, `serie`, `suave` o `enfriar` (`recupera` y `trote` valen como `suave`) |
+| `nombre` | no | Lo que canta la voz y sale en "Luego" |
+| `vatios` | sí | Potencia objetivo |
+| `cad` | no | `[mín, máx]` pedaladas por minuto |
+| `seg` | sí | Duración en segundos |
+
+El Worker devuelve además un `total` con los segundos y los kJ de la sesión.
+
+Cómo guía la voz (media de 10 s contra el objetivo, margen ±10 W o ±7 %):
+no corrige en los 15 primeros segundos del bloque ni en los 8 últimos; tras 8 s
+fuera dice qué tocar (pocos vatios con cadencia baja → «pedalea más rápido»;
+con buena cadencia → «sube resistencia»; al revés, «baja la cadencia» o «quita
+resistencia») y no repite antes de 20 s; al volver, «Así, vas bien».
+
+Un evento de bici **sin** bloque (título con «Bici», «Spinning», «Ciclismo»…)
+sale con el botón «Bici libre»: pantalla y datos, y la voz cada 5 min.
+
+```json
+#copiloto
+{
+  "tipo": "bici",
+  "nombre": "4×4 min a 220 W",
+  "bloques": [
+    {"tipo":"calentar","nombre":"Calentamiento","vatios":120,"cad":[80,90],"seg":600},
+    {"tipo":"serie","nombre":"Serie 1","vatios":220,"cad":[90,100],"seg":240},
+    {"tipo":"suave","nombre":"Suave 1","vatios":130,"cad":[80,90],"seg":180},
+    {"tipo":"serie","nombre":"Serie 2","vatios":220,"cad":[90,100],"seg":240},
+    {"tipo":"enfriar","nombre":"Enfriar","vatios":100,"cad":[75,85],"seg":300}
+  ]
+}
+#fin
+```
 
 ## Lo que devuelve el Worker
 

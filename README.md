@@ -14,6 +14,7 @@ gimnasio. Se sirve con GitHub Pages.
 | Ruta | Qué es |
 |---|---|
 | `index.html` | La app entera (HTML, CSS y JS en un solo fichero). Lleva `APP_VERSION`. |
+| `bici.js` | Copiloto de la bici de spinning (BODY BIKE): lee la bici por Bluetooth (APK o Chrome), pantalla de vatios y cadencia, y la voz que te dice si subes, bajas o vas bien. Lógica pura probada en `tests/bici.test.mjs`. |
 | `arc.js` | Winter Arc: objetivo, reglas, días, semanas y sus cuatro diseños (A anillos, B línea del día, C temporada, D cuadrícula). Va aparte del `index.html` y se carga `async`: si falla, la app arranca igual. Datos en `copiloto.arc.*`. |
 | `docs/DISENO-ARC.md` | Reglas de diseño del Arc y cómo se comprueban. |
 | `docs/propuestas-arc/` | Capturas de los cuatro diseños (claro y oscuro, 3 estados), su índice y la revisión. Se rehacen con `scripts/capturas-arc.mjs`. |

@@ -408,6 +408,35 @@
       return { instalada: String(yo.version || ""), nueva: mejor && compara(mejor.version, String(yo.version || "0")) > 0 ? mejor : null };
     });
   } : null;
+  /* ------------------------- la bici de spinning ------------------------- */
+  // BiciBle.java busca la BODY BIKE (o cualquier bici con potencia Bluetooth), se
+  // conecta y pasa cada medida en bruto; bici.js la lee. Un APK sin esto: null.
+  //   N.bici.busca(auto) / conecta(id) / corta()  -> Promise (rechaza "sin_permiso",
+  //   "apagado", "sin_bluetooth")
+  //   N.bici.oye({datos(tipo, bytes, t), estado(estado, nombre), vista(bici)})
+  N.bici = tiene("biciBusca") ? (function () {
+    var oy = null, puesto = false;
+    function engancha() {
+      if (puesto) return; puesto = true;
+      C.nativeCallback(P, "addListener", { eventName: "bici" }, function (d) {
+        if (d && oy && oy.datos) try { oy.datos(d.tipo, d.bytes || [], d.t || Date.now()); } catch (e) {}
+      });
+      C.nativeCallback(P, "addListener", { eventName: "biciEstado" }, function (d) {
+        if (d && oy && oy.estado) try { oy.estado(d.estado, d.nombre || ""); } catch (e) {}
+      });
+      C.nativeCallback(P, "addListener", { eventName: "biciVista" }, function (d) {
+        if (d && oy && oy.vista) try { oy.vista(d); } catch (e) {}
+      });
+    }
+    function err(e) { throw (e && (e.code || e.message)) || "error"; }
+    return {
+      oye: function (o) { oy = o; engancha(); },
+      busca: function (auto) { engancha(); return llama(P, "biciBusca", { auto: auto !== false }).catch(err); },
+      conecta: function (id) { engancha(); return llama(P, "biciConecta", { id: id }).catch(err); },
+      corta: function () { return llama(P, "biciCorta").catch(function () {}); }
+    };
+  })() : null;
+
   // cada({evento: "progreso"|"instalando"|"permiso"|"error", pct, error})
   N.instalaApk = function (u, cada) {
     C.nativeCallback(P, "instalaApk", { url: u.url, checksum: u.checksum, version: u.version }, function (r, err) {

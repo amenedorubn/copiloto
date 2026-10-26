@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.75.0] - 2026-10-26
+
+### Añadido
+
+- Modo bici: Copiloto sustituye a la app de BODY BIKE. Se conecta a la bici por Bluetooth (APK nuevo o Chrome), enseña vatios, cadencia y km, y la voz te guía por la sesión del calendario «Entreno» (tipo "bici": vatios y cadencia por bloque) diciendo si subes, bajas o vas bien; sin plan, «Bici libre»; «Probar sin bici» para verlo en casa. Guarda el entreno y lo exporta en TCX. Lo nativo (BiciBle) necesita APK nuevo
+
 ## [2.74.0] - 2026-10-25
 
 ### Añadido
@@ -1032,6 +1038,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.75.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.75.0
 [2.74.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.74.0
 [2.73.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.73.1
 [2.73.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.73.0

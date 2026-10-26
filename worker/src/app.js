@@ -701,14 +701,15 @@ function extraePlan(desc, titulo, lugar) {
 
 const TIPOS_BLOQUE = ["calentar", "serie", "trote", "enfriar"];
 
-function normaliza(p) {
+export function normaliza(p) {
   if (!p || typeof p !== "object") fallo("El bloque #copiloto tiene que ser un objeto JSON.");
   const tipo = String(p.tipo || "").toLowerCase();
 
   if (tipo === "cinta") return normCinta(p);
   if (tipo === "fuera") return normFuera(p);
   if (tipo === "gym") return normGym(p);
-  fallo('El campo "tipo" tiene que ser "cinta", "fuera" o "gym" (llego: ' + JSON.stringify(p.tipo) + ").");
+  if (tipo === "bici") return normBici(p);
+  fallo('El campo "tipo" tiene que ser "cinta", "fuera", "gym" o "bici" (llego: ' + JSON.stringify(p.tipo) + ").");
 }
 
 function normCinta(p) {
@@ -804,6 +805,39 @@ function normGym(p) {
     nombre: String(p.nombre || ("Rutina " + rut)),
     ejercicios,
     total: { series: ejercicios.reduce((a, e) => a + e.series, 0) }
+  };
+}
+
+/* Bici de spinning (BODY BIKE): bloques por tiempo con vatios y, si se quiere,
+   un rango de cadencia. "recupera" o "trote" se leen como "suave".          */
+const TIPOS_BICI = ["calentar", "serie", "suave", "enfriar"];
+function normBici(p) {
+  if (!Array.isArray(p.bloques) || !p.bloques.length) fallo('Un plan de bici necesita "bloques".');
+  const bloques = p.bloques.map((b, i) => {
+    let t = String(b.tipo || "").toLowerCase();
+    if (t === "recupera" || t === "trote") t = "suave";
+    if (TIPOS_BICI.indexOf(t) < 0)
+      fallo("Bloque " + (i + 1) + ': "tipo" tiene que ser calentar, serie, suave o enfriar.');
+    const vatios = Math.round(num(b.vatios, "Bloque " + (i + 1) + ': faltan los "vatios".'));
+    const seg = Math.round(num(b.seg, "Bloque " + (i + 1) + ': falta "seg".'));
+    if (vatios <= 0 || vatios > 1500) fallo("Bloque " + (i + 1) + ': "vatios" fuera de rango.');
+    if (seg <= 0) fallo("Bloque " + (i + 1) + ': "seg" tiene que ser mayor que 0.');
+    const o = { tipo: t, nombre: String(b.nombre || (t === "suave" ? "Suave" : etiquetaPorDefecto(t, i))), vatios, seg };
+    if (b.cad !== undefined && b.cad !== null) {
+      if (!Array.isArray(b.cad) || b.cad.length !== 2)
+        fallo("Bloque " + (i + 1) + ': "cad" tiene que ser [min, max] pedaladas por minuto.');
+      o.cad = b.cad.map(x => Math.round(num(x, "Bloque " + (i + 1) + ": cadencia no numerica.")));
+      if (o.cad[1] < o.cad[0]) o.cad.reverse();
+    }
+    return o;
+  });
+  const seg = bloques.reduce((a, b) => a + b.seg, 0);
+  const kj = bloques.reduce((a, b) => a + b.vatios * b.seg / 1000, 0);
+  return {
+    tipo: "bici",
+    nombre: String(p.nombre || "Sesion de bici"),
+    bloques,
+    total: { seg, kj: Math.round(kj) }
   };
 }
 

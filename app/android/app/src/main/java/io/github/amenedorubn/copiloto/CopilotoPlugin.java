@@ -77,7 +77,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Una frase nueva corta la anterior (como speechSynthesis.cancel + speak).
  */
 @CapacitorPlugin(name = "Copiloto")
-public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
+public class CopilotoPlugin extends Plugin implements CarreraService.Oyente, BiciBle.Oyente {
     private static final String TAG = "Copiloto";
     private static final String VOZ = "voz";
     private static final String MODELO = VOZ + "/es_ES-miro-high.onnx";
@@ -106,6 +106,7 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
     private final ExecutorService descargas = Executors.newSingleThreadExecutor();
     private boolean permisosPedidos = false;
     private Boolean enBloqueo = null;
+    private BiciBle bici;
 
     /** Una frase: su llamada, su turno y si ya se ha cerrado. */
     private static class Frase {
@@ -742,6 +743,99 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
         s.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "aviso" + System.currentTimeMillis());
     }
 
+    /* ------------------------ la bici de spinning ------------------------ */
+    // BiciBle busca la bici, se conecta y pasa cada medida en bruto; bici.js la lee.
+
+    private BiciBle bici() {
+        if (bici == null) bici = new BiciBle(getContext(), this);
+        return bici;
+    }
+
+    /** Los permisos de Bluetooth de cada Android (12+: buscar y conectar; antes: ubicacion). */
+    private String[] permisosBici() {
+        if (Build.VERSION.SDK_INT >= 31)
+            return new String[] { Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT };
+        return new String[] { Manifest.permission.ACCESS_FINE_LOCATION };
+    }
+
+    private boolean tienePermisosBici() {
+        for (String p : permisosBici())
+            if (ContextCompat.checkSelfPermission(getContext(), p) != PackageManager.PERMISSION_GRANTED) return false;
+        return true;
+    }
+
+    /** Busca la bici ({auto: true} se conecta sola a la primera). Sin permiso: lo pide y "sin_permiso". */
+    @PluginMethod
+    public void biciBusca(PluginCall call) {
+        if (!tienePermisosBici()) {
+            ActivityCompat.requestPermissions(getActivity(), permisosBici(), 4712);
+            call.reject("sin_permiso");
+            return;
+        }
+        String d = bici().disponible();
+        if (!"ok".equals(d)) {
+            call.reject(d);
+            return;
+        }
+        final boolean auto = !Boolean.FALSE.equals(call.getBoolean("auto", true));
+        getActivity().runOnUiThread(() -> bici().busca(auto));
+        call.resolve();
+    }
+
+    /** Se conecta a una bici vista en la busqueda ({id}). */
+    @PluginMethod
+    public void biciConecta(PluginCall call) {
+        if (!tienePermisosBici()) {
+            ActivityCompat.requestPermissions(getActivity(), permisosBici(), 4712);
+            call.reject("sin_permiso");
+            return;
+        }
+        final String id = call.getString("id");
+        if (id == null) {
+            call.reject("sin_id");
+            return;
+        }
+        getActivity().runOnUiThread(() -> bici().conecta(id));
+        call.resolve();
+    }
+
+    /** Suelta la bici (y deja de reintentar). */
+    @PluginMethod
+    public void biciCorta(PluginCall call) {
+        if (bici != null) getActivity().runOnUiThread(() -> bici.corta());
+        call.resolve();
+    }
+
+    @Override
+    public void biciVista(String id, String nombre, int rssi, boolean potencia, boolean ftms) {
+        JSObject d = new JSObject();
+        d.put("id", id);
+        d.put("nombre", nombre);
+        d.put("rssi", rssi);
+        d.put("potencia", potencia);
+        d.put("ftms", ftms);
+        notifyListeners("biciVista", d);
+    }
+
+    @Override
+    public void biciEstado(String estado, String nombre) {
+        JSObject d = new JSObject();
+        d.put("estado", estado);
+        d.put("nombre", nombre);
+        notifyListeners("biciEstado", d);
+    }
+
+    @Override
+    public void biciDatos(String tipo, int[] bytes) {
+        JSObject d = new JSObject();
+        d.put("tipo", tipo);
+        com.getcapacitor.JSArray a = new com.getcapacitor.JSArray();
+        for (int b : bytes) a.put(b);
+        d.put("bytes", a);
+        d.put("t", System.currentTimeMillis());
+        notifyListeners("bici", d);
+    }
+
     /* ------------------------ avisos de Cocina ------------------------ */
 
     /** La lista de avisos ({lista:[{id, cuando, titulo, texto}]}): sustituye a la anterior. */
@@ -955,6 +1049,7 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente {
         } catch (Throwable e) {
             // no estaba
         }
+        if (bici != null) bici.corta();
         descargas.shutdown();
         turno.incrementAndGet();
         corta();
