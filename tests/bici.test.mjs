@@ -102,3 +102,46 @@ test("Worker: el plan de bici del calendario", async () => {
   assert.deepEqual(p.total, { seg: 1020, kj: Math.round((120 * 600 + 220 * 240 + 130 * 180) / 1000) });
   assert.throws(() => normaliza({ tipo: "bici", bloques: [{ tipo: "serie", seg: 60 }] }), /vatios/);
 });
+
+test("juntar con el reloj: pulsaciones interpoladas por la hora real y en el TCX", () => {
+  const ini = Date.UTC(2026, 9, 26, 16, 46, 51);
+  // el reloj empezo 53 s despues, una medida cada 5 s
+  const P = { inicio: ini + 53000, t: [0, 5, 10], bpm: [100, 110, 120] };
+  const f = B.fcDe(P);
+  assert.equal(f(ini + 53000), 100);
+  assert.equal(f(ini + 55500), 105);            // a medio camino
+  assert.equal(f(ini + 40000), 100);            // 13 s antes: la primera
+  assert.equal(f(ini + 30000), null);           // 23 s antes: nada
+  assert.equal(f(ini + 63000 + 20000), null);
+  const M = [[0, 150, 85, 0, ini + 53000], [1, 160, 86, 9, ini + 58000], [2, 170, 87, 18, ini + 63000]];
+  const x = B.tcx(M, ini, f);
+  assert.match(x, /<Id>2026-10-26T16:47:44Z<\/Id>/);       // la hora real de la primera muestra
+  assert.match(x, /<HeartRateBpm><Value>110<\/Value><\/HeartRateBpm>/);
+  assert.match(x, /<AverageHeartRateBpm><Value>110<\/Value><\/AverageHeartRateBpm><MaximumHeartRateBpm><Value>120<\/Value>/);
+});
+
+test("Worker /pulsos: elige la del reloj que se solapa y trae sus pulsaciones", async () => {
+  const { pulsos } = await import("../worker/src/strava.js");
+  const ini = Date.UTC(2026, 9, 26, 16, 46, 51), fin = ini + 657000;
+  const viejo = globalThis.fetch;
+  globalThis.fetch = async (u) => {
+    u = String(u);
+    const ok = (j) => ({ ok: true, status: 200, json: async () => j, text: async () => "" });
+    if (u.includes("oauth/token")) return ok({ access_token: "t", expires_at: Date.now() / 1000 + 3600 });
+    if (u.includes("athlete/activities")) return ok([
+      { id: 1, name: "Bicicleta por la tarde", start_date: new Date(ini).toISOString(), elapsed_time: 657, has_heartrate: false },
+      { id: 2, name: "Ciclismo en interiores", start_date: new Date(ini + 53000).toISOString(), elapsed_time: 650, has_heartrate: true },
+      { id: 3, name: "Carrera de ayer", start_date: new Date(ini - 86400000).toISOString(), elapsed_time: 3000, has_heartrate: true }
+    ]);
+    if (u.includes("/activities/2/streams")) return ok({ time: { data: [0, 5] }, heartrate: { data: [96, 104] } });
+    throw new Error("no esperado " + u);
+  };
+  try {
+    const env = { STRAVA_REFRESH_TOKEN: "r", STRAVA_CLIENT_ID: "a", STRAVA_CLIENT_SECRET: "b" };
+    const r = await pulsos(env, new URL("https://x/pulsos?desde=" + ini + "&hasta=" + fin));
+    assert.equal(r.id, "2"); assert.equal(r.nombre, "Ciclismo en interiores");
+    assert.equal(r.inicio, ini + 53000); assert.deepEqual(r.bpm, [96, 104]);
+    const r2 = await pulsos(env, new URL("https://x/pulsos?desde=" + (ini + 7200000) + "&hasta=" + (fin + 7200000)));
+    assert.equal(r2.error, "sin_reloj");
+  } finally { globalThis.fetch = viejo; }
+});

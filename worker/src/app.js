@@ -34,7 +34,7 @@
    /agenda las sirve igual que antes. La primera vez se copian las del calendario.
    =========================================================================== */
 
-import { rutas, ruta, conectar, vuelta } from "./strava.js";
+import { rutas, ruta, conectar, vuelta, pulsos } from "./strava.js";
 import { biblioteca } from "./biblioteca.js";
 import { hechos, detalle, pruebaHevy } from "./hecho.js";
 import { autoriza, vueltaGithub } from "./acceso.js";
@@ -135,6 +135,14 @@ export const app = {
         const fallo = revisaClave(req, env);
         if (fallo) return json(fallo, fallo.codigo, origen);
         const r = await cocina(env, req);
+        return json(r, r.codigo || 200, origen);
+      }
+
+      // v2.76: las pulsaciones del reloj para juntarlas con la bici
+      if (url.pathname === "/pulsos") {
+        const fallo = revisaClave(req, env);
+        if (fallo) return json(fallo, fallo.codigo, origen);
+        const r = await pulsos(env, url);
         return json(r, r.codigo || 200, origen);
       }
 

@@ -923,6 +923,52 @@ public class CopilotoPlugin extends Plugin implements CarreraService.Oyente, Bic
         }
     }
 
+    /**
+     * Guarda un archivo de texto (el .tcx de la bici) en Descargas, para subirlo a Strava
+     * desde el navegador. Android 10+: MediaStore, sin permisos. Antes: se comparte.
+     * {nombre, texto, mime} -> {donde: "Descargas"} o {compartido: true}
+     */
+    @PluginMethod
+    public void guardaArchivo(PluginCall call) {
+        String nombre = call.getString("nombre", "copiloto.txt");
+        String texto = call.getString("texto", "");
+        String mime = call.getString("mime", "application/octet-stream");
+        byte[] datos = texto.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                android.content.ContentValues v = new android.content.ContentValues();
+                v.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, nombre);
+                v.put(android.provider.MediaStore.Downloads.MIME_TYPE, mime);
+                Uri u = getContext().getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                if (u == null) throw new IllegalStateException("sin uri");
+                try (OutputStream o = getContext().getContentResolver().openOutputStream(u)) {
+                    if (o == null) throw new IllegalStateException("sin salida");
+                    o.write(datos);
+                }
+                JSObject d = new JSObject();
+                d.put("donde", "Descargas");
+                d.put("nombre", nombre);
+                call.resolve(d);
+                return;
+            }
+            java.io.File f = new java.io.File(getContext().getCacheDir(), nombre);
+            try (OutputStream o = new FileOutputStream(f)) {
+                o.write(datos);
+            }
+            Uri u = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
+            Intent i = new Intent(Intent.ACTION_SEND).setType(mime)
+                .putExtra(Intent.EXTRA_STREAM, u)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().startActivity(Intent.createChooser(i, nombre));
+            JSObject d = new JSObject();
+            d.put("compartido", true);
+            call.resolve(d);
+        } catch (Throwable e) {
+            Log.e(TAG, "guardaArchivo", e);
+            call.reject("no_se_guarda");
+        }
+    }
+
     /* --------------------------- APK sin cable --------------------------- */
 
     /** La version del APK instalado (lo nativo; la web puede ir por delante). */

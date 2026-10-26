@@ -194,14 +194,19 @@ function anuncio(b, n, de) {
 
 /* ============================== 4 · EL ARCHIVO ==============================
    TCX con vatios y cadencia segundo a segundo, para Strava (y para juntarlo
-   luego con las pulsaciones del reloj). M = [[seg, vatios, cadencia, metros], ...] */
-function tcx(M, inicioMs) {
+   luego con las pulsaciones del reloj).
+   M = [[seg, vatios, cadencia, metros, ms reales], ...]; fc(ms) -> pulsaciones o null */
+function tcx(M, inicioMs, fc) {
   var iso = function (ms) { return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z"); };
-  var n = M.length, sw = 0, sc = 0, nc = 0, pts = [];
+  var n = M.length, sw = 0, sc = 0, nc = 0, pts = [], sh = 0, nh = 0, mh = 0;
+  if (n && M[0][4]) inicioMs = M[0][4];
   for (var i = 0; i < n; i++) {
-    var m = M[i]; sw += m[1]; if (m[2] > 0) { sc += m[2]; nc++; }
-    pts.push("<Trackpoint><Time>" + iso(inicioMs + m[0] * 1000) + "</Time><DistanceMeters>" + m[3].toFixed(1) +
-      "</DistanceMeters><Cadence>" + Math.round(m[2]) + "</Cadence><Extensions><ns3:TPX><ns3:Watts>" + Math.round(m[1]) +
+    var m = M[i], ms = m[4] || inicioMs + m[0] * 1000, h = fc ? fc(ms) : null;
+    sw += m[1]; if (m[2] > 0) { sc += m[2]; nc++; }
+    if (h) { sh += h; nh++; if (h > mh) mh = h; }
+    pts.push("<Trackpoint><Time>" + iso(ms) + "</Time><DistanceMeters>" + m[3].toFixed(1) +
+      "</DistanceMeters>" + (h ? "<HeartRateBpm><Value>" + h + "</Value></HeartRateBpm>" : "") +
+      "<Cadence>" + Math.round(m[2]) + "</Cadence><Extensions><ns3:TPX><ns3:Watts>" + Math.round(m[1]) +
       "</ns3:Watts></ns3:TPX></Extensions></Trackpoint>");
   }
   var dur = n ? M[n - 1][0] : 0, dist = n ? M[n - 1][3] : 0;
@@ -209,11 +214,28 @@ function tcx(M, inicioMs) {
     '<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n' +
     '<Activities><Activity Sport="Biking"><Id>' + iso(inicioMs) + '</Id><Lap StartTime="' + iso(inicioMs) + '">' +
     '<TotalTimeSeconds>' + dur + '</TotalTimeSeconds><DistanceMeters>' + dist.toFixed(1) + '</DistanceMeters>' +
-    '<Calories>' + Math.round(sw / 1000 / 0.24 / 4.184) + '</Calories><Intensity>Active</Intensity>' +
+    '<Calories>' + Math.round(sw / 1000 / 0.24 / 4.184) + '</Calories>' +
+    (nh ? '<AverageHeartRateBpm><Value>' + Math.round(sh / nh) + '</Value></AverageHeartRateBpm><MaximumHeartRateBpm><Value>' + mh + '</Value></MaximumHeartRateBpm>' : '') +
+    '<Intensity>Active</Intensity>' +
     (nc ? '<Cadence>' + Math.round(sc / nc) + '</Cadence>' : '') + '<TriggerMethod>Manual</TriggerMethod>' +
     '<Track>' + pts.join("") + '</Track></Lap>' +
     '<Creator xsi:type="Device_t" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><Name>Copiloto · BODY BIKE</Name></Creator>' +
     '</Activity></Activities></TrainingCenterDatabase>\n';
+}
+/* Las pulsaciones del reloj (lo que da /pulsos: inicio en ms y t en s desde ahi)
+   en cualquier instante: interpoladas entre las dos medidas de alrededor; fuera
+   de lo que grabo el reloj, la mas cercana si esta a menos de 15 s. */
+function fcDe(P) {
+  var t = P.t, b = P.bpm, n = t.length;
+  return function (ms) {
+    var x = (ms - P.inicio) / 1000, lo = 0, hi = n - 1;
+    if (!n) return null;
+    if (x <= t[0]) return x > t[0] - 15 ? b[0] : null;
+    if (x >= t[hi]) return x < t[hi] + 15 ? b[hi] : null;
+    while (hi - lo > 1) { var mi = (lo + hi) >> 1; if (t[mi] <= x) lo = mi; else hi = mi; }
+    var f = (x - t[lo]) / Math.max(1, t[hi] - t[lo]);
+    return Math.round(b[lo] + (b[hi] - b[lo]) * f);
+  };
 }
 function resumenDe(M) {
   var n = M.length, sw = 0, sc = 0, nc = 0;
@@ -223,7 +245,7 @@ function resumenDe(M) {
 }
 
 var API = { leeFTMS: leeFTMS, leePotencia: leePotencia, Lector: Lector, velDePotencia: velDePotencia,
-            Guia: Guia, margen: margen, anuncio: anuncio, durVoz: durVoz, tcx: tcx, resumenDe: resumenDe,
+            Guia: Guia, margen: margen, anuncio: anuncio, durVoz: durVoz, tcx: tcx, resumenDe: resumenDe, fcDe: fcDe,
             sesionDe: sesionDe, COLT: COLT };
 if (typeof document === "undefined") return API;
 
@@ -275,7 +297,12 @@ var CSS = "" +
 "#bkFin{justify-content:center;gap:10px;text-align:center}" +
 "#bkFin .tit{font-size:clamp(24px,5vh,36px);font-weight:900}" +
 "#bkFin .bkFila{grid-template-columns:repeat(2,1fr)}" +
-"#bkFin .nota{font-size:14px;font-weight:700;color:#8e939b;line-height:1.35}";
+"#bkFin .nota{font-size:14px;font-weight:700;color:#8e939b;line-height:1.35}" +
+"#bkFin{overflow-y:auto}#bfJunta{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:4px}" +
+".bfPaso{display:flex;gap:12px;align-items:center;font-size:16px;font-weight:800;margin-top:6px}" +
+".bfPaso>b{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:#e0a33b;color:#0a0b0d;display:flex;align-items:center;justify-content:center;font-size:15px}" +
+".bfPaso.ok>b{background:#3fbf6f}.bfPaso small{display:block;font-size:13px;font-weight:700;color:#8e939b;margin-top:2px}" +
+".bfBtn{display:flex;align-items:center;justify-content:center;min-height:56px;border-radius:16px;background:#15171b;border:1px solid rgba(255,255,255,.12);color:#fff;font-size:17px;font-weight:800;text-decoration:none}";
 
 var HTML = "" +
 '<div id="bkPre" class="bkV">' +
@@ -303,8 +330,17 @@ var HTML = "" +
   '<div class="tit">Sesión terminada</div>' +
   '<div class="bkFila"><div><i>Tiempo</i><b id="bfT">0:00</b></div><div><i>Km</i><b id="bfK">0</b></div>' +
   '<div><i>Vatios media</i><b id="bfW">0</b></div><div><i>Cadencia media</i><b id="bfC">0</b></div></div>' +
-  '<div class="nota" id="bfNota">Guardada en el móvil. Las pulsaciones del reloj se juntan después en Strava.</div>' +
-  '<button id="bfTcx">Descargar archivo (TCX)</button>' +
+  '<div class="nota" id="bfNota">–</div>' +
+  '<div id="bfJunta">' +
+    '<div class="bfPaso" id="bfP1"><b>1</b><div><span id="bfP1T">Junta las pulsaciones del reloj</span><small id="bfP1S">Cuando el Huawei se haya sincronizado con Strava</small></div></div>' +
+    '<button id="bfJuntar">Juntar con el reloj</button>' +
+    '<div class="bfPaso" id="bfP2" hidden><b>2</b><div><span>Guarda el archivo</span><small id="bfP2S">Se queda en Descargas</small></div></div>' +
+    '<button id="bfTcx" hidden>Guardar el archivo</button>' +
+    '<div class="bfPaso" id="bfP3" hidden><b>3</b><div><span>Borra en Strava la del reloj</span><small id="bfP3S">–</small></div></div>' +
+    '<a id="bfBorra" class="bfBtn" hidden>Abrir la del reloj en Strava</a>' +
+    '<div class="bfPaso" id="bfP4" hidden><b>4</b><div><span>Sube el archivo</span><small>Archivo → elige el de Descargas → Guardar. Tipo: Ciclismo virtual</small></div></div>' +
+    '<a id="bfSube" class="bfBtn" hidden href="https://www.strava.com/upload/select">Abrir la página de subida</a>' +
+  '</div>' +
   '<button id="bfVolver">Volver al inicio</button>' +
 '</div>';
 
@@ -332,6 +368,7 @@ function monta() {
     else { armado = Date.now(); E("bkFinBtn").textContent = "¿Seguro?"; E("bkFinBtn").className = "arm"; }
   });
   E("bfTcx").addEventListener("click", descarga);
+  E("bfJuntar").addEventListener("click", juntar);
   E("bfVolver").addEventListener("click", function () { olvida(); sal(); });
 }
 
@@ -542,9 +579,60 @@ function vistaFin(r) {
   ver("bkFin"); E("appBici").classList.remove("flash");
   E("bfT").textContent = HMS(r.seg); E("bfK").textContent = coma(r.km, 1);
   E("bfW").textContent = r.w; E("bfC").textContent = r.cad || "–";
-  E("bfNota").textContent = estado.fuente === "prueba"
-    ? "Era una prueba: no se guarda como entreno."
-    : "Guardada en el móvil. Las pulsaciones del reloj se juntan después en Strava.";
+  var prueba = estado.fuente === "prueba";
+  E("bfNota").textContent = prueba ? "Era una prueba: no se guarda como entreno." : "Guardada en el móvil.";
+  E("bfJunta").hidden = prueba;
+  pintaJunta();
+}
+/* ------------------------- juntar con el reloj -------------------------
+   Copiloto no sube nada a Strava: el Huawei sube su actividad (con pulsaciones)
+   y aqui se trae la de esa hora, se junta con la bici y queda el archivo listo.
+   Pasos: 1 juntar · 2 guardar el archivo · 3 borrar la del reloj · 4 subir.   */
+function conf() {
+  try { var c = JSON.parse(localStorage.getItem("copiloto.conf.v1") || "{}");
+        return { url: (c.url || "https://copiloto-api.amenedorubn.workers.dev").replace(/\/+$/, ""), key: c.key || "" }; }
+  catch (e) { return { url: "https://copiloto-api.amenedorubn.workers.dev", key: "" }; }
+}
+function hora(ms) { var d = new Date(ms); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); }
+function pintaJunta(msg, mal) {
+  var P = estado && estado.pulsos, ok = !!P;
+  E("bfP1").className = "bfPaso" + (ok ? " ok" : "");
+  E("bfP1T").textContent = ok ? "Pulsaciones del reloj juntas" : "Junta las pulsaciones del reloj";
+  E("bfP1S").textContent = msg || (ok ? "«" + P.nombre + "» de las " + hora(P.inicio) + " · FC media " + P.media
+                                      : "Cuando el Huawei se haya sincronizado con Strava (abre Huawei Health)");
+  E("bfP1S").style.color = mal ? "#ffb4a0" : "";
+  E("bfJuntar").hidden = ok;
+  ["bfP2", "bfTcx", "bfP3", "bfBorra", "bfP4", "bfSube"].forEach(function (id) { E(id).hidden = !ok; });
+  if (!ok) return;
+  E("bfP2").className = "bfPaso" + (estado.guardado ? " ok" : "");
+  E("bfP2S").textContent = estado.guardado || "Se queda en Descargas";
+  E("bfP3S").textContent = "«" + P.nombre + "» de las " + hora(P.inicio) + " → ··· → Eliminar";
+  E("bfBorra").href = "https://www.strava.com/activities/" + P.id;
+  var web = !(window.Nativo && Nativo.es);               // en Chrome, en otra pestaña
+  E("bfBorra").target = web ? "_blank" : ""; E("bfSube").target = web ? "_blank" : "";
+}
+function juntar() {
+  if (!estado || !estado.M.length) return;
+  var c = conf(), M = estado.M, desde = M[0][4] || estado.t0, hasta = M[M.length - 1][4] || desde + M[M.length - 1][0] * 1000;
+  if (!c.key) { pintaJunta("Falta la clave del Worker en Ajustes de Copiloto.", true); return; }
+  E("bfJuntar").disabled = true; pintaJunta("Buscando en Strava…");
+  fetch(c.url + "/pulsos?desde=" + desde + "&hasta=" + hasta, { headers: { "X-Copiloto-Key": c.key }, cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (P) {
+      E("bfJuntar").disabled = false;
+      if (P.error) {
+        pintaJunta(P.error === "sin_reloj"
+          ? "Aún no está en Strava la del reloj. Abre Huawei Health, espera un minuto y vuelve a tocar."
+          : (P.mensaje || P.error), true);
+        return;
+      }
+      var f = fcDe(P), s = 0, n = 0;
+      M.forEach(function (m) { var h = f(m[4]); if (h) { s += h; n++; } });
+      if (!n) { pintaJunta("La del reloj no coincide en hora con la bici.", true); return; }
+      estado.pulsos = { id: P.id, nombre: P.nombre, inicio: P.inicio, t: P.t, bpm: P.bpm, media: Math.round(s / n) };
+      guarda(true); pintaJunta();
+    })
+    .catch(function () { E("bfJuntar").disabled = false; pintaJunta("Sin conexión. Vuelve a tocar cuando tengas red.", true); });
 }
 function guardaHecha(r) {
   if (estado.fuente === "prueba" || !estado.M.length) return;
@@ -556,10 +644,18 @@ function guardaHecha(r) {
 }
 function descarga() {
   if (!estado || !estado.M.length) return;
-  var txt = tcx(estado.M, estado.t0), d = new Date(estado.t0);
+  var txt = tcx(estado.M, estado.t0, estado.pulsos ? fcDe(estado.pulsos) : null), d = new Date(estado.t0);
   var nom = "bici_" + d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "_" +
             String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + ".tcx";
+  if (window.Nativo && Nativo.guardaArchivo) {             // APK: a Descargas, donde lo ve la página de Strava
+    Nativo.guardaArchivo(nom, txt, "application/vnd.garmin.tcx+xml").then(function (r) {
+      estado.guardado = r && r.donde ? "Guardado en Descargas: " + nom : "Enviado: " + nom;
+      guarda(true); pintaJunta();
+    }).catch(function () { pintaJunta("No se ha podido guardar el archivo.", true); });
+    return;
+  }
   var blob = new Blob([txt], { type: "application/vnd.garmin.tcx+xml" });
+  estado.guardado = "Descargado: " + nom; guarda(true); setTimeout(pintaJunta, 0);
   try {
     var f = new File([blob], nom, { type: blob.type });
     if (navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: nom }).catch(function () {}); return; }
@@ -572,6 +668,10 @@ function descarga() {
 var ultGuarda = 0;
 function guarda(forzar) {
   if (!estado) return;
+  if (estado.fin && estado.M.length && forzar) {           // lo de juntar tambien en la lista de hechas
+    try { var L = JSON.parse(localStorage.getItem(LSH) || "[]");
+          if (L[0] && (L[0].inicio === estado.t0)) { L[0].pulsos = estado.pulsos || null; L[0].guardado = estado.guardado || ""; localStorage.setItem(LSH, JSON.stringify(L)); } } catch (e) {}
+  }
   if (!forzar && ahora() - ultGuarda < 5000 && !estado.fin) return;
   ultGuarda = ahora();
   try { localStorage.setItem(LS, JSON.stringify(estado)); } catch (e) {}
@@ -635,7 +735,7 @@ function pinta() {
     if (!pa) {
       var v = m.kmh != null ? m.kmh / 3.6 : velDePotencia(m.w);
       estado.dist += v * Math.max(1, Math.min(5, s - estado.ultS));
-      estado.M.push([s, m.w, m.cad, Math.round(estado.dist * 10) / 10]);
+      estado.M.push([s, m.w, m.cad, Math.round(estado.dist * 10) / 10, ahora()]);
       hist.push([s, m.w, m.cad]); if (hist.length > 30) hist.shift();
     }
     estado.ultS = s;
@@ -722,6 +822,17 @@ API.enCurso = function () { return !!(estado && !estado.fin); };
 API.retoma = retoma;
 API.sal = function () { if (estado && estado.fin) olvida(); sal(); };
 API.visible = function () { var a = E("appBici"); return !!(a && !a.hidden); };
+API.abreUltima = function () {
+  var L = API.hechas(); if (!L.length) return false;
+  if (estado && !estado.fin) { retoma(); return true; }
+  var h = L[0]; monta();
+  S = { id: "hecha", nombre: h.nombre, bloques: [] }; B = [];
+  estado = { ses: S, fuente: "hecha", t0: h.inicio, pausaAcum: 0, pausaDesde: 0, bi: 0, bIni: 0, M: h.M, dist: 0,
+             fin: true, tFin: 0, ultS: 0, pulsos: h.pulsos || null, guardado: h.guardado || "" };
+  ["appHoy", "selector"].forEach(function (id) { var x = E(id); if (x) x.hidden = true; });
+  E("appBici").hidden = false; vistaFin(h.resumen);
+  return true;
+};
 API.hechas = function () { try { return JSON.parse(localStorage.getItem(LSH) || "[]"); } catch (e) { return []; } };
 return API;
 });

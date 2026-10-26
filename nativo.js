@@ -437,6 +437,11 @@
     };
   })() : null;
 
+  // un archivo de texto a Descargas (el .tcx de la bici): Promise({donde} | {compartido})
+  N.guardaArchivo = tiene("guardaArchivo") ? function (nombre, texto, mime) {
+    return llama(P, "guardaArchivo", { nombre: nombre, texto: texto, mime: mime || "application/octet-stream" });
+  } : null;
+
   // cada({evento: "progreso"|"instalando"|"permiso"|"error", pct, error})
   N.instalaApk = function (u, cada) {
     C.nativeCallback(P, "instalaApk", { url: u.url, checksum: u.checksum, version: u.version }, function (r, err) {

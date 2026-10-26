@@ -1275,6 +1275,7 @@ function ajustaTick() {
   if (TICK && TICK_MS === ms) return;
   clearInterval(TICK); TICK = setInterval(late, ms); TICK_MS = ms;
 }
+var REPES_MAX = 3, ALARMA_MAX = 10 * 60e3;       // v2.76: «mira las lentejas» 3 veces; los pitidos, 10 min
 function late() {
   var ahora = ya(), real = Date.now(), cambio = false, sim = ahora;
   Object.keys(VIVOS).forEach(function (id) {
@@ -1282,11 +1283,15 @@ function late() {
     var X = VIVOS[id], S = X.S, ev = revisa(S, ahora);
     if (ev.length) { guarda(id, S); ev.forEach(function (e) { e.ahora = ahora; avisa(id, X, e); }); cambio = true; }
     S.timers.forEach(function (T) {
-      // v2.73: lo que se cuece y ya sonó: avisa otra vez cada minuto mientras no digas «Ya está» (o +1 min)
-      if (T.cuece && T.finAvisado && T.pausa == null && restante(T, ahora) <= 0 && ahora - (T.ultAviso || 0) >= 60e3) {
-        T.ultAviso = ahora; pita(2); di(vozMiraDe(T.nombre || T.pasoTxt, T.senal)); guarda(id, S); cambio = true;
+      // v2.73: lo que se cuece y ya sonó: avisa otra vez cada minuto mientras no digas «Ya está» (o +1 min).
+      // v2.76: solo con esa receta abierta en la pantalla de cocina y 3 veces como mucho: fuera de
+      // Cocina (en la bici, en el GPS) o horas despues ya no repite nada (las lentejas que no callaban)
+      if (T.cuece && T.finAvisado && T.pausa == null && restante(T, ahora) <= 0 && ahora - (T.ultAviso || 0) >= 60e3 &&
+          V && V.id === id && (T.repes || 0) < REPES_MAX) {
+        T.ultAviso = ahora; T.repes = (T.repes || 0) + 1; pita(2); di(vozMiraDe(T.nombre || T.pasoTxt, T.senal)); guarda(id, S); cambio = true;
       }
       if (!sonando(T, ahora)) return;
+      if (ahora - (T.fin || ahora) > ALARMA_MAX) return;       // v2.76: una alarma no pita para siempre
       var u = ALARMA[T.id] || 0, iv = ahora - (T.fin || ahora) < 120e3 ? 5e3 : 30e3;
       if (!u) ALARMA[T.id] = ahora; else if (ahora - u >= iv) { ALARMA[T.id] = ahora; pita(2); }
     });

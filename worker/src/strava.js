@@ -651,3 +651,48 @@ function cada100(dist, alt) {
   }
   return out;
 }
+
+/* ===========================================================================
+   PULSOS (v2.76) · las pulsaciones del reloj para la bici
+   ---------------------------------------------------------------------------
+   La bici la graba Copiloto (vatios, cadencia, km) y el reloj Huawei, a la
+   vez, las pulsaciones, que llegan a Strava por Huawei Health. La app pide aqui
+   las de la actividad del reloj que se solapa con su sesion y las junta.
+     /pulsos?desde=<ms>&hasta=<ms>
+     -> {id, nombre, inicio (ms), fin (ms), t: [s...], bpm: [...]}
+     -> {error: "sin_reloj"} si todavia no ha llegado ninguna con pulsaciones
+   =========================================================================== */
+export async function pulsos(env, url) {
+  const desde = Number(url.searchParams.get("desde")), hasta = Number(url.searchParams.get("hasta"));
+  if (!(desde > 0) || !(hasta > desde)) return { error: "sin_fechas", codigo: 400, mensaje: "Faltan desde y hasta (ms)." };
+  const token = await accessToken(env);
+  const cab = { Authorization: "Bearer " + token };
+  const r = await fetch("https://www.strava.com/api/v3/athlete/activities?per_page=30" +
+    "&after=" + Math.floor(desde / 1000 - 3 * 3600) + "&before=" + Math.ceil(hasta / 1000 + 3 * 3600), { headers: cab });
+  if (!r.ok) {
+    const e = new Error("Strava ha contestado " + r.status + " al pedir las actividades.");
+    e.codigo = r.status === 429 ? 429 : 502; throw e;
+  }
+  const lista = await r.json();
+  let mejor = null, solape = 0;
+  for (const a of Array.isArray(lista) ? lista : []) {
+    if (!a.has_heartrate) continue;
+    const ini = Date.parse(a.start_date), fin = ini + (a.elapsed_time || 0) * 1000;
+    const s = Math.min(fin, hasta) - Math.max(ini, desde);
+    if (s > solape) { solape = s; mejor = { a, ini, fin }; }
+  }
+  // que se solapen al menos un tercio de la sesion: si no, es otra cosa
+  if (!mejor || solape < (hasta - desde) / 3)
+    return { error: "sin_reloj", mensaje: "Todavía no está en Strava la actividad del reloj con pulsaciones." };
+  const rS = await fetch("https://www.strava.com/api/v3/activities/" + mejor.a.id +
+    "/streams?keys=time,heartrate&key_by_type=true", { headers: cab });
+  if (!rS.ok) {
+    const e = new Error("Strava ha contestado " + rS.status + " al pedir las pulsaciones.");
+    e.codigo = rS.status === 429 ? 429 : 502; throw e;
+  }
+  const s = await rS.json();
+  const t = s.time && s.time.data, bpm = s.heartrate && s.heartrate.data;
+  if (!Array.isArray(t) || !Array.isArray(bpm) || t.length !== bpm.length || !t.length)
+    return { error: "sin_reloj", mensaje: "La actividad del reloj no trae pulsaciones." };
+  return { id: String(mejor.a.id), nombre: mejor.a.name, inicio: mejor.ini, fin: mejor.fin, t, bpm };
+}

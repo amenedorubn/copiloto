@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.76.0] - 2026-10-26
+
+### Añadido
+
+- Bici: al terminar, «Juntar con el reloj» trae de Strava las pulsaciones del Huawei de esa hora (ruta /pulsos del Worker), las junta con vatios y cadencia y te guía en 4 pasos: guardar el archivo en Descargas, borrar la del reloj y subir el nuevo (enlaces directos). La última sesión se reabre desde Entreno libre. Cocina: «mira las lentejas» ya no se repite fuera de la receta ni más de 3 veces, y las alarmas dejan de pitar a los 10 min
+
 ## [2.75.0] - 2026-10-26
 
 ### Añadido
@@ -1038,6 +1044,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.76.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.76.0
 [2.75.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.75.0
 [2.74.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.74.0
 [2.73.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.73.1
