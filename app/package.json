@@ -6,7 +6,7 @@
   "scripts": {
     "web": "node prepara-web.mjs",
     "sync": "node prepara-web.mjs && npx cap sync android",
-    "apk": "node prepara-web.mjs && npx cap sync android && cd android && gradlew.bat assembleRelease"
+    "apk": "node prepara-web.mjs && npx cap sync android && node gradle.mjs assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
