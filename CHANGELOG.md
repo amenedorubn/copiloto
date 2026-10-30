@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.78.0] - 2026-10-30
+
+### Añadido
+
+- Bici: si hay varias bicis cerca, pregunta cuál es la tuya por su número (la más cerca arriba). «Recordar mi bici» hace que la próxima vez vaya directa a esa, y «Cambiar de bici» vuelve a sacar la lista. Con una sola bici se conecta sola, como antes. Sin APK nuevo
+
 ## [2.77.0] - 2026-10-26
 
 ### Añadido
@@ -1050,6 +1056,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.78.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.78.0
 [2.77.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.77.0
 [2.76.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.76.0
 [2.75.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.75.0

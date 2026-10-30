@@ -303,9 +303,55 @@ function resumenDe(M) {
   return r;
 }
 
+/* ============================ 4b · ELEGIR LA BICI ============================
+   En un gimnasio hay varias BODY BIKE a la vez. El APK busca y avisa de cada bici
+   que ve (biciVista); aqui se decide: si hay una sola, se conecta; si hay varias,
+   se pregunta cual es (por el numero del nombre); si hay una recordada y aparece,
+   va directa a esa.                                                               */
+var ESPERA_VISTAS = 2500, ESPERA_MIA = 6000;
+// "BODY BIKE 12" -> "12"; "BODYBIKE_007" -> "7"; sin numero -> ""
+function numeroDe(nombre) {
+  var m = String(nombre || "").match(/(\d+)\D*$/);
+  return m ? String(parseInt(m[1], 10)) : "";
+}
+function barrasDe(rssi) { return rssi == null ? 1 : rssi >= -62 ? 3 : rssi >= -78 ? 2 : 1; }
+/* Las bicis vistas en una busqueda. El orden (mas cerca primero) se fija al
+   ordenar(); las que llegan despues van al final, para que la lista no salte
+   mientras se elige. */
+function Vistas() {
+  var L = {}, orden = [];
+  return {
+    ve: function (d, t) {
+      if (!d || !d.id) return false;
+      var v = L[d.id], nueva = !v;
+      if (nueva) { v = L[d.id] = { id: d.id, nombre: "", num: "", rssi: d.rssi, t0: t }; orden.push(d.id); }
+      else if (d.rssi != null) v.rssi = v.rssi == null ? d.rssi : Math.round(v.rssi * 0.7 + d.rssi * 0.3);
+      if (d.nombre && d.nombre !== v.nombre) { v.nombre = d.nombre; v.num = numeroDe(d.nombre); }
+      v.t = t; return nueva;
+    },
+    ordena: function () { orden.sort(function (a, b) { return (L[b].rssi || -999) - (L[a].rssi || -999); }); },
+    lista: function () { return orden.map(function (id) { return L[id]; }); },
+    n: function () { return orden.length; },
+    tiene: function (id) { return !!L[id]; }
+  };
+}
+/* Que hacer ya: {accion: "espera"} | {accion: "conecta", id} | {accion: "elige"}
+   o = {lista, mia (id recordado o null), ms (desde la primera vista), siempre (forzar lista)} */
+function decideBici(o) {
+  var L = o.lista || [];
+  if (o.mia && !o.siempre) for (var i = 0; i < L.length; i++) if (L[i].id === o.mia) return { accion: "conecta", id: o.mia };
+  if (!L.length) return { accion: "espera" };
+  if (o.ms < ESPERA_VISTAS) return { accion: "espera" };
+  if (o.siempre) return { accion: "elige" };
+  if (o.mia && o.ms < ESPERA_MIA) return { accion: "espera" };      // dale tiempo a la tuya
+  if (L.length === 1 && !o.mia) return { accion: "conecta", id: L[0].id };
+  return { accion: "elige" };                                       // varias, o la tuya no esta
+}
+
 var API = { leeFTMS: leeFTMS, leePotencia: leePotencia, Lector: Lector, velDePotencia: velDePotencia,
             Guia: Guia, margen: margen, anuncio: anuncio, durVoz: durVoz, tcx: tcx, resumenDe: resumenDe, fcDe: fcDe,
-            sesionDe: sesionDe, COLT: COLT, EXTRAS: EXTRAS, NOMBRES: NOMBRES };
+            sesionDe: sesionDe, COLT: COLT, EXTRAS: EXTRAS, NOMBRES: NOMBRES,
+            numeroDe: numeroDe, Vistas: Vistas, decideBici: decideBici, barrasDe: barrasDe };
 if (typeof document === "undefined") return API;
 
 /* ============================== 5 · LA PANTALLA ============================== */
@@ -325,6 +371,15 @@ var CSS = "" +
 ".bkCon{display:flex;align-items:center;gap:10px;justify-content:center;background:#15171b;border-radius:16px;padding:12px;font-size:16px;font-weight:800;min-height:52px}" +
 ".bkCon b{width:12px;height:12px;border-radius:50%;background:#6b7079;flex:0 0 auto}.bkCon.ok b{background:#3fbf6f}.bkCon.va b{background:#e0a33b}.bkCon.mal b{background:#e5484d}" +
 ".bkCon small{display:block;font-size:13px;font-weight:700;color:#8e939b;margin-top:2px}" +
+"#bkElige{display:flex;flex-direction:column;gap:8px;background:#15171b;border-radius:16px;padding:10px}" +
+".bkBici{display:flex!important;align-items:center;gap:12px;text-align:left;width:100%;min-height:62px!important;padding:8px 12px!important;background:transparent!important}" +
+".bkBici .n{font-size:34px;font-weight:800;min-width:52px;text-align:center;line-height:1}" +
+".bkBici .t{flex:1 1 auto;min-width:0}.bkBici .t span{display:block;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+".bkBici .t small{display:block;font-size:12px;font-weight:700;color:#8e939b;margin-top:1px}" +
+".bkBici .s{display:flex;gap:2px;align-items:flex-end;flex:0 0 auto}.bkBici .s i{width:4px;border-radius:1px;background:#3a3d44}.bkBici .s i.on{background:#fff}" +
+"#bkRecuerda{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 4px;font-size:14px;font-weight:700;color:#b9bdc4;cursor:pointer}" +
+"#bkRecuerda input{width:22px;height:22px;accent-color:#3fbf6f}" +
+"#bkOtra,#bkOtraVez{min-height:46px!important;font-size:14px!important;background:transparent!important;color:#b9bdc4!important}" +
 "#bkGo{min-height:84px!important;font-size:25px!important;background:#f4f5f7!important;color:#0a0b0d!important;border-color:#fff!important}" +
 "#bkPrueba,#bkVolver{min-height:50px!important;font-size:15px!important;background:transparent!important;color:#b9bdc4!important}" +
 ".bkTop{display:flex;justify-content:space-between;align-items:center;flex:0 0 auto}" +
@@ -374,7 +429,11 @@ var HTML = "" +
 '<div id="bkPre" class="bkV">' +
   '<div id="bkPreT">–</div><div id="bkPreD">–</div><div id="bkPlan"></div>' +
   '<div id="bkCon" class="bkCon"><b></b><div><span id="bkConT">Bici sin conectar</span><small id="bkConS"></small></div></div>' +
+  '<div id="bkElige" hidden><div id="bkLista"></div>' +
+    '<label id="bkRecuerda"><span>Recordar mi bici</span><input type="checkbox" id="bkRecuerdaC"></label>' +
+    '<button id="bkOtraVez">Buscar otra vez</button></div>' +
   '<button id="bkConecta">Conectar la bici</button>' +
+  '<button id="bkOtra" hidden>Cambiar de bici</button>' +
   '<button id="bkGo" disabled>Empezar</button>' +
   '<button id="bkPrueba">Probar sin bici</button>' +
   '<button id="bkVolver">Volver</button>' +
@@ -426,6 +485,12 @@ function monta() {
   var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
   var d = document.createElement("div"); d.id = "appBici"; d.hidden = true; d.innerHTML = HTML; document.body.appendChild(d);
   E("bkConecta").addEventListener("click", function () { audioOn(); conecta(); });
+  E("bkLista").addEventListener("click", function (ev) {
+    var b = ev.target.closest && ev.target.closest(".bkBici"); if (!b) return;
+    audioOn(); elige(b.getAttribute("data-id"), E("bkRecuerdaC").checked);
+  });
+  E("bkOtraVez").addEventListener("click", function () { audioOn(); Nativo.bici.corta(); buscaNativo(true); });
+  E("bkOtra").addEventListener("click", function () { audioOn(); Nativo.bici.corta(); buscaNativo(true); });
   E("bkGo").addEventListener("click", function () { audioOn(); empieza(); });
   E("bkPrueba").addEventListener("click", function () { audioOn(); fuente = "prueba"; pintaCon("ok", "Modo prueba", "vatios inventados, sin bici"); empieza(); });
   E("bkVolver").addEventListener("click", sal);
@@ -470,11 +535,17 @@ function pantallaOff() { try { if (wl) { wl.release(); wl = null; } } catch (e) 
 /* ------------------------------ la bici ------------------------------ */
 var fuente = null;            // "nativo" | "web" | "prueba"
 var lector = Lector(), conEstado = "nada", wbDev = null;
+/* elegir entre varias bicis (APK) */
+var LSMIA = "copiloto.bici.mia";
+var vistas = null, t1Vista = 0, revisaT = null, eligiendo = false, forzarLista = false, idElegida = null;
+function mia() { try { var m = JSON.parse(localStorage.getItem(LSMIA) || "null"); return m && m.id ? m : null; } catch (e) { return null; } }
+function guardaMia(v) { try { if (v) localStorage.setItem(LSMIA, JSON.stringify({ id: v.id, nombre: v.nombre, num: v.num })); else localStorage.removeItem(LSMIA); } catch (e) {} }
 function pintaCon(cls, t, s) {
   var c = E("bkCon"); if (!c) return;
   c.className = "bkCon " + (cls || ""); E("bkConT").textContent = t; E("bkConS").textContent = s || "";
   E("bkGo").disabled = cls !== "ok";
-  E("bkConecta").hidden = cls === "ok" || cls === "va";
+  E("bkConecta").hidden = cls === "ok" || cls === "va" || eligiendo;
+  E("bkOtra").hidden = !(cls === "ok" && fuente === "nativo");
 }
 var TXT = {
   buscando: ["va", "Buscando la bici…", "pedalea un poco para despertarla"],
@@ -490,7 +561,13 @@ var TXT = {
   error_busqueda: ["mal", "No se pudo buscar", "vuelve a tocar Conectar"]
 };
 function cambiaEstado(e, nombre) {
+  // mientras eliges, la busqueda sigue (o se acaba sola a los 15 s): no tapes la lista
+  if (eligiendo && (e === "buscando" || e === "no_encontrada")) return;
+  if (fuente === "nativo" && e === "no_encontrada" && vistas && vistas.n() && !idElegida) return;
+  if (fuente === "nativo" && e === "desconectada" && vistas && !idElegida) return;   // el corta() de «Cambiar de bici»
   conEstado = e;
+  if (e === "conectada" || e === "conectando") paraRevisa();
+  if (e === "conectada" && idElegida) { var m = mia(); if (m && m.id === idElegida) nombre = (nombre || m.nombre) + " · tu bici"; }
   var t = TXT[e] || ["mal", "Bici: " + e, ""];
   pintaCon(t[0], t[1], e === "conectada" && nombre ? nombre : t[2]);
   if (estado && !estado.fin) {
@@ -501,16 +578,58 @@ function cambiaEstado(e, nombre) {
 function oyeNativo() {
   Nativo.bici.oye({
     datos: function (tipo, bytes, t) { lector.procesa(tipo, bytes, t); },
-    estado: cambiaEstado
+    estado: cambiaEstado,
+    vista: function (d) {
+      if (!vistas || idElegida) return;
+      var t = Date.now(); if (!t1Vista) t1Vista = t;
+      if (vistas.ve(d, t) && eligiendo) pintaLista();
+    }
   });
 }
+/* ---- elegir la bici ---- */
+function paraRevisa() { clearInterval(revisaT); revisaT = null; }
+function buscaNativo(siempre) {
+  fuente = "nativo"; oyeNativo();
+  vistas = Vistas(); t1Vista = 0; idElegida = null; forzarLista = !!siempre; ocultaLista();
+  cambiaEstado("buscando");
+  Nativo.bici.busca(false).catch(function (e) { paraRevisa(); cambiaEstado(TXT[e] ? e : "error_busqueda"); });
+  paraRevisa(); revisaT = setInterval(revisa, 400);
+}
+function revisa() {
+  if (!vistas || idElegida) { paraRevisa(); return; }
+  var m = mia();
+  var r = decideBici({ lista: vistas.lista(), mia: m && m.id, ms: t1Vista ? Date.now() - t1Vista : 0, siempre: forzarLista });
+  if (r.accion === "conecta") { paraRevisa(); elige(r.id, null); }
+  else if (r.accion === "elige") { paraRevisa(); muestraLista(); }
+}
+function muestraLista() {
+  eligiendo = true; vistas.ordena();
+  var m = mia(); E("bkRecuerdaC").checked = !!m;
+  E("bkElige").hidden = false; pintaLista();
+}
+function ocultaLista() { eligiendo = false; var x = E("bkElige"); if (x) x.hidden = true; }
+function pintaLista() {
+  var L = vistas.lista(), m = mia();
+  var t = L.length === 1 ? "Hay 1 bici cerca" : "Hay " + L.length + " bicis cerca";
+  var s = m && !vistas.tiene(m.id) ? "No veo la tuya" + (m.num ? " (la " + m.num + ")" : "") + ". ¿Cuál es?" : "¿Cuál es la tuya? Mira el número del manillar";
+  pintaCon("va", t, s);
+  E("bkLista").innerHTML = L.map(function (v, i) {
+    var b = barrasDe(v.rssi), nom = v.nombre || "Bici sin nombre";
+    var sub = (i === 0 && L.length > 1 ? "La más cerca" : "") + (m && m.id === v.id ? (i === 0 && L.length > 1 ? " · " : "") + "Tu bici" : "");
+    return '<button class="bkBici" data-id="' + v.id + '"><span class="n">' + (v.num || "–") + '</span>' +
+      '<span class="t"><span>' + nom.replace(/[<>&"]/g, "") + '</span><small>' + (sub || "&nbsp;") + '</small></span>' +
+      '<span class="s"><i class="on" style="height:6px"></i><i class="' + (b > 1 ? "on" : "") + '" style="height:10px"></i><i class="' + (b > 2 ? "on" : "") + '" style="height:14px"></i></span></button>';
+  }).join("");
+}
+function elige(id, recordar) {
+  var v = null; vistas.lista().forEach(function (x) { if (x.id === id) v = x; });
+  if (recordar === true && v) guardaMia(v);
+  if (recordar === false) { var m = mia(); if (m) guardaMia(null); }
+  idElegida = id; ocultaLista(); cambiaEstado("conectando");
+  Nativo.bici.conecta(id).catch(function (e) { idElegida = null; cambiaEstado(TXT[e] ? e : "no_encontrada"); });
+}
 function conecta() {
-  if (window.Nativo && Nativo.es && Nativo.bici) {
-    fuente = "nativo"; oyeNativo();
-    cambiaEstado("buscando");
-    Nativo.bici.busca(true).catch(function (e) { cambiaEstado(TXT[e] ? e : "error_busqueda"); });
-    return;
-  }
+  if (window.Nativo && Nativo.es && Nativo.bici) { buscaNativo(false); return; }
   if (window.Nativo && Nativo.es) {
     pintaCon("mal", "Hace falta el APK nuevo", "esta versión de la app aún no sabe hablar con la bici");
     return;
@@ -553,6 +672,7 @@ function abreWeb(d) {
   });
 }
 function suelta() {
+  paraRevisa(); ocultaLista(); vistas = null; idElegida = null;
   if (fuente === "nativo" && window.Nativo && Nativo.bici) Nativo.bici.corta();
   if (fuente === "web" && wbDev) { var d = wbDev; wbDev = null; try { d.gatt.disconnect(); } catch (e) {} }
   fuente = null;

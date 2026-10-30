@@ -157,3 +157,39 @@ test("Worker /pulsos: elige la del reloj que se solapa y trae sus pulsaciones", 
     assert.equal(r2.error, "sin_reloj");
   } finally { globalThis.fetch = viejo; }
 });
+
+test("elegir bici: numero del nombre", () => {
+  assert.equal(B.numeroDe("BODY BIKE 12"), "12");
+  assert.equal(B.numeroDe("BODYBIKE_007"), "7");
+  assert.equal(B.numeroDe("BODY BIKE 12 (A)"), "12");
+  assert.equal(B.numeroDe("BODY BIKE"), "");
+  assert.equal(B.numeroDe(""), "");
+});
+
+test("elegir bici: la lista no salta mientras eliges", () => {
+  const V = B.Vistas();
+  V.ve({ id: "a", nombre: "BODY BIKE 7", rssi: -80 }, 0);
+  V.ve({ id: "b", nombre: "BODY BIKE 12", rssi: -55 }, 10);
+  V.ordena();
+  assert.deepEqual(V.lista().map((v) => v.num), ["12", "7"]);
+  V.ve({ id: "a", rssi: -40 }, 20); V.ve({ id: "a", rssi: -40 }, 30);        // se acerca: no reordena
+  V.ve({ id: "c", nombre: "BODY BIKE 3", rssi: -30 }, 40);                    // nueva: al final
+  assert.deepEqual(V.lista().map((v) => v.num), ["12", "7", "3"]);
+  assert.equal(V.ve({ id: "c", rssi: -30 }, 50), false);
+  assert.equal(V.n(), 3);
+});
+
+test("elegir bici: que hacer", () => {
+  const una = [{ id: "a" }], dos = [{ id: "a" }, { id: "b" }];
+  assert.equal(B.decideBici({ lista: [], ms: 9000 }).accion, "espera");
+  assert.equal(B.decideBici({ lista: una, ms: 1000 }).accion, "espera");          // espera por si sale otra
+  assert.deepEqual(B.decideBici({ lista: una, ms: 3000 }), { accion: "conecta", id: "a" });
+  assert.equal(B.decideBici({ lista: dos, ms: 3000 }).accion, "elige");
+  // la recordada va directa en cuanto aparece, aunque haya otras
+  assert.deepEqual(B.decideBici({ lista: dos, mia: "b", ms: 100 }), { accion: "conecta", id: "b" });
+  // la recordada no aparece: se espera un poco y luego se pregunta (aunque solo haya otra)
+  assert.equal(B.decideBici({ lista: una, mia: "z", ms: 3000 }).accion, "espera");
+  assert.equal(B.decideBici({ lista: una, mia: "z", ms: 7000 }).accion, "elige");
+  // «Cambiar de bici»: siempre la lista, aunque este la tuya o haya solo una
+  assert.equal(B.decideBici({ lista: una, mia: "a", ms: 3000, siempre: true }).accion, "elige");
+});
