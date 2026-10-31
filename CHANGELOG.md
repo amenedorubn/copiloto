@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.79.0] - 2026-10-31
+
+### Añadido
+
+- Calle sin bloque #copiloto: «Elegir ruta» junto a «Empezar sin ruta» (importar GPX en este móvil); la ruta queda asignada a ese entreno y día aunque recargues, y se puede cambiar o quitar desde la tarjeta
+
 ## [2.78.0] - 2026-10-30
 
 ### Añadido
@@ -1056,6 +1062,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.79.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.79.0
 [2.78.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.78.0
 [2.77.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.77.0
 [2.76.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.76.0
