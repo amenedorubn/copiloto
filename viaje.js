@@ -1,5 +1,5 @@
 /* ===========================================================================
-   VIAJE · guía del día en CDMX (v2.81.0)
+   VIAJE · guía del día en CDMX (v2.82.0)
    ---------------------------------------------------------------------------
    Viaje.pinta(c): el miércoles 4 de noviembre de 2026 en Ciudad de México.
    Arriba el mapa esquemático del Centro, debajo el horario. Cada parada lleva
@@ -78,36 +78,20 @@ var P = [
       "La entrada es gratis. Hay misas durante todo el día: si hay una en marcha, recorre los laterales sin hacer ruido y sin flash.",
       "A la salida, ve a la derecha, hacia la esquina noreste, para ir al Templo Mayor: la entrada está en la calle Seminario, justo al lado."] ] },
 
-  { s:"11:00", e:"12:45", t:"🔺 Templo Mayor (zona + museo)", n:"Templo Mayor", q:["mexicas", "tlaloc", "nahuatl", "moctezuma"], d:"Pegado al lado este de la Catedral. Taquilla en calle Seminario 8, junto a la maqueta de Tenochtitlan. Primero ruinas, luego museo.", $:"$210 💵/💳", map:GM+"10128805338444740272", pin:4, g:[
+  { s:"11:40", e:"12:45", t:"🎨 Murales de Diego Rivera (SEP) + Santo Domingo", n:"SEP", q:["rivera", "zapata", "villa"], d:"Edificio de la SEP, República de Argentina 28: unos 7 min al norte desde la Catedral. Gratis. Después, Plaza Santo Domingo a 2 min.", $:"$0", map:"https://www.google.com/maps/search/?api=1&query=Secretar%C3%ADa+de+Educaci%C3%B3n+P%C3%BAblica+Rep%C3%BAblica+de+Argentina+28+CDMX", pin:10, g:[
     ["Lo esencial",
-      "Estás en lo que fue el centro del mundo para los mexicas: el Huey Teocalli, el gran templo de Tenochtitlan. Era una pirámide de unos cuarenta y cinco metros de altura, con dos escalinatas y dos santuarios en lo alto.",
-      "Uno estaba dedicado a Huitzilopochtli, dios de la guerra y del sol, protector de los mexicas. El otro a Tláloc, dios de la lluvia y del agua. Guerra y agua: el tributo que conseguían los ejércitos y las cosechas que dependían de la lluvia. Las dos cosas que sostenían a la ciudad.",
-      "Alrededor estaba el recinto sagrado, con decenas de templos, escuelas, juegos de pelota y el muro de cráneos. Era una plaza amurallada, y hoy está enterrada bajo las manzanas que tienes alrededor."],
-    ["El mito de la fundación",
-      "Según su historia, los mexicas venían del norte, de un lugar llamado Aztlán. Su dios Huitzilopochtli les había dicho que fundaran su ciudad donde vieran un águila posada sobre un nopal, devorando una serpiente. Tras más de un siglo vagando, la encontraron en un islote del lago, y ahí fundaron Tenochtitlan en 1325.",
-      "Esa escena es el escudo que está en el centro de la bandera de México. Así que la bandera cuenta, literalmente, la fundación de este lugar."],
-    ["El nacimiento de Huitzilopochtli",
-      "Este es el mito que explica todo el templo. La diosa Coatlicue, la de la falda de serpientes, barría en el cerro de Coatepec cuando le cayó del cielo una bola de plumas. Se la guardó en el pecho y quedó embarazada.",
-      "Su hija Coyolxauhqui, diosa de la luna, y sus cuatrocientos hermanos, las estrellas del sur, lo vieron como una deshonra y decidieron matar a su madre. Pero en el momento del ataque nació Huitzilopochtli, ya adulto y armado. Venció a sus hermanos y despedazó a Coyolxauhqui, cuyo cuerpo rodó cerro abajo.",
-      "El Templo Mayor era una representación de ese cerro de Coatepec. Por eso, al pie de la escalinata de Huitzilopochtli, los mexicas pusieron una enorme piedra con la figura de Coyolxauhqui desmembrada, con la cabeza y los brazos separados del cuerpo. Los prisioneros sacrificados arriba eran arrojados escaleras abajo y acababan sobre ella, repitiendo el mito. Es el sol venciendo a la luna y a las estrellas cada mañana."],
-    ["Un templo dentro de otro",
-      "Lo que vas a ver en las ruinas no es un solo templo, sino varios, uno dentro de otro, como las capas de una cebolla. Cada gran gobernante ampliaba el templo cubriendo el anterior con uno más grande. Los arqueólogos identifican siete etapas principales.",
-      "Por eso las pasarelas te llevan por escalinatas a distintas alturas: las más profundas son las más antiguas. En la etapa dos, la más antigua que se ve bien, todavía se conserva arriba la piedra de sacrificios del lado de Huitzilopochtli y una escultura de chac mool, una figura recostada con un recipiente en el vientre, del lado de Tláloc.",
-      "Busca las cabezas de serpiente que salen de las bases de las escalinatas, los braseros, y en el lado de Tláloc, unas ranas de piedra: la rana es el animal de la lluvia."],
-    ["Cómo se descubrió",
-      "Tras la conquista, el templo fue destruido y enterrado bajo casas coloniales. Se sabía más o menos dónde estaba, pero no se había excavado.",
-      "La madrugada del 21 de febrero de 1978, unos trabajadores de la compañía de luz que cavaban en la esquina de las calles Guatemala y Argentina toparon con una enorme piedra tallada. Era la Coyolxauhqui, un disco de más de tres metros de diámetro. El hallazgo fue tan importante que el gobierno decidió demoler varias manzanas de edificios para excavar el templo entero. Lo dirigió el arqueólogo Eduardo Matos Moctezuma, y en 1987 se abrió el museo.",
-      "Las excavaciones no han parado. En 2006 apareció la Tlaltecuhtli, y en la última década se encontró el gran tzompantli, el muro de cráneos, con torres hechas con cráneos humanos unidos con argamasa."],
-    ["El museo: qué no perderte",
-      "El museo está organizado como el propio templo: una mitad, la sur, dedicada a Huitzilopochtli, con la guerra, el tributo y el sacrificio; y la otra mitad, la norte, dedicada a Tláloc, con el agua, la agricultura, la flora y la fauna.",
-      "Primero, la Coyolxauhqui original, la del descubrimiento. Se ve desde arriba, desde una pasarela, igual que la veían los mexicas desde lo alto del templo.",
-      "Segundo, la Tlaltecuhtli: es el monolito más grande que se conoce de los mexicas, de unos cuatro metros, y representa a la diosa de la tierra, que devora a los muertos y da a luz la vida. Conserva restos de pintura roja, ocre, azul y blanca, y te hace ver que todo esto estaba pintado de colores vivos.",
-      "Tercero, los guerreros águila: dos figuras de barro de tamaño natural, de un hombre vestido de águila, encontradas en la Casa de las Águilas, junto al templo.",
-      "Y cuarto, las ofrendas: los mexicas enterraban en el templo cajas de piedra con objetos traídos de todo su imperio, como conchas y corales del mar, pieles de jaguar, esqueletos de lobo, cuchillos de pedernal con caras pintadas y máscaras de pueblos más antiguos. Se han encontrado más de doscientas."],
+      "Estás en la sede histórica de la Secretaría de Educación Pública. Por fuera parece un edificio de oficinas más, pero dentro, en los pasillos que rodean sus dos patios, está uno de los conjuntos de murales más grandes de Diego Rivera.",
+      "Rivera los pintó entre 1923 y 1928. Son más de doscientos paneles repartidos en tres pisos. Fue su primer gran encargo al volver de Europa, y aquí se nota cómo va encontrando su estilo."],
+    ["Por qué están aquí",
+      "Tras la Revolución, el gobierno quiso contar la historia del país a gente que en gran parte no sabía leer. José Vasconcelos, secretario de Educación, encargó a los pintores que llenaran las paredes de los edificios públicos. Así nació el muralismo mexicano.",
+      "Los murales eran la forma de enseñar historia y política en la pared, a la vista de todos, gratis."],
+    ["Qué buscar",
+      "En la planta baja del primer patio, el del Trabajo, verás escenas de mineros, campesinos y tejedores: el trabajo de la gente corriente como protagonista.",
+      "En el segundo patio, el de las Fiestas, están las celebraciones populares, incluido el Día de Muertos, que acabas de tener.",
+      "Sube al último piso: ahí está el Corrido de la Revolución, una serie que se lee como una canción, con una cinta que recorre los paneles. En uno de ellos, el del arsenal, aparece Frida Kahlo repartiendo armas, años antes de casarse con Rivera."],
     ["Consejos",
-      "El recorrido empieza por las ruinas al aire libre y termina en el museo. Calcula una hora para cada parte.",
-      "El último acceso es hacia las cuatro y media, así que vas con tiempo de sobra. No se puede usar flash.",
-      "Si en la taquilla aceptan tarjeta, paga con ella y guarda el efectivo para la comida."] ] },
+      "Entra con calma y recorre los pasillos de cada piso en orden. Puede que en la puerta te pidan dejar algo a la vista o enseñar la mochila.",
+      "Al salir, la Plaza Santo Domingo está a dos minutos: fíjate en los escribanos de los soportales, que todavía imprimen documentos para la gente."] ] },
 
   { s:"12:45", e:"13:30", t:"🌮 Comida (Centro)", n:"Comida", d:"45 min. Tacos o comida corrida rápida, en efectivo.", $:"$150–250 💵", map:"https://www.google.com/maps/search/taquer%C3%ADa/@19.4335,-99.1355,17z", mapTxt:"Taquerías", g:[
     ["Qué pedir",
@@ -249,6 +233,41 @@ var P = [
       "Al bajar, pide el Uber desde la esquina con Madero o vete al metro Bellas Artes. A esa hora el metro va muy lleno: mochila delante."] ] },
 
   { s:"18:30", e:"19:15", t:"🚕 Vuelta a casa", d:"Uber ~30–45 min. El metro a esta hora va lleno: Bellas Artes → Hidalgo → Zapata.", l:["L2","L3"], $:"$150–250 💳", map:RUTA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
+];
+
+/* Paradas que ya no están en el plan fijo pero cuya guía se usa si vuelven al
+   calendario (se emparejan por nombre). */
+var EXTRA = [
+  { s:"11:00", e:"12:45", t:"🔺 Templo Mayor (zona + museo)", n:"Templo Mayor", q:["mexicas", "tlaloc", "nahuatl", "moctezuma"], d:"Pegado al lado este de la Catedral. Taquilla en calle Seminario 8, junto a la maqueta de Tenochtitlan. Primero ruinas, luego museo.", $:"$210 💵/💳", map:GM+"10128805338444740272", pin:4, g:[
+    ["Lo esencial",
+      "Estás en lo que fue el centro del mundo para los mexicas: el Huey Teocalli, el gran templo de Tenochtitlan. Era una pirámide de unos cuarenta y cinco metros de altura, con dos escalinatas y dos santuarios en lo alto.",
+      "Uno estaba dedicado a Huitzilopochtli, dios de la guerra y del sol, protector de los mexicas. El otro a Tláloc, dios de la lluvia y del agua. Guerra y agua: el tributo que conseguían los ejércitos y las cosechas que dependían de la lluvia. Las dos cosas que sostenían a la ciudad.",
+      "Alrededor estaba el recinto sagrado, con decenas de templos, escuelas, juegos de pelota y el muro de cráneos. Era una plaza amurallada, y hoy está enterrada bajo las manzanas que tienes alrededor."],
+    ["El mito de la fundación",
+      "Según su historia, los mexicas venían del norte, de un lugar llamado Aztlán. Su dios Huitzilopochtli les había dicho que fundaran su ciudad donde vieran un águila posada sobre un nopal, devorando una serpiente. Tras más de un siglo vagando, la encontraron en un islote del lago, y ahí fundaron Tenochtitlan en 1325.",
+      "Esa escena es el escudo que está en el centro de la bandera de México. Así que la bandera cuenta, literalmente, la fundación de este lugar."],
+    ["El nacimiento de Huitzilopochtli",
+      "Este es el mito que explica todo el templo. La diosa Coatlicue, la de la falda de serpientes, barría en el cerro de Coatepec cuando le cayó del cielo una bola de plumas. Se la guardó en el pecho y quedó embarazada.",
+      "Su hija Coyolxauhqui, diosa de la luna, y sus cuatrocientos hermanos, las estrellas del sur, lo vieron como una deshonra y decidieron matar a su madre. Pero en el momento del ataque nació Huitzilopochtli, ya adulto y armado. Venció a sus hermanos y despedazó a Coyolxauhqui, cuyo cuerpo rodó cerro abajo.",
+      "El Templo Mayor era una representación de ese cerro de Coatepec. Por eso, al pie de la escalinata de Huitzilopochtli, los mexicas pusieron una enorme piedra con la figura de Coyolxauhqui desmembrada, con la cabeza y los brazos separados del cuerpo. Los prisioneros sacrificados arriba eran arrojados escaleras abajo y acababan sobre ella, repitiendo el mito. Es el sol venciendo a la luna y a las estrellas cada mañana."],
+    ["Un templo dentro de otro",
+      "Lo que vas a ver en las ruinas no es un solo templo, sino varios, uno dentro de otro, como las capas de una cebolla. Cada gran gobernante ampliaba el templo cubriendo el anterior con uno más grande. Los arqueólogos identifican siete etapas principales.",
+      "Por eso las pasarelas te llevan por escalinatas a distintas alturas: las más profundas son las más antiguas. En la etapa dos, la más antigua que se ve bien, todavía se conserva arriba la piedra de sacrificios del lado de Huitzilopochtli y una escultura de chac mool, una figura recostada con un recipiente en el vientre, del lado de Tláloc.",
+      "Busca las cabezas de serpiente que salen de las bases de las escalinatas, los braseros, y en el lado de Tláloc, unas ranas de piedra: la rana es el animal de la lluvia."],
+    ["Cómo se descubrió",
+      "Tras la conquista, el templo fue destruido y enterrado bajo casas coloniales. Se sabía más o menos dónde estaba, pero no se había excavado.",
+      "La madrugada del 21 de febrero de 1978, unos trabajadores de la compañía de luz que cavaban en la esquina de las calles Guatemala y Argentina toparon con una enorme piedra tallada. Era la Coyolxauhqui, un disco de más de tres metros de diámetro. El hallazgo fue tan importante que el gobierno decidió demoler varias manzanas de edificios para excavar el templo entero. Lo dirigió el arqueólogo Eduardo Matos Moctezuma, y en 1987 se abrió el museo.",
+      "Las excavaciones no han parado. En 2006 apareció la Tlaltecuhtli, y en la última década se encontró el gran tzompantli, el muro de cráneos, con torres hechas con cráneos humanos unidos con argamasa."],
+    ["El museo: qué no perderte",
+      "El museo está organizado como el propio templo: una mitad, la sur, dedicada a Huitzilopochtli, con la guerra, el tributo y el sacrificio; y la otra mitad, la norte, dedicada a Tláloc, con el agua, la agricultura, la flora y la fauna.",
+      "Primero, la Coyolxauhqui original, la del descubrimiento. Se ve desde arriba, desde una pasarela, igual que la veían los mexicas desde lo alto del templo.",
+      "Segundo, la Tlaltecuhtli: es el monolito más grande que se conoce de los mexicas, de unos cuatro metros, y representa a la diosa de la tierra, que devora a los muertos y da a luz la vida. Conserva restos de pintura roja, ocre, azul y blanca, y te hace ver que todo esto estaba pintado de colores vivos.",
+      "Tercero, los guerreros águila: dos figuras de barro de tamaño natural, de un hombre vestido de águila, encontradas en la Casa de las Águilas, junto al templo.",
+      "Y cuarto, las ofrendas: los mexicas enterraban en el templo cajas de piedra con objetos traídos de todo su imperio, como conchas y corales del mar, pieles de jaguar, esqueletos de lobo, cuchillos de pedernal con caras pintadas y máscaras de pueblos más antiguos. Se han encontrado más de doscientas."],
+    ["Consejos",
+      "El recorrido empieza por las ruinas al aire libre y termina en el museo. Calcula una hora para cada parte.",
+      "El último acceso es hacia las cuatro y media, así que vas con tiempo de sobra. No se puede usar flash.",
+      "Si en la taquilla aceptan tarjeta, paga con ella y guarda el efectivo para la comida."] ] }
 ];
 
 /* ---------------------------------------------------------------------------
@@ -405,12 +424,12 @@ var MAPA =
 '<g class="met"><rect x="312" y="98" width="18" height="18" rx="4"/><text x="321" y="111">M</text></g><text x="302" y="92" class="lbl" text-anchor="end">Metro Bellas Artes ← vuelta</text>' +
 '<g class="met"><rect x="486" y="200" width="18" height="18" rx="4"/><text x="495" y="213">M</text></g>' +
 '{PINS}' +
-'<text x="560" y="210" class="lbl" text-anchor="end">Palacio N.</text><text x="520" y="128" class="lbl">Templo M.</text>' +
+'<text x="492" y="86" class="lbl" text-anchor="end">SEP</text><text x="560" y="210" class="lbl" text-anchor="end">Palacio N.</text><text x="520" y="128" class="lbl">Templo M.</text>' +
 '<text x="470" y="146" class="lbl" text-anchor="end">Catedral</text><text x="382" y="190" class="lbl">Azulejos</text>' +
 '<text x="352" y="210" class="lbl">Torre Latino</text><line x1="340" y1="179" x2="347" y2="163" stroke="var(--mu)"/>' +
 '<text x="70" y="116" class="lbl">Revolución</text><text x="585" y="30" class="lbl" text-anchor="end">N ↑</text>' +
 '<line x1="20" y1="232" x2="125" y2="232" stroke="var(--fg)" stroke-width="2"/><text x="20" y="226" class="stl">500 m</text></svg>';
-var XY = { 2:[550,187], 3:[512,152], 4:[540,140], 5:[368,172], 6:[334,133], 7:[38,111], 9:[340,190] };
+var XY = { 10:[498,100], 2:[550,187], 3:[512,152], 4:[540,140], 5:[368,172], 6:[334,133], 7:[38,111], 9:[340,190] };
 
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]; }); }
 function min(h) { var a = h.split(":"); return (+a[0]) * 60 + (+a[1]); }
@@ -552,7 +571,86 @@ function pintaRep() {
 
 /* ---- pantalla ---- */
 var reloj = null;
-function pinta(c) {
+
+/* ---------------------------------------------------------------------------
+   v2.82: el horario sale del calendario de Google (ruta /viaje del Worker,
+   secreto ICAL_VIAJE). Cada evento se empareja por nombre con una parada de
+   la guía (P o EXTRA) para conservar mapa, pin y audio; lo que no empareja
+   sale tal cual, con la descripción del calendario. Sin conexión o sin el
+   secreto, se queda el último horario bueno guardado o el plan fijo.
+   --------------------------------------------------------------------------- */
+var FIJO = P.slice(), SYNC = { estado:"", hora:"" }, K_SYNC = "copiloto.viaje.cal." + DIA;
+function nrm(t) {
+  return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9ñ ]+/g, " ").replace(/\s+/g, " ").trim();
+}
+var MOVIL = /^(🚇|🚕|🚌|🚶‍♂️|🚆)/;
+function empareja(ev, usados) {
+  var tt = " " + nrm(ev.titulo) + " ", cat = FIJO.concat(EXTRA), mejor = null;
+  if (MOVIL.test(ev.titulo)) return null;           // trayectos: tal cual el calendario
+  cat.forEach(function (x) {
+    if (mejor || usados.indexOf(x) >= 0 || x.mov) return;
+    if (nrm(x.t) === nrm(ev.titulo)) { mejor = x; return; }
+    var n = nrm(x.n || ""); if (n && tt.indexOf(" " + n) >= 0) mejor = x;
+  });
+  return mejor;
+}
+function desdeCal(evs) {
+  var usados = [], out = [];
+  evs.forEach(function (ev) {
+    if (!ev.hora) return;
+    var x = empareja(ev, usados), y;
+    if (x) { usados.push(x); y = Object.assign({}, x); }
+    else {
+      var txt = String(ev.texto || "").replace(/\s+/g, " ").trim();
+      y = { d: txt.length > 260 ? txt.slice(0, 257) + "…" : txt, $:"" };
+      if (MOVIL.test(ev.titulo)) {
+        y.mov = 1; var ls = (ev.texto || "").match(/\bL\d{1,2}\b/g);
+        if (ls) y.l = ls.filter(function (l, i) { return ls.indexOf(l) === i && /^L[1-9]$|^L1[0-2]$/.test(l); });
+        if (ev.lugar) y.map = RUTA(ev.lugar);
+      } else if (ev.lugar) y.map = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(ev.lugar);
+    }
+    y.s = ev.hora.replace(/^0/, ""); y.e = (ev.fin || ev.hora).replace(/^0/, ""); y.t = ev.titulo;
+    out.push(y);
+  });
+  out.sort(function (a, b) { return min(a.s) - min(b.s); });
+  return out;
+}
+function aplica(evs, estado, hora) {
+  var q = desdeCal(evs);
+  if (!q.length) return false;
+  P = q; SYNC = { estado:estado, hora:hora }; return true;
+}
+function guardado() {
+  try { var g = JSON.parse(localStorage.getItem(K_SYNC) || "null"); if (g && g.eventos) aplica(g.eventos, "guardado", g.hora); } catch (e) {}
+}
+function sincroniza(c) {
+  var cf = window.conf || {};
+  if (!cf.url || !cf.key) { SYNC.estado = SYNC.estado || "sinclave"; return; }
+  fetch(cf.url.replace(/\/+$/, "") + "/viaje?dia=" + DIA, { headers:{ "X-Copiloto-Key":cf.key }, cache:"no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.error === "sin_viaje") { if (!SYNC.estado) SYNC.estado = "sinsecreto"; if (c.isConnected) pinta(c, 1); return; }
+      if (!j || j.error || !j.eventos) throw 0;
+      var h = ahora(), hh = Math.floor(h.m / 60) + ":" + ("0" + h.m % 60).slice(-2);
+      if (aplica(j.eventos, "ok", hh)) {
+        try { localStorage.setItem(K_SYNC, JSON.stringify({ hora:hh, eventos:j.eventos })); } catch (e) {}
+      }
+      if (c.isConnected && !R.va) pinta(c, 1);
+    })
+    .catch(function () { if (!SYNC.estado) SYNC.estado = "sinred"; if (c.isConnected && !R.va) pinta(c, 1); });
+}
+function notaSync() {
+  var t = { ok:"📅 Horario del calendario (actualizado a las " + SYNC.hora + ").",
+            guardado:"📅 Horario del calendario guardado a las " + SYNC.hora + " (sin conexión ahora).",
+            sinsecreto:"📅 Falta conectar el calendario (secreto ICAL_VIAJE en Cloudflare): se ve el plan fijo.",
+            sinred:"📅 No se ha podido leer el calendario: se ve el plan fijo.",
+            sinclave:"📅 Sin conexión con el Worker: se ve el plan fijo." }[SYNC.estado];
+  return t ? '<div class="vjNota">' + esc(t) + '</div>' : "";
+}
+guardado();
+
+function pinta(c, sinPedir) {
   cierra();
   if (!document.getElementById("vjCss")) { var st = document.createElement("style"); st.id = "vjCss"; st.textContent = CSS; document.head.appendChild(st); }
   var pins = "";
@@ -561,7 +659,7 @@ function pinta(c) {
   });
   var h = '<div class="vjW"><div class="vjMapa">' + MAPA.replace("{PINS}", pins) + '</div>' +
     '<div class="vjNota">El número en rosa es donde te toca estar. Tócalo para abrirlo en Google Maps. Fuera del mapa: 1 Soriana (al sur) y 8 Basílica (al norte).</div>' +
-    '<div class="vjAhora"><span class="vjAhT">–</span><button type="button" class="vjIr">Ir a lo de ahora</button></div><div class="vjL">';
+    notaSync() + '<div class="vjAhora"><span class="vjAhT">–</span><button type="button" class="vjIr">Ir a lo de ahora</button></div><div class="vjL">';
   P.forEach(function (x, i) {
     h += '<div class="vjP' + (x.mov ? " mov" : "") + '" data-i="' + i + '"><div class="vjH">' + x.s + '<small>' + x.e + '</small></div><div class="vjC">' +
       '<h3><span class="vjAh">AHORA</span>' + esc(x.t) + '</h3><p>' + esc(x.d) + '</p>' +
@@ -580,7 +678,7 @@ function pinta(c) {
     }
     h += '</div></div>';
   });
-  h += '</div><div class="vjNota">Efectivo: llevas $700. Templo Mayor $210 por si no cogen tarjeta, comida $150–200 y monedas para baños. Lo demás con tarjeta. Total del día ~$685–1.075 (35–54 €).</div>' +
+  h += '</div><div class="vjNota">Efectivo: llevas $700. Comida $150–250 y monedas para baños; lo demás con tarjeta.</div>' +
     '<div class="vjNota">Batería: la guía no usa el GPS ni deja la pantalla encendida. Puedes bloquear el móvil mientras escuchas; si al bloquearlo se corta entre frases, dale a ▶ al volver.</div></div>' +
     '<div class="vjRep" hidden><div class="vjRT"><div><b class="vjRTi">–</b><small class="vjRSu">–</small></div><button type="button" class="vjX" aria-label="Cerrar la guía">✕</button></div>' +
     '<div class="vjBarra"><i></i></div>' +
@@ -626,7 +724,8 @@ function pinta(c) {
   marca(); clearInterval(reloj); reloj = setInterval(marca, 60000);
   c.querySelector(".vjIr").addEventListener("click", function () { marca(); if (cur) cur.scrollIntoView({ behavior:"smooth", block:"start" }); });
   setTimeout(function () { if (cur) cur.scrollIntoView({ block:"start" }); }, 350);
+  if (!sinPedir) sincroniza(c);
 }
 
-window.Viaje = { pinta:pinta, para:cierra, _Q:Q, dia:DIA, _P:P, _frases:frases };
+window.Viaje = { pinta:pinta, para:cierra, _Q:Q, dia:DIA, _P:P, _lista:function () { return P; }, _frases:frases };
 })();

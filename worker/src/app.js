@@ -10,6 +10,8 @@
      ICAL_URL      direccion iCal secreta del calendario "Entreno"
      ICAL_COMIDAS  (opcional) direccion iCal secreta del calendario "Comidas"
      ICAL_RUTINA   (opcional) direccion iCal secreta del calendario "Claude"
+     ICAL_VIAJE    (opcional) direccion iCal secreta del calendario principal, donde
+                   va el plan del viaje; lo lee GET /viaje?dia= (v2.82)
      VAULT_TOKEN   (opcional) token de GitHub de solo lectura del repo de Obsidian
                    (mivault, Contents: Read-only) para la despensa de la app
 
@@ -67,6 +69,7 @@ export const app = {
             ICAL_URL: !!env.ICAL_URL,
             ICAL_COMIDAS: !!env.ICAL_COMIDAS,
             ICAL_RUTINA: !!env.ICAL_RUTINA,
+            ICAL_VIAJE: !!env.ICAL_VIAJE,
             VAULT_TOKEN: !!env.VAULT_TOKEN,
             STRAVA_APP: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET),
             KV: !!env.COPILOTO,
@@ -90,6 +93,12 @@ export const app = {
         const fallo = revisaClave(req, env);
         if (fallo) return json(fallo, fallo.codigo, origen);
         return json(await agenda(env, url), 200, origen);
+      }
+
+      if (url.pathname === "/viaje") {
+        const fallo = revisaClave(req, env);
+        if (fallo) return json(fallo, fallo.codigo, origen);
+        return json(await viaje(env, url), 200, origen);
       }
 
       // estas dos las abre el navegador, no la app: no llevan cabecera.
@@ -211,6 +220,29 @@ function igual(a, b) {
   let d = 0;
   for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return d === 0;
+}
+
+/* -------------------------------- viaje --------------------------------- */
+// v2.82: el horario del día de viaje, del calendario principal, en hora de
+// Ciudad de México (los eventos llevan su TZID, así que la hora es la real).
+const ZONA_VIAJE = "America/Mexico_City";
+async function viaje(env, url) {
+  if (!env.ICAL_VIAJE) return { error: "sin_viaje",
+    mensaje: "Falta el secreto ICAL_VIAJE en el panel de Cloudflare." };
+  const dia = url.searchParams.get("dia") || hoyISO(ZONA_VIAJE);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return { error: "dia_raro" };
+  const r = await fetch(env.ICAL_VIAJE, {
+    cf: { cacheTtl: 60, cacheEverything: true },
+    headers: { "User-Agent": "copiloto-api" }
+  });
+  if (!r.ok) return { error: "ical_no_responde", estado: r.status,
+    mensaje: "Google no ha devuelto el calendario. Revisa el secreto ICAL_VIAJE." };
+  const c = parseICS(await r.text());
+  const eventos = expande(c.eventos, dia, dia, ZONA_VIAJE, true)
+    .filter((e) => e.hora && e.fecha === dia)
+    .sort(porInicio)
+    .map((e) => ({ hora: e.hora, fin: e.fin, titulo: e.titulo, texto: e.texto, lugar: e.lugar }));
+  return { generado: new Date().toISOString(), zona: ZONA_VIAJE, dia, eventos };
 }
 
 /* -------------------------------- agenda -------------------------------- */
