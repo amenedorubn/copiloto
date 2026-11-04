@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.81.0] - 2026-11-04
+
+### Añadido
+
+- Viaje: guías mucho más largas y por secciones (lo esencial, historia, qué buscar, curiosidades, consejos), reproductor abajo con pausa, frase anterior, sección anterior/siguiente y velocidad, y «¿Quién es?» con 18 personajes y palabras (Hidalgo, Moctezuma, Cortés, Villa, Zapata, Juárez…) que al acabar vuelve a la guía. Sin GPS ni pantalla encendida
+
 ## [2.80.0] - 2026-11-04
 
 ### Añadido
@@ -1068,6 +1074,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.81.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.81.0
 [2.80.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.80.0
 [2.79.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.79.0
 [2.78.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.78.0
