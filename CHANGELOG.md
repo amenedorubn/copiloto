@@ -13,6 +13,12 @@ Las versiones antiguas vivían en carpetas `v4/` … `v20/`. Ahora cada una es
 un tag de git: `v4` → `v0.4.0`, `v13` → `v1.3.0`, `v20` → `v2.0.0`.
 Los resúmenes salen de los mensajes de commit de cada versión.
 
+## [2.83.1] - 2026-11-07
+
+### Corregido
+
+- Viaje: museo reordenado (Paraguas → Piedra del Sol → Mexica → ala de Oaxaca a Occidente → ala de Introducción a Toltecas) y plano del museo con las salas numeradas
+
 ## [2.83.0] - 2026-11-07
 
 ### Añadido
@@ -1086,6 +1092,7 @@ Corresponde a la carpeta `v20/`.
 - Primera versión guardada en su carpeta (`v4/`). Los commits no describen
   los cambios.
 
+[2.83.1]: https://github.com/amenedorubn/copiloto/releases/tag/v2.83.1
 [2.83.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.83.0
 [2.82.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.82.0
 [2.81.0]: https://github.com/amenedorubn/copiloto/releases/tag/v2.81.0
