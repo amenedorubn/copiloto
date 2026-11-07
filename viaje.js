@@ -113,13 +113,29 @@ var P = [
       "Sigue a la sala de al lado: Golfo de México, el número cinco."] ] },
 
   { s:"17:01", e:"17:08", t:"🗿 Golfo de México (olmecas)", n:"Golfo", d:"La cabeza colosal olmeca y el Luchador.", $:"", pin:5, obj:1, g:[
-    ["🧭 Entender la cultura",
-      "La costa del golfo de México es tierra caliente y húmeda: selva, ríos enormes, pantanos y lluvias casi todo el año. Muy distinta del altiplano seco y frío donde vivían los mexicas. Aquí convivieron tres culturas en épocas distintas: olmecas, totonacas y huastecos.",
-      "Los olmecas son los más antiguos. Florecieron entre unos mil doscientos y cuatrocientos años antes de Cristo, en el sur de Veracruz y en Tabasco, en centros como San Lorenzo y La Venta. No eran un imperio, sino sociedades gobernadas por linajes de jefes poderosos, que se hacían retratar en esas cabezas colosales.",
-      "Se los llama cultura madre porque muchas cosas que luego son típicas de toda Mesoamérica aparecen primero con ellos: las pirámides de tierra, el juego de pelota, el culto al jaguar, el gusto por el jade y probablemente los primeros calendarios y signos de escritura. Comerciaban con jade y obsidiana hasta Oaxaca y el altiplano, y su estilo se copió por todas partes.",
-      "Fíjate en un rasgo olmeca que se repite: rostros con labios gruesos y hacia abajo, como un bebé llorando, a veces con rasgos de jaguar. Es el llamado hombre jaguar, una mezcla de humano y felino que se cree ligada a la lluvia y al poder de los gobernantes.",
-      "Siglos después, en el centro de Veracruz, vivieron los totonacas, con la gran ciudad de El Tajín, famosa por sus juegos de pelota. De ellos son los yugos y hachas de piedra, que imitan las protecciones que llevaban los jugadores en la cintura. Y las caritas sonrientes de barro: figuras que se ríen abiertamente, algo muy raro en el arte prehispánico.",
-      "Al norte, en la Huasteca, vivían los huastecos, emparentados por la lengua con los mayas aunque viven lejos de ellos. Los mexicas los consideraban gente desinhibida y fuerte, y tenían fama de ir pintados y tatuados. El Adolescente huasteco es su obra maestra."],
+    ["🧭 El territorio",
+      "La costa del golfo de México es una franja larga junto al mar, desde Tamaulipas en el norte hasta Tabasco en el sur, pasando por todo Veracruz. Es tierra caliente: selva, ríos anchísimos que bajan de las montañas, pantanos, lagunas y lluvias casi todo el año. Muy distinto del altiplano seco y frío de Ciudad de México.",
+      "Era una tierra rica. Allí se daban el cacao, el algodón, el hule, la vainilla y las plumas de aves tropicales, cosas muy valoradas en todo Mesoamérica. Por eso fue siempre zona de comercio y, más tarde, de conquista por parte de los mexicas. Y por esta misma costa entraron los españoles en 1519: Cortés fundó Veracruz y desde aquí subió hacia Tenochtitlan.",
+      "En esta sala conviven tres culturas de épocas muy distintas: los olmecas, los más antiguos, en el sur; las culturas del centro de Veracruz, con los totonacas y la ciudad de El Tajín; y los huastecos, en el norte."],
+    ["🧭 Los olmecas, la cultura madre",
+      "Los olmecas vivieron en el sur de Veracruz y en Tabasco entre unos mil doscientos y cuatrocientos años antes de Cristo. Es decir, florecieron hace más de tres mil años, cuando en Europa estaba la Grecia de Homero.",
+      "El nombre olmeca no es suyo: se lo pusieron los arqueólogos en el siglo veinte, por una palabra náhuatl que significa la gente del país del hule. No sabemos cómo se llamaban a sí mismos ni qué lengua hablaban, aunque se cree que podría ser antecesora de las lenguas mixe y zoque que aún se hablan en la región.",
+      "Sus grandes centros fueron San Lorenzo, que es el más antiguo, y La Venta, después. No eran ciudades de piedra como las mayas: construían con tierra y arcilla, plataformas y montículos, porque en esa zona de pantanos no hay piedra. Por eso son tan asombrosas las cabezas colosales: el basalto lo traían desde la sierra de los Tuxtlas, a más de cincuenta kilómetros, arrastrando bloques de muchas toneladas y probablemente moviéndolos en balsas por los ríos.",
+      "Se los llama cultura madre porque muchas cosas que luego son típicas de toda Mesoamérica aparecen primero con ellos: las pirámides, el juego de pelota con pelotas de hule, el culto al jaguar, el valor sagrado del jade, los gobernantes que se presentan como intermediarios con lo divino, y probablemente los primeros calendarios y signos de escritura. Su estilo se copió en lugares tan lejanos como Oaxaca, el valle de México o Guerrero, y por eso verás rasgos olmecas en la sala del Preclásico.",
+      "Fíjate en un rostro que se repite: labios gruesos con las comisuras hacia abajo, como un bebé que llora, a veces con colmillos o rasgos de jaguar. Es el llamado hombre jaguar, una mezcla de humano y felino ligada probablemente a la lluvia, la tierra y el poder de los jefes. Y fíjate en las hachas de jade pulido, que enterraban en ofrendas: para ellos el jade verde era el color del agua y del maíz, la vida misma."],
+    ["🧭 El centro de Veracruz y El Tajín",
+      "Siglos después de los olmecas, en el centro de Veracruz florecieron otras culturas. La más famosa es la de El Tajín, una gran ciudad que alcanzó su apogeo entre los años seiscientos y mil doscientos después de Cristo. Su edificio más conocido es la Pirámide de los Nichos, con trescientos sesenta y cinco huecos, uno por cada día del año según la tradición.",
+      "El Tajín estaba obsesionado con el juego de pelota: tiene al menos diecisiete canchas. De esta cultura son los yugos de piedra, con forma de herradura, que imitan los cinturones protectores que llevaban los jugadores, y las palmas y hachas que se ponían encima. Eran versiones ceremoniales en piedra, demasiado pesadas para jugar con ellas.",
+      "También de esta zona son las caritas sonrientes: figuras de barro que se ríen abiertamente, con la cabeza ladeada y los brazos abiertos. En el arte prehispánico casi nadie sonríe, así que son una rareza. Se cree que tenían que ver con fiestas, música y quizá con estados de trance.",
+      "Cuando llegaron los españoles, esta zona la habitaban los totonacas, cuya capital era Cempoala. Estaban sometidos a los mexicas y hartos de pagarles tributo, así que fueron los primeros aliados de Cortés. Hoy los totonacas siguen ahí, y son famosos por la danza de los voladores de Papantla, que giran colgados de un palo altísimo."],
+    ["🧭 Los huastecos",
+      "En el norte, en la Huasteca, entre Veracruz, San Luis Potosí y Tamaulipas, vivían los huastecos. Lo curioso es que su lengua es maya, aunque viven a más de mil kilómetros de las tierras mayas: se separaron de los demás pueblos mayas hace unos tres mil años.",
+      "Los mexicas los veían con una mezcla de desprecio y fascinación: decían que eran gente desinhibida, que iban con poca ropa, pintados y tatuados, y que bebían mucho pulque. Los conquistaron a finales del siglo quince.",
+      "El Adolescente huasteco, la escultura del joven con el cuerpo cubierto de dibujos, es su gran obra. Y su dios más importante era Quetzalcóatl en su forma de viento, Ehécatl; de hecho, muchas de las ideas sobre Quetzalcóatl podrían venir de esta zona."],
+    ["🧭 En qué se diferencian",
+      "Si comparas esta sala con la mexica, verás que aquí no hay un imperio ni una sola cultura, sino una costa rica por la que pasaron pueblos distintos durante dos mil quinientos años.",
+      "Los olmecas pusieron las bases de todo lo que vino después. Las culturas del centro de Veracruz aportaron el juego de pelota como gran ceremonia y un arte más alegre. Y los huastecos son un pueblo de lengua maya en tierra lejana.",
+      "Mientras paseas, busca esos tres estilos: el olmeca, macizo y serio, con caras de bebé y jaguar; el veracruzano, con yugos y caritas sonrientes; y el huasteco, con figuras delgadas y tatuadas."],
     ["📍 Cabeza colosal",
       "Busca una cabeza enorme de piedra, de más de dos metros, con una especie de casco.",
       "Es el retrato de un gobernante olmeca. Se tallaba en un solo bloque de basalto de varias toneladas que traían desde montañas a decenas de kilómetros, sin ruedas ni animales de carga. Se conocen diecisiete."],
@@ -133,12 +149,34 @@ var P = [
       "Sigue a la sala de al lado: Maya, el número seis."] ] },
 
   { s:"17:08", e:"17:22", t:"🌿 Maya: tumba de Pakal", n:"Maya", d:"Baja a la réplica de la tumba de Pakal. Después, sal al jardín a ver Bonampak.", $:"", pin:6, obj:1, g:[
-    ["🧭 Entender la cultura",
-      "Los mayas vivieron en el sureste de México, en Yucatán, Chiapas, Campeche, Tabasco y Quintana Roo, y en Guatemala, Belice y Honduras. Nunca fueron un imperio ni un país: eran decenas de ciudades estado, cada una con su rey, que se aliaban y guerreaban entre sí, como las ciudades de la antigua Grecia.",
-      "Su gran época, el periodo clásico, va del año doscientos cincuenta al novecientos más o menos. Palenque, Tikal, Calakmul o Copán eran ciudades de piedra en plena selva, con templos, palacios y juegos de pelota. Sus reyes se consideraban sagrados y mediadores con los dioses, y se hacían sangrar en rituales para comunicarse con ellos.",
-      "Tenían la escritura más completa de América: podían escribir cualquier cosa que dijeran, con cientos de signos. Grabaron en piedra fechas, nombres de reyes, guerras y bodas, y hoy se puede leer gran parte de lo que escribieron. Usaban el cero y calculaban los ciclos de Venus y los eclipses con mucha precisión.",
-      "Hacia el año novecientos muchas ciudades del sur se abandonaron. Es el famoso colapso maya, probablemente por sequías, guerras y sobreexplotación de la selva. Pero los mayas no desaparecieron: siguieron en Yucatán, con ciudades como Chichén Itzá y Mayapán.",
-      "Y siguen hoy: más de seis millones de personas hablan lenguas mayas. La diferencia con los mexicas es grande: los mayas son mucho más antiguos, nunca tuvieron una capital común y su arte es más naturalista y narrativo, con retratos de reyes muy humanos."],
+    ["🧭 Quiénes eran y dónde vivían",
+      "Los mayas vivieron en el sureste de México, en los actuales Yucatán, Campeche, Quintana Roo, Chiapas y Tabasco, y también en Guatemala, Belice y parte de Honduras y El Salvador. Es un territorio enorme y muy variado: al sur, tierras altas de montañas y volcanes; en el centro, la selva tropical húmeda de El Petén; y al norte, la península de Yucatán, una losa de roca caliza plana y seca, sin ríos en la superficie.",
+      "En Yucatán el agua está bajo tierra. Por eso son tan importantes los cenotes, pozos naturales donde el techo de una cueva se hundió y deja ver el agua subterránea. Para los mayas eran entradas al inframundo, y en algunos se arrojaban ofrendas, e incluso personas.",
+      "La historia maya es larguísima. Las primeras aldeas aparecen hacia el dos mil antes de Cristo, y en el Preclásico ya hay ciudades enormes como El Mirador, en Guatemala, con pirámides más grandes que muchas posteriores. La gran época, el Clásico, va más o menos del año doscientos cincuenta al novecientos. Y el Posclásico llega hasta la llegada de los españoles. Es decir, más de tres mil años de historia: cuando nació Tenochtitlan, los mayas ya llevaban dos mil años construyendo ciudades."],
+    ["🧭 Ciudades estado y reyes sagrados",
+      "Lo más importante para entender a los mayas es que nunca fueron un imperio ni un país. Eran decenas de ciudades estado independientes, cada una con su rey, su dinastía y su dios patrón. Se parecían más a las ciudades de la antigua Grecia o a los reinos de la Italia del Renacimiento que al imperio mexica.",
+      "Algunas ciudades eran superpotencias. En el Clásico, las dos grandes eran Tikal, en Guatemala, y Calakmul, en Campeche. Durante siglos se disputaron el dominio de la región con alianzas, bodas entre familias reales y guerras, como una guerra fría de la selva. Las ciudades pequeñas se ponían bajo la protección de una o de otra.",
+      "El rey se llamaba k'uhul ajaw, señor sagrado. No era solo un jefe político: era el intermediario entre los hombres y los dioses. En ceremonias se sacaba sangre de la lengua o de otras partes del cuerpo y la dejaba caer sobre papel, que luego se quemaba. En el humo se aparecían los antepasados y los dioses.",
+      "Las ciudades tenían un centro ceremonial con templos piramidales, palacios, plazas y juegos de pelota, y alrededor, barrios y campos de cultivo repartidos por la selva. Calzadas blancas de piedra, llamadas sacbé, unían edificios y ciudades."],
+    ["🧭 Escritura, números y calendario",
+      "Los mayas tenían la escritura más completa de la América antigua. No eran solo dibujos: era un sistema con cientos de signos, que mezclaba signos de palabras completas con signos de sílabas, como el japonés. Podían escribir cualquier cosa que pudieran decir.",
+      "Escribían en estelas de piedra, en dinteles, en vasijas pintadas y en libros de papel de corteza doblados en acordeón, los códices. Casi todos los códices fueron quemados por los frailes españoles. Solo sobreviven cuatro, y ninguno está en México salvo uno.",
+      "Durante mucho tiempo nadie sabía leerla. El gran avance llegó en los años cincuenta y sesenta del siglo veinte, con investigadores como el ruso Yuri Knórosov y la estadounidense Tatiana Proskouriakoff, que demostró que las estelas contaban la vida de reyes reales: nacimientos, subidas al trono, guerras y muertes. Hoy se puede leer la mayor parte de lo que escribieron.",
+      "Contaban en base veinte, con un punto para el uno, una barra para el cinco y una concha para el cero. Fueron de las primeras culturas del mundo en usar el cero. Con esto llevaban varios calendarios a la vez: el ritual de doscientos sesenta días, el solar de trescientos sesenta y cinco, y la Cuenta Larga, que contaba los días desde una fecha de creación del mundo, en el año tres mil ciento catorce antes de Cristo. Lo del supuesto fin del mundo en 2012 venía de ahí: solo era el final de un gran ciclo, como cuando un cuentakilómetros pasa a cero."],
+    ["🧭 Religión, maíz y juego de pelota",
+      "Para los mayas, el ser humano estaba hecho de maíz. Lo cuenta el Popol Vuh, el libro sagrado de los mayas quichés de Guatemala: los dioses intentaron crear a los hombres de barro y de madera, y fracasaron, hasta que los hicieron de masa de maíz.",
+      "El mundo tenía tres niveles: el cielo, la tierra y el inframundo, llamado Xibalbá, el lugar del miedo. En el centro, un gran árbol, la ceiba, unía los tres niveles. Es el árbol que verás en la losa de la tumba de Pakal.",
+      "El Popol Vuh cuenta también la historia de los Héroes Gemelos, Hunahpú e Ixbalanqué, que bajan a Xibalbá y vencen a los señores de la muerte jugando a la pelota. Por eso el juego de pelota era mucho más que un deporte: era la representación del movimiento del sol y de la lucha entre la vida y la muerte. Se jugaba con una pelota de hule macizo, golpeándola con la cadera, y a veces terminaba con sacrificios.",
+      "El dios de la lluvia era Chaac, el equivalente del Tláloc mexica, con la nariz larga y curvada. Lo verás en muchas fachadas."],
+    ["🧭 El colapso y los mayas de hoy",
+      "Hacia el siglo nueve, una ciudad tras otra del sur dejó de levantar monumentos, y la gente se fue. Tikal, Calakmul, Palenque o Copán quedaron vacías y se las comió la selva. Es el famoso colapso maya.",
+      "No hubo una sola causa. Se combinaron sequías muy fuertes, que hoy se detectan en sedimentos de lagos, el exceso de población, la deforestación y las guerras constantes entre ciudades. Los reyes sagrados no podían traer la lluvia, y perdieron su autoridad.",
+      "Pero los mayas no desaparecieron. La vida siguió en el norte de Yucatán, con ciudades como Chichén Itzá, Uxmal y, después, Mayapán. Cuando llegaron los españoles, la región estaba dividida en pequeños señoríos, y por eso la conquista fue lenta: el último reino maya independiente, Tayasal, en Guatemala, cayó en 1697, casi doscientos años después que Tenochtitlan.",
+      "Hoy más de seis millones de personas hablan alguna de las treinta lenguas mayas, como el yucateco, el tzotzil, el tzeltal o el quiché."],
+    ["🧭 En qué se diferencian de los mexicas",
+      "Los mexicas fueron un imperio joven, de apenas doscientos años, con una capital única que cobraba tributo a todos. Los mayas fueron una civilización de más de tres mil años, repartida en muchas ciudades rivales, sin capital común.",
+      "Su arte también es distinto. El arte mexica es monumental, rígido y simbólico, pensado para impresionar. El maya es más naturalista y narrativo: retratos de reyes con rasgos personales, escenas de corte, textos largos que cuentan historias concretas. Y los mayas escribían de verdad, mientras que los mexicas usaban sobre todo pictogramas.",
+      "Mientras recorres la sala, fíjate en eso: aquí las caras parecen personas concretas."],
     ["📍 Tumba de Pakal",
       "Busca dentro de la sala unas escaleras que bajan. Abajo está la reproducción de la tumba.",
       "Pakal fue el gran rey de Palenque. Subió al trono con doce años y gobernó sesenta y ocho, hasta su muerte en el año 683.",
@@ -708,9 +746,11 @@ function di() {                                     // dice la frase R.k de la s
   var mio = ++R.turno;
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
   if (R.k >= R.fr.length) {                         // fin de la sección: la siguiente, si hay
+    if (R.prev && typeof R.i !== "string" && /^📍/.test(src(R.i).g[R.s][0])) { fin(); return; }   // objeto suelto: vuelve a la cultura
     if (R.s + 1 < src(R.i).g.length) {
+      var cult = /^🧭/.test(src(R.i).g[R.s][0]) && /^🧭/.test(src(R.i).g[R.s + 1][0]);
       R.s++; R.k = 0; R.fr = frases(R.i, R.s);
-      if (src(R.i).obj) { R.va = false; pintaRep(); aviso("Busca: " + src(R.i).g[R.s][0].replace(/^\S+\s/, "") + " · dale a ▶ cuando lo tengas delante"); return; }
+      if (src(R.i).obj && !cult) { R.va = false; pintaRep(); aviso("Busca: " + src(R.i).g[R.s][0].replace(/^\S+\s/, "") + " · dale a ▶ cuando lo tengas delante"); return; }
       pintaRep(); di(); }
     else fin();
     return;
@@ -921,7 +961,11 @@ function pinta(c, sinPedir) {
   c.querySelector(".vjX").addEventListener("click", cierra);
   [].forEach.call(c.querySelectorAll(".vjQ"), function (b) { b.addEventListener("click", function () { empieza(b.dataset.q, 0); }); });
   [].forEach.call(c.querySelectorAll(".vjB.au"), function (b) { b.addEventListener("click", function () { empieza(+b.dataset.i, 0); }); });
-  [].forEach.call(c.querySelectorAll(".vjS:not(.vjQ)"), function (b) { b.addEventListener("click", function () { empieza(+b.dataset.i, +b.dataset.s); }); });
+  [].forEach.call(c.querySelectorAll(".vjS:not(.vjQ)"), function (b) { b.addEventListener("click", function () {
+    var i = +b.dataset.i, s = +b.dataset.s, x = src(i);
+    var vuelve = x.obj && /^📍/.test(x.g[s][0]) && R.i === i && /^🧭/.test(x.g[R.s][0]) ? { i:R.i, s:R.s, k:R.k } : null;
+    empieza(i, s); if (vuelve) R.prev = vuelve;            // al acabar el objeto, vuelve a la cultura donde iba
+  }); });
 
   var filas = [].slice.call(c.querySelectorAll(".vjP")), cur = null;
   function marca() {
