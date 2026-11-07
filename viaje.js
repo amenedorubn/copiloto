@@ -90,8 +90,13 @@ var P = [
       "Sal de la Sala Mexica por el lado de Oaxaca, la fila de arriba del mapa, número cuatro. Si miras hacia la entrada, queda a tu derecha."] ] },
 
   { s:"16:55", e:"17:01", t:"🦇 Oaxaca", n:"Oaxaca", d:"Zapotecos y mixtecos. Si vas justo, esta es la que se recorta.", $:"", pin:4, obj:1, g:[
-    ["📍 La sala",
-      "Esta sala es de Oaxaca, al sur, con dos grandes culturas: los zapotecos, que construyeron Monte Albán en lo alto de una montaña aplanada, y los mixtecos, los mejores orfebres de Mesoamérica."],
+    ["🧭 Entender la cultura",
+      "Oaxaca es un estado de montañas, valles y sierras al sur de México. Hoy sigue siendo el estado con más pueblos indígenas y más lenguas vivas del país.",
+      "Los zapotecos, que se llamaban a sí mismos el pueblo de las nubes, fundaron Monte Albán hacia el año quinientos antes de Cristo. Aplanaron la cima de un cerro para construir una ciudad sagrada que dominó el valle durante más de mil años. Fueron de los primeros en Mesoamérica en usar escritura y calendario.",
+      "Su gran obsesión eran los antepasados. Enterraban a sus muertos en tumbas bajo las casas, decoradas con pinturas, y colocaban urnas de barro con figuras de dioses para que los protegieran.",
+      "Más tarde destacaron los mixtecos, del oeste de Oaxaca, que se llamaban el pueblo de la lluvia. Eran pequeños reinos que se aliaban y peleaban mediante bodas y guerras, y que lo dejaron todo escrito en códices pintados en piel de venado: genealogías de reyes, como un árbol familiar ilustrado.",
+      "Eran los mejores artesanos de su tiempo en oro, turquesa y hueso tallado. Los mexicas los conquistaron en parte y se llevaban a sus orfebres a Tenochtitlan.",
+      "La diferencia con los mexicas es clara: aquí no hay un imperio guerrero, sino ciudades y señoríos de montaña, muy ligados a la familia y a los antepasados."],
     ["📍 Máscara del dios murciélago",
       "Busca una máscara verde hecha de muchas piezas pequeñas de jade, con forma de murciélago.",
       "Se encontró en Monte Albán. El murciélago estaba ligado a la noche, la muerte y la fertilidad. Los ojos y los dientes son de concha."],
@@ -108,8 +113,13 @@ var P = [
       "Sigue a la sala de al lado: Golfo de México, el número cinco."] ] },
 
   { s:"17:01", e:"17:08", t:"🗿 Golfo de México (olmecas)", n:"Golfo", d:"La cabeza colosal olmeca y el Luchador.", $:"", pin:5, obj:1, g:[
-    ["📍 La sala",
-      "Los olmecas vivieron en la costa del golfo, en Veracruz y Tabasco, desde hace más de tres mil años. Se los suele llamar la cultura madre de Mesoamérica, porque muchas ideas que has visto en los mexicas aparecen primero aquí."],
+    ["🧭 Entender la cultura",
+      "La costa del golfo de México es tierra caliente y húmeda: selva, ríos enormes, pantanos y lluvias casi todo el año. Muy distinta del altiplano seco y frío donde vivían los mexicas. Aquí convivieron tres culturas en épocas distintas: olmecas, totonacas y huastecos.",
+      "Los olmecas son los más antiguos. Florecieron entre unos mil doscientos y cuatrocientos años antes de Cristo, en el sur de Veracruz y en Tabasco, en centros como San Lorenzo y La Venta. No eran un imperio, sino sociedades gobernadas por linajes de jefes poderosos, que se hacían retratar en esas cabezas colosales.",
+      "Se los llama cultura madre porque muchas cosas que luego son típicas de toda Mesoamérica aparecen primero con ellos: las pirámides de tierra, el juego de pelota, el culto al jaguar, el gusto por el jade y probablemente los primeros calendarios y signos de escritura. Comerciaban con jade y obsidiana hasta Oaxaca y el altiplano, y su estilo se copió por todas partes.",
+      "Fíjate en un rasgo olmeca que se repite: rostros con labios gruesos y hacia abajo, como un bebé llorando, a veces con rasgos de jaguar. Es el llamado hombre jaguar, una mezcla de humano y felino que se cree ligada a la lluvia y al poder de los gobernantes.",
+      "Siglos después, en el centro de Veracruz, vivieron los totonacas, con la gran ciudad de El Tajín, famosa por sus juegos de pelota. De ellos son los yugos y hachas de piedra, que imitan las protecciones que llevaban los jugadores en la cintura. Y las caritas sonrientes de barro: figuras que se ríen abiertamente, algo muy raro en el arte prehispánico.",
+      "Al norte, en la Huasteca, vivían los huastecos, emparentados por la lengua con los mayas aunque viven lejos de ellos. Los mexicas los consideraban gente desinhibida y fuerte, y tenían fama de ir pintados y tatuados. El Adolescente huasteco es su obra maestra."],
     ["📍 Cabeza colosal",
       "Busca una cabeza enorme de piedra, de más de dos metros, con una especie de casco.",
       "Es el retrato de un gobernante olmeca. Se tallaba en un solo bloque de basalto de varias toneladas que traían desde montañas a decenas de kilómetros, sin ruedas ni animales de carga. Se conocen diecisiete."],
@@ -123,8 +133,12 @@ var P = [
       "Sigue a la sala de al lado: Maya, el número seis."] ] },
 
   { s:"17:08", e:"17:22", t:"🌿 Maya: tumba de Pakal", n:"Maya", d:"Baja a la réplica de la tumba de Pakal. Después, sal al jardín a ver Bonampak.", $:"", pin:6, obj:1, g:[
-    ["📍 La sala",
-      "Los mayas vivieron en el sureste de México y en Centroamérica. Tenían la escritura más completa de América, un calendario muy preciso y conocían el cero."],
+    ["🧭 Entender la cultura",
+      "Los mayas vivieron en el sureste de México, en Yucatán, Chiapas, Campeche, Tabasco y Quintana Roo, y en Guatemala, Belice y Honduras. Nunca fueron un imperio ni un país: eran decenas de ciudades estado, cada una con su rey, que se aliaban y guerreaban entre sí, como las ciudades de la antigua Grecia.",
+      "Su gran época, el periodo clásico, va del año doscientos cincuenta al novecientos más o menos. Palenque, Tikal, Calakmul o Copán eran ciudades de piedra en plena selva, con templos, palacios y juegos de pelota. Sus reyes se consideraban sagrados y mediadores con los dioses, y se hacían sangrar en rituales para comunicarse con ellos.",
+      "Tenían la escritura más completa de América: podían escribir cualquier cosa que dijeran, con cientos de signos. Grabaron en piedra fechas, nombres de reyes, guerras y bodas, y hoy se puede leer gran parte de lo que escribieron. Usaban el cero y calculaban los ciclos de Venus y los eclipses con mucha precisión.",
+      "Hacia el año novecientos muchas ciudades del sur se abandonaron. Es el famoso colapso maya, probablemente por sequías, guerras y sobreexplotación de la selva. Pero los mayas no desaparecieron: siguieron en Yucatán, con ciudades como Chichén Itzá y Mayapán.",
+      "Y siguen hoy: más de seis millones de personas hablan lenguas mayas. La diferencia con los mexicas es grande: los mayas son mucho más antiguos, nunca tuvieron una capital común y su arte es más naturalista y narrativo, con retratos de reyes muy humanos."],
     ["📍 Tumba de Pakal",
       "Busca dentro de la sala unas escaleras que bajan. Abajo está la reproducción de la tumba.",
       "Pakal fue el gran rey de Palenque. Subió al trono con doce años y gobernó sesenta y ocho, hasta su muerte en el año 683.",
@@ -140,6 +154,12 @@ var P = [
       "Sigue a la sala de al lado: Norte y Occidente, el número siete."] ] },
 
   { s:"17:22", e:"17:28", t:"🐕 Norte + Occidente", n:"Occidente", d:"Cerámica de Paquimé y perritos de Colima. Después cruza el patio a la fila de abajo (8).", $:"", pin:7, obj:1, g:[
+    ["🧭 Entender la cultura",
+      "Esta sala junta dos zonas lejos del centro de Mesoamérica.",
+      "El occidente, con Colima, Jalisco y Nayarit, en la costa del Pacífico, vivió bastante apartado de las grandes culturas del centro. Durante siglos no construyeron grandes pirámides ni templos de piedra. Su arte está en las tumbas, en esas figuras de barro de gente cotidiana: familias, músicos, guerreros, enfermos, casas, perros. Es como un álbum de la vida diaria de hace dos mil años.",
+      "Más tarde, en Michoacán, surgieron los purépechas, a los que los españoles llamaron tarascos. Tuvieron un reino fuerte y fueron los únicos que derrotaron a los mexicas en batalla. Trabajaban muy bien el cobre y los metales.",
+      "El norte es otro mundo: desierto y sierras, con pueblos que en su mayoría eran cazadores y recolectores. Los mexicas los llamaban chichimecas, una palabra que venía a significar bárbaros. Hubo excepciones, como Paquimé en Chihuahua, una ciudad de adobe de varios pisos con canales de agua, más parecida a los pueblos del suroeste de Estados Unidos que a Teotihuacan.",
+      "La idea clave: Mesoamérica tenía límites. Al norte empezaba otra forma de vivir, y muchos de esos pueblos siguen ahí, como los rarámuris o tarahumaras de la sierra de Chihuahua."],
     ["📍 Cerámica de Paquimé",
       "En la parte del norte, busca vasijas pintadas con dibujos geométricos en rojo y negro.",
       "Son de Paquimé, en Chihuahua, una ciudad de adobe que comerciaba con el suroeste de lo que hoy es Estados Unidos, y criaba guacamayas para sus plumas."],
@@ -150,6 +170,12 @@ var P = [
       "Ahora cruza el patio, pasando junto al Paraguas, hasta el ala de enfrente. Empieza por la sala de Introducción, la más cercana a la entrada, el número ocho del mapa."] ] },
 
   { s:"17:28", e:"17:32", t:"🦣 Introducción + Poblamiento de América", n:"Poblamiento", d:"De paso: foto rápida y sigue a la sala de al lado.", $:"", pin:8, obj:1, g:[
+    ["🧭 Entender la historia",
+      "Esta sala es el principio de todo. América fue el último continente al que llegaron los humanos.",
+      "Durante la última glaciación, el nivel del mar bajó tanto que Asia y América quedaron unidas por tierra en lo que hoy es el estrecho de Bering. Por ahí, y probablemente también en barca bordeando la costa, pasaron grupos de cazadores hace más de quince mil años. Algunos hallazgos en México, como la cueva del Chiquihuite en Zacatecas, podrían ser aún más antiguos.",
+      "Eran grupos pequeños y nómadas que cazaban mamuts, bisontes y caballos, y recolectaban plantas. Cuando acabó la glaciación esos grandes animales se extinguieron, y la gente tuvo que cambiar de vida.",
+      "Entonces empezó la gran revolución: la agricultura. Aquí, en México, se domesticaron el maíz, el frijol, la calabaza, el chile, el tomate y el aguacate. El maíz viene del teocintle, una hierba con mazorcas diminutas, y tardaron miles de años en convertirlo en lo que hoy conocemos.",
+      "Con el maíz llegaron las aldeas, y con las aldeas todo lo demás que vas a ver en estas salas."],
     ["📍 Cazadores de mamut",
       "Busca la escena de cazadores con un mamut.",
       "Hace más de quince mil años, en plena glaciación, grupos de cazadores cruzaron desde Asia por el estrecho de Bering, que entonces era tierra firme. Bajaron por el continente cazando mamuts, bisontes y caballos, que luego se extinguieron.",
@@ -158,6 +184,11 @@ var P = [
       "Sigue a la sala de al lado: Preclásico, el número nueve."] ] },
 
   { s:"17:32", e:"17:37", t:"🤸 Preclásico (Tlatilco)", n:"Preclásico", d:"Figurillas de Tlatilco y el Acróbata.", $:"", pin:9, obj:1, g:[
+    ["🧭 Entender la época",
+      "El Preclásico es la época de los primeros pueblos agrícolas, aproximadamente entre el dos mil quinientos antes de Cristo y el año doscientos después.",
+      "En el valle de México, que entonces era una gran cuenca de lagos, la gente vivía en aldeas junto al agua: cultivaban maíz, pescaban y cazaban aves. Todavía no había grandes ciudades ni reyes poderosos, pero ya había diferencias: algunas tumbas tienen muchas más ofrendas que otras.",
+      "Tlatilco era una de esas aldeas, y de sus entierros salen casi todas las piezas de esta sala. Se ve la influencia olmeca, la de la sala del Golfo, en algunas figuras con rasgos de jaguar.",
+      "Al final de la época aparece Cuicuilco, al sur de la ciudad, con una pirámide circular. Una erupción del volcán Xitle la sepultó en lava hacia el siglo primero o segundo, y mucha gente se fue al norte del valle. Allí estaba creciendo Teotihuacan, la sala siguiente."],
     ["📍 Mujeres de Tlatilco",
       "Busca figurillas de barro pequeñas de mujeres con caderas anchas y peinados elaborados.",
       "Son de Tlatilco, un lugar al noroeste de la ciudad lleno de entierros de hace unos tres mil años. Se las llama mujeres bonitas y se asocian a la fertilidad."],
@@ -168,9 +199,12 @@ var P = [
       "Sigue a la sala de al lado: Teotihuacan, el número diez."] ] },
 
   { s:"17:37", e:"17:49", t:"🔺 Teotihuacan", n:"Teotihuacan", q:["tlaloc", "nahuatl"], d:"Fachada de Quetzalcóatl a tamaño real, Chalchiuhtlicue, máscaras y maqueta.", $:"", pin:10, obj:1, g:[
-    ["📍 La sala",
-      "Teotihuacan fue la gran ciudad de Mesoamérica entre los siglos uno y seis después de Cristo, con unos cien mil habitantes. Está a cincuenta kilómetros al noreste de aquí.",
-      "No sabemos cómo se llamaban ellos. El nombre se lo pusieron los mexicas siglos después, cuando la encontraron en ruinas: el lugar donde se hacen los dioses. Para ellos, allí había nacido el quinto sol."],
+    ["🧭 Entender la cultura",
+      "Teotihuacan fue la primera gran ciudad del altiplano y una de las mayores del mundo en su tiempo. Floreció entre los siglos uno y seis después de Cristo, con unos cien mil habitantes.",
+      "Lo más curioso es que no conocemos ni un solo nombre de sus gobernantes. No hay retratos de reyes ni tumbas reales claras, como sí tienen los mayas. Algunos investigadores creen que la gobernaba un consejo, y no un rey.",
+      "Estaba planificada como una cuadrícula, orientada según el sol, con la gran Calzada de los Muertos y las pirámides del Sol y de la Luna. La gente vivía en conjuntos de apartamentos de piedra para varias familias, con patios y pinturas murales. Había barrios de extranjeros, por ejemplo de gente de Oaxaca y de la costa del golfo.",
+      "Su riqueza venía de la obsidiana, el vidrio volcánico con el que se hacían cuchillos y puntas, y que se comerciaba por toda Mesoamérica. Su influencia llegó hasta las ciudades mayas, donde se han encontrado inscripciones sobre la llegada de gente de Teotihuacan.",
+      "Hacia el año quinientos cincuenta el centro ardió y la ciudad decayó. Cuando llegaron los mexicas, unos setecientos años después, la encontraron en ruinas y pensaron que la habían construido gigantes o dioses. Por eso le pusieron ese nombre."],
     ["📍 Fachada de Quetzalcóatl",
       "Busca una pared enorme de colores con cabezas de serpiente que salen de ella.",
       "Es la reproducción a tamaño real de una parte del Templo de Quetzalcóatl, con su color original: cabezas de serpiente emplumada alternadas con otras de aspecto geométrico, que se suelen identificar como la serpiente de fuego o el tocado de Tláloc.",
@@ -189,6 +223,12 @@ var P = [
       "Sigue a la sala de al lado: Toltecas, el número once."] ] },
 
   { s:"17:49", e:"17:55", t:"🗿 Toltecas", n:"Tolteca", d:"Atlante de Tula, Chac Mool y la cabeza de coyote de nácar.", $:"", pin:11, obj:1, g:[
+    ["🧭 Entender la cultura",
+      "Tras la caída de Teotihuacan, el centro de México se dividió en varias ciudades rivales. Una de las que más creció fue Tula, en Hidalgo, capital de los toltecas, entre los siglos diez y doce.",
+      "Los toltecas eran una sociedad muy militar: sus esculturas están llenas de guerreros, águilas y jaguares devorando corazones, y muros de calaveras. Es una época más dura y guerrera que la de Teotihuacan.",
+      "Tula tenía relación con Chichén Itzá, en Yucatán: hay edificios y Chac Mool casi idénticos en las dos ciudades, y todavía se discute quién influyó a quién.",
+      "Según la leyenda, Tula la gobernó Quetzalcóatl, un rey sacerdote sabio que acabó expulsado y se marchó hacia el oriente, prometiendo volver.",
+      "Para los mexicas, los toltecas eran el modelo perfecto. Decían descender de ellos, y la palabra tolteca pasó a significar artista o sabio. Es como los romanos mirando a los griegos."],
     ["📍 Atlante de Tula",
       "Busca un guerrero gigante de piedra, de pie, rígido.",
       "Es uno de los Atlantes que sostenían el techo de un templo en Tula, la capital tolteca, en Hidalgo. Fíjate en el pectoral de mariposa, el lanzadardos y el tocado de plumas.",
