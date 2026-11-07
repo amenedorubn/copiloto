@@ -786,7 +786,7 @@ function minutos(g) { var n = 0; g.forEach(function (s) { n += palabras(s); }); 
    Reproductor. Estado: sitio i, sección s, frase k. Frases ≤180 letras (el
    mp3 de Google corta ahí y la voz nativa responde mejor en trozos cortos).
    --------------------------------------------------------------------------- */
-var VELS = [0.75, 0.85, 1, 1.15, 1.3, 1.5, 1.75, 2, 2.5];
+var VELS = [0.75, 0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
 var R = { i:-1, s:0, k:0, fr:[], va:false, turno:0, vel:1, modo:null, empezo:false, prev:null };
 try { var v0 = parseFloat(localStorage.getItem("copiloto.viaje.vel")); if (VELS.indexOf(v0) >= 0) R.vel = v0; } catch (e) {}
 var UI = null, audioV = null;
