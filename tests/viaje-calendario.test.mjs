@@ -47,5 +47,5 @@ test("si el calendario no trae ninguna parada del plan del día, se queda el pla
   const P = JSON.parse(JSON.stringify(ctx.window.Viaje._lista()));
   assert.equal(ctx.window.Viaje.dia, "2026-11-07");
   assert.ok(P.find((x) => x.n === "Piedra del Sol").g.length >= 5);
-  assert.equal(P.length, 12);
+  assert.equal(P.length, 13);
 });

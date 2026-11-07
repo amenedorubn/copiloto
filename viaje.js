@@ -362,6 +362,35 @@ var P = [
     ["➡️ Salida",
       "Con esto has visto toda la planta baja. Sal al patio y vuelve hacia la entrada."] ] },
 
+  { s:"17:45", e:"18:00", t:"🧠 Resumen: todo lo que has visto", n:"Resumen", d:"Las culturas en orden y en qué se diferencian. Suena todo seguido.", $:"", g:[
+    ["🧠 La idea clave",
+      "Has visto más de tres mil años de historia en una tarde, así que vamos a ordenarlo todo en la cabeza con una sola idea: todo lo que has visto es una misma gran civilización, Mesoamérica, que fue creciendo por etapas y en lugares distintos. Todos compartían el maíz, las pirámides, el juego de pelota, el calendario de doscientos sesenta días y los sacrificios. Lo que cambia es la época, el lugar y la forma de organizarse.",
+      "Piénsalo como Europa: griegos, romanos, medievales y españoles son distintos, pero cada uno hereda del anterior. Aquí pasa igual."],
+    ["🧠 La línea del tiempo",
+      "Primero, los cazadores. Hace más de quince mil años llegaron desde Asia, cazando mamuts. Es la sala del poblamiento.",
+      "Después, el maíz. Hace unos nueve mil años se domesticó aquí, y con él aparecieron las aldeas. Es el Preclásico, con las figuritas de Tlatilco y el Acróbata.",
+      "Al mismo tiempo, en la costa del golfo, los olmecas, hace unos tres mil años. Son los primeros con pirámides, jade, jaguares y cabezas colosales. Por eso se les llama la cultura madre: inventaron cosas que todos copiaron después.",
+      "Luego, las grandes ciudades. En Oaxaca, los zapotecos levantan Monte Albán hacia el quinientos antes de Cristo. En el valle de México, Teotihuacan, del siglo uno al seis después de Cristo, la gran metrópoli de cien mil habitantes. Y en la selva, los mayas viven su época de oro entre el doscientos cincuenta y el novecientos.",
+      "Después, una época de guerra: cae Teotihuacan, se hunden las ciudades mayas del sur, y surge Tula, la ciudad de los toltecas, con sus Atlantes guerreros, entre el novecientos y el mil ciento cincuenta.",
+      "Y al final, los mexicas, los aztecas. Fundan Tenochtitlan en 1325 y en menos de doscientos años construyen un imperio. En 1521 llegan los españoles y todo cambia.",
+      "Resumen en una frase: olmecas, los abuelos; Teotihuacan y mayas, la edad de oro; toltecas, los guerreros; mexicas, el imperio final."],
+    ["🧠 Las diferencias, cultura por cultura",
+      "Los olmecas: los más antiguos, en la costa húmeda del golfo. Pocas ciudades, de tierra y no de piedra, y arte macizo y serio, con caras de bebé y jaguar. Son el origen.",
+      "Los zapotecos y mixtecos de Oaxaca: gente de montaña. No hicieron un imperio, sino ciudades y pequeños reinos muy centrados en la familia y en los antepasados. Los zapotecos, las urnas y Monte Albán. Los mixtecos, los mejores orfebres, con oro y turquesa, y libros pintados con genealogías de reyes.",
+      "Teotihuacan: una sola ciudad gigantesca y planificada, con calles en cuadrícula y apartamentos para el pueblo. Su gran misterio es que no conocemos a ningún rey: quizá la gobernaba un consejo. Su arte es geométrico e impersonal. Los mexicas la encontraron en ruinas y creyeron que la habían hecho los dioses.",
+      "Los mayas: muchas ciudades rivales en la selva, nunca un imperio, cada una con su rey sagrado. Son los grandes intelectuales: escritura completa, cero, astronomía. Su arte es el más humano y narrativo, con retratos de personas concretas. Y siguen vivos: millones hablan lenguas mayas hoy.",
+      "Los toltecas: la ciudad de Tula, en una época violenta. Arte de guerreros, águilas, jaguares y calaveras. Los mexicas los admiraban como el modelo perfecto, igual que los romanos admiraban a los griegos.",
+      "Los mexicas: los últimos y los más poderosos. Un imperio joven y militar, con capital en una isla del lago, que cobraba tributo a medio México. Su arte es monumental y está pensado para impresionar: la Piedra del Sol, la Coatlicue. Su religión giraba en torno a mantener vivo el sol con sacrificios.",
+      "Y en los márgenes: en el occidente, culturas centradas en la familia y las tumbas, con figuritas de la vida diaria y perros; y en el norte, pueblos nómadas del desierto, que los mexicas llamaban chichimecas."],
+    ["🧠 Lo que comparten todos",
+      "Si te quedas con tres cosas en común, que sean estas.",
+      "Uno: el maíz. Todos vivían de él, y muchos creían que los humanos estaban hechos de maíz.",
+      "Dos: el tiempo. Todos usaban el mismo calendario ritual de doscientos sesenta días y creían que el mundo se destruye y se renueva en ciclos, como los cinco soles de la Piedra del Sol.",
+      "Tres: el intercambio con los dioses. La lluvia, el sol y las cosechas había que pagarlos con ofrendas, con sangre y, a veces, con vidas humanas. Tláloc para los mexicas, Chaac para los mayas y Cocijo para los zapotecos son en el fondo el mismo dios de la lluvia con distinto nombre."],
+    ["🧠 Para recordarlo",
+      "Los olmecas empezaron. Teotihuacan y los mayas brillaron. Los toltecas guerrearon. Los mexicas dominaron. Y Oaxaca, el occidente y el norte fueron mundos propios alrededor.",
+      "Y nada de esto desapareció del todo: los pueblos de la planta de arriba son sus descendientes, y en México se siguen hablando más de sesenta lenguas indígenas."] ] },
+
   { s:"17:55", e:"18:00", t:"🚪 Salida", d:"Cruza el patio hasta el vestíbulo y sal por la entrada principal. Recoge lo del guardarropa.", $:"", pin:12 }
 ];
 
