@@ -786,7 +786,7 @@ function minutos(g) { var n = 0; g.forEach(function (s) { n += palabras(s); }); 
    Reproductor. Estado: sitio i, sección s, frase k. Frases ≤180 letras (el
    mp3 de Google corta ahí y la voz nativa responde mejor en trozos cortos).
    --------------------------------------------------------------------------- */
-var VELS = [0.75, 0.85, 1, 1.15, 1.3, 1.5];
+var VELS = [0.75, 0.85, 1, 1.15, 1.3, 1.5, 1.75, 2, 2.5];
 var R = { i:-1, s:0, k:0, fr:[], va:false, turno:0, vel:1, modo:null, empezo:false, prev:null };
 try { var v0 = parseFloat(localStorage.getItem("copiloto.viaje.vel")); if (VELS.indexOf(v0) >= 0) R.vel = v0; } catch (e) {}
 var UI = null, audioV = null;
@@ -892,7 +892,8 @@ function vel(d) {
   j = Math.min(VELS.length - 1, Math.max(0, j + d)); R.vel = VELS[j];
   try { localStorage.setItem("copiloto.viaje.vel", String(R.vel)); } catch (e) {}
   if (R.modo === "mp3" && audioV) { try { audioV.playbackRate = R.vel; } catch (e) {} pintaRep(); return; }
-  if (R.va) di(); else pintaRep();                  // la voz nativa no cambia en marcha: repite la frase
+  pintaRep();                                       // la voz del móvil no cambia en marcha: la nueva velocidad entra en la frase siguiente, sin repetir
+  if (R.va) aviso("Velocidad ×" + String(R.vel).replace(".", ",") + " desde la siguiente frase");
 }
 function aviso(t) { if (UI) { UI.sub.textContent = t; } }
 
