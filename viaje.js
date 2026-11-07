@@ -16,7 +16,7 @@
 (function () {
 "use strict";
 
-var DIA = "2026-11-04";
+var DIA = "2026-11-07";
 var GM = "https://maps.google.com/?cid=";
 var RUTA = function (d) { return "https://www.google.com/maps/dir/?api=1&travelmode=transit&destination=" + encodeURIComponent(d); };
 
@@ -25,6 +25,123 @@ var RUTA = function (d) { return "https://www.google.com/maps/dir/?api=1&travelm
    g: secciones de la guía [[título, párrafo, párrafo…], …]
    --------------------------------------------------------------------------- */
 var P = [
+  { s:"16:30", e:"16:33", t:"🏛️ Entrada y el Paraguas", n:"Paraguas", q:["mexicas"], d:"Pasa el vestíbulo, sal al patio y gira a la DERECHA: primera puerta, sala de Introducción. Mochila grande o bebida al guardarropa.", $:"", map:"https://www.google.com/maps/search/?api=1&query=Museo+Nacional+de+Antropolog%C3%ADa+CDMX", g:[
+    ["Lo esencial",
+      "Estás en el Museo Nacional de Antropología, inaugurado en 1964 y diseñado por el arquitecto Pedro Ramírez Vázquez. Es el museo más visitado de México y guarda la mayor colección de arte prehispánico del mundo.",
+      "La planta baja es arqueología: cada sala es una cultura antigua. La planta alta es etnografía, los pueblos indígenas de hoy. Con hora y media, quédate abajo.",
+      "La estructura del patio es el Paraguas: una cubierta enorme apoyada en una sola columna de bronce, de la que cae una cortina de agua. Los relieves de la columna son de José Chávez Morado y cuentan la historia de México."],
+    ["Por dónde ir",
+      "Sal al patio y gira a la derecha. Vas a dar la vuelta completa al patio: primero el ala derecha, del poblamiento de América a los toltecas; luego, al fondo, la Sala Mexica con la Piedra del Sol; y al final el ala izquierda: Oaxaca, Golfo, Maya, Norte y Occidente, que te dejan de nuevo junto a la salida.",
+      "Al salir de cada sala, la siguiente está justo al lado.",
+      "Una curiosidad de fuera: el Tláloc gigante de la entrada, en Reforma, pesa más de ciento sesenta toneladas. Lo trajeron en 1964 desde Coatlinchán, y cuentan que cuando llegó a la ciudad cayó un aguacero fuera de temporada."] ] },
+
+  { s:"16:33", e:"16:38", t:"🦣 Introducción + Poblamiento de América", n:"Poblamiento", d:"De paso: foto rápida y sigue a la sala de al lado.", $:"", g:[
+    ["Lo esencial",
+      "Las dos primeras salas son la puerta de entrada. La de introducción explica qué es la antropología y cómo evolucionó el ser humano. La siguiente cuenta cómo llegaron las personas a América.",
+      "Hace más de quince mil años, en plena glaciación, grupos de cazadores cruzaron desde Asia por el estrecho de Bering, que entonces era tierra firme. Bajaron por el continente cazando mamuts, bisontes y caballos, que luego se extinguieron.",
+      "Busca la escena de cazadores con el mamut. Y piensa que el maíz, que lo cambió todo, se domesticó aquí en México hace unos nueve mil años, a partir de una hierba silvestre llamada teocintle, con mazorcas del tamaño de un dedo. Sigue a la sala de al lado."] ] },
+
+  { s:"16:38", e:"16:43", t:"🤸 Preclásico (Tlatilco)", n:"Preclásico", d:"Figurillas de Tlatilco y el Acróbata.", $:"", g:[
+    ["Lo esencial",
+      "Esta sala es el Preclásico del altiplano central, entre unos dos mil quinientos y doscientos años antes de Cristo. Son los primeros pueblos agrícolas del valle de México.",
+      "Casi todo viene de Tlatilco, un lugar al noroeste de la ciudad lleno de entierros. Mira las figurillas de barro de mujeres, con caderas anchas y peinados elaborados, que se suelen llamar mujeres bonitas. Se asocian a la fertilidad.",
+      "La pieza estrella es el Acróbata, o contorsionista: una figura que se dobla hacia atrás hasta apoyar los pies sobre la cabeza. Hazle la foto y sigue: la siguiente sala es Teotihuacan."] ] },
+
+  { s:"16:43", e:"16:55", t:"🔺 Teotihuacan", n:"Teotihuacan", q:["tlaloc", "nahuatl"], d:"Fachada de Quetzalcóatl a tamaño real, Chalchiuhtlicue, máscaras y maqueta.", $:"", g:[
+    ["Lo esencial",
+      "Teotihuacan fue la gran ciudad de Mesoamérica entre los siglos uno y seis después de Cristo. Llegó a tener unos cien mil habitantes, una de las mayores ciudades del mundo de su época. Está a cincuenta kilómetros al noreste de aquí.",
+      "No sabemos cómo se llamaban ellos ni qué lengua hablaban. El nombre Teotihuacan se lo pusieron los mexicas siglos después, cuando la encontraron en ruinas: significa el lugar donde se hacen los dioses. Para ellos, allí había nacido el quinto sol, el que vas a ver en la Piedra del Sol."],
+    ["Qué buscar",
+      "La pieza más espectacular es la reproducción a tamaño real de una parte del Templo de Quetzalcóatl, con su color original: cabezas de serpiente emplumada alternadas con otras de aspecto geométrico, que se suelen identificar como la serpiente de fuego o el tocado de Tláloc.",
+      "La enorme escultura de piedra es Chalchiuhtlicue, la diosa del agua, la de la falda de jade. Pesa más de veinte toneladas y estaba cerca de la Pirámide de la Luna.",
+      "Mira también las máscaras de piedra verde, con incrustaciones de concha y obsidiana en los ojos, y la maqueta de la ciudad, con la Calzada de los Muertos y las pirámides del Sol y la Luna."],
+    ["Curiosidad",
+      "Teotihuacan acabó hacia el año 550, con un gran incendio del centro de la ciudad. No se sabe si fue una revuelta interna o un ataque. Sigue a la sala de al lado: los toltecas."] ] },
+
+  { s:"16:55", e:"17:00", t:"🗿 Toltecas", n:"Tolteca", d:"Atlante de Tula, Chac Mool y la cabeza de coyote de nácar.", $:"", g:[
+    ["Lo esencial",
+      "Los toltecas dominaron el centro de México entre los siglos diez y doce, con capital en Tula, en Hidalgo. Los mexicas los admiraban tanto que tolteca llegó a significar artista o sabio.",
+      "El gigante de piedra es un Atlante: uno de los guerreros que sostenían el techo de un templo en Tula. Fíjate en el pectoral de mariposa, el lanzadardos y el tocado de plumas.",
+      "El Chac Mool es la figura recostada que gira la cabeza y sostiene un recipiente en el vientre, probablemente para ofrendas. Y busca la cabeza de coyote con un rostro humano dentro de las fauces, cubierta de piezas de concha nácar. Es pequeña y muy fácil de pasar por alto.",
+      "Desde aquí, sigue al fondo: la gran sala central es la Mexica. Ve directo a la Piedra del Sol, en la pared del fondo."] ] },
+
+  { s:"17:00", e:"17:12", t:"☀️ Piedra del Sol (Sala Mexica)", n:"Piedra del Sol", q:["mexicas", "moctezuma", "nahuatl"], d:"En la pared del fondo de la Sala Mexica, en el centro. Colócate de frente y luego acércate al anillo de los días.", $:"", g:[
+    ["Lo esencial",
+      "Delante tienes la pieza más famosa de México: la Piedra del Sol. Es un disco de basalto de unos tres metros y medio de diámetro y casi veinticinco toneladas, tallado por los mexicas a finales del siglo quince o principios del dieciséis, pocos años antes de la llegada de los españoles.",
+      "Se la llama calendario azteca, pero no es un calendario para consultar fechas. Es un monumento religioso: una imagen del cosmos mexica, de cómo nació este mundo y de cómo va a terminar.",
+      "Originalmente estaba pintada de colores: rojo, amarillo, azul y blanco. Hoy se ve gris, pero en Tenochtitlan brillaba."],
+    ["El rostro del centro",
+      "Empieza por el centro. Ese rostro suele identificarse con Tonatiuh, el sol. Algunos investigadores creen que es Tlaltecuhtli, el señor de la tierra, o el sol nocturno que viaja por el inframundo. El debate sigue abierto.",
+      "Fíjate en la lengua: es un cuchillo de pedernal, el cuchillo del sacrificio. Y a los lados, las garras sujetan corazones humanos. Para los mexicas, el sol necesitaba sangre para seguir moviéndose, y los sacrificios lo alimentaban."],
+    ["Los cinco soles",
+      "Alrededor del rostro hay cuatro recuadros. Son los cuatro soles, las cuatro eras anteriores del mundo, cada una destruida de una forma.",
+      "Arriba a la derecha, el jaguar: el primer sol, que acabó cuando los jaguares devoraron a los gigantes. Arriba a la izquierda, el viento: el segundo, barrido por huracanes. Abajo a la izquierda, la lluvia de fuego. Y abajo a la derecha, el agua: el cuarto sol, que acabó en un diluvio.",
+      "Los cuatro juntos, con el centro, forman el signo Nahui Ollin, cuatro movimiento. Es el quinto sol, el nuestro. Según el mito, este mundo terminará con terremotos."],
+    ["El anillo de los días",
+      "El primer anillo que rodea todo eso tiene veinte casillas. Son los veinte signos de los días del calendario ritual mexica: cocodrilo, viento, casa, lagartija, serpiente, muerte, venado, conejo, agua, perro, mono, hierba, caña, jaguar, águila, zopilote, movimiento, pedernal, lluvia y flor.",
+      "Combinados con los números del uno al trece daban un ciclo de doscientos sesenta días, que se usaba para los rituales y para poner nombre a las personas según el día en que nacían."],
+    ["Las serpientes de fuego",
+      "Ahora mira el borde exterior. Lo rodean dos xiuhcóatl, serpientes de fuego, con el cuerpo dividido en segmentos. Sus colas empiezan arriba y sus cabezas se encuentran abajo, en el centro, frente a frente. De sus fauces salen dos rostros humanos.",
+      "Justo arriba, entre las colas, hay un recuadro con una fecha: trece caña. Es el año en que, según el mito, nació el quinto sol. Esas serpientes cargan al sol en su recorrido por el cielo."],
+    ["Su historia",
+      "Después de la conquista, la piedra se enterró boca abajo en la plaza mayor, quizá para borrar los antiguos dioses. Pasó más de dos siglos bajo el suelo.",
+      "Apareció el 17 de diciembre de 1790, durante unas obras para empedrar el Zócalo, pocos meses después de que saliera la Coatlicue, que tienes en esta misma sala. El astrónomo Antonio de León y Gama la estudió y publicó el primer libro sobre ella.",
+      "Durante casi cien años estuvo empotrada en el muro de la torre oeste de la Catedral, la que viste el otro día, a la vista de todos. En 1885 la llevaron al museo de la calle Moneda, y en 1964 la trajeron aquí."],
+    ["Qué buscar",
+      "Ponte primero lejos, de frente, para ver el conjunto. Después acércate y busca, en este orden: la lengua de cuchillo, las garras con corazones, el jaguar de arriba a la derecha, la fecha trece caña arriba del todo y las dos cabezas de serpiente abajo.",
+      "Mira también el borde lateral: hay zonas sin terminar o dañadas. Y fíjate en las marcas del lado derecho: se cree que en algún momento se intentó romper o reutilizar la piedra."] ] },
+
+  { s:"17:12", e:"17:25", t:"🐍 Resto de la Sala Mexica", n:"Sala Mexica", q:["mexicas", "moctezuma", "tlaloc"], d:"Coatlicue, Piedra de Tízoc, ocelocuauhxicalli, maqueta de Tenochtitlan y réplica del penacho.", $:"", g:[
+    ["Coatlicue",
+      "Busca la gran escultura vertical: es Coatlicue, la de la falda de serpientes, madre de Huitzilopochtli. Salió del Zócalo en agosto de 1790, cuatro meses antes que la Piedra del Sol.",
+      "No tiene cabeza: en su lugar brotan dos serpientes que se miran, y que representan dos chorros de sangre. Lleva un collar de manos y corazones con una calavera en el centro, y sus pies son garras.",
+      "Causó tanta impresión que la volvieron a enterrar en el patio de la universidad, para que nadie la adorara ni se asustara. La desenterraron y enterraron varias veces hasta que se quedó en el museo."],
+    ["Más piezas",
+      "La Piedra de Tízoc es el gran cilindro tallado. Muestra al gobernante Tízoc capturando a guerreros de pueblos vencidos; en la parte de arriba tiene un hueco y un canal, quizá para sacrificios.",
+      "El jaguar con un hueco en el lomo es un ocelocuauhxicalli: un recipiente donde se depositaban los corazones de los sacrificados.",
+      "Xochipilli, el príncipe de las flores, es la figura sentada con máscara y el cuerpo cubierto de flores talladas. Era el dios del arte, la música, la danza y el placer.",
+      "La maqueta de Tenochtitlan te enseña la ciudad sobre el lago, con el recinto sagrado y el Templo Mayor en el centro. Es justo lo que viste el miércoles desde fuera.",
+      "Y el penacho verde de plumas de quetzal es una réplica del llamado penacho de Moctezuma. El original está en Viena, y México lleva años pidiendo que vuelva."],
+    ["Consejo",
+      "A las cinco y veinticinco sal de la sala y sigue hacia la izquierda, hacia el ala de enfrente: la primera sala es Oaxaca."] ] },
+
+  { s:"17:25", e:"17:31", t:"🦇 Oaxaca", n:"Oaxaca", d:"Zapotecos y mixtecos. Si vas justo, esta es la que se recorta.", $:"", g:[
+    ["Lo esencial",
+      "Esta sala es de Oaxaca, al sur, con dos grandes culturas: los zapotecos, que construyeron Monte Albán en lo alto de una montaña aplanada, y los mixtecos, los mejores orfebres de Mesoamérica.",
+      "Busca la máscara del dios murciélago, un mosaico de piezas de jade encontrado en Monte Albán. Mira también las urnas de barro zapotecas, con figuras de dioses sentados, y las joyas de oro mixtecas, finísimas.",
+      "Fíjate también en las réplicas de los Danzantes de Monte Albán: figuras de hombres en posturas retorcidas que hoy se cree que son prisioneros sacrificados.",
+      "Si vas con prisa, sigue directo a la sala siguiente: Golfo de México."] ] },
+
+  { s:"17:31", e:"17:38", t:"🗿 Golfo de México (olmecas)", n:"Golfo", d:"La cabeza colosal olmeca y el Luchador.", $:"", g:[
+    ["Lo esencial",
+      "Los olmecas vivieron en la costa del golfo, en Veracruz y Tabasco, desde hace más de tres mil años. Se los suele llamar la cultura madre de Mesoamérica, porque muchas ideas que luego verás en mexicas y mayas aparecen primero aquí.",
+      "La pieza estrella es la cabeza colosal: un retrato de un gobernante con una especie de casco, tallado en un bloque de basalto de varias toneladas que trajeron desde montañas a decenas de kilómetros, sin ruedas ni animales de carga.",
+      "Busca también el Luchador, una figura pequeña de un hombre sentado con los brazos en movimiento. Es de las esculturas más naturales y modernas que vas a ver en todo el museo.",
+      "Y en la parte huasteca, el Adolescente huasteco: un joven desnudo con el cuerpo cubierto de tatuajes tallados. Probablemente representa a Quetzalcóatl joven."] ] },
+
+  { s:"17:38", e:"17:52", t:"🌿 Maya: tumba de Pakal", n:"Maya", d:"Baja a la réplica de la tumba de Pakal. Después, sal al jardín a ver Bonampak.", $:"", g:[
+    ["Lo esencial",
+      "Los mayas vivieron en el sureste de México y en Centroamérica. Tenían la escritura más completa de América, un calendario muy preciso y conocían el cero.",
+      "Lo más importante de la sala está abajo: la reproducción de la tumba de Pakal, el gran rey de Palenque. Subió al trono con doce años y gobernó sesenta y ocho, hasta su muerte en el año 683."],
+    ["La tumba",
+      "Su tumba la descubrió en 1952 el arqueólogo Alberto Ruz, dentro del Templo de las Inscripciones de Palenque. Tardó cuatro años en vaciar la escalera interior, rellena de escombros a propósito.",
+      "Pakal estaba en un sarcófago tapado con una losa tallada, que verás reproducida: el rey cayendo al inframundo, o renaciendo, bajo un árbol sagrado.",
+      "Su máscara funeraria de jade, la original, está en esta sala. Fue robada en la Navidad de 1985 junto con otras piezas del museo, y se recuperó en 1989."],
+    ["Qué buscar al salir",
+      "Al acabar, sal al jardín de la sala maya. Hay una reproducción de un templo de Bonampak con sus murales pintados, en colores muy vivos, con escenas de guerra y de la corte.",
+      "A las seis menos ocho sigue a la sala de al lado: Norte y Occidente."] ] },
+
+  { s:"17:52", e:"17:58", t:"🐕 Norte + Occidente", n:"Occidente", d:"Cerámica de Paquimé y los perritos de Colima. Después, al vestíbulo y salida.", $:"", g:[
+    ["Lo esencial",
+      "Las dos últimas salas son el norte y el occidente de México, culturas muy distintas a las del centro.",
+      "En la sala del norte busca la cerámica de Paquimé, en Chihuahua: vasijas pintadas con dibujos geométricos y figuras humanas. Paquimé comerciaba con el suroeste de lo que hoy es Estados Unidos.",
+      "En occidente, sobre todo Colima, Jalisco y Nayarit, enterraban a sus muertos en tumbas de tiro: un pozo vertical con cámaras al fondo. Dentro ponían figuras de barro. Las más famosas son los perritos de Colima, gorditos y brillantes. Son xoloitzcuintles, los perros sin pelo que según la tradición guiaban a las almas al inframundo.",
+      "Y con esto has visto la planta baja completa. Vuelve al vestíbulo y sal."] ] },
+
+  { s:"17:58", e:"18:00", t:"🚪 Salida", d:"Vuelve al patio y sal por la entrada principal. Recoge lo del guardarropa.", $:"" }
+];
+
+var VIEJO = [
   { s:"8:30", e:"9:00", t:"🎒 Preparar la mochila", d:"Powerbank y cable, mapa offline, gorra, crema solar, pesos y tarjeta, monedas para baños.", $:"$0" },
   { s:"9:00", e:"9:10", t:"🛒 Soriana: agua para el día", d:"Botella de 1,5 L. Metro al lado: División del Norte (L3).", $:"$15–25 💳", map:GM+"2748762233231824542", pin:1 },
   { s:"9:10", e:"9:55", t:"🚇 Soriana → Zócalo", d:"División del Norte → Hidalgo, cambio → Zócalo/Tenochtitlan. Sales directo a la plaza.", l:["L3","L2"], $:"$5", map:RUTA("Zócalo, Ciudad de México"), mov:1 },
@@ -237,7 +354,7 @@ var P = [
 
 /* Paradas que ya no están en el plan fijo pero cuya guía se usa si vuelven al
    calendario (se emparejan por nombre). */
-var EXTRA = [
+var EXTRA = VIEJO.concat([
   { s:"11:00", e:"12:45", t:"🔺 Templo Mayor (zona + museo)", n:"Templo Mayor", q:["mexicas", "tlaloc", "nahuatl", "moctezuma"], d:"Pegado al lado este de la Catedral. Taquilla en calle Seminario 8, junto a la maqueta de Tenochtitlan. Primero ruinas, luego museo.", $:"$210 💵/💳", map:GM+"10128805338444740272", pin:4, g:[
     ["Lo esencial",
       "Estás en lo que fue el centro del mundo para los mexicas: el Huey Teocalli, el gran templo de Tenochtitlan. Era una pirámide de unos cuarenta y cinco metros de altura, con dos escalinatas y dos santuarios en lo alto.",
@@ -268,7 +385,7 @@ var EXTRA = [
       "El recorrido empieza por las ruinas al aire libre y termina en el museo. Calcula una hora para cada parte.",
       "El último acceso es hacia las cuatro y media, así que vas con tiempo de sobra. No se puede usar flash.",
       "Si en la taquilla aceptan tarjeta, paga con ella y guarda el efectivo para la comida."] ] }
-];
+]);
 
 /* ---------------------------------------------------------------------------
    ¿Quién es? Personajes y palabras que salen en las guías. Cada parada lista
@@ -614,11 +731,12 @@ function desdeCal(evs) {
     out.push(y);
   });
   out.sort(function (a, b) { return min(a.s) - min(b.s); });
+  out.casan = usados.filter(function (x) { return FIJO.indexOf(x) >= 0; }).length;
   return out;
 }
 function aplica(evs, estado, hora) {
   var q = desdeCal(evs);
-  if (!q.length) return false;
+  if (!q.length || !q.casan) return false;           // el calendario no trae este plan: se queda el fijo
   P = q; SYNC = { estado:estado, hora:hora }; return true;
 }
 function guardado() {

@@ -37,18 +37,15 @@ test("/viaje sin el secreto avisa y sin clave no contesta", async () => {
   assert.equal(r2.status, 401);
 });
 
-test("la guía empareja cada evento con su parada y conserva el audio", async () => {
+test("si el calendario no trae ninguna parada del plan del día, se queda el plan fijo", async () => {
   const r = await app.fetch(new Request("https://w.test/viaje?dia=2026-11-04", { headers: { "X-Copiloto-Key": "k" } }), env);
   const { eventos } = await r.json();
   const ls = {}, win = {}, ctx = { window: win, localStorage: { getItem: (k) => ls[k] || null, setItem: (k, v) => { ls[k] = v; } } };
   ctx.globalThis = ctx;
-  vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
-  ls["copiloto.viaje.cal.2026-11-04"] = JSON.stringify({ hora: "11:39", eventos });
+  ls["copiloto.viaje.cal.2026-11-07"] = JSON.stringify({ hora: "11:39", eventos });
   vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
   const P = JSON.parse(JSON.stringify(ctx.window.Viaje._lista()));
-  assert.deepEqual(P.map((x) => [x.s, !!x.g, !!x.mov]), [
-    ["9:30", false, false], ["10:10", false, true], ["11:40", true, false], ["17:15", true, false], ["19:00", false, false]]);
-  assert.deepEqual(P[1].l, ["L3", "L2"]);
-  assert.equal(P[2].n, "SEP");
-  assert.equal(P[4].d, "Una descripción.");
+  assert.equal(ctx.window.Viaje.dia, "2026-11-07");
+  assert.equal(P[1].n, "Piedra del Sol");
+  assert.ok(P[1].g.length >= 5);
 });
