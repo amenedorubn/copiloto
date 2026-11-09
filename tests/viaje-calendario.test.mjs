@@ -42,10 +42,10 @@ test("si el calendario no trae ninguna parada del plan del día, se queda el pla
   const { eventos } = await r.json();
   const ls = {}, win = {}, ctx = { window: win, localStorage: { getItem: (k) => ls[k] || null, setItem: (k, v) => { ls[k] = v; } } };
   ctx.globalThis = ctx;
-  ls["copiloto.viaje.cal.2026-11-07"] = JSON.stringify({ hora: "11:39", eventos });
+  ls["copiloto.viaje.cal.2026-11-09"] = JSON.stringify({ hora: "11:39", eventos });
   vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
   const P = JSON.parse(JSON.stringify(ctx.window.Viaje._lista()));
-  assert.equal(ctx.window.Viaje.dia, "2026-11-07");
-  assert.ok(P.find((x) => x.n === "Piedra del Sol").g.length >= 5);
-  assert.equal(P.length, 13);
+  assert.equal(ctx.window.Viaje.dia, "2026-11-09");
+  assert.ok(P.find((x) => /Pirámide del Sol/.test(x.t)).g.length >= 5);
+  assert.equal(P.length, 8);
 });

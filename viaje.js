@@ -1,5 +1,5 @@
 /* ===========================================================================
-   VIAJE · guía del día en CDMX (v2.82.0)
+   VIAJE · guía del día (lunes 9: Teotihuacan)
    ---------------------------------------------------------------------------
    Viaje.pinta(c): el miércoles 4 de noviembre de 2026 en Ciudad de México.
    Arriba el mapa esquemático del Centro, debajo el horario. Cada parada lleva
@@ -16,7 +16,7 @@
 (function () {
 "use strict";
 
-var DIA = "2026-11-07";
+var DIA = "2026-11-09";
 var GM = "https://maps.google.com/?cid=";
 var RUTA = function (d) { return "https://www.google.com/maps/dir/?api=1&travelmode=transit&destination=" + encodeURIComponent(d); };
 
@@ -25,6 +25,185 @@ var RUTA = function (d) { return "https://www.google.com/maps/dir/?api=1&travelm
    g: secciones de la guía [[título, párrafo, párrafo…], …]
    --------------------------------------------------------------------------- */
 var P = [
+  { s:"15:45", e:"16:00", t:"🧭 Entender Teotihuacan (ponlo mientras caminas)", q:["mexicas", "nahuatl", "tlaloc", "talud", "obsidiana"], d:"La historia completa de la ciudad: quiénes eran, cómo vivían, quién mandaba y por qué cayó. Escúchalo andando por la Calzada, entre parada y parada.", $:"", pin:1, map:"https://www.google.com/maps/search/?api=1&query=Zona+Arqueol%C3%B3gica+de+Teotihuacan", g:[
+    ["Lo esencial",
+      "Estás en Teotihuacan, la ciudad más grande que hubo en América antes de la llegada de los europeos durante casi mil años. Ojo con una cosa: esto no es azteca. Cuando los mexicas llegaron a este valle, esta ciudad llevaba más de setecientos años en ruinas. Para ellos era tan antigua y misteriosa como para nosotros la Roma imperial.",
+      "La ciudad nació hacia el año 100 antes de Cristo, tuvo su mejor momento entre los años 350 y 550 de nuestra era, y fue abandonada poco después. En su apogeo vivían aquí más de cien mil personas, en unos veinte kilómetros cuadrados. En ese momento era una de las cinco o seis ciudades más grandes del planeta, a la altura de Constantinopla.",
+      "Lo que pisas hoy es solo el centro ceremonial, más o menos una décima parte de la ciudad. Debajo de los campos, los pueblos y las carreteras que ves alrededor siguen enterrados miles de edificios.",
+      "Estás a unos dos mil trescientos metros de altitud, algo más alto que Ciudad de México. Si te cansas más de lo normal, es por eso."],
+    ["El nombre y el mito del Quinto Sol",
+      "No sabemos cómo llamaban ellos a su ciudad, ni siquiera qué idioma hablaban. Teotihuacan es una palabra náhuatl que le pusieron los mexicas siglos después. Suele traducirse como el lugar donde los hombres se convierten en dioses, o el lugar donde fueron hechos los dioses.",
+      "También los nombres de los edificios son mexicas: Pirámide del Sol, Pirámide de la Luna, Calzada de los Muertos. Los pusieron ellos, mirando las ruinas e imaginando qué habían sido. Así que no te los tomes al pie de la letra.",
+      "Los mexicas creían que aquí había nacido el mundo actual. Su mito cuenta que, tras la destrucción del cuarto sol, todo estaba a oscuras, y los dioses se reunieron en Teotihuacan alrededor de una gran hoguera. Uno de ellos tenía que arrojarse al fuego para convertirse en el nuevo sol.",
+      "Se ofrecieron dos. Tecuciztécatl, rico y orgulloso, que ofrecía plumas preciosas y oro. Y Nanahuatzin, pobre, enfermo y cubierto de llagas, que solo podía ofrecer cañas y espinas con su propia sangre. Tecuciztécatl se acercó al fuego cuatro veces y las cuatro se echó atrás. Nanahuatzin cerró los ojos y saltó a la primera. Se convirtió en el sol.",
+      "Avergonzado, Tecuciztécatl saltó detrás y se convirtió en un segundo sol, igual de brillante. Los dioses, para castigarlo, le lanzaron un conejo a la cara y apagaron su brillo: así nació la luna. Por eso en México, cuando miran la luna llena, no ven una cara: ven un conejo.",
+      "Pero el sol no se movía. Entonces todos los demás dioses se sacrificaron para darle fuerza, y el viento sopló hasta ponerlo en marcha. Ese es el quinto sol, el de la Piedra del Sol que viste el sábado en el museo. Para los mexicas, la deuda de los humanos con los dioses empezó exactamente donde tienes los pies."],
+    ["Cómo estaba hecha la ciudad",
+      "Teotihuacan no creció a lo loco: fue planificada. Todo está alineado con una misma orientación, desviada unos quince grados y medio al este del norte. La Calzada, las pirámides, las casas e incluso el río San Juan, que desviaron y canalizaron para que cruzara la avenida en ángulo recto.",
+      "Esa orientación no es casual. Con ella, la Pirámide del Sol mira hacia el punto del horizonte por donde se pone el sol dos días al año, el 29 de abril y el 13 de agosto. Entre una fecha y otra hay ciento cinco días, y el resto del año suma doscientos sesenta: justo la duración del calendario ritual de toda Mesoamérica.",
+      "Casi todos los edificios usan el mismo módulo, que es la firma de la ciudad: el talud-tablero. Un muro inclinado, el talud, y encima un panel rectangular con marco, el tablero. Uno sobre otro, como escalones gigantes. Cuando ese diseño aparece en una ciudad maya o en Oaxaca, los arqueólogos saben que Teotihuacan anduvo por allí.",
+      "Y todo estaba pintado. Las pirámides iban recubiertas de estuco de cal y pintadas, sobre todo de rojo. Las piedras pequeñas que ves sobresalir de las paredes eran el agarre de ese estuco. Imagina la ciudad entera de color rojo y blanco, brillando al sol."],
+    ["Cómo vivía la gente",
+      "Esto es lo más moderno de Teotihuacan. La mayoría de la población no vivía en chozas, sino en unos dos mil conjuntos de apartamentos: grandes manzanas de piedra, de una sola planta, con muros altos hacia la calle y, dentro, patios, habitaciones, cocinas, altares y desagües.",
+      "En cada conjunto vivían varias familias emparentadas, de sesenta a cien personas, que solían dedicarse al mismo oficio: alfareros, talladores de obsidiana, pintores, albañiles. A sus muertos los enterraban bajo el suelo de casa.",
+      "Era además una ciudad de inmigrantes. Había un barrio de gente de Oaxaca, que durante siglos siguió haciendo cerámica zapoteca y enterrando a sus muertos a su manera. Había un barrio de comerciantes de la costa del Golfo y de la zona maya, con casas redondas. Y gente del occidente. Los análisis de los huesos confirman que muchos habitantes habían nacido muy lejos de aquí.",
+      "La riqueza venía en buena parte de la obsidiana, un vidrio volcánico negro o verde que era el acero de aquel mundo: de ella salían cuchillos, puntas de flecha y navajas. Teotihuacan controlaba las minas cercanas, sobre todo las de obsidiana verde de Pachuca, y exportaba a toda Mesoamérica. Los vendedores que te ofrecen figuras de obsidiana siguen, sin saberlo, con el negocio original."],
+    ["Quién mandaba: el gran misterio",
+      "Aquí viene lo más raro. En Egipto, en Roma o entre los mayas, los reyes se retratan por todas partes y graban su nombre en piedra. En Teotihuacan, no. No hay ni un solo retrato seguro de un gobernante, ni una tumba real identificada, ni una inscripción con el nombre de un rey.",
+      "Tenían signos de escritura, pero pocos y sin descifrar. Y su arte es impersonal: procesiones de sacerdotes todos iguales, animales, dioses, símbolos. Nunca un individuo presumiendo de sus hazañas.",
+      "Por eso muchos investigadores creen que la ciudad, al menos en su época madura, la gobernaba un consejo: representantes de los grandes barrios o linajes, y no un rey todopoderoso. Otros piensan que al principio sí hubo gobernantes fuertes, los que levantaron las pirámides, y que después hubo una reacción contra ese poder personal. En la Ciudadela te cuento la pista que apunta a eso.",
+      "Tampoco se ha encontrado en el centro un gran juego de pelota de piedra, que es algo que tienen casi todas las ciudades de Mesoamérica. Teotihuacan iba por libre."],
+    ["Los dioses",
+      "Vas a ver sobre todo a cuatro. El primero, el dios de las tormentas, con anteojeras redondas y colmillos: es el antepasado directo del Tláloc mexica que conociste en el Templo Mayor.",
+      "El segundo, la Serpiente Emplumada, que los mexicas llamarían Quetzalcóatl: una serpiente de cascabel cubierta de plumas de quetzal, que une la tierra y el cielo. Aquí está uno de sus retratos más antiguos.",
+      "El tercero, el dios viejo del fuego: un anciano encorvado y arrugado que carga un brasero sobre la cabeza. Es de los dioses más antiguos del centro de México, porque este es un valle de volcanes.",
+      "Y el cuarto, una gran figura femenina ligada al agua, a las cuevas y a la fertilidad. Muchos la llaman la Gran Diosa. El monolito enorme que viste el sábado en la sala Teotihuacan del museo, esa mujer cuadrada de más de veinte toneladas, apareció aquí, junto a la Pirámide de la Luna."],
+    ["Teotihuacan y los mayas",
+      "La influencia de esta ciudad llegó a más de mil kilómetros. El episodio más famoso está escrito en piedra en Tikal, en la selva de Guatemala. En enero del año 378 llegó allí un personaje llamado Sihyaj K'ahk', Nace el Fuego, vestido a la manera de Teotihuacan. Ese mismo día murió el rey de Tikal.",
+      "Poco después se sentó en el trono de Tikal un niño, hijo de un misterioso señor al que los textos mayas llaman Búho Lanzadardos, que muchos creen que era un gobernante de Teotihuacan. Durante generaciones, los reyes mayas se retrataron con armas, anteojeras y símbolos teotihuacanos, como quien presume de un título extranjero.",
+      "Y la relación era de ida y vuelta: aquí mismo, junto a la Calzada, en la Plaza de las Columnas, se han encontrado murales de estilo maya y restos de un banquete con cerámica maya. Vivían aquí mayas de alto rango. En algún momento, esos murales fueron destrozados a propósito."],
+    ["La caída",
+      "Hacia el año 550 o 600, el centro de la ciudad ardió. Pero no ardió toda la ciudad: los incendios se concentran en los templos y los palacios de la Calzada. Rompieron esculturas, destrozaron ídolos y prendieron fuego a los edificios del poder. Las casas de la gente corriente quedaron casi intactas.",
+      "Por eso la explicación más aceptada no es una invasión, sino una revuelta interna: la población contra su propia élite. Detrás pudo haber sequías, malas cosechas y una desigualdad creciente: los huesos de los últimos siglos muestran más desnutrición entre los pobres.",
+      "La ciudad no se vació de golpe. Siguió viviendo gente durante generaciones, pero ya como un pueblo entre ruinas. El poder pasó a otras ciudades, como Xochicalco, Cholula y, después, Tula.",
+      "Cuando llegaron los mexicas, ochocientos años más tarde, hicieron de esto un lugar de peregrinación. Se dice que Moctezuma venía a hacer ofrendas. Excavaron en las ruinas y se llevaron piezas a Tenochtitlan: en las ofrendas del Templo Mayor aparecieron máscaras teotihuacanas, guardadas como reliquias de mil años de antigüedad."] ] },
+
+  { s:"16:00", e:"16:15", t:"🐍 La Ciudadela y el Templo de la Serpiente Emplumada", q:["tlaloc", "talud"], d:"Extremo sur, junto a la Puerta 1. Cruza la gran plaza hasta el fondo, sube a la plataforma que tapa el templo y baja por detrás: la fachada con las cabezas está escondida ahí.", $:"", pin:2, map:"https://www.google.com/maps/search/?api=1&query=Templo+de+Quetzalc%C3%B3atl+Teotihuac%C3%A1n", g:[
+    ["La plaza",
+      "Estás en la Ciudadela. El nombre es un error de los españoles, que al ver este recinto cuadrado y cerrado pensaron en un fuerte militar. No lo era. Es una plaza hundida de unos cuatrocientos metros de lado, rodeada por plataformas con quince templos pequeños.",
+      "Aquí cabían unas cien mil personas: prácticamente toda la ciudad. Era el gran escenario de las ceremonias públicas. Algunos investigadores creen incluso que la plaza se inundaba a propósito en ciertos rituales, para convertirla en un espejo de agua que representaba el mar del origen del mundo.",
+      "A los lados del templo del fondo hay dos grandes conjuntos de habitaciones. Durante mucho tiempo se pensó que eran los palacios de los gobernantes. Sería lo más parecido a un palacio real que hay en la ciudad."],
+    ["La fachada de las serpientes",
+      "Lo que ves primero al fondo no es el templo, sino una plataforma más sencilla que construyeron delante, pegada a él. Súbela y asómate por detrás: entre las dos queda un pasillo, y ahí está lo bueno.",
+      "Es el Templo de la Serpiente Emplumada, construido hacia el año 200. Tenía siete cuerpos de talud y tablero, cubiertos de esculturas por los cuatro lados. Se calcula que había más de doscientas sesenta cabezas de piedra. Solo se salvaron las de este lado, precisamente porque la plataforma las tapó.",
+      "Fíjate en dos tipos de cabeza que se alternan. La primera es la serpiente emplumada: sale de un collar de plumas, como de una flor, con las fauces abiertas y los colmillos fuera. Su cuerpo ondula a lo largo del tablero y acaba en un cascabel.",
+      "La segunda es más cuadrada, con dos aros en la frente y aspecto de mosaico. Durante décadas se dijo que era Tláloc. Hoy se piensa que no es una cara sino un tocado: el tocado de una serpiente de guerra o de un cocodrilo primordial, que la serpiente emplumada lleva sobre el lomo.",
+      "Entre los cuerpos de las serpientes hay conchas y caracoles de mar, a doscientos kilómetros de la costa. Las serpientes nadan en el océano del principio del tiempo. Y todo estaba pintado: quedan restos de rojo, verde y blanco, y las cabezas tenían ojos de obsidiana que brillaban. En el museo viste el sábado la reconstrucción a todo color: esta es la de verdad."],
+    ["Los sacrificados",
+      "En los años ochenta, los arqueólogos excavaron bajo el templo y alrededor, y encontraron algo que cambió la imagen pacífica que se tenía de Teotihuacan. Había más de ciento treinta personas enterradas, y se calcula que en total fueron más de doscientas.",
+      "Estaban colocadas en grupos simétricos, de cuatro, de ocho, de dieciocho, de veinte: números del calendario. Tenían las manos atadas a la espalda. Muchos eran hombres jóvenes vestidos de guerreros, con puntas de obsidiana y espejos a la cintura.",
+      "Llevaban collares hechos con mandíbulas humanas. Algunas eran reales y otras, imitaciones talladas en concha. Y los análisis de los huesos dicen que muchos no eran de aquí: venían de regiones lejanas. Fueron sacrificados todos a la vez, cuando se inauguró el templo."],
+    ["El templo que mandaron tapar",
+      "Ahora la pista política que te prometí. Este templo, el más decorado de la ciudad, duró poco a la vista. Unos ciento cincuenta o doscientos años después de construirlo, alguien arrancó parte de las esculturas, quemó el santuario y levantó delante la plataforma lisa que lo oculta.",
+      "Muchos lo leen como un golpe de timón: el templo sería el monumento de un gobernante poderoso, quizá enterrado aquí mismo, y taparlo fue la forma de decir que eso se había acabado. A partir de entonces, el arte de la ciudad se vuelve todavía más anónimo y colectivo."],
+    ["El túnel secreto",
+      "Y lo último, que es de película. En 2003, después de unas lluvias muy fuertes, se abrió un agujero en el suelo justo delante de la plataforma. El arqueólogo Sergio Gómez bajó con una cuerda y encontró un túnel hecho por los teotihuacanos y sellado por ellos mismos hace unos mil ochocientos años.",
+      "El túnel está a unos quince metros de profundidad, mide algo más de cien metros y termina justo debajo del centro del templo. Tardaron años en vaciarlo, y usaron pequeños robots para explorar el final.",
+      "Dentro había más de cien mil objetos: esculturas de jade, colmillos y huesos de jaguar, pelotas de hule, conchas enormes talladas, semillas, e incluso restos de piel. Las paredes y el techo estaban espolvoreados con polvo de pirita, un mineral metálico que brilla: con una antorcha, el túnel parecía un cielo estrellado.",
+      "Y al fondo encontraron mercurio líquido, algo rarísimo y muy difícil de producir, que quizá representaba un río o un lago del inframundo. El túnel era una reproducción del mundo de los muertos. No apareció ninguna tumba real, pero es lo más cerca que se ha estado de encontrar una.",
+      "No se puede bajar, pero cuando cruces la plaza de vuelta, piensa que lo tienes bajo los pies."],
+    ["➡️ Siguiente",
+      "Sal de la Ciudadela a la Calzada de los Muertos y gira a la derecha, hacia el norte. Al fondo verás la Pirámide de la Luna, y a la derecha, la del Sol. Hasta la del Sol hay algo más de un kilómetro: es buen momento para poner la guía de la Calzada."] ] },
+
+  { s:"16:15", e:"16:25", t:"🛣️ Calzada de los Muertos", q:["mexicas", "talud"], d:"La avenida central, de sur a norte. Ve por el centro; entre el Sol y la Luna, busca a la derecha el techo que protege el Mural del Puma.", $:"", pin:3, map:"https://www.google.com/maps/search/?api=1&query=Calzada+de+los+Muertos+Teotihuac%C3%A1n", g:[
+    ["Lo esencial",
+      "Caminas por el eje de la ciudad. Los mexicas la llamaron Miccaotli, calzada de los muertos, porque creyeron que los montículos de los lados eran tumbas de reyes convertidos en dioses. No lo eran: son plataformas de templos y de palacios.",
+      "Mide unos cuarenta metros de ancho, más que muchas avenidas actuales. El tramo que recorres, de la Ciudadela a la Luna, tiene unos dos kilómetros, pero la avenida seguía hacia el sur otros tantos, hoy bajo los campos.",
+      "No es llana: sube poco a poco hacia la Luna, unos treinta metros en total. Y está dividida por escalinatas y muros que hay que subir y bajar, formando plazas hundidas. No se pensó para ir rápido, sino para una procesión: el camino te obliga a ir despacio y te va tapando y enseñando la pirámide del fondo."],
+    ["La perspectiva",
+      "Mira hacia el norte. La Pirámide de la Luna cierra la avenida, y justo detrás tienes una montaña: el Cerro Gordo, un volcán apagado. La pirámide está colocada para repetir la silueta del cerro. No es una coincidencia: para ellos una pirámide era una montaña artificial, y las montañas eran depósitos de agua y de vida.",
+      "El cerro tenía manantiales, y su nombre antiguo, Tenan, significa madre de piedra. Toda la avenida apunta hacia él."],
+    ["Qué buscar por el camino",
+      "A tu izquierda y derecha, entre el río y el Sol, hay conjuntos de habitaciones y templos que suelen saltarse. Uno se llama Edificios Superpuestos: puedes bajar y ver cómo construían un edificio encima del anterior, con restos de pintura en los muros de abajo.",
+      "Entre el Sol y la Luna, en el lado derecho, busca un techo moderno pegado a un muro. Protege el Mural del Puma: un felino grande, pintado en tonos ocre sobre franjas de color, con las garras bien marcadas. Es de los pocos murales que siguen en su sitio a pie de calzada, y te da una idea de cómo estaba decorada toda la avenida.",
+      "Y prueba una cosa: delante de una escalinata, da una palmada fuerte. El eco vuelve convertido en un chirrido agudo. Los vendedores lo saben, y por eso oirás todo el rato sus silbatos, que imitan el rugido del jaguar."],
+    ["➡️ Siguiente",
+      "La mole que tienes a la derecha es la Pirámide del Sol. Entra a su plaza por la escalinata y colócate en el centro, de frente."] ] },
+
+  { s:"16:25", e:"16:40", t:"☀️ Pirámide del Sol", q:["batres", "tlaloc", "mexicas"], d:"A media Calzada, a la derecha. Colócate en el centro de la plaza, de frente, y luego rodéala por un lado para ver su tamaño. No se puede subir.", $:"", pin:4, map:"https://www.google.com/maps/search/?api=1&query=Pir%C3%A1mide+del+Sol+Teotihuac%C3%A1n", g:[
+    ["Lo esencial",
+      "Tienes delante el edificio más grande de Teotihuacan y uno de los más grandes del mundo antiguo. Mide unos doscientos veinticinco metros por lado y unos sesenta y cinco de alto, como un edificio de veinte plantas.",
+      "Una comparación para que te sitúes: su base es casi igual que la de la Gran Pirámide de Guiza, en Egipto, pero tiene menos de la mitad de altura. En volumen es la tercera pirámide más grande del planeta, detrás de la de Cholula, que tienes junto a Puebla, y de la de Keops.",
+      "Pero la idea es distinta. Una pirámide egipcia es una tumba cerrada que acaba en punta. Esta es una montaña con escaleras: una base enorme para subir un templo hasta el cielo. Arriba había un santuario de madera y adobe, donde se hacían las ceremonias a la vista de la plaza.",
+      "Hoy no se puede subir. Está prohibido desde 2020 para protegerla."],
+    ["Cómo se construyó",
+      "Se levantó hacia el año 200, y casi toda de una vez, cosa rara en Mesoamérica, donde las pirámides suelen crecer por capas. Dentro no hay cámaras: es un relleno macizo de tierra, adobes y piedra volcánica, más de un millón de metros cúbicos.",
+      "Todo eso se movió sin ruedas, sin animales de carga y sin herramientas de metal. A espaldas de personas, en cestos. Se calcula que trabajaron miles de personas durante décadas.",
+      "Por fuera iba forrada de piedra, recubierta de estuco y pintada de rojo. Las piedras que sobresalen de la superficie como pinchos servían para sujetar esa capa de estuco, que tenía un grosor considerable."],
+    ["Lo que ves no es del todo original",
+      "Aquí hay una historia poco conocida. La pirámide que tienes delante la reconstruyó entre 1905 y 1910 Leopoldo Batres, por encargo del presidente Porfirio Díaz, que quería presumir de pasado glorioso en el centenario de la Independencia.",
+      "Batres tenía prisa y pocos escrúpulos. Usó dinamita en algún punto, arrancó la capa exterior, de varios metros de grosor, y con ella se perdieron la fachada original y sus esculturas. La pirámide era más grande de lo que ves.",
+      "Además interpretó mal la forma. Originalmente tenía cuatro cuerpos, y él la dejó con cinco: ese escalón estrecho que ves hacia arriba, entre el tercer cuerpo y el último, es un invento suyo. Aun así, sin él quizá hoy sería un cerro cubierto de matorral."],
+    ["La cueva de debajo",
+      "En 1971, por casualidad, se descubrió al pie de la escalinata la entrada de un túnel. Corre unos cien metros bajo la pirámide, a seis metros de profundidad, y termina cerca del centro, en una cámara con forma de trébol de cuatro hojas.",
+      "Durante años se pensó que era una cueva natural, y que la pirámide se había construido aquí por ella: en Mesoamérica las cuevas son el lugar del que salieron los primeros humanos y la puerta al inframundo. Hoy se sabe que la excavaron los propios teotihuacanos. Fue saqueada en la antigüedad, así que no sabemos qué guardaba. Es hermana del túnel de la Ciudadela."],
+    ["A quién estaba dedicada",
+      "Lo del sol es cosa de los mexicas. No sabemos a quién la dedicaron sus constructores, pero hay pistas. Batres encontró esqueletos de niños enterrados en las esquinas de cada cuerpo. En el mundo mexica, los niños se sacrificaban al dios de la lluvia. Y alrededor de la pirámide había un canal ancho, como un foso: una montaña rodeada de agua.",
+      "En los últimos años se excavó un túnel hasta el centro y apareció la ofrenda de fundación: una máscara de piedra verde, vasijas con la cara del dios de las tormentas, obsidiana, conchas, y animales sacrificados, entre ellos un águila.",
+      "Y en lo alto, en 2012 y 2013, apareció una escultura grande del dios viejo del fuego. Así que quizá arriba se rendía culto al fuego. Agua abajo y fuego arriba: los dos extremos del mundo en un solo edificio.",
+      "Recuerda además la orientación: la fachada mira al oeste, hacia donde se pone el sol el 29 de abril y el 13 de agosto, las fechas que dividen el año en ciento cinco y doscientos sesenta días. La pirámide funcionaba como un calendario gigante."],
+    ["Qué buscar y fotos",
+      "Uno: desde el centro de la plaza, la escalinata. Se divide en dos y vuelve a unirse; arriba del todo hay una sola.",
+      "Dos: la plataforma baja que tiene pegada delante, añadida más tarde, igual que en la Ciudadela.",
+      "Tres: rodéala hasta una esquina y mira la arista hacia arriba. Es donde mejor se entiende el tamaño.",
+      "Cuatro: la mejor foto de la pirámide entera no se hace desde aquí, sino desde la Calzada o desde la Pirámide de la Luna, con ella de perfil y los cerros detrás."],
+    ["➡️ Siguiente",
+      "Si te da tiempo, el museo de sitio está detrás de la pirámide, hacia el sur. Si no, vuelve a la Calzada y sigue a la derecha hasta el final: la Plaza de la Luna."] ] },
+
+  { s:"16:40", e:"16:45", t:"🏛️ Museo de sitio (opcional)", d:"Al sur de la Pirámide del Sol, entre jardines. Entra con el mismo boleto. Si vas justo de tiempo, sáltatelo: lo importante ya lo viste en Antropología.", $:"", pin:5, map:"https://www.google.com/maps/search/?api=1&query=Museo+de+la+Cultura+Teotihuacana", g:[
+    ["Qué ver en diez minutos",
+      "El museo es pequeño. Ve directo a tres cosas.",
+      "Primero, la sala de la maqueta: una maqueta enorme de la ciudad bajo un suelo de cristal, con un ventanal al fondo por el que se ve la Pirámide del Sol de verdad. Es la mejor forma de entender el tamaño real de la ciudad y dónde estás.",
+      "Segundo, los entierros de la Serpiente Emplumada: esqueletos de los guerreros sacrificados, colocados como se encontraron, con sus collares de mandíbulas.",
+      "Y tercero, las vitrinas de obsidiana y de cerámica: busca los incensarios tipo teatro, unos braseros de barro con una carita en el centro rodeada de adornos, y las figuritas articuladas, con brazos y piernas que se mueven.",
+      "Fuera hay un jardín con esculturas y otro con plantas de la zona. Es de las pocas sombras de todo el sitio."] ] },
+
+  { s:"16:45", e:"16:55", t:"🌙 Plaza y Pirámide de la Luna", q:["talud", "mexicas"], d:"Al final de la Calzada, al norte. Párate en el altar del centro de la plaza. Si hoy dejan subir, es solo hasta la primera plataforma: pregunta al personal.", $:"", pin:6, map:"https://www.google.com/maps/search/?api=1&query=Pir%C3%A1mide+de+la+Luna+Teotihuac%C3%A1n", g:[
+    ["Lo esencial",
+      "Has llegado al final de la Calzada. Para muchos arqueólogos, esta plaza es el conjunto mejor compuesto de la ciudad. La Pirámide de la Luna al fondo, y alrededor, doce plataformas de templos casi iguales, todas de talud y tablero, colocadas con una simetría perfecta.",
+      "La pirámide mide unos cuarenta y cinco metros de alto y unos ciento cincuenta de base. Es bastante más pequeña que la del Sol, pero como el terreno sube, las dos cimas quedan casi a la misma altura.",
+      "Mírala con el Cerro Gordo detrás: la pirámide copia la forma de la montaña. Aquí se entiende mejor que en ningún otro sitio que la ciudad está diseñada mirando al paisaje.",
+      "Sobre subir: desde 2025 se permitía subir solo hasta la primera plataforma, y este año ha estado cerrada por temporadas. Lo que valga hoy te lo dice el personal que está al pie. Si se puede, sube: desde ahí se ve toda la Calzada en línea recta con el Sol a la izquierda. Es la foto del día."],
+    ["Siete pirámides en una",
+      "A diferencia de la del Sol, esta sí creció por capas. Dentro hay siete pirámides, una dentro de otra. La primera, de hacia el año 100, era pequeña y ni siquiera tenía la orientación del resto de la ciudad: es de lo más antiguo de Teotihuacan. La última es de hacia el año 400.",
+      "La estructura que sobresale por delante, con cuatro cuerpos y la escalinata, es un añadido posterior, igual que las plataformas del Sol y de la Ciudadela."],
+    ["Lo que había dentro",
+      "Entre 1998 y 2004, los arqueólogos Saburo Sugiyama y Rubén Cabrera abrieron túneles en el interior y encontraron varias tumbas de ofrenda, una por cada ampliación.",
+      "En una había un hombre con las manos atadas a la espalda, rodeado de animales: pumas, un lobo, águilas, halcones, un búho y serpientes de cascabel. Algunos estaban enjaulados y fueron enterrados vivos. Son los animales de la guerra, los que luego llevarían los guerreros mexicas en sus trajes.",
+      "En otra había diecisiete cabezas humanas cortadas. Y en la más tardía, tres hombres sentados con las piernas cruzadas, sin ataduras, con adornos de jade al estilo de los reyes mayas. Eran personajes importantes, quizá mayas o relacionados con ellos. Encaja con lo que te conté de Tikal.",
+      "Junto a ellos había cuchillos de obsidiana, espejos de pirita y dos figuritas de piedra verde. Teotihuacan no era la ciudad pacífica de sacerdotes que se imaginaba hace cien años: era también una potencia militar."],
+    ["La plaza",
+      "En el centro tienes un altar cuadrado con cuatro escalinatas, una por cada rumbo del mundo. Aquí se hacían las ceremonias a la vista de todos.",
+      "En esta plaza apareció el gran monolito de la diosa del agua que viste en el Museo de Antropología. Imagínalo aquí de pie, pintado, delante de la pirámide.",
+      "Y un detalle: la plaza es bastante más pequeña que la Ciudadela. Aquí no cabía toda la ciudad. Probablemente era un espacio más restringido."],
+    ["➡️ Siguiente",
+      "Mirando a la pirámide, en la esquina izquierda de la plaza, al suroeste, hay una escalinata con una cabeza de serpiente. Sube por ahí: es la entrada al Palacio de Quetzalpapálotl, lo más bonito por dentro."] ] },
+
+  { s:"16:55", e:"17:00", t:"🦋 Palacio de Quetzalpapálotl, Jaguares y Caracoles", d:"Esquina suroeste de la Plaza de la Luna (a la izquierda mirando la pirámide). Tres partes seguidas: el patio de los pilares, el patio de los Jaguares y, bajando, el templo enterrado.", $:"", pin:7, map:"https://www.google.com/maps/search/?api=1&query=Palacio+de+Quetzalpap%C3%A1lotl", obj:1, g:[
+    ["🧭 Qué es este sitio",
+      "Estás en la única zona del centro donde puedes hacerte una idea de cómo era por dentro un edificio de la élite: con techos, patios, pilares tallados y pintura en las paredes. Probablemente vivían o se reunían aquí los sacerdotes de la Pirámide de la Luna.",
+      "Lo excavó y reconstruyó en los años sesenta el arqueólogo Jorge Acosta. Los techos y parte de los muros son reconstrucción, pero los pilares, los relieves y las pinturas son originales."],
+    ["📍 Patio de los Pilares",
+      "Busca un patio cuadrado rodeado de pilares de piedra tallados.",
+      "Cada pilar tiene grabado un animal mítico: el quetzalpapálotl, mezcla de quetzal y mariposa, que da nombre al palacio. En los pilares de un lado lo ves de perfil, y en otros de frente, con las alas abiertas; algunos creen que estos últimos son búhos. Fíjate en los ojos: son discos de obsidiana incrustados, y alguno sigue en su sitio.",
+      "Alrededor hay símbolos de agua y de fuego. Y arriba, en el borde del techo, unas almenas de piedra con el signo del año. Los pilares estaban pintados; quedan restos de rojo y de verde. Mira también los muros del pasillo, con dibujos geométricos en rojo."],
+    ["📍 Patio de los Jaguares",
+      "Sal por detrás y baja a un patio más hundido, con habitaciones alrededor y pinturas en la parte baja de los muros.",
+      "Busca los felinos. Son jaguares o pumas de perfil, con un tocado de plumas y conchas en el lomo, que soplan una caracola con plumas como si fuera una trompeta. De la caracola salen la vírgula del sonido y gotas de agua. Están llamando a la lluvia. Por encima, en la franja superior, se alternan caras del dios de las tormentas."],
+    ["📍 Templo de los Caracoles Emplumados",
+      "Desde el patio de los Jaguares, busca un pasadizo que baja. Estás entrando debajo del palacio.",
+      "Es un templo más antiguo, de hacia el año 200 o 300, que quedó enterrado cuando construyeron encima. Por eso conserva los colores mejor que nada de lo que has visto.",
+      "En la fachada hay relieves de grandes caracolas con plumas y con boquilla: son instrumentos musicales. Y abajo, en la plataforma, una fila de pájaros verdes, seguramente loros o quetzales, que echan un chorro de agua azul por el pico sobre flores amarillas. Es de lo más delicado de todo Teotihuacan."],
+    ["➡️ Salida",
+      "Con esto has visto lo principal. La Puerta 3 está aquí al lado, detrás del palacio. Si tu autobús sale de la Puerta 1 o de la 2, tienes que volver por la Calzada: hasta la Puerta 2 son unos diez minutos, y hasta la 1, media hora andando. El sitio cierra a las cinco."] ] },
+
+  { s:"17:00", e:"17:10", t:"🎨 Si sobra tiempo: los murales de Tepantitla", d:"Fuera del recinto, detrás de la Pirámide del Sol (salida por la Puerta 4, unos 500 m). Entra con el mismo boleto. Solo si vas sobrado de tiempo y antes del cierre.", $:"", pin:8, map:"https://www.google.com/maps/search/?api=1&query=Tepantitla+Teotihuac%C3%A1n", g:[
+    ["Qué es y qué ver",
+      "Tepantitla es uno de aquellos conjuntos de apartamentos donde vivía la gente, en este caso gente rica. Conserva el mural más famoso de la ciudad, conocido como el Tlalocan, el paraíso del dios de la lluvia.",
+      "En la parte de arriba hay una gran figura de frente, con un árbol que le sale de la cabeza, lleno de arañas y mariposas, y agua que le brota de las manos. Es la Gran Diosa de la que te hablé.",
+      "Debajo está lo mejor: decenas de figuritas humanas diminutas que nadan, cantan, juegan a la pelota, cazan mariposas y bailan al pie de una montaña de la que salen ríos. De sus bocas salen vírgulas, que son palabras o canciones. Es la única escena alegre y cotidiana del arte de Teotihuacan.",
+      "Hay otros dos conjuntos con murales al oeste del sitio, Tetitla y Atetelco, pero quedan lejos a pie. Las mejores piezas pintadas las viste el sábado en Antropología."],
+    ["🧠 Resumen para recordarlo",
+      "Si te quedas con cinco ideas, que sean estas.",
+      "Una: no es azteca. Es mil años anterior, y los mexicas ya la encontraron en ruinas.",
+      "Dos: fue una ciudad planificada, de cien mil habitantes, con gente de toda Mesoamérica viviendo en apartamentos.",
+      "Tres: no conocemos a ninguno de sus reyes. Quizá gobernaba un consejo.",
+      "Cuatro: las pirámides son montañas sagradas, con cuevas y túneles debajo que reproducen el inframundo.",
+      "Y cinco: no la destruyó un enemigo de fuera. Lo más probable es que su propia gente quemara los templos del poder."] ] }
+];
+
+/* Sábado 7: Museo Nacional de Antropología (se conserva por si vuelve al calendario). */
+var MUSEO = [
   { s:"16:30", e:"16:32", t:"🏛️ Entrada y el Paraguas", n:"Paraguas", q:["mexicas"], d:"Cruza el patio recto hasta el fondo: la Sala Mexica (2 en el mapa).", $:"", pin:1, map:"https://www.google.com/maps/search/?api=1&query=Museo+Nacional+de+Antropolog%C3%ADa+CDMX", g:[
     ["Lo esencial",
       "Estás en el Museo Nacional de Antropología, inaugurado en 1964 y diseñado por el arquitecto Pedro Ramírez Vázquez. Es el museo más visitado de México y guarda la mayor colección de arte prehispánico del mundo.",
@@ -607,7 +786,7 @@ var VIEJO = [
 
 /* Paradas que ya no están en el plan fijo pero cuya guía se usa si vuelven al
    calendario (se emparejan por nombre). */
-var EXTRA = VIEJO.concat([
+var EXTRA = VIEJO.concat(MUSEO, [
   { s:"11:00", e:"12:45", t:"🔺 Templo Mayor (zona + museo)", n:"Templo Mayor", q:["mexicas", "tlaloc", "nahuatl", "moctezuma"], d:"Pegado al lado este de la Catedral. Taquilla en calle Seminario 8, junto a la maqueta de Tenochtitlan. Primero ruinas, luego museo.", $:"$210 💵/💳", map:GM+"10128805338444740272", pin:4, g:[
     ["Lo esencial",
       "Estás en lo que fue el centro del mundo para los mexicas: el Huey Teocalli, el gran templo de Tenochtitlan. Era una pirámide de unos cuarenta y cinco metros de altura, con dos escalinatas y dos santuarios en lo alto.",
@@ -646,6 +825,18 @@ var EXTRA = VIEJO.concat([
    guía donde estaba (en pausa).
    --------------------------------------------------------------------------- */
 var Q = {
+  batres:["Leopoldo Batres",
+    "Leopoldo Batres, nacido en 1852, fue el arqueólogo oficial del gobierno de Porfirio Díaz, con el cargo de inspector de monumentos. Era militar de formación y había estudiado algo de antropología en París.",
+    "Excavó y reconstruyó a toda prisa la Pirámide del Sol entre 1905 y 1910, para el centenario de la Independencia. También trabajó en Monte Albán, Mitla y Xochicalco, y dirigió las primeras excavaciones en la zona del Templo Mayor.",
+    "Hoy se le critica mucho: destruyó la capa exterior de la pirámide, le añadió un cuerpo que no existía y apenas dejó registros de lo que encontraba. Pero también fue quien puso Teotihuacan en el mapa y quien consiguió que el Estado protegiera el sitio. Cayó en desgracia con la Revolución y murió en 1926."],
+  talud:["Talud-tablero",
+    "Es el sistema de construcción típico de Teotihuacan. Cada cuerpo de un edificio tiene dos partes: abajo, un muro inclinado, el talud; y encima, un panel vertical rectangular rodeado por un marco que sobresale, el tablero.",
+    "El tablero se apoya en losas de piedra que vuelan sobre el talud, y servía de marco para pinturas o esculturas. Repetido en varios pisos, da ese aspecto de franjas horizontales que ves en todas las plataformas de la Calzada.",
+    "Se convirtió en la marca de la ciudad. Cuando aparece en Tikal, en Kaminaljuyú o en Monte Albán, indica contacto con Teotihuacan, igual que una columna griega fuera de Grecia."],
+  obsidiana:["Obsidiana",
+    "La obsidiana es un vidrio natural que se forma cuando la lava se enfría muy rápido. Al golpearla se rompe en lascas con un filo más fino que el de un bisturí de acero.",
+    "En un mundo sin metales para herramientas, era el material más valioso para cortar: de ella se hacían navajas, cuchillos, puntas de lanza y de flecha, y también espejos y joyas.",
+    "Teotihuacan tenía cerca dos fuentes: la obsidiana gris de Otumba, a pocos kilómetros, y la verde dorada de la Sierra de las Navajas, cerca de Pachuca, que es única en Mesoamérica. Controlar esas minas y los talleres fue una de las bases de su riqueza."],
   hidalgo:["Miguel Hidalgo",
     "Miguel Hidalgo y Costilla, nacido en 1753, era un cura criollo, es decir, hijo de españoles nacido en América. Era un hombre culto: había sido rector de un colegio en Valladolid, la actual Morelia, leía a los ilustrados franceses, hablaba lenguas indígenas y en su parroquia de Dolores, en Guanajuato, enseñaba oficios a los vecinos.",
     "Participaba en una conspiración para independizarse de España. Cuando fue descubierta, decidió adelantarse: la madrugada del 16 de septiembre de 1810 hizo sonar la campana de su iglesia y llamó a la gente a levantarse. Es el Grito de Dolores, el inicio de la Independencia.",
@@ -782,21 +973,21 @@ var CSS = [
 ].join("\n");
 
 var MAPA =
-'<svg viewBox="0 0 600 250" role="img" aria-label="Plano de la planta baja del museo con las salas numeradas en orden de visita">' +
-'<rect x="10" y="80" width="110" height="90" rx="4" class="plaza"/><text x="65" y="165" class="stl" text-anchor="middle">Entrada</text>' +
-'<rect x="130" y="80" width="340" height="90" rx="4" class="park"/><text x="300" y="150" class="area">Patio</text>' +
-'<rect x="475" y="15" width="115" height="220" rx="4" class="plaza"/><text x="532" y="225" class="stl" text-anchor="middle">MEXICA</text>' +
-'<rect x="385" y="15" width="85" height="60" rx="4" class="plaza"/><text x="427" y="68" class="stl" text-anchor="middle">Oaxaca</text>' +
-'<rect x="300" y="15" width="85" height="60" rx="4" class="plaza"/><text x="342" y="68" class="stl" text-anchor="middle">Golfo</text>' +
-'<rect x="215" y="15" width="85" height="60" rx="4" class="plaza"/><text x="257" y="68" class="stl" text-anchor="middle">Maya</text>' +
-'<rect x="130" y="15" width="85" height="60" rx="4" class="plaza"/><text x="172" y="68" class="stl" text-anchor="middle">Norte · Occ.</text>' +
-'<rect x="130" y="175" width="85" height="60" rx="4" class="plaza"/><text x="172" y="228" class="stl" text-anchor="middle">Introducción</text>' +
-'<rect x="215" y="175" width="85" height="60" rx="4" class="plaza"/><text x="257" y="228" class="stl" text-anchor="middle">Preclásico</text>' +
-'<rect x="300" y="175" width="85" height="60" rx="4" class="plaza"/><text x="342" y="228" class="stl" text-anchor="middle">Teotihuacan</text>' +
-'<rect x="385" y="175" width="85" height="60" rx="4" class="plaza"/><text x="427" y="228" class="stl" text-anchor="middle">Toltecas</text>' +
-'<path class="walk" d="M65,118 H520 M505,60 H180 M180,90 V200 M180,200 H430 M430,160 H65"/>' +
+'<svg viewBox="0 0 600 250" role="img" aria-label="Plano de Teotihuacan con las paradas numeradas; el norte queda a la derecha">' +
+'<rect x="30" y="110" width="490" height="20" rx="3" class="park"/><text x="215" y="103" class="area">Calzada de los Muertos</text>' +
+'<rect x="60" y="140" width="115" height="95" rx="4" class="plaza"/><text x="117" y="228" class="stl" text-anchor="middle">Ciudadela</text>' +
+'<rect x="135" y="170" width="30" height="30" rx="2" class="park"/>' +
+'<path class="walk" d="M190,20 V240"/><text x="194" y="30" class="stl">río San Juan</text>' +
+'<rect x="330" y="138" width="90" height="85" rx="4" class="plaza"/><text x="375" y="216" class="stl" text-anchor="middle">SOL</text>' +
+'<rect x="248" y="182" width="64" height="45" rx="4" class="plaza"/><text x="280" y="240" class="stl" text-anchor="middle">Museo</text>' +
+'<rect x="470" y="88" width="50" height="64" rx="4" class="plaza"/>' +
+'<rect x="522" y="85" width="66" height="70" rx="4" class="plaza"/><text x="555" y="170" class="stl" text-anchor="middle">LUNA</text>' +
+'<rect x="452" y="38" width="64" height="42" rx="4" class="plaza"/><text x="484" y="30" class="stl" text-anchor="middle">Quetzalpapálotl</text>' +
+'<rect x="440" y="192" width="60" height="38" rx="4" class="plaza"/><text x="470" y="244" class="stl" text-anchor="middle">Tepantitla</text>' +
+'<text x="75" y="95" class="stl">Puerta 1</text><text x="350" y="95" class="stl">Puerta 2</text><text x="535" y="40" class="stl">Puerta 3</text>' +
+'<text x="575" y="235" class="stl" text-anchor="end">Norte →</text>' +
 '{PINS}</svg>';
-var XY = { 1:[165,118], 2:[532,90], 3:[532,150], 4:[427,40], 5:[342,40], 6:[257,40], 7:[172,40], 8:[172,198], 9:[257,198], 10:[342,198], 11:[427,198], 12:[40,118] };
+var XY = { 1:[45,120], 2:[117,170], 3:[260,120], 4:[375,170], 5:[280,200], 6:[555,115], 7:[484,58], 8:[470,208] };
 
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]; }); }
 function min(h) { var a = h.split(":"); return (+a[0]) * 60 + (+a[1]); }
@@ -1033,7 +1224,7 @@ function pinta(c, sinPedir) {
       pins += x.map ? '<a href="' + esc(x.map) + '" target="_blank" rel="noopener">' + gp + '</a>' : gp; }
   });
   var h = '<div class="vjW"><div class="vjMapa">' + MAPA.replace("{PINS}", pins) + '</div>' +
-    '<div class="vjNota">El número en rosa es donde te toca estar. Tócalo para abrirlo en Google Maps. Fuera del mapa: 1 Soriana (al sur) y 8 Basílica (al norte).</div>' +
+    '<div class="vjNota">El norte queda a la derecha. Las horas son orientativas: toca la parada en la que estés. Cada número abre el sitio en Google Maps.</div>' +
     notaSync() + '<div class="vjAhora"><span class="vjAhT">–</span><button type="button" class="vjIr">Ir a lo de ahora</button></div><div class="vjL">';
   P.forEach(function (x, i) {
     h += '<div class="vjP' + (x.mov ? " mov" : "") + '" data-i="' + i + '"><div class="vjH">' + x.s + '<small>' + x.e + '</small></div><div class="vjC">' +
@@ -1053,7 +1244,7 @@ function pinta(c, sinPedir) {
     }
     h += '</div></div>';
   });
-  h += '</div><div class="vjNota">Efectivo: llevas $700. Comida $150–250 y monedas para baños; lo demás con tarjeta.</div>' +
+  h += '</div><div class="vjNota">El sitio cierra a las 17:00. Lleva agua, gorra y crema: casi no hay sombra.</div>' +
     '<div class="vjNota">Batería: la guía no usa el GPS ni deja la pantalla encendida. Puedes bloquear el móvil mientras escuchas; si al bloquearlo se corta entre frases, dale a ▶ al volver.</div></div>' +
     '<div class="vjRep" hidden><div class="vjRT"><div><b class="vjRTi">–</b><small class="vjRSu">–</small></div><button type="button" class="vjX" aria-label="Cerrar la guía">✕</button></div>' +
     '<div class="vjBarra"><i></i></div>' +
@@ -1095,7 +1286,7 @@ function pinta(c, sinPedir) {
     if (cur) cur.classList.add("on");
     c.querySelectorAll(".pin").forEach(function (p) { p.classList.toggle("on", !!cur && p.dataset.i === cur.dataset.i); });
     var t = c.querySelector(".vjAhT");
-    if (!hoy) { t.textContent = "Plan del miércoles 4 de noviembre."; return; }
+    if (!hoy) { t.textContent = "Plan del lunes 9 de noviembre."; return; }
     if (!cur) { t.textContent = "Día terminado."; return; }
     var x = P[+cur.dataset.i], nx = P[+cur.dataset.i + 1];
     t.innerHTML = "<b>Ahora (" + x.s + "–" + x.e + "):</b> " + esc(x.t) + (nx ? "<br>Después, a las " + nx.s + ": " + esc(nx.t) : "");
