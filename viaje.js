@@ -1,5 +1,5 @@
 /* ===========================================================================
-   VIAJE · guía del día (lunes 9: Teotihuacan)
+   VIAJE · guía del día (miércoles 11: Polanco, Cablebús, Chapultepec, Reforma, Roma-Condesa y Bellas Artes)
    ---------------------------------------------------------------------------
    Viaje.pinta(c): el miércoles 4 de noviembre de 2026 en Ciudad de México.
    Arriba el mapa esquemático del Centro, debajo el horario. Cada parada lleva
@@ -16,7 +16,13 @@
 (function () {
 "use strict";
 
-var DIA = "2026-11-09";
+var DIA = "2026-11-11";
+/* Textos del día (cambian con cada guía). */
+var TXT = {
+  mapa:"El norte queda arriba. El mapa es esquemático: cada número abre el sitio en Google Maps. Las horas son orientativas: toca la parada en la que estés.",
+  pie:"Bellas Artes vende boletos hasta las 17:30 y cierra a las 18:00; el Castillo cierra a las 17:00. Lleva la tarjeta MI cargada y algo de efectivo para el mercado.",
+  otro:"Plan del miércoles 11 de noviembre."
+};
 var GM = "https://maps.google.com/?cid=";
 var RUTA = function (d) { return "https://www.google.com/maps/dir/?api=1&travelmode=transit&destination=" + encodeURIComponent(d); };
 
@@ -25,6 +31,231 @@ var RUTA = function (d) { return "https://www.google.com/maps/dir/?api=1&travelm
    g: secciones de la guía [[título, párrafo, párrafo…], …]
    --------------------------------------------------------------------------- */
 var P = [
+  { s:"9:00", e:"9:50", t:"🚇 Casa → Polanco (Plaza Carso)", d:"Zapata → Mixcoac (L12), Mixcoac → San Joaquín (L7) y unos 10 min andando hasta Plaza Carso.", l:["L12","L7"], $:"$5", map:RUTA("Museo Soumaya, Plaza Carso, Ciudad de México"), mov:1 },
+
+  { s:"9:50", e:"10:10", t:"🪞 Museo Soumaya y Museo Jumex (por fuera)", n:"Soumaya", d:"Solo por fuera: fotos del edificio plateado y del blanco de dientes de sierra, que están uno frente al otro.", $:"$0", map:"https://www.google.com/maps/search/?api=1&query=Museo+Soumaya+Plaza+Carso", pin:1, g:[
+    ["Lo esencial",
+      "Estás en Plaza Carso, en lo que se conoce como Nuevo Polanco. Hace unas décadas esto era una zona de fábricas y almacenes. Hoy es un barrio de torres de oficinas, centros comerciales y dos museos que son, sobre todo, dos edificios para fotografiar.",
+      "El plateado y retorcido es el Museo Soumaya. El blanco y anguloso, justo enfrente, es el Museo Jumex. Son casi opuestos: uno es todo curvas y brillo, el otro es todo líneas rectas y sobriedad. Mirarlos juntos es la gracia del sitio.",
+      "Tienes veinte minutos: rodea el Soumaya por fuera, haz la foto desde la explanada entre los dos, y sigue hacia el metro."],
+    ["El Museo Soumaya",
+      "El Soumaya lo mandó construir Carlos Slim, uno de los hombres más ricos del mundo, y lleva el nombre de su mujer, Soumaya Domit, que murió en 1999. Se inauguró en 2011.",
+      "El arquitecto fue Fernando Romero, yerno de Slim. El edificio mide unos cuarenta y seis metros de alto, tiene seis plantas y no tiene ni una sola ventana hacia fuera. Está forrado con unas dieciséis mil piezas hexagonales de aluminio, que le dan ese brillo de escamas.",
+      "La forma se ha comparado con muchas cosas: un reloj de arena retorcido, una escultura de Rodin, un yunque, una nube. Rodéalo despacio y verás que cambia de silueta según desde dónde lo mires: por un lado parece estrecho y por otro se abre como una falda.",
+      "Por dentro guarda decenas de miles de obras, sobre todo arte europeo y mexicano, y en la última planta, bajo el techo, una de las mayores colecciones de esculturas de Rodin fuera de Francia. La entrada es gratis todos los días, pero hoy no entras: la foto de fuera es lo que buscabas."],
+    ["El Museo Jumex",
+      "El edificio blanco de enfrente es el Museo Jumex, abierto en 2013. Lo diseñó el arquitecto británico David Chipperfield.",
+      "Fíjate en el tejado: son dientes de sierra, como los de las naves industriales antiguas. Sirven para que entre luz natural del norte en las salas de arriba. Es un guiño al pasado fabril del barrio.",
+      "Jumex es una marca mexicana de zumos, y el museo pertenece a la fundación de la familia propietaria. Su colección de arte contemporáneo es una de las más importantes de América Latina. Dentro hay exposiciones que cambian, pero hoy también es solo para fuera.",
+      "Y una curiosidad: el edificio está levantado sobre pilares, con la planta baja casi transparente, para que la explanada siga por debajo como si fuera una plaza."],
+    ["Consejos",
+      "La mejor foto de los dos juntos es desde el centro de la explanada, un poco apartado hacia la avenida, con el Soumaya a un lado y el Jumex al otro.",
+      "Para volver al metro, desanda el camino hasta San Joaquín, en la Línea 7, la naranja. Vas en dirección Barranca del Muerto, tres paradas, y te bajas en Constituyentes."] ] },
+
+  { s:"10:10", e:"10:25", t:"🚇 San Joaquín → Constituyentes", d:"L7 dirección Barranca del Muerto, 3 paradas. La estación del Cablebús, Los Pinos/Constituyentes, está pegada a la salida.", l:["L7"], $:"$5", map:RUTA("Cablebús Los Pinos Constituyentes, Ciudad de México"), mov:1 },
+
+  { s:"10:25", e:"11:30", t:"🚡 Cablebús Línea 3 (teleférico de Chapultepec)", n:"Cablebus", q:["mexicas", "moctezuma", "rivera", "orozco", "siqueiros", "cardenas"], d:"Ida y vuelta desde Los Pinos/Constituyentes hasta Vasco de Quiroga (unos 25 min por trayecto). Si vas justo, baja en Cineteca y vuelve. Paga con la tarjeta MI.", $:"$7 + $7", map:"https://www.google.com/maps/search/?api=1&query=Cableb%C3%BAs+L%C3%ADnea+3+Los+Pinos+Constituyentes", pin:2, g:[
+    ["Lo esencial",
+      "Estás en la Línea 3 del Cablebús, el teleférico urbano de Ciudad de México. Se inauguró en septiembre de 2024 y une la entrada de Los Pinos, junto al metro Constituyentes, con el pueblo de Santa Fe, al oeste.",
+      "Son unos cinco kilómetros y medio y seis estaciones: Los Pinos y Constituyentes, Panteón de Dolores, Charrería, Parque de Cultura Urbana y Colegio de Arquitectos, Cineteca Nacional y Bodega de Arte, y Vasco de Quiroga. De punta a punta se tarda poco más de veinte minutos.",
+      "Lo que lo hace especial es que va casi todo el rato por encima del Bosque de Chapultepec, cruzando sus cuatro secciones. Es transporte público, cuesta siete pesos, y es la mejor vista aérea barata que vas a tener del poniente de la ciudad.",
+      "El plan: subes en Los Pinos, vas hasta el final y vuelves sin bajarte. Si se te hace tarde, bájate en Cineteca, cambia de andén y regresa."],
+    ["Qué es Chapultepec",
+      "Chapultepec es una palabra náhuatl: chapulín es saltamontes, y tépetl es cerro. El cerro del chapulín. El símbolo antiguo del lugar es un saltamontes sobre un monte, y lo verás dibujado en las estaciones del metro.",
+      "El cerro tenía manantiales de agua dulce, y eso era oro para Tenochtitlan, que estaba en medio de un lago de agua salobre. Los mexicas construyeron un acueducto desde aquí hasta la ciudad. Por eso este bosque es sagrado desde hace siglos: los gobernantes mexicas venían a descansar aquí, y en las rocas del cerro se tallaron sus retratos.",
+      "Hoy el Bosque de Chapultepec es uno de los parques urbanos más grandes del continente, de unas setecientas hectáreas, más o menos el doble que Central Park. Tiene museos, un zoológico, lagos, el castillo y el antiguo palacio presidencial."],
+    ["Los Pinos, la estación de salida",
+      "La estación de salida se llama Los Pinos por la antigua residencia oficial de los presidentes de México. Desde los años treinta, con el presidente Lázaro Cárdenas, los presidentes vivieron allí en vez de en el castillo, que les parecía demasiado imperial.",
+      "En diciembre de 2018, el presidente López Obrador se negó a vivir en Los Pinos y lo abrió al público como centro cultural. Ahora cualquiera puede pasear por los jardines y ver los despachos y las habitaciones de los antiguos presidentes. La entrada es gratis."],
+    ["Lo que vas a ver desde la cabina",
+      "Nada más salir, a tu izquierda y a tu derecha, la segunda sección del bosque, con sus lagos y el parque de diversiones. Después vas a pasar por encima de un mar de tumbas: es el Panteón de Dolores, el cementerio más grande de la ciudad.",
+      "Dentro del panteón está la Rotonda de las Personas Ilustres, donde están enterrados muchos de los grandes nombres de México: entre ellos los muralistas Diego Rivera, José Clemente Orozco y David Alfaro Siqueiros, cuyas obras vas a ver esta tarde en Bellas Artes.",
+      "La siguiente estación es Charrería, por el lienzo charro de la zona. La charrería es el deporte nacional de México, una especie de rodeo con caballos, lazos y trajes de charro, y es patrimonio cultural inmaterial de la humanidad.",
+      "Luego viene el Parque de Cultura Urbana, con pistas para patines, bicis y monopatín, y después la Cineteca Nacional de Chapultepec, una sede nueva de la filmoteca de México, construida sobre antiguos terrenos militares. Esa es la parte más nueva del bosque, la cuarta sección, que se abrió en 2024.",
+      "Al final, la estación Vasco de Quiroga, en el pueblo de Santa Fe. Mira hacia el oeste: los rascacielos de cristal que se ven son el distrito de negocios de Santa Fe, levantado sobre antiguos tiraderos de basura y minas de arena."],
+    ["Mirando la ciudad",
+      "A la vuelta, ya mirando hacia el este, tienes la mejor panorámica. Busca las torres de Reforma, la avenida que vas a recorrer andando después del castillo. Y en un día claro, al fondo, los volcanes: el Popocatépetl, que suele echar humo, y el Iztaccíhuatl, la mujer dormida, con su silueta alargada y blanca.",
+      "Fíjate también en el relieve. Ciudad de México está en un valle cerrado rodeado de montañas, a más de dos mil doscientos metros. El poniente, donde estás, es la parte alta y con barrancas; el centro es el fondo plano del antiguo lago.",
+      "Una curiosidad del Cablebús: es el único transporte de la ciudad donde puedes subir con la bici a cualquier hora."],
+    ["Consejos",
+      "Ten a mano la tarjeta MI: se paga al entrar en la estación, siete pesos por viaje. Como vuelves desde la otra punta, pagas dos veces.",
+      "Al volver a Los Pinos, sal hacia el bosque. El Castillo de Chapultepec queda a unos veinte minutos andando, hacia el este, por la primera sección. La subida al cerro se hace por una rampa: también hay un trenecito, pero andando se tarda casi lo mismo."] ] },
+
+  { s:"11:30", e:"11:50", t:"🚶‍♂️ Los Pinos → Castillo de Chapultepec", d:"Andando por la primera sección del bosque, unos 20 min, y la rampa de subida al cerro.", $:"$0", map:"https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=Castillo+de+Chapultepec", mov:1 },
+
+  { s:"11:50", e:"13:20", t:"🏰 Castillo de Chapultepec (Museo Nacional de Historia)", n:"Castillo", q:["maximiliano", "carlota", "ninos", "juarez", "diaz", "siqueiros", "orozco", "hidalgo", "cardenas"], d:"Entrada unos $100. Primero el museo de abajo (historia), luego el Alcázar de arriba (salones de Maximiliano y Carlota) y la terraza con las vistas de Reforma.", $:"~$100 💳", map:"https://www.google.com/maps/search/?api=1&query=Castillo+de+Chapultepec", pin:3, g:[
+    ["Lo esencial",
+      "Estás en el único castillo de América del Norte que fue residencia real de verdad. Así lo suelen presentar los mexicanos, y tiene su parte de razón: aquí vivieron un emperador y una emperatriz.",
+      "En este cerro se resume la historia de México: fue lugar sagrado de los mexicas, casa de verano de un virrey, academia militar, campo de batalla contra Estados Unidos, palacio de Maximiliano, residencia de los presidentes y, desde los años cuarenta, Museo Nacional de Historia.",
+      "El edificio tiene dos partes. Abajo, el museo, con salas que van de la conquista a la Revolución. Arriba, en lo alto del cerro, el Alcázar: las habitaciones de Maximiliano y Carlota y, después, de Porfirio Díaz, con un jardín y una terraza desde donde se ve todo el Paseo de la Reforma.",
+      "Tienes hora y media. Mi consejo: una hora para el museo y la media hora final para el Alcázar y la terraza, que es lo más bonito."],
+    ["El cerro antes del castillo",
+      "Mucho antes del castillo, este cerro fue uno de los primeros hogares de los mexicas. Cuando llegaron al valle, hacia finales del siglo trece, eran un pueblo pobre y mal visto, y se instalaron aquí, en Chapultepec, por el agua de los manantiales.",
+      "Sus vecinos no los querían. Hacia el año 1300 una coalición de pueblos del valle los atacó y los expulsó del cerro, y su jefe fue capturado y sacrificado. Los mexicas tuvieron que huir y vagar por los pantanos del lago hasta que, unos años después, fundaron Tenochtitlan en un islote. Por eso, cuando ya eran poderosos, volvieron aquí con orgullo.",
+      "Los gobernantes mexicas convirtieron el cerro en lugar sagrado y de descanso. Construyeron albercas, plantaron árboles y tallaron sus retratos en la roca del cerro. El de Moctezuma segundo todavía se intuye, muy dañado, en la ladera.",
+      "Fíjate en los árboles enormes del bosque, de tronco ancho y retorcido: son ahuehuetes, el árbol nacional de México. Algunos de los de Chapultepec tienen varios siglos, y la tradición dice que los gobernantes mexicas ya paseaban entre ellos."],
+    ["Del virrey a la academia militar",
+      "El castillo lo empezó a construir en 1785 el virrey Bernardo de Gálvez, un militar malagueño famoso por haber ayudado a los estadounidenses en su guerra de independencia. Lo quería como casa de recreo, pero murió al año siguiente y la obra se quedó a medias.",
+      "La Corona se desentendió, el edificio pasó por varias manos y, ya con México independiente, en 1841 se instaló aquí el Colegio Militar, la academia donde se formaban los cadetes del ejército. Ese detalle es clave para lo que pasó seis años después."],
+    ["La batalla de Chapultepec y los Niños Héroes",
+      "En 1846 estalló la guerra entre México y Estados Unidos. Los estadounidenses querían los territorios del norte de México, y su ejército llegó hasta la capital.",
+      "El 13 de septiembre de 1847 atacaron el castillo, que era la última gran defensa antes de entrar en la ciudad. Lo defendían unos pocos cientos de soldados y los cadetes del Colegio Militar, algunos de ellos adolescentes.",
+      "La tradición recuerda a seis cadetes que murieron aquel día: Juan de la Barrera, Juan Escutia, Francisco Márquez, Agustín Melgar, Fernando Montes de Oca y Vicente Suárez. Son los Niños Héroes. Según la leyenda, Juan Escutia, al ver que todo estaba perdido, se envolvió en la bandera mexicana y se lanzó al vacío desde lo alto del cerro para que el enemigo no se la llevara.",
+      "Los historiadores discuten si lo de la bandera pasó así, pero la historia es sagrada en México. Busca en el techo de la escalera principal un mural con un cadete cayendo envuelto en la bandera: es esa escena. Y al pie del cerro, a la entrada del bosque desde Reforma, está el gran monumento de mármol a los Niños Héroes, con seis columnas.",
+      "La guerra la ganó Estados Unidos. Con el tratado de Guadalupe Hidalgo de 1848, México perdió más o menos la mitad de su territorio: lo que hoy es California, Nevada, Utah, Nuevo México, buena parte de Arizona y más. Todavía hoy el himno de los marines estadounidenses empieza mencionando los salones de Moctezuma, por esta batalla."],
+    ["Maximiliano y Carlota",
+      "Diecisiete años después llega la historia más novelesca del castillo. México estaba arruinado y en guerra civil entre liberales y conservadores. Los conservadores, con el apoyo militar de Napoleón tercero de Francia, ofrecieron una corona a un príncipe europeo.",
+      "El elegido fue Maximiliano de Habsburgo, hermano del emperador de Austria, Francisco José. Llegó en 1864 con su mujer, Carlota, hija del rey de los belgas. Él tenía treinta y un años y ella veinticuatro.",
+      "Eligieron este castillo como residencia y lo reformaron a su gusto, con jardines en la azotea, muebles traídos de Europa y vistas al valle. Maximiliano quería ir cómodo de aquí al centro, así que mandó trazar una gran avenida recta en diagonal hasta la ciudad: se llamó Paseo de la Emperatriz. Hoy es el Paseo de la Reforma, el que vas a recorrer después.",
+      "Maximiliano resultó más liberal de lo que esperaban quienes lo trajeron, y se quedó sin amigos en ambos bandos. Cuando Francia retiró sus tropas, el imperio se vino abajo. Carlota viajó a Europa a pedir ayuda a Napoleón y al Papa, no la consiguió y allí perdió la razón. Nunca volvió. Vivió encerrada en Bélgica hasta 1927, sesenta años más que su marido.",
+      "Maximiliano fue capturado por los liberales de Benito Juárez y fusilado en el Cerro de las Campanas, en Querétaro, el 19 de junio de 1867. Juárez no le perdonó la vida pese a las peticiones de media Europa: quería dejar claro que nadie de fuera iba a volver a gobernar México."],
+    ["Porfirio Díaz y el museo",
+      "Tras el imperio, el castillo fue observatorio y otra vez colegio militar, y a partir de los años ochenta del siglo diecinueve, residencia de los presidentes. El que más lo disfrutó fue Porfirio Díaz, que gobernó más de treinta años. Muchas de las habitaciones de arriba están decoradas como en su época, con el gusto francés del momento.",
+      "El presidente Lázaro Cárdenas decidió que un castillo no era sitio para un presidente de la Revolución. En 1934 se fue a vivir a Los Pinos, la casa por la que has pasado esta mañana, y en 1939 convirtió el castillo en el Museo Nacional de Historia, que abrió en 1944."],
+    ["El museo: qué no perderte",
+      "En las salas de abajo, la historia va en orden, de la conquista a la Revolución. No intentes leerlo todo: busca cuatro cosas.",
+      "Primero, los dos carruajes. Uno es la carroza de Maximiliano, dorada, enorme, de cuento de hadas. Cerca está el carruaje de Benito Juárez, negro y sencillo, en el que recorrió el país huyendo del imperio. Ponerlos juntos es la lección del museo: el lujo de un emperador extranjero contra la austeridad del presidente indígena que lo venció.",
+      "Segundo, el retablo de la Independencia, de Juan O'Gorman: un mural enorme lleno de personajes, con Miguel Hidalgo en el centro con un estandarte de la Virgen de Guadalupe. Se lee de izquierda a derecha, desde los abusos de la colonia hasta el levantamiento.",
+      "Tercero, la sala de la Revolución, con el mural de David Alfaro Siqueiros, Del porfirismo a la Revolución. A un lado, Porfirio Díaz rodeado de señores de levita y bailarinas; al otro, los obreros en huelga, los campesinos, Zapata, Villa, Madero. Fíjate en cómo Siqueiros pinta en las esquinas y el techo para que la escena te rodee.",
+      "Y cuarto, el mural de José Clemente Orozco sobre Juárez y la caída del imperio, con la cabeza enorme de Juárez flotando sobre la escena. Orozco es el más trágico y oscuro de los tres grandes muralistas. Esta tarde vas a ver a los tres en Bellas Artes."],
+    ["El Alcázar: los salones de arriba",
+      "Para subir al Alcázar sigues la rampa hasta lo alto del cerro. Arriba están las habitaciones privadas. Fíjate en tres cosas.",
+      "Los salones de Maximiliano y Carlota: el comedor, el salón de recepciones, el gabinete de trabajo y la habitación de Carlota, con muebles, porcelanas, vajillas con el escudo imperial y retratos de los dos. Todo muy de corte europea del siglo diecinueve.",
+      "La galería de vitrales: un corredor abierto al jardín con grandes vidrieras de colores con figuras de diosas griegas y romanas. Las encargó Porfirio Díaz en París hacia 1900. Con el sol de mediodía brillan muchísimo.",
+      "Y el jardín de la azotea, con una pequeña torre en el centro, el Caballero Alto, que fue observatorio. Desde el borde de la terraza tienes la foto del día: el Paseo de la Reforma saliendo recto en diagonal hacia el centro, entre rascacielos, con el Ángel de la Independencia al fondo. Esa diagonal la trazó Maximiliano para ir de su casa al centro. Ahora vas a recorrerla tú."],
+    ["Consejos",
+      "La taquilla está abajo, al llegar a lo alto de la rampa. Pagas con tarjeta si la aceptan y guardas el efectivo.",
+      "Las mochilas grandes a veces hay que dejarlas en consigna. Hay baños dentro, con la entrada.",
+      "Para bajar, vuelves por la misma rampa. Al salir del bosque por la Puerta de los Leones, en Reforma, tienes delante la Estela de Luz: la siguiente parada."] ] },
+
+  { s:"13:30", e:"14:30", t:"🗽 Paseo de la Reforma: Estela de Luz, Diana y el Ángel", n:"Reforma", q:["maximiliano", "juarez", "diaz", "hidalgo"], d:"Andando unos 30 min por el camellón. Si te cansas, Metrobús L7 por Reforma hasta la parada El Ángel.", $:"$0", map:"https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=%C3%81ngel+de+la+Independencia", pin:4, g:[
+    ["Lo esencial",
+      "Estás en el Paseo de la Reforma, la gran avenida de Ciudad de México. Ya sabes de dónde viene: la trazó Maximiliano para ir del castillo al centro, y la llamó Paseo de la Emperatriz en honor a Carlota.",
+      "Cuando cayó el imperio, los liberales le cambiaron el nombre por el de Reforma, en honor a las leyes de Reforma de Benito Juárez, que separaron la Iglesia del Estado. El emperador hizo la avenida y su enemigo le puso nombre.",
+      "La idea era imitar los grandes bulevares de París y de Viena. Durante el porfiriato se llenó de palacetes, y en el siglo veinte esos palacetes fueron sustituidos por rascacielos. Hoy es el centro financiero del país y la calle de las grandes manifestaciones y celebraciones.",
+      "Vas a hacer tres paradas: la Estela de Luz, la Diana Cazadora y el Ángel de la Independencia. Son unos treinta minutos andando por el lado del camellón, que tiene árboles y esculturas."],
+    ["La Estela de Luz",
+      "La torre fina y alta, revestida de paneles de cuarzo blanquecino, es la Estela de Luz. Se hizo para celebrar el bicentenario de la Independencia, en 2010, pero se inauguró con más de un año de retraso, a principios de 2012, y costando varias veces lo presupuestado. Hubo investigaciones por corrupción.",
+      "Mide unos ciento cuatro metros. De noche se ilumina por dentro. Los mexicanos, que tienen apodo para todo, la llaman la suavicrema, por un barquillo de galleta que se parece mucho.",
+      "Aquí cerca también está la entrada principal al bosque, la Puerta de los Leones, con sus dos leones de bronce, y detrás el monumento de los Niños Héroes, el de las seis columnas blancas."],
+    ["La Diana Cazadora",
+      "La siguiente glorieta, la de la fuente con la mujer desnuda tensando un arco hacia el cielo, es la Diana Cazadora. Su nombre oficial es más poético: la Flechadora de las Estrellas del Norte. Es de 1942, obra del escultor Juan Fernando Olaguíbel.",
+      "Cuando se inauguró hubo escándalo. Una liga de la decencia protestó porque la diosa estaba desnuda en plena avenida, y el escultor tuvo que ponerle un taparrabos de bronce. Se lo quitaron muchos años después, a finales de los sesenta, cuando la ciudad se preparaba para los Juegos Olímpicos de 1968.",
+      "La modelo fue una joven secretaria de Petróleos Mexicanos, Helvia Martínez, que durante décadas guardó el secreto de que el cuerpo de la estatua era el suyo. Lo contó ya mayor."],
+    ["El Ángel de la Independencia",
+      "Y al fondo, el símbolo de la ciudad: el Ángel de la Independencia. Es una columna de más de cuarenta y cinco metros contando el pedestal, coronada por una victoria alada de bronce dorado, que sostiene en una mano una corona de laurel y en la otra una cadena rota.",
+      "Lo inauguró Porfirio Díaz en 1910, para el centenario de la Independencia, pocas semanas antes de que estallara la Revolución que lo echaría del poder. Lo diseñó el arquitecto Antonio Rivas Mercado.",
+      "En el terremoto de 1957 la estatua dorada se cayó y se hizo pedazos. La que ves es una reconstrucción. La cabeza original se conserva aparte.",
+      "Lo más importante está en la base: es un mausoleo. Dentro reposan los restos de los héroes de la Independencia, entre ellos Miguel Hidalgo, Ignacio Allende y José María Morelos. A sus pies hay estatuas de mármol de varios de ellos, con Hidalgo en el lugar principal.",
+      "Y el Ángel es donde la gente sale a celebrar: cuando gana la selección de fútbol, en la noche del 15 de septiembre, y también donde empiezan muchas protestas. Si alguna vez ves a una multitud con banderas por la tele en Ciudad de México, casi seguro que es aquí."],
+    ["Consejos",
+      "Ve por el camellón central o por la acera ancha; cruza solo en los semáforos, que la avenida es rapidísima.",
+      "Si se te hace largo, el Metrobús de la Línea 7 va por la misma avenida: te subes en cualquier parada y te bajas en la del Ángel.",
+      "Desde el Ángel, la Condesa está a unos veinte minutos al sur, cruzando la avenida Chapultepec. Tira por la calle Sevilla o por Ámsterdam."] ] },
+
+  { s:"14:30", e:"15:15", t:"🌳 Condesa: Parque México y avenida Ámsterdam", n:"Condesa", d:"Andando unos 20 min desde el Ángel. Da la vuelta al óvalo de Ámsterdam y cruza el Parque México.", $:"$0", map:"https://www.google.com/maps/search/?api=1&query=Parque+M%C3%A9xico+Condesa", pin:5, g:[
+    ["Lo esencial",
+      "Estás en la colonia Condesa, uno de los barrios más bonitos y paseables de Ciudad de México: calles con árboles enormes en el centro, edificios art déco, cafés y gente con perros.",
+      "El nombre viene de la condesa de Miravalle, una aristócrata de la época colonial que tenía aquí una gran hacienda. A principios del siglo veinte la hacienda se dividió en parcelas y se construyó el barrio."],
+    ["Un hipódromo convertido en barrio",
+      "Lo más curioso de la Condesa es su forma. Aquí hubo un hipódromo, una pista de carreras de caballos. Cuando se urbanizó en los años veinte, la pista se convirtió en calle.",
+      "Es la avenida Ámsterdam: si la recorres entera, das una vuelta completa y vuelves al punto de partida, porque es un óvalo. Y tiene un camellón central, ancho y lleno de árboles, por donde la gente pasea y corre. Antes por ahí corrían caballos.",
+      "Lo que quedaba dentro del óvalo, el centro del hipódromo, se convirtió en el Parque México, que abrió en 1927. Por eso el parque está justo en el centro de la vuelta de Ámsterdam."],
+    ["El Parque México y el art déco",
+      "El Parque México es de los parques más queridos de la ciudad. Busca el reloj de la entrada, el foro Lindbergh, una especie de teatro al aire libre con columnas, y el estanque. Todo tiene el estilo de los años veinte y treinta: art déco, líneas geométricas y escalonadas.",
+      "Ese estilo se ve también en los edificios de alrededor. Fíjate en las fachadas con esquinas redondeadas, ventanas en franja y letras geométricas en los nombres de los edificios. El más famoso es el edificio Basurto, en la calle Mazatlán, con una escalera en espiral que se ve desde la calle.",
+      "Si tienes un minuto, fíjate en la cantidad de paseadores de perros con diez o doce perros a la vez. Es casi una tradición del barrio."],
+    ["Consejos",
+      "Para seguir hacia la Roma, sal del parque por la calle Michoacán hacia el este y cruza la avenida Insurgentes. El Mercado de Medellín está a unos quince minutos andando."] ] },
+
+  { s:"15:15", e:"16:15", t:"🍽️ Roma: comida en el Mercado de Medellín y Álvaro Obregón", n:"Medellin", d:"Comida en el mercado (fondas dentro y alrededor). Después, paseo corto por la avenida Álvaro Obregón hacia el metro Insurgentes.", $:"$100–200 💵", map:"https://www.google.com/maps/search/?api=1&query=Mercado+de+Medell%C3%ADn+Roma+Sur", pin:6, g:[
+    ["Lo esencial",
+      "Estás en la colonia Roma, la vecina de la Condesa. Es algo más antigua: se trazó a principios del siglo veinte, en la época de Porfirio Díaz, para familias acomodadas que dejaban el centro.",
+      "Por eso aquí hay más casonas de estilo francés, con mansardas, rejas de hierro y fachadas de cantera, mezcladas con edificios modernos. Muchas se dañaron o cayeron en el terremoto de 1985, que golpeó muy fuerte esta zona. En los últimos veinte años el barrio se ha llenado de restaurantes, galerías y cafés."],
+    ["El Mercado de Medellín",
+      "El Mercado de Medellín es un mercado de barrio de toda la vida, pero con una particularidad: tiene muchísimos productos de otros países de América Latina. Colombianos, venezolanos, peruanos, cubanos o argentinos vienen aquí a comprar lo de su tierra.",
+      "Dentro hay fondas para comer barato: comida corrida, que es el menú del día mexicano, con sopa, arroz, un guisado y agua de sabor. También hay puestos de mariscos y de comida colombiana o venezolana, como arepas.",
+      "Si quieres algo muy local, busca un agua fresca de sabores que no conozcas, como jamaica, tamarindo u horchata. Y paga en efectivo: en el mercado casi nadie acepta tarjeta."],
+    ["La Roma de la película",
+      "Si has visto la película Roma, de Alfonso Cuarón, que ganó tres Oscar en 2019, está ambientada justo aquí, a principios de los años setenta. Cuarón creció en este barrio, y la casa de la película está en la calle Tepeji, en la Roma Sur, muy cerca del mercado.",
+      "La película cuenta la vida de una empleada doméstica indígena que trabaja para una familia de clase media, y retrata un momento duro: la matanza del Jueves de Corpus de 1971, cuando un grupo paramilitar atacó una manifestación de estudiantes."],
+    ["La avenida Álvaro Obregón",
+      "Después de comer, sube hacia el norte hasta la avenida Álvaro Obregón, la más bonita de la Roma: un bulevar con un camellón ancho, bancos, esculturas y fuentes, y casonas a los lados.",
+      "Álvaro Obregón fue uno de los generales que ganaron la Revolución y fue presidente de México. En 1928, recién reelegido, lo asesinó a tiros un joven católico, durante un banquete en un restaurante del sur de la ciudad. Fue en plena guerra cristera, el conflicto entre el gobierno y la Iglesia.",
+      "Muy cerca está la Plaza Villa de Madrid, con una copia de la fuente de Cibeles. Fue un regalo de la ciudad de Madrid en 1980. Si te pilla de camino, es la foto de casa."],
+    ["Consejos",
+      "Desde Álvaro Obregón, el metro Insurgentes, de la Línea 1, está a unos diez minutos. La glorieta de Insurgentes es redonda y hundida: entra por cualquiera de los accesos.",
+      "No te entretengas demasiado: en Bellas Artes venden boletos hasta las cinco y media y cierran a las seis."] ] },
+
+  { s:"16:15", e:"16:30", t:"🚇 Insurgentes → Bellas Artes", d:"L1 dirección Pantitlán hasta Salto del Agua (3 paradas); cambio a L8 dirección Garibaldi, 2 paradas, hasta Bellas Artes.", l:["L1","L8"], $:"$5", map:RUTA("Palacio de Bellas Artes, Ciudad de México"), mov:1 },
+
+  { s:"16:30", e:"17:30", t:"🎭 Bellas Artes por dentro: los murales", n:"Bellas Artes", q:["rivera", "orozco", "siqueiros", "diaz"], d:"Entrada unos $95 (boletos hasta las 17:30; cierra a las 18:00). Sube directo a los pisos de los murales: Rivera, Orozco, Siqueiros y Tamayo.", $:"~$95 💳", map:GM+"1718141752200063183", pin:7, g:[
+    ["Lo esencial",
+      "Estás dentro del Palacio de Bellas Artes, el gran teatro y museo de México. Lo viste por fuera el primer día. Ahora lo importante está dentro: los murales de los grandes pintores mexicanos del siglo veinte, todos en un mismo edificio.",
+      "El palacio lo empezó en 1904 el arquitecto italiano Adamo Boari, por encargo de Porfirio Díaz. Por fuera es art nouveau, de mármol blanco. Pero la Revolución paró las obras, el edificio se hundía en el suelo blando del antiguo lago, y no se terminó hasta 1934, treinta años después. Por eso por dentro el estilo es otro: art déco, con mármoles de colores, bronces y lámparas geométricas.",
+      "Te doy un orden: sube directamente al segundo piso, mira los murales de Rivera, Orozco y Siqueiros, y después los de Tamayo, en el piso de arriba. Al final, si te sobra tiempo, el vestíbulo y la cúpula."],
+    ["Un edificio que se hunde",
+      "Bellas Artes es enorme y está hecho de mármol de Carrara, y está construido sobre el fondo blando del antiguo lago de Texcoco. El resultado es que se hunde. Ya durante las obras se hundió tanto que hubo que reforzar los cimientos varias veces, y a lo largo del siglo veinte siguió bajando varios metros.",
+      "Por eso la explanada que lo rodea está más baja que la calle: el edificio no se ha movido de sitio, pero sí hacia abajo. Fíjate también en las juntas y en algunos suelos del interior: no todo está perfectamente nivelado.",
+      "Boari lo había diseñado con una gran cúpula de hierro y cristal como la que ves, revestida por fuera con tejas de cerámica dorada y naranja, y un águila de bronce coronándola. Lo que no pudo prever fue cuánto pesaría todo eso sobre el barro."],
+    ["El muralismo, en dos minutos",
+      "Tras la Revolución, el gobierno mexicano quiso contar la historia del país al pueblo, que en buena parte no sabía leer. La idea fue pintarla en las paredes de los edificios públicos, donde todo el mundo pudiera verla. Así nació el muralismo mexicano, en los años veinte.",
+      "Los tres grandes fueron Diego Rivera, José Clemente Orozco y David Alfaro Siqueiros. Rivera es el narrador: escenas llenas de gente, colores claros, historia contada como un cómic. Orozco es el trágico: figuras deformadas, fuego, violencia, mucho pesimismo. Siqueiros es el experimental: perspectivas que se te echan encima, pinturas industriales, figuras que parecen salir de la pared.",
+      "Bellas Artes es el único sitio donde los tienes a los tres a pocos pasos."],
+    ["Diego Rivera: El hombre controlador del universo",
+      "Este mural tiene la mejor historia del edificio. En 1933, la familia Rockefeller encargó a Diego Rivera un mural para el vestíbulo del Rockefeller Center de Nueva York. Rivera, que era comunista, incluyó en él un retrato de Lenin.",
+      "Nelson Rockefeller le pidió que lo quitara. Rivera se negó. Le pagaron, lo despidieron, taparon el mural y en 1934 lo destruyeron a martillazos.",
+      "Rivera, furioso, volvió a pintarlo aquí, en Bellas Artes, ese mismo año, con un poco de venganza añadida. En el centro, un obrero maneja una gran máquina, en el cruce de dos elipses: una con el telescopio, el cosmos y los astros, y otra con el microscopio, las células y los microbios. A un lado, el mundo capitalista: soldados con máscaras de gas, señores ricos jugando a las cartas. Al otro, el mundo socialista: obreros unidos, Lenin, Trotsky y Marx.",
+      "Busca a la izquierda, en la escena de los ricos, a John D. Rockefeller hijo, el padre de quien le había censurado. Rivera lo pintó en una fiesta, bebiendo, justo al lado de unos microbios que, según la tradición, representan enfermedades venéreas. Esa fue su respuesta."],
+    ["Orozco: La Katharsis",
+      "Enfrente, o muy cerca, está La Katharsis, de José Clemente Orozco, también de 1934. Es el mural más violento del edificio.",
+      "Abajo, una mujer desnuda tumbada, riéndose a carcajadas, que muchos interpretan como la corrupción o la prostitución. Alrededor, hombres que se pelean con cuchillos y fusiles, máquinas y engranajes. Y arriba, todo arde: un gran incendio que lo destruye todo.",
+      "Para Orozco, la civilización moderna, la técnica y la guerra llevaban a la destrucción, y solo el fuego podía purificarla. Eso es la catarsis: la purificación. Orozco había perdido la mano izquierda de joven en un accidente con pólvora, y pintaba con una sola mano."],
+    ["Siqueiros: Nueva democracia",
+      "De Siqueiros busca Nueva democracia, de 1944. Es una mujer gigante, con el gorro frigio de la libertad, que sale de un volcán con los brazos en alto, rompiendo las cadenas. En una mano lleva una antorcha y en la otra una flor.",
+      "Lo pintó al final de la Segunda Guerra Mundial, como la victoria contra el fascismo. A sus lados están Víctimas de la guerra y Víctimas del fascismo. Fíjate en los puños y en las cadenas: parecen salir hacia ti. Siqueiros pintaba con pistolas de aire y pinturas de coche para conseguir esos volúmenes.",
+      "Por la misma galería están también sus dos murales sobre Cuauhtémoc, el último emperador mexica: uno con su tortura por los españoles, a los que pinta con armaduras como robots, y otro con su resurrección."],
+    ["Tamayo y el resto",
+      "En el piso de arriba están los dos murales de Rufino Tamayo, de los años cincuenta. Tamayo era de Oaxaca y no le gustaba nada el muralismo político de los otros tres. Él pintaba con colores muy intensos, sobre todo rojos, rosas y morados, y formas casi abstractas.",
+      "Sus murales son Nacimiento de nuestra nacionalidad, con el choque entre un caballo español y una figura indígena de la que nace el mestizo, y México de hoy. Es interesante verlo después de Rivera: la misma historia, pero contada sin discurso."],
+    ["El teatro, la cúpula y la cortina de cristal",
+      "El corazón del edificio es la sala de teatro, donde actúan la Compañía Nacional de Danza, la ópera y el Ballet Folklórico. Normalmente no se puede entrar sin función.",
+      "Dentro tiene dos maravillas. La primera, la cortina del escenario: no es de tela, sino de casi un millón de piezas de cristal, hecha en Nueva York por la casa Tiffany. Representa el valle de México con sus dos volcanes, el Popocatépetl y el Iztaccíhuatl, y se ilumina para que pase del amanecer al anochecer.",
+      "La segunda, el techo de la sala, una gran lámpara de cristal con Apolo y las musas, del artista húngaro Géza Maróti, que también decoró la cúpula.",
+      "Si no se puede pasar, mira desde el vestíbulo hacia arriba: la cúpula por dentro, con sus vidrios, es preciosa."],
+    ["Consejos",
+      "La entrada se compra en la taquilla, en la planta baja. A veces hay que dejar la mochila grande en consigna.",
+      "No se pueden usar trípodes; el móvil sí, sin flash.",
+      "Al salir, la Alameda está justo detrás, al oeste, y la Plaza Tolsá a cinco minutos andando por la calle Tacuba, hacia el este."] ] },
+
+  { s:"17:30", e:"18:15", t:"🐎 Alameda y Plaza Tolsá: El Caballito, Minería y MUNAL", n:"Tolsa", q:["tolsa", "juarez"], d:"La Alameda detrás de Bellas Artes y, por la calle Tacuba, la Plaza Tolsá: El Caballito, el Palacio de Minería y el MUNAL por fuera.", $:"$0", map:"https://www.google.com/maps/search/?api=1&query=Plaza+Tols%C3%A1+Ciudad+de+M%C3%A9xico", pin:8, g:[
+    ["Lo esencial",
+      "Terminas el día en el corazón del Centro, entre dos lugares muy distintos: la Alameda, el parque más antiguo de la ciudad, y la Plaza Tolsá, una de las plazas más elegantes de México, dedicada a un valenciano."],
+    ["La Alameda Central",
+      "La Alameda se creó en 1592, por orden del virrey Luis de Velasco. Es el parque público más antiguo de América. Se llama así por los álamos que se plantaron al principio, aunque hoy casi todo son fresnos y otros árboles.",
+      "Durante la época colonial, en el extremo oeste del parque estaba el quemadero de la Inquisición, donde se ejecutaba a los condenados. Durante siglos solo la podían usar las clases altas; hoy es el parque más popular del centro.",
+      "En el lado de la avenida Juárez verás el Hemiciclo a Juárez, un semicírculo de columnas de mármol blanco con la estatua de Benito Juárez en el centro, sentado, coronado por la patria. También es de 1910, de las fiestas del centenario de Porfirio Díaz.",
+      "Diego Rivera pintó un mural famoso sobre este parque, Sueño de una tarde dominical en la Alameda Central, con la Catrina del brazo de un Diego niño y de Frida Kahlo. Está en un pequeño museo en el lado oeste, el Museo Mural Diego Rivera."],
+    ["El Caballito de Tolsá",
+      "La estatua ecuestre del centro de la plaza es la de Carlos cuarto de España, aunque todo el mundo la llama El Caballito. La hizo Manuel Tolsá, un escultor y arquitecto valenciano, de Enguera, y se fundió en bronce en 1803. Es una de las estatuas ecuestres más grandes del mundo de su época.",
+      "Lo curioso es el nombre. Después de la Independencia, a nadie le apetecía rendir homenaje a un rey español, pero la estatua era demasiado buena para fundirla. Así que la gente empezó a decir que lo que se admiraba era el caballo, no el rey. Y se quedó con El Caballito.",
+      "La estatua ha cambiado de sitio varias veces: estuvo en el Zócalo, en un patio de la universidad y en la esquina de Reforma, y desde 1979 está aquí. En 2013 una restauración mal hecha, con ácido, le dañó buena parte de la superficie, y hubo que tratarla durante años.",
+      "No la confundas con el otro Caballito, una gran escultura abstracta amarilla del escultor Sebastián, que está en Reforma justo donde estaba antes esta."],
+    ["El Palacio de Minería",
+      "El edificio neoclásico de enfrente, con columnas y una fachada larguísima, es el Palacio de Minería, también obra de Manuel Tolsá. Se construyó entre 1797 y 1813 para el Real Seminario de Minería, la escuela de ingenieros de minas de la Nueva España, cuando las minas de plata de México eran la gran riqueza del imperio español.",
+      "Muchos lo consideran la obra neoclásica más importante de América. Como casi todo en el centro, se ha hundido de forma desigual: dentro, el patio y las escaleras tienen inclinaciones que se notan a simple vista. Hoy pertenece a la Universidad Nacional, y cada año acoge una gran feria del libro."],
+    ["El MUNAL",
+      "El otro gran edificio de la plaza, con cúpula y escalinata, es el Museo Nacional de Arte, el MUNAL. Fue construido a principios del siglo veinte como Palacio de Comunicaciones, la sede del ministerio de correos y telégrafos, por el arquitecto italiano Silvio Contri.",
+      "Por dentro tiene una escalera imperial de mármol y bronce espectacular. Guarda arte mexicano desde la época colonial hasta mediados del siglo veinte, con muchos paisajes del pintor José María Velasco, que pintó este mismo valle de México visto desde arriba, como lo has visto tú hoy desde el teleférico."],
+    ["Para cerrar el día",
+      "Si lo piensas, hoy has recorrido la historia del país al revés y al derecho. Los mexicas, en el cerro del saltamontes. La Nueva España, en el virrey Gálvez, en la Alameda y en Tolsá. La guerra con Estados Unidos y los Niños Héroes. El imperio de Maximiliano y su avenida. El porfiriato, en el Ángel y en Bellas Artes. Y la Revolución, contada en las paredes por Rivera, Orozco y Siqueiros.",
+      "El metro Bellas Artes está en la esquina, junto al Palacio Postal. Línea 2 hasta Hidalgo, Línea 3 hasta Zapata. A esta hora va lleno: mochila delante."] ] },
+
+  { s:"18:15", e:"19:00", t:"🚇 Vuelta a casa", d:"Bellas Artes → Hidalgo (L2), Hidalgo → Zapata (L3). Unos 35 min. Va lleno: mochila delante.", l:["L2","L3"], $:"$5", map:RUTA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
+];
+
+/* Lunes 9: Teotihuacan (se conserva por si vuelve al calendario). */
+var TEO = [
   { s:"15:45", e:"16:00", t:"🧭 Entender Teotihuacan (ponlo mientras caminas)", q:["mexicas", "nahuatl", "tlaloc", "talud", "obsidiana"], d:"La historia completa de la ciudad: quiénes eran, cómo vivían, quién mandaba y por qué cayó. Escúchalo andando por la Calzada, entre parada y parada.", $:"", pin:1, map:"https://www.google.com/maps/search/?api=1&query=Zona+Arqueol%C3%B3gica+de+Teotihuacan", g:[
     ["Lo esencial",
       "Estás en Teotihuacan, la ciudad más grande que hubo en América antes de la llegada de los europeos durante casi mil años. Ojo con una cosa: esto no es azteca. Cuando los mexicas llegaron a este valle, esta ciudad llevaba más de setecientos años en ruinas. Para ellos era tan antigua y misteriosa como para nosotros la Roma imperial.",
@@ -786,7 +1017,7 @@ var VIEJO = [
 
 /* Paradas que ya no están en el plan fijo pero cuya guía se usa si vuelven al
    calendario (se emparejan por nombre). */
-var EXTRA = VIEJO.concat(MUSEO, [
+var EXTRA = VIEJO.concat(MUSEO, TEO, [
   { s:"11:00", e:"12:45", t:"🔺 Templo Mayor (zona + museo)", n:"Templo Mayor", q:["mexicas", "tlaloc", "nahuatl", "moctezuma"], d:"Pegado al lado este de la Catedral. Taquilla en calle Seminario 8, junto a la maqueta de Tenochtitlan. Primero ruinas, luego museo.", $:"$210 💵/💳", map:GM+"10128805338444740272", pin:4, g:[
     ["Lo esencial",
       "Estás en lo que fue el centro del mundo para los mexicas: el Huey Teocalli, el gran templo de Tenochtitlan. Era una pirámide de unos cuarenta y cinco metros de altura, con dos escalinatas y dos santuarios en lo alto.",
@@ -825,6 +1056,19 @@ var EXTRA = VIEJO.concat(MUSEO, [
    guía donde estaba (en pausa).
    --------------------------------------------------------------------------- */
 var Q = {
+  carlota:["Carlota de México",
+    "Carlota era princesa de Bélgica, hija del rey Leopoldo primero. Nació en 1840 y en 1857 se casó con Maximiliano de Habsburgo.",
+    "En 1864 llegó a México con él como emperatriz. Era inteligente y ambiciosa, y cuando Maximiliano viajaba, ella gobernaba en su nombre.",
+    "En 1866, con el imperio hundiéndose, viajó a Europa para pedir ayuda a Napoleón tercero y al Papa. Nadie la ayudó, y en Roma empezó a mostrar signos de una grave crisis mental: creía que querían envenenarla.",
+    "No volvió a México. Vivió recluida en castillos de Bélgica hasta su muerte, en 1927, sesenta años después del fusilamiento de su marido."],
+  ninos:["Los Niños Héroes",
+    "Son seis cadetes del Colegio Militar que murieron defendiendo el Castillo de Chapultepec el 13 de septiembre de 1847, durante la invasión estadounidense: Juan de la Barrera, Juan Escutia, Francisco Márquez, Agustín Melgar, Fernando Montes de Oca y Vicente Suárez.",
+    "Tenían entre trece y veinte años. La leyenda más famosa dice que Juan Escutia se envolvió en la bandera y saltó desde lo alto del cerro para que no cayera en manos enemigas.",
+    "Cada 13 de septiembre se les rinde homenaje en el monumento de las seis columnas, a la entrada del bosque, y sus nombres aparecen en calles y estaciones de metro de todo el país."],
+  cardenas:["Lázaro Cárdenas",
+    "Lázaro Cárdenas fue presidente de México de 1934 a 1940, y es uno de los más queridos por los mexicanos.",
+    "Hizo un gran reparto de tierras a los campesinos y, en 1938, expropió el petróleo a las compañías extranjeras: así nació Pemex. También acogió a miles de exiliados de la guerra civil española.",
+    "Fue el primer presidente que vivió en Los Pinos en vez de en el Castillo de Chapultepec, al que convirtió en museo."],
   batres:["Leopoldo Batres",
     "Leopoldo Batres, nacido en 1852, fue el arqueólogo oficial del gobierno de Porfirio Díaz, con el cargo de inspector de monumentos. Era militar de formación y había estudiado algo de antropología en París.",
     "Excavó y reconstruyó a toda prisa la Pirámide del Sol entre 1905 y 1910, para el centenario de la Independencia. También trabajó en Monte Albán, Mitla y Xochicalco, y dirigió las primeras excavaciones en la zona del Templo Mayor.",
@@ -944,7 +1188,7 @@ var CSS = [
   ".vjPr{font-size:12.5px;font-weight:800;color:var(--fg);margin-top:6px;font-variant-numeric:tabular-nums}",
   ".vjAh{display:none;font-size:10.5px;font-weight:800;background:#e0457b;color:#fff;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:2px}.vjP.on .vjAh{display:inline-block}",
   ".vjLn{display:flex;gap:4px;margin-top:6px}.vjLn span{font-size:10.5px;font-weight:800;color:#fff;border-radius:999px;padding:2px 8px}",
-  ".vjL2{background:#2d82dc}.vjL3{background:#5c9c29}.vjL6{background:#e4463e}",
+  ".vjL1{background:#e4007c}.vjL2{background:#2d82dc}.vjL3{background:#5c9c29}.vjL6{background:#e4463e}.vjL7{background:#f28c1e}.vjL8{background:#0a8a4a}.vjL12{background:#b39b5d}",
   ".vjAc{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}",
   ".vjB{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--ln);background:var(--sf);color:var(--fg);font:800 13.5px Manrope,sans-serif;text-decoration:none}",
   ".vjB.au{background:#e0457b;border-color:#e0457b;color:#fff}",
@@ -973,21 +1217,21 @@ var CSS = [
 ].join("\n");
 
 var MAPA =
-'<svg viewBox="0 0 600 250" role="img" aria-label="Plano de Teotihuacan con las paradas numeradas; el norte queda a la derecha">' +
-'<rect x="30" y="110" width="490" height="20" rx="3" class="park"/><text x="215" y="103" class="area">Calzada de los Muertos</text>' +
-'<rect x="60" y="140" width="115" height="95" rx="4" class="plaza"/><text x="117" y="228" class="stl" text-anchor="middle">Ciudadela</text>' +
-'<rect x="135" y="170" width="30" height="30" rx="2" class="park"/>' +
-'<path class="walk" d="M190,20 V240"/><text x="194" y="30" class="stl">río San Juan</text>' +
-'<rect x="330" y="138" width="90" height="85" rx="4" class="plaza"/><text x="375" y="216" class="stl" text-anchor="middle">SOL</text>' +
-'<rect x="248" y="182" width="64" height="45" rx="4" class="plaza"/><text x="280" y="240" class="stl" text-anchor="middle">Museo</text>' +
-'<rect x="470" y="88" width="50" height="64" rx="4" class="plaza"/>' +
-'<rect x="522" y="85" width="66" height="70" rx="4" class="plaza"/><text x="555" y="170" class="stl" text-anchor="middle">LUNA</text>' +
-'<rect x="452" y="38" width="64" height="42" rx="4" class="plaza"/><text x="484" y="30" class="stl" text-anchor="middle">Quetzalpapálotl</text>' +
-'<rect x="440" y="192" width="60" height="38" rx="4" class="plaza"/><text x="470" y="244" class="stl" text-anchor="middle">Tepantitla</text>' +
-'<text x="75" y="95" class="stl">Puerta 1</text><text x="350" y="95" class="stl">Puerta 2</text><text x="535" y="40" class="stl">Puerta 3</text>' +
-'<text x="575" y="235" class="stl" text-anchor="end">Norte →</text>' +
+'<svg viewBox="0 0 600 250" role="img" aria-label="Plano esquemático del poniente y el centro de Ciudad de México con las paradas numeradas; el norte queda arriba">' +
+'<path class="park" d="M20,110 Q40,95 120,100 L215,118 Q225,160 190,190 L60,200 Q15,190 20,110 Z"/><text x="110" y="185" class="area">Bosque de Chapultepec</text>' +
+'<path class="walk" d="M75,150 L5,215"/><text x="10" y="240" class="stl">→ Santa Fe (Cablebús)</text>' +
+'<path class="st" d="M200,120 L330,82 L470,62 L520,50" fill="none"/><text x="300" y="70" class="stl">Paseo de la Reforma</text>' +
+'<rect x="45" y="20" width="70" height="30" rx="4" class="plaza"/><text x="80" y="65" class="stl" text-anchor="middle">Polanco</text>' +
+'<rect x="255" y="160" width="80" height="45" rx="20" class="park"/><text x="295" y="222" class="stl" text-anchor="middle">Condesa</text>' +
+'<rect x="355" y="150" width="90" height="55" rx="4" class="plaza"/><text x="400" y="222" class="stl" text-anchor="middle">Roma</text>' +
+'<rect x="480" y="72" width="55" height="26" rx="3" class="park"/><text x="508" y="115" class="stl" text-anchor="middle">Alameda</text>' +
+'<g class="met"><rect x="88" y="4" width="22" height="16" rx="3"/><text x="99" y="16">M</text></g><text x="114" y="16" class="stl">San Joaquín</text>' +
+'<g class="met"><rect x="36" y="130" width="22" height="16" rx="3"/><text x="47" y="142">M</text></g><text x="20" y="126" class="stl">Constituyentes</text>' +
+'<g class="met"><rect x="340" y="128" width="22" height="16" rx="3"/><text x="351" y="140">M</text></g><text x="366" y="140" class="stl">Insurgentes</text>' +
+'<g class="met"><rect x="548" y="96" width="22" height="16" rx="3"/><text x="559" y="108">M</text></g><text x="545" y="124" class="stl">Bellas Artes</text>' +
+'<text x="590" y="245" class="stl" text-anchor="end">↑ Norte</text>' +
 '{PINS}</svg>';
-var XY = { 1:[45,120], 2:[117,170], 3:[260,120], 4:[375,170], 5:[280,200], 6:[555,115], 7:[484,58], 8:[470,208] };
+var XY = { 1:[80,35], 2:[75,150], 3:[200,130], 4:[330,90], 5:[295,182], 6:[400,177], 7:[555,80], 8:[565,45] };
 
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]; }); }
 function min(h) { var a = h.split(":"); return (+a[0]) * 60 + (+a[1]); }
@@ -1183,7 +1427,10 @@ function desdeCal(evs) {
 }
 function aplica(evs, estado, hora) {
   var q = desdeCal(evs);
-  if (!q.length || !q.casan) return false;           // el calendario no trae este plan: se queda el fijo
+  // El calendario no trae este plan, o lo trae en un único evento-resumen del día
+  // (p. ej. «Polanco, Cablebús, Chapultepec…»): se queda el fijo, con todas sus guías.
+  var conGuia = FIJO.filter(function (x) { return x.g; }).length;
+  if (!q.length || q.casan < Math.min(2, conGuia)) return false;
   P = q; SYNC = { estado:estado, hora:hora }; return true;
 }
 function guardado() {
@@ -1224,7 +1471,7 @@ function pinta(c, sinPedir) {
       pins += x.map ? '<a href="' + esc(x.map) + '" target="_blank" rel="noopener">' + gp + '</a>' : gp; }
   });
   var h = '<div class="vjW"><div class="vjMapa">' + MAPA.replace("{PINS}", pins) + '</div>' +
-    '<div class="vjNota">El norte queda a la derecha. Las horas son orientativas: toca la parada en la que estés. Cada número abre el sitio en Google Maps.</div>' +
+    '<div class="vjNota">' + esc(TXT.mapa) + '</div>' +
     notaSync() + '<div class="vjAhora"><span class="vjAhT">–</span><button type="button" class="vjIr">Ir a lo de ahora</button></div><div class="vjL">';
   P.forEach(function (x, i) {
     h += '<div class="vjP' + (x.mov ? " mov" : "") + '" data-i="' + i + '"><div class="vjH">' + x.s + '<small>' + x.e + '</small></div><div class="vjC">' +
@@ -1244,7 +1491,7 @@ function pinta(c, sinPedir) {
     }
     h += '</div></div>';
   });
-  h += '</div><div class="vjNota">El sitio cierra a las 17:00. Lleva agua, gorra y crema: casi no hay sombra.</div>' +
+  h += '</div><div class="vjNota">' + esc(TXT.pie) + '</div>' +
     '<div class="vjNota">Batería: la guía no usa el GPS ni deja la pantalla encendida. Puedes bloquear el móvil mientras escuchas; si al bloquearlo se corta entre frases, dale a ▶ al volver.</div></div>' +
     '<div class="vjRep" hidden><div class="vjRT"><div><b class="vjRTi">–</b><small class="vjRSu">–</small></div><button type="button" class="vjX" aria-label="Cerrar la guía">✕</button></div>' +
     '<div class="vjBarra"><i></i></div>' +
@@ -1286,7 +1533,7 @@ function pinta(c, sinPedir) {
     if (cur) cur.classList.add("on");
     c.querySelectorAll(".pin").forEach(function (p) { p.classList.toggle("on", !!cur && p.dataset.i === cur.dataset.i); });
     var t = c.querySelector(".vjAhT");
-    if (!hoy) { t.textContent = "Plan del lunes 9 de noviembre."; return; }
+    if (!hoy) { t.textContent = TXT.otro; return; }
     if (!cur) { t.textContent = "Día terminado."; return; }
     var x = P[+cur.dataset.i], nx = P[+cur.dataset.i + 1];
     t.innerHTML = "<b>Ahora (" + x.s + "–" + x.e + "):</b> " + esc(x.t) + (nx ? "<br>Después, a las " + nx.s + ": " + esc(nx.t) : "");

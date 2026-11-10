@@ -42,10 +42,42 @@ test("si el calendario no trae ninguna parada del plan del día, se queda el pla
   const { eventos } = await r.json();
   const ls = {}, win = {}, ctx = { window: win, localStorage: { getItem: (k) => ls[k] || null, setItem: (k, v) => { ls[k] = v; } } };
   ctx.globalThis = ctx;
-  ls["copiloto.viaje.cal.2026-11-09"] = JSON.stringify({ hora: "11:39", eventos });
+  ls["copiloto.viaje.cal.2026-11-11"] = JSON.stringify({ hora: "11:39", eventos });
   vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
   const P = JSON.parse(JSON.stringify(ctx.window.Viaje._lista()));
-  assert.equal(ctx.window.Viaje.dia, "2026-11-09");
-  assert.ok(P.find((x) => /Pirámide del Sol/.test(x.t)).g.length >= 5);
-  assert.equal(P.length, 8);
+  assert.equal(ctx.window.Viaje.dia, "2026-11-11");
+  assert.ok(P.find((x) => /^🏰 Castillo/.test(x.t)).g.length >= 7);
+  assert.equal(P.length, 13);
+});
+
+const carga = (eventos) => {
+  const ls = { "copiloto.viaje.cal.2026-11-11": JSON.stringify({ hora: "8:00", eventos }) }, win = {};
+  const ctx = { window: win, localStorage: { getItem: (k) => ls[k] || null, setItem: (k, v) => { ls[k] = v; } } };
+  ctx.globalThis = ctx;
+  vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
+  return JSON.parse(JSON.stringify(ctx.window.Viaje._lista()));
+};
+
+test("miércoles 11: un único evento-resumen del día no sustituye al plan con guías", () => {
+  const P = carga([{ hora: "09:00", fin: "19:00", titulo: "🏰 Polanco, Cablebús, Chapultepec, Reforma, Roma-Condesa y Bellas Artes (solo)", texto: "1. 9:00 …" }]);
+  assert.equal(P.length, 13);
+  assert.ok(P.find((x) => /Cablebús Línea 3/.test(x.t)).g.length >= 5);
+});
+
+test("miércoles 11: con eventos por parada, cada uno se empareja con su guía", () => {
+  const P = carga([
+    { hora: "10:30", fin: "11:30", titulo: "🚡 Cablebús ida y vuelta" },
+    { hora: "12:00", fin: "13:30", titulo: "🏰 Castillo de Chapultepec" },
+    { hora: "16:45", fin: "17:30", titulo: "🎭 Bellas Artes por dentro" }]);
+  assert.equal(P.length, 3);
+  assert.ok(P.every((x) => x.g && x.g.length >= 4));
+  assert.equal(P[1].s, "12:00");
+});
+
+test("miércoles 11: todas las guías y personajes existen", () => {
+  const P = carga([]);
+  const src = readFileSync(new URL("../viaje.js", import.meta.url), "utf8");
+  P.forEach((x) => (x.q || []).forEach((k) => assert.ok(new RegExp("\\n  " + k + ":\\[").test(src), k)));
+  const min = P.filter((x) => x.g).reduce((n, x) => n + x.g.reduce((m, s) => m + s.slice(1).join(" ").split(/\s+/).length, 0), 0) / 150;
+  assert.ok(min > 35, "audio total " + min);
 });
