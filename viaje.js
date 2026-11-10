@@ -1498,12 +1498,13 @@ var MARTES = {
 '{PINS}</svg>',
   XY:{ 1:[180,172], 2:[262,222], 3:[441,206], 4:[480,180], 5:[448,150], 6:[405,34] }
 };
-(function () {
-  var hoy = (typeof window !== "undefined" && window.viajeDia) || ahora().dia;
-  if (hoy !== MARTES.dia) return;
-  DIA = MARTES.dia; TXT = MARTES.txt; P = MARTES.P; MAPA = MARTES.MAPA; XY = MARTES.XY;
-  TIT = MARTES.tit; SUB = MARTES.sub;
-})();
+var DIAS = {};
+DIAS[DIA] = { dia:DIA, tit:TIT, sub:SUB, txt:TXT, P:P, MAPA:MAPA, XY:XY };
+DIAS[MARTES.dia] = MARTES;
+function ponDia(d) { var x = DIAS[d]; if (!x) return false;
+  DIA = x.dia; TXT = x.txt; P = x.P; MAPA = x.MAPA; XY = x.XY; TIT = x.tit; SUB = x.sub; return true; }
+/* Al cargar: la guía de hoy si la hay; si no, la del miércoles 11. */
+ponDia((typeof window !== "undefined" && window.viajeDia) || ahora().dia);
 
 /* ---------------------------------------------------------------------------
    v2.82: el horario sale del calendario de Google (ruta /viaje del Worker,
@@ -1513,6 +1514,10 @@ var MARTES = {
    secreto, se queda el último horario bueno guardado o el plan fijo.
    --------------------------------------------------------------------------- */
 var FIJO = P.slice(), SYNC = { estado:"", hora:"" }, K_SYNC = "copiloto.viaje.cal." + DIA;
+function cambia(d) {                                 // pasa la pantalla a la guía del día d
+  if (d === DIA || !DIAS[d]) return;
+  ponDia(d); FIJO = P.slice(); SYNC = { estado:"", hora:"" }; K_SYNC = "copiloto.viaje.cal." + DIA; guardado();
+}
 function nrm(t) {
   return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     .replace(/[^a-z0-9ñ ]+/g, " ").replace(/\s+/g, " ").trim();
@@ -1669,41 +1674,18 @@ function pinta(c, sinPedir) {
   if (!sinPedir) sincroniza(c);
 }
 
-window.Viaje = { pinta:pinta, para:cierra, _Q:Q, dia:DIA, tit:TIT, sub:SUB, _P:P, _lista:function () { return P; }, _frases:frases };
-
-/* v2.86 · Aviso en Hoy: el día que hay guía, la pantalla principal enseña qué
-   toca ahora y después; al tocarlo se abre la guía. Se refresca cada minuto
-   solo con la app a la vista. */
-function aviso_hoy() {
-  if (typeof document === "undefined") return;
-  var hoyEl = document.getElementById("appHoy"), est = document.getElementById("hEstado");
-  if (!hoyEl || !est) return;
-  if (!document.getElementById("vjBanCss")) {
-    var st = document.createElement("style"); st.id = "vjBanCss";
-    st.textContent = "#vjBan{display:block;width:calc(100% - 32px);margin:8px 16px 4px;padding:12px 14px;border:0;border-radius:18px;background:#e0457b;color:#fff;text-align:left;font:700 14px/1.35 Manrope,sans-serif}" +
-      "#vjBan small{display:block;opacity:.85;font-weight:600;font-size:12.5px;margin-top:3px}#vjBan b{font-weight:800}";
-    document.head.appendChild(st);
+/* v2.86 · Para la pantalla Hoy: ¿hay guía ese día?, su título y qué toca ahora. */
+function info(d) {
+  var x = DIAS[d]; if (!x) return null;
+  var n = ahora(), lst = d === DIA ? P : x.P, cur = null, nx = null, r = { tit:x.tit, sub:x.sub, ahora:"" };
+  if (n.dia === d) {
+    lst.forEach(function (y, i) { if (!cur && n.m < min(y.e)) { cur = y; nx = lst[i + 1]; } });
+    r.ahora = cur ? (n.m >= min(cur.s) ? "Ahora: " : "A las " + cur.s + ": ") + cur.t + (nx ? " · Después: " + nx.t : "") : "Día terminado.";
   }
-  var b = document.getElementById("vjBan");
-  if (!b) {
-    b = document.createElement("button"); b.type = "button"; b.id = "vjBan";
-    b.addEventListener("click", function () { var v = document.getElementById("hViaje"); if (v) v.click(); });
-    est.parentNode.insertBefore(b, est.nextSibling);
-  }
-  function pon() {
-    if (document.hidden) return;
-    var n = ahora();
-    if (n.dia !== DIA) { b.hidden = true; return; }
-    var cur = null, nx = null;
-    P.forEach(function (x, i) { if (!cur && n.m < min(x.e)) { cur = x; nx = P[i + 1]; } });
-    b.hidden = false;
-    b.innerHTML = "📍 <b>Guía de hoy · " + esc(TIT.replace(/^[^·]*·\s*/, "")) + "</b>" +
-      (cur ? "<small>" + (n.m >= min(cur.s) ? "Ahora" : "A las " + esc(cur.s)) + ": " + esc(cur.t) + (nx ? " · Después: " + esc(nx.t) : "") + "</small>" : "<small>Día terminado. Toca para ver la guía.</small>");
-  }
-  pon(); setInterval(pon, 60000);
-  document.addEventListener("visibilitychange", pon);
+  return r;
 }
-if (typeof document !== "undefined") {
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", aviso_hoy); else aviso_hoy();
-}
+window.Viaje = { pinta:function (c, sinPedir, d) { if (d) cambia(d); pinta(c, sinPedir); }, para:cierra, info:info,
+  get dia() { return DIA; }, get tit() { return TIT; }, get sub() { return SUB; },
+  _Q:Q, _P:P, _lista:function () { return P; }, _frases:frases };
+if (typeof document !== "undefined" && document.dispatchEvent) try { document.dispatchEvent(new Event("viaje-listo")); } catch (e) {}
 })();
