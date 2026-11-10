@@ -1381,6 +1381,131 @@ function pintaRep() {
 var reloj = null;
 
 /* ---------------------------------------------------------------------------
+   v2.86 · Guía del martes 10 (Coyoacán). Cada día lleva lo suyo: si hoy (hora
+   de CDMX) es el 10, la pantalla Viaje y el aviso de Hoy enseñan Coyoacán;
+   el resto de días, la guía de arriba (miércoles 11). window.viajeDia fuerza
+   un día (para pruebas).
+   --------------------------------------------------------------------------- */
+var TIT = "Miércoles 11 · Chapultepec y Reforma", SUB = "Cablebús, Castillo, Reforma, Roma-Condesa y Bellas Artes";
+var ANDA = function (d) { return "https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=" + encodeURIComponent(d); };
+var MARTES = {
+  dia:"2026-11-10", tit:"Martes 10 · Coyoacán", sub:"Viveros, Francisco Sosa, el centro, el mercado, la Casa Azul y Walmart",
+  txt:{
+    mapa:"El norte queda arriba. Mapa esquemático: la línea verde es la Línea 3 del metro por Av. Universidad. Cada parada tiene «Mapa» con la ruta andando desde donde estés.",
+    pie:"Los Viveros cierran a las 18:00 y no dejan entrar comida. El Walmart abre hasta las 22:00. Todo el día en metro (Línea 3) y andando.",
+    otro:"Plan del martes 10 de noviembre."
+  },
+  P:[
+    { s:"15:00", e:"15:10", t:"🚇 Universidad → Viveros/Derechos Humanos", d:"Línea 3 dirección Indios Verdes, 3 paradas: Copilco, Miguel Ángel de Quevedo y Viveros/Derechos Humanos. La entrada del parque NO está pegada al metro: sal a Av. Universidad, anda hacia el sur (el parque a tu izquierda) unos 300 m hasta Av. Progreso y gira a la izquierda: Puerta 1.", l:["L3"], $:"$5", map:ANDA("Gate 1 Viveros, Av. Progreso 3, Coyoacán"), mapTxt:"Ir a la Puerta 1", mov:1 },
+
+    { s:"15:10", e:"15:50", t:"🌳 Viveros de Coyoacán", n:"Viveros", d:"Entra por la Puerta 1 (Av. Progreso), cruza el parque hacia el este por el camino ancho y sal por la Puerta 4, hacia Francisco Sosa. Gratis. Cierra a las 18:00.", $:"$0", map:ANDA("Gate 1 Viveros, Av. Progreso 3, Coyoacán"), mapTxt:"Ir a la Puerta 1", pin:1, g:[
+      ["Lo esencial",
+        "Estás en los Viveros de Coyoacán, uno de los pulmones verdes del sur de la ciudad. Son unas treinta y nueve hectáreas de árboles, con un circuito de tierra de unos tres kilómetros por donde corre medio barrio.",
+        "No es un parque cualquiera: nació como vivero, es decir, como una fábrica de árboles. Aquí se criaban los arbolitos con los que se reforestaba la Ciudad de México y sus alrededores.",
+        "Tienes unos cuarenta minutos. El plan es sencillo: entra por la Puerta 1, cruza hacia el este por el camino principal, mira las ardillas y los ahuehuetes, y sal por la Puerta 4, que te deja cerca de la avenida Francisco Sosa."],
+      ["El apóstol del árbol",
+        "El parque se lo debe la ciudad a Miguel Ángel de Quevedo, un ingeniero mexicano nacido en Guadalajara en 1862. Había estudiado en Francia y volvió obsesionado con una idea: que sin bosques no hay agua, y que el valle de México se estaba quedando pelado.",
+        "A principios del siglo veinte cedió terrenos suyos aquí, en Coyoacán, para montar un vivero. De aquí salieron millones de árboles para plantar en avenidas, parques y laderas. Por eso le llamaban el apóstol del árbol.",
+        "La gran avenida que cruzaste en metro, Miguel Ángel de Quevedo, lleva su nombre. Y en 1938, durante el gobierno de Lázaro Cárdenas, los Viveros se declararon parque nacional."],
+      ["Qué mirar",
+        "Las ardillas: son las reinas del parque y se acercan mucho. Verás gente con cacahuates, aunque dentro se pide no darles de comer.",
+        "Los árboles en hileras: fíjate en que muchas zonas están plantadas en filas rectas, como un cultivo. Es la huella del vivero original.",
+        "Y la gente corriendo: es uno de los sitios favoritos de los corredores de la ciudad. Piensa que estás a más de dos mil doscientos metros: aquí entrenar cuesta más que en Madrid."],
+      ["Consejos",
+        "Sal por la Puerta 4, en el lado este. Desde ahí, baja hacia el sur hasta la avenida Francisco Sosa y gira a la izquierda, hacia el este. Si te lías, toca «Mapa» en la siguiente parada.",
+        "Hay baños en las entradas. No se puede entrar con comida, y a veces los vigilantes ponen pegas con las cámaras grandes."] ] },
+
+    { s:"15:50", e:"16:15", t:"🚶 Av. Francisco Sosa y Capilla de Santa Catarina", n:"Francisco Sosa", d:"Andando hacia el este por Francisco Sosa: casas coloniales, la plaza y la capilla amarilla de Santa Catarina. Solo paseo y fotos.", $:"$0", map:ANDA("Capilla de Santa Catarina, Coyoacán"), pin:2, g:[
+      ["Lo esencial",
+        "Estás en la avenida Francisco Sosa, la calle más bonita de Coyoacán. Es una calle empedrada, de casi dos kilómetros, que une los Viveros con el centro del barrio, y se suele decir que es de las más antiguas del continente: el camino ya existía en tiempos de la conquista.",
+        "Lleva el nombre de Francisco Sosa, un escritor y periodista del siglo diecinueve, nacido en Yucatán, que vivió en Coyoacán.",
+        "A los lados verás casonas de los siglos dieciocho y diecinueve, con portones grandes, patios y buganvillas. Muchas eran casas de campo de familias ricas, cuando Coyoacán todavía era un pueblo a las afueras de la ciudad."],
+      ["La plaza de Santa Catarina",
+        "A mitad de camino llegas a una placita con una capilla pintada de amarillo y blanco: la capilla de Santa Catarina. Su origen se remonta al siglo dieciséis, aunque lo que ves es sobre todo de reconstrucciones posteriores.",
+        "La plaza es de las más tranquilas del barrio: suele haber gente leyendo en los bancos y, algunos fines de semana, música o cuentacuentos. Enfrente está la Casa de Cultura Jesús Reyes Heroles, una casona con un jardín precioso.",
+        "Haz aquí la foto de la capilla con la plaza delante, y sigue recto hacia el este."],
+      ["Qué buscar por el camino",
+        "Más adelante, a la derecha, la Casa de Alvarado, una casona roja que la tradición relaciona con Pedro de Alvarado, uno de los capitanes de Hernán Cortés, aunque el edificio es muy posterior. Hoy es la Fototeca Nacional.",
+        "Fíjate también en los nombres de las calles y en los portones: muchos llevan placas con la historia de la casa. Y al final de la calle verás el arco de entrada al Jardín Centenario: ese es tu siguiente punto."] ] },
+
+    { s:"16:15", e:"16:40", t:"⛲ Jardín Centenario, Plaza Hidalgo y San Juan Bautista", n:"Jardin Centenario", q:["cortes", "mexicas", "nahuatl"], d:"El corazón de Coyoacán: la fuente de los coyotes, el kiosco, la parroquia de San Juan Bautista y la Casa de Cortés (la alcaldía).", $:"$0", map:ANDA("Jardín Centenario, Coyoacán"), pin:3, g:[
+      ["Lo esencial",
+        "Estás en el centro de Coyoacán. Son dos plazas pegadas: el Jardín Centenario, con la fuente de los coyotes, y la Plaza Hidalgo, con el kiosco. Entre las dos, la parroquia de San Juan Bautista.",
+        "Coyoacán es una palabra náhuatl que se suele traducir como lugar de coyotes. Por eso la fuente de los dos coyotes es el símbolo del barrio y la foto que todo el mundo se hace.",
+        "Tienes veinticinco minutos: foto de la fuente, entra un momento en la parroquia, cruza a la Plaza Hidalgo por el kiosco y mira la Casa de Cortés."],
+      ["Coyoacán y Hernán Cortés",
+        "Antes de la conquista, Coyoacán era un pueblo de la orilla del lago, aliado y a la vez sometido a Tenochtitlan.",
+        "En 1521, después de tomar Tenochtitlan, Hernán Cortés se instaló aquí, en Coyoacán, mientras la gran ciudad mexica seguía en ruinas. Durante un tiempo, Coyoacán fue el centro desde donde se gobernó la Nueva España. Aquí se reunió uno de los primeros ayuntamientos.",
+        "La tradición también cuenta que aquí Cortés hizo torturar a Cuauhtémoc, el último gobernante mexica, quemándole los pies para que dijera dónde estaba el oro, y que aquí vivió con Malinche, su intérprete. Son historias que mezclan hechos y leyenda, pero el barrio las tiene muy presentes."],
+      ["La parroquia de San Juan Bautista",
+        "La parroquia la levantaron los frailes dominicos en el siglo dieciséis, poco después de la conquista. Por fuera es sobria; por dentro, fíjate en los techos pintados y en los retablos dorados.",
+        "Los arcos que ves en el Jardín Centenario, junto a la fuente, eran la entrada del antiguo atrio del convento. Es decir, toda esta plaza era el patio de la iglesia."],
+      ["La Plaza Hidalgo y la Casa de Cortés",
+        "En la Plaza Hidalgo está el kiosco, coronado con un águila, y alrededor siempre hay ambiente: músicos, globos, puestos de dulces y de esquites.",
+        "En el lado norte, el edificio rojizo con arcos es la Casa de Cortés. Hoy es la sede de la alcaldía de Coyoacán. El nombre viene de la tradición, porque el edificio actual es del siglo dieciocho, pero se levantó donde, según se dice, estuvieron las casas de Cortés.",
+        "Si la puerta está abierta, asómate: dentro hay murales sobre la historia del barrio."],
+      ["Consejos",
+        "Para el mercado, sal de la Plaza Hidalgo hacia el norte por la calle Ignacio Allende. Son unas cuatro calles."] ] },
+
+    { s:"16:40", e:"17:15", t:"🌮 Mercado de Coyoacán", n:"Mercado", d:"Calle Ignacio Allende, 4 calles al norte. Famoso por las tostadas (pata, tinga, pollo, ceviche). Solo efectivo en muchos puestos.", $:"$60–120 💵", map:ANDA("Mercado de Coyoacán"), pin:4, g:[
+      ["Lo esencial",
+        "Estás en el mercado de Coyoacán, el mercado de barrio de toda la vida. Fruta, flores, carne, piñatas, artesanía y, sobre todo, comida.",
+        "Es famoso por las tostadas: una tortilla frita y crujiente con frijoles encima y lo que elijas: tinga de pollo, pata, ceviche, camarón o pulpo. Se pide una o dos, se le pone salsa y crema, y se come de pie o en la barra.",
+        "Como ya has comido, aquí el plan es picar algo, pasear por los pasillos y hacer fotos de los puestos de fruta y de las piñatas."],
+      ["Qué probar",
+        "Una tostada de tinga o de pata, en los puestos de tostadas del interior, que son los más conocidos.",
+        "Un agua fresca: de horchata, de jamaica o de tamarindo. O un elote o unos esquites en la calle.",
+        "Y si te queda hueco, algo dulce: una nieve o un churro en el centro de Coyoacán, que está lleno de puestos."],
+      ["Consejos",
+        "En muchos puestos solo aceptan efectivo. Mira el precio antes de pedir.",
+        "Para la Casa Azul, sal por el lado norte y sigue por Ignacio Allende hasta la calle Londres. Está a unas tres calles."] ] },
+
+    { s:"17:15", e:"17:35", t:"💙 Casa Azul (Museo Frida Kahlo), por fuera", n:"Casa Azul", q:["rivera"], d:"Londres 247, esquina con Allende. Solo la foto de la fachada azul; no entras.", $:"$0", map:ANDA("Museo Frida Kahlo, Londres 247, Coyoacán"), pin:5, g:[
+      ["Lo esencial",
+        "Estás frente a la Casa Azul, la casa de Frida Kahlo. Aquí nació en 1907, aquí vivió buena parte de su vida y aquí murió en 1954.",
+        "Hoy es el Museo Frida Kahlo, uno de los más visitados de México, con su ropa, sus pinceles, su cama con el espejo en el techo y su silla de ruedas. Hoy no entras: la fachada azul cobalto es la foto.",
+        "Ese azul tan fuerte no es casual: Frida y Diego Rivera la pintaron así, con colores de la arquitectura popular mexicana, como una declaración de identidad."],
+      ["Frida y Diego",
+        "Frida tuvo un accidente de autobús con dieciocho años que le destrozó la columna y la pelvis. Empezó a pintar en la cama, con un espejo encima, y por eso tantos de sus cuadros son autorretratos.",
+        "Se casó con Diego Rivera, el muralista, veintiún años mayor que ella. Se divorciaron y se volvieron a casar. Ella decía que en su vida había tenido dos accidentes: el autobús y Diego.",
+        "Cuando Frida murió, Diego donó la casa para que se convirtiera en museo, y se abrió en 1958."],
+      ["Trotsky, el vecino",
+        "En esta casa vivió también, entre 1937 y 1939, León Trotsky, el revolucionario ruso exiliado por Stalin. Diego Rivera consiguió que México le diera asilo y le prestó la casa.",
+        "Después Trotsky se mudó a otra casa a pocas calles, en la avenida Río Churubusco. Allí, en 1940, lo asesinó con un piolet un agente de Stalin. Esa casa también es museo hoy.",
+        "Es curioso pensar que en unas pocas manzanas de este barrio tranquilo se cruzaron Frida, Diego, Trotsky y media historia del siglo veinte."],
+      ["Consejos",
+        "La mejor foto es desde la acera de enfrente, en la esquina de Londres con Allende, para que salga la fachada entera.",
+        "Desde aquí, al metro Coyoacán son unos quince minutos andando hacia el noroeste. Toca «Mapa» en la siguiente parada."] ] },
+
+    { s:"17:35", e:"17:55", t:"🚶 Casa Azul → Metro Coyoacán", d:"Unos 15 min andando hacia el noroeste hasta Av. Universidad.", $:"$0", map:ANDA("Metro Coyoacán, Ciudad de México"), mapTxt:"Ir al metro", mov:1 },
+    { s:"17:55", e:"18:05", t:"🚇 Coyoacán → Zapata", d:"Línea 3 dirección Indios Verdes, 1 parada. Sal por el lado de Av. Universidad y baja unos 200 m hacia el sur.", l:["L3"], $:"$5", map:ANDA("Walmart Av. Universidad 936, Santa Cruz Atoyac, Ciudad de México"), mapTxt:"Ir al Walmart", mov:1 },
+
+    { s:"18:05", e:"18:50", t:"🛒 Walmart Av. Universidad", n:"Walmart", d:"Av. Universidad 936 (Santa Cruz Atoyac), a 200 m de Zapata. Supercenter grande: comida, ropa, electrónica. Abre hasta las 22:00.", $:"💳", map:ANDA("Walmart Av. Universidad 936, Santa Cruz Atoyac, Ciudad de México"), pin:6 },
+
+    { s:"18:50", e:"19:05", t:"🚶 Walmart → casa", d:"Andando por Av. Universidad hasta casa de Sergio.", $:"$0", map:ANDA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
+  ],
+  MAPA:
+'<svg viewBox="0 0 600 250" role="img" aria-label="Plano esquemático de Coyoacán con la Línea 3 del metro y las paradas numeradas; el norte queda arriba">' +
+'<rect x="75" y="147" width="210" height="47" rx="8" class="park"/><text x="180" y="142" class="area" text-anchor="middle">Viveros</text>' +
+'<path class="st" d="M60,212 L262,222 L441,209" fill="none"/><text x="160" y="240" class="stl">Av. Francisco Sosa</text>' +
+'<path class="st" d="M67,168 L203,100 L383,16" fill="none"/><text x="250" y="60" class="stl">Av. Universidad · Línea 3</text>' +
+'<path class="walk" d="M285,180 L262,222 M441,209 L470,183 L448,152 L203,100"/>' +
+'<rect x="420" y="190" width="45" height="30" rx="4" class="plaza"/><text x="520" y="225" class="stl" text-anchor="middle">Centro</text>' +
+'<g class="met"><rect x="40" y="160" width="22" height="16" rx="3"/><text x="51" y="172">M</text></g><text x="8" y="195" class="stl">Viveros</text>' +
+'<g class="met"><rect x="176" y="92" width="22" height="16" rx="3"/><text x="187" y="104">M</text></g><text x="120" y="88" class="stl">Coyoacán</text>' +
+'<g class="met"><rect x="356" y="8" width="22" height="16" rx="3"/><text x="367" y="20">M</text></g><text x="300" y="20" class="stl">Zapata</text>' +
+'<text x="590" y="245" class="stl" text-anchor="end">↑ Norte</text>' +
+'{PINS}</svg>',
+  XY:{ 1:[180,172], 2:[262,222], 3:[441,206], 4:[480,180], 5:[448,150], 6:[405,34] }
+};
+(function () {
+  var hoy = (typeof window !== "undefined" && window.viajeDia) || ahora().dia;
+  if (hoy !== MARTES.dia) return;
+  DIA = MARTES.dia; TXT = MARTES.txt; P = MARTES.P; MAPA = MARTES.MAPA; XY = MARTES.XY;
+  TIT = MARTES.tit; SUB = MARTES.sub;
+})();
+
+/* ---------------------------------------------------------------------------
    v2.82: el horario sale del calendario de Google (ruta /viaje del Worker,
    secreto ICAL_VIAJE). Cada evento se empareja por nombre con una parada de
    la guía (P o EXTRA) para conservar mapa, pin y audio; lo que no empareja
@@ -1544,5 +1669,41 @@ function pinta(c, sinPedir) {
   if (!sinPedir) sincroniza(c);
 }
 
-window.Viaje = { pinta:pinta, para:cierra, _Q:Q, dia:DIA, _P:P, _lista:function () { return P; }, _frases:frases };
+window.Viaje = { pinta:pinta, para:cierra, _Q:Q, dia:DIA, tit:TIT, sub:SUB, _P:P, _lista:function () { return P; }, _frases:frases };
+
+/* v2.86 · Aviso en Hoy: el día que hay guía, la pantalla principal enseña qué
+   toca ahora y después; al tocarlo se abre la guía. Se refresca cada minuto
+   solo con la app a la vista. */
+function aviso_hoy() {
+  if (typeof document === "undefined") return;
+  var hoyEl = document.getElementById("appHoy"), est = document.getElementById("hEstado");
+  if (!hoyEl || !est) return;
+  if (!document.getElementById("vjBanCss")) {
+    var st = document.createElement("style"); st.id = "vjBanCss";
+    st.textContent = "#vjBan{display:block;width:calc(100% - 32px);margin:8px 16px 4px;padding:12px 14px;border:0;border-radius:18px;background:#e0457b;color:#fff;text-align:left;font:700 14px/1.35 Manrope,sans-serif}" +
+      "#vjBan small{display:block;opacity:.85;font-weight:600;font-size:12.5px;margin-top:3px}#vjBan b{font-weight:800}";
+    document.head.appendChild(st);
+  }
+  var b = document.getElementById("vjBan");
+  if (!b) {
+    b = document.createElement("button"); b.type = "button"; b.id = "vjBan";
+    b.addEventListener("click", function () { var v = document.getElementById("hViaje"); if (v) v.click(); });
+    est.parentNode.insertBefore(b, est.nextSibling);
+  }
+  function pon() {
+    if (document.hidden) return;
+    var n = ahora();
+    if (n.dia !== DIA) { b.hidden = true; return; }
+    var cur = null, nx = null;
+    P.forEach(function (x, i) { if (!cur && n.m < min(x.e)) { cur = x; nx = P[i + 1]; } });
+    b.hidden = false;
+    b.innerHTML = "📍 <b>Guía de hoy · " + esc(TIT.replace(/^[^·]*·\s*/, "")) + "</b>" +
+      (cur ? "<small>" + (n.m >= min(cur.s) ? "Ahora" : "A las " + esc(cur.s)) + ": " + esc(cur.t) + (nx ? " · Después: " + esc(nx.t) : "") + "</small>" : "<small>Día terminado. Toca para ver la guía.</small>");
+  }
+  pon(); setInterval(pon, 60000);
+  document.addEventListener("visibilitychange", pon);
+}
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", aviso_hoy); else aviso_hoy();
+}
 })();

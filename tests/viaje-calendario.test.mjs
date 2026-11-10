@@ -40,7 +40,7 @@ test("/viaje sin el secreto avisa y sin clave no contesta", async () => {
 test("si el calendario no trae ninguna parada del plan del día, se queda el plan fijo", async () => {
   const r = await app.fetch(new Request("https://w.test/viaje?dia=2026-11-04", { headers: { "X-Copiloto-Key": "k" } }), env);
   const { eventos } = await r.json();
-  const ls = {}, win = {}, ctx = { window: win, localStorage: { getItem: (k) => ls[k] || null, setItem: (k, v) => { ls[k] = v; } } };
+  const ls = {}, win = { viajeDia: "2026-11-11" }, ctx = { window: win, localStorage: { getItem: (k) => ls[k] || null, setItem: (k, v) => { ls[k] = v; } } };
   ctx.globalThis = ctx;
   ls["copiloto.viaje.cal.2026-11-11"] = JSON.stringify({ hora: "11:39", eventos });
   vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
@@ -51,7 +51,7 @@ test("si el calendario no trae ninguna parada del plan del día, se queda el pla
 });
 
 const carga = (eventos) => {
-  const ls = { "copiloto.viaje.cal.2026-11-11": JSON.stringify({ hora: "8:00", eventos }) }, win = {};
+  const ls = { "copiloto.viaje.cal.2026-11-11": JSON.stringify({ hora: "8:00", eventos }) }, win = { viajeDia: "2026-11-11" };
   const ctx = { window: win, localStorage: { getItem: (k) => ls[k] || null, setItem: (k, v) => { ls[k] = v; } } };
   ctx.globalThis = ctx;
   vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
@@ -80,4 +80,17 @@ test("miércoles 11: todas las guías y personajes existen", () => {
   P.forEach((x) => (x.q || []).forEach((k) => assert.ok(new RegExp("\\n  " + k + ":\\[").test(src), k)));
   const min = P.filter((x) => x.g).reduce((n, x) => n + x.g.reduce((m, s) => m + s.slice(1).join(" ").split(/\s+/).length, 0), 0) / 150;
   assert.ok(min > 35, "audio total " + min);
+});
+
+test("martes 10: ese día la guía es la de Coyoacán, con mapa y audio", () => {
+  const win = { viajeDia: "2026-11-10" }, ctx = { window: win, localStorage: { getItem: () => null, setItem: () => {} } };
+  ctx.globalThis = ctx;
+  vm.runInNewContext(readFileSync(new URL("../viaje.js", import.meta.url), "utf8"), ctx);
+  const P = JSON.parse(JSON.stringify(ctx.window.Viaje._lista()));
+  assert.equal(ctx.window.Viaje.dia, "2026-11-10");
+  assert.match(ctx.window.Viaje.tit, /Coyoacán/);
+  assert.ok(P.find((x) => /Viveros de Coyoacán/.test(x.t)).g.length >= 4);
+  assert.ok(P.find((x) => /Walmart/.test(x.t)).map);
+  const src = readFileSync(new URL("../viaje.js", import.meta.url), "utf8");
+  P.forEach((x) => (x.q || []).forEach((k) => assert.ok(new RegExp("\\n  " + k + ":\\[").test(src), k)));
 });
