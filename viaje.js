@@ -1510,7 +1510,7 @@ var MARTES = {
   var pon = function (n, s, e, pin, d) { var x = de(n); x.s = s; x.e = e; x.pin = pin; if (d) x.d = d; return x; };
   var fuera = [de("Soumaya"), de("Bellas Artes"), de("Tolsa")];
   var W = "https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=";
-  var lag = { s:"9:30", e:"11:00", t:"🛍️ Mercado de La Lagunilla (con los amigos de Sergio)", n:"Lagunilla", q:["mexicas", "diaz"], d:"Con los amigos de Sergio. Entre semana son los mercados fijos (ropa y telas, muebles, varios); el tianguis de antigüedades solo se pone los domingos. Móvil guardado y mochila delante.", $:"💵", map:"https://www.google.com/maps/search/?api=1&query=Mercado+de+La+Lagunilla+Ciudad+de+M%C3%A9xico", pin:1, g:[
+  var lag = { s:"9:30", e:"11:00", t:"🛍️ Mercado de La Lagunilla (con los amigos de Sergio)", n:"Lagunilla", q:["mexicas", "diaz"], d:"Con los amigos de Sergio. A buscar la camiseta de México (réplica; regatea). Entre semana son los mercados fijos (ropa y telas, muebles, varios); el tianguis de antigüedades solo se pone los domingos. Móvil guardado y mochila delante.", $:"💵", map:"https://www.google.com/maps/search/?api=1&query=Mercado+de+La+Lagunilla+Ciudad+de+M%C3%A9xico", pin:1, g:[
     ["Lo esencial",
       "Estás en La Lagunilla, uno de los barrios de comercio más antiguos y con más carácter de la ciudad, justo al norte del Centro Histórico.",
       "El nombre viene de una pequeña laguna que había aquí, entre Tenochtitlan y Tlatelolco, las dos ciudades mexicas vecinas. Por esa laguna entraban las canoas cargadas de mercancía hacia el gran mercado de Tlatelolco. O sea, que aquí se vende desde antes de que llegaran los españoles.",
@@ -1526,17 +1526,18 @@ var MARTES = {
       "Es una zona de mucho trajín: lleva el móvil guardado, la mochila delante y el dinero justo en el bolsillo. Quédate con el grupo y no te alejes hacia el este.",
       "Cuando acabéis, sal hacia el Paseo de la Reforma, que pasa por el borde del barrio, y coge allí el Metrobús de la Línea 7, el de dos pisos, hasta El Ángel."] ] };
   P = [
+    { s:"8:25", e:"8:45", t:"💵 Sacar efectivo en un cajero de banco", d:"En un cajero de banco (BBVA, Santander, Banorte, HSBC…) de camino al metro Zapata, no en el del súper. Si la pantalla ofrece convertir a euros, di que NO (cobrar en pesos). Si falla, prueba otro banco.", $:"", map:"https://www.google.com/maps/search/cajero+banco/@19.3725,-99.1645,16z", mapTxt:"Cajeros" },
     { s:"8:45", e:"9:30", t:"🚇 Casa → La Lagunilla", d:"Zapata → Guerrero (L3 dirección Indios Verdes); cambio a la Línea B dirección Ciudad Azteca, 2 paradas, hasta Lagunilla. Confirma con los amigos de Sergio dónde quedáis.", l:["L3","LB"], $:"$5", map:RUTA("Mercado de La Lagunilla, Ciudad de México"), mov:1 },
     lag,
     { s:"11:30", e:"12:00", t:"🚌 La Lagunilla → El Ángel (Metrobús L7)", d:"Anda hasta Reforma, a la parada Glorieta de Cuitláhuac. Metrobús L7 (el de dos pisos) dirección Campo Marte hasta El Ángel. Arriba y delante, si puedes. Tarjeta MI.", $:"$6", map:RUTA("Ángel de la Independencia, Ciudad de México"), mov:1 },
     pon("Reforma", "12:00", "12:45", 2, "Al revés que en el audio: del Ángel hacia Chapultepec, pasando por la Diana y la Estela de Luz. Unos 30 min por el camellón y la rampa de subida al cerro."),
-    pon("Castillo", "12:45", "14:15", 3, "Cierra a las 17:00. Entrada unos $100. Primero el museo de abajo, luego el Alcázar y la terraza con las vistas de Reforma."),
-    { s:"14:15", e:"14:40", t:"🚶‍♂️ Castillo → Condesa", d:"Bajas del cerro, sales del bosque por el metro Chapultepec y sigues hacia el sureste, unos 25 min, hasta el Parque México.", $:"$0", map:W + encodeURIComponent("Parque México, Condesa, Ciudad de México"), mov:1 },
-    pon("Condesa", "14:40", "15:15", 4, "Da la vuelta al óvalo de la avenida Ámsterdam y cruza el Parque México."),
-    pon("Medellin", "15:15", "16:10", 5, "Comida en el mercado (fondas dentro y alrededor), a unos 10 min andando del Parque México."),
-    { s:"16:10", e:"16:40", t:"🚇 Roma → Constituyentes", d:"Chilpancingo → Tacubaya (L9, 2 paradas); cambio a L7 dirección El Rosario, 1 parada, hasta Constituyentes. El Cablebús está pegado a la salida.", l:["L9","L7"], $:"$5", map:RUTA("Cablebús Los Pinos Constituyentes, Ciudad de México"), mov:1 },
-    pon("Cablebus", "16:40", "17:45", 6, "Ida y vuelta desde Los Pinos/Constituyentes hasta Vasco de Quiroga (unos 25 min por trayecto), con la luz de la tarde. Si vas justo, baja en Cineteca y vuelve. Tarjeta MI."),
-    { s:"17:45", e:"18:25", t:"🚇 Vuelta a casa", d:"Constituyentes → Mixcoac (L7 dirección Barranca del Muerto); cambio a L12 → Zapata. Unos 35 min.", l:["L7","L12"], $:"$5", map:RUTA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
+    pon("Castillo", "12:45", "14:30", 3, "Cierra a las 17:00. Entrada unos $100. Primero el museo de abajo, luego el Alcázar y la terraza con las vistas de Reforma."),
+    { s:"14:30", e:"14:55", t:"🚶‍♂️ Castillo → Condesa", d:"Bajas del cerro, sales del bosque por el metro Chapultepec y sigues hacia el sureste, unos 25 min, hasta el Parque México.", $:"$0", map:W + encodeURIComponent("Parque México, Condesa, Ciudad de México"), mov:1 },
+    pon("Condesa", "14:55", "15:30", 4, "Da la vuelta al óvalo de la avenida Ámsterdam y cruza el Parque México."),
+    pon("Medellin", "15:30", "16:30", 5, "Comida en el mercado (fondas dentro y alrededor), a unos 10 min andando del Parque México."),
+    { s:"16:30", e:"17:00", t:"🚇 Roma → Constituyentes", d:"Chilpancingo → Tacubaya (L9, 2 paradas); cambio a L7 dirección El Rosario, 1 parada, hasta Constituyentes. El Cablebús está pegado a la salida.", l:["L9","L7"], $:"$5", map:RUTA("Cablebús Los Pinos Constituyentes, Ciudad de México"), mov:1 },
+    pon("Cablebus", "17:00", "18:15", 6, "Ida y vuelta desde Los Pinos/Constituyentes hasta Vasco de Quiroga (unos 25 min por trayecto), con la luz de la tarde. Si vas justo, baja en Cineteca y vuelve. Tarjeta MI."),
+    { s:"18:15", e:"19:00", t:"🚇 Vuelta a casa", d:"Sergio llega a las 19:00. Constituyentes → Mixcoac (L7 dirección Barranca del Muerto); cambio a L12 → Zapata. Unos 35 min.", l:["L7","L12"], $:"$5", map:RUTA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
   ];
   EXTRA = EXTRA.concat(fuera);
   XY = { 1:[520,18], 2:[330,90], 3:[200,130], 4:[295,182], 5:[400,177], 6:[75,150] };

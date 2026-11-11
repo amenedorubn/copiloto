@@ -47,7 +47,7 @@ test("si el calendario no trae ninguna parada del plan del día, se queda el pla
   const P = JSON.parse(JSON.stringify(ctx.window.Viaje._lista()));
   assert.equal(ctx.window.Viaje.dia, "2026-11-11");
   assert.ok(P.find((x) => /^🏰 Castillo/.test(x.t)).g.length >= 7);
-  assert.equal(P.length, 11);
+  assert.equal(P.length, 12);
 });
 
 const carga = (eventos) => {
@@ -60,7 +60,7 @@ const carga = (eventos) => {
 
 test("miércoles 11: un único evento-resumen del día no sustituye al plan con guías", () => {
   const P = carga([{ hora: "09:00", fin: "19:00", titulo: "🏰 Polanco, Cablebús, Chapultepec, Reforma, Roma-Condesa y Bellas Artes (solo)", texto: "1. 9:00 …" }]);
-  assert.equal(P.length, 11);
+  assert.equal(P.length, 12);
   assert.ok(P.find((x) => /Cablebús Línea 3/.test(x.t)).g.length >= 5);
 });
 
@@ -97,10 +97,10 @@ test("martes 10: ese día la guía es la de Coyoacán, con mapa y audio", () => 
 
 test("miércoles 11 rehecho: empieza en La Lagunilla y el Castillo va antes de las 17:00", () => {
   const P = carga([]);
-  assert.match(P[1].t, /Lagunilla/);
-  assert.ok(P[1].g.length >= 4);
+  assert.match(P[2].t, /Lagunilla/);
+  assert.ok(P[2].g.length >= 4);
   const c = P.find((x) => x.n === "Castillo");
-  assert.equal(c.e, "14:15");
+  assert.equal(c.e, "14:30");
   const pins = P.filter((x) => x.pin).map((x) => x.pin);
   assert.deepEqual(pins, [1, 2, 3, 4, 5, 6]);
 });
