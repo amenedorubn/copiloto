@@ -1508,7 +1508,7 @@ var MARTES = {
 (function () {
   var de = function (n) { return P.filter(function (x) { return x.n === n; })[0]; };
   var pon = function (n, s, e, pin, d) { var x = de(n); x.s = s; x.e = e; x.pin = pin; if (d) x.d = d; return x; };
-  var fuera = [de("Soumaya"), de("Medellin")];
+  var fuera = [de("Soumaya"), de("Bellas Artes"), de("Tolsa")];
   var W = "https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=";
   var lag = { s:"9:30", e:"11:00", t:"🛍️ Mercado de La Lagunilla (con los amigos de Sergio)", n:"Lagunilla", q:["mexicas", "diaz"], d:"Con los amigos de Sergio. Entre semana son los mercados fijos (ropa y telas, muebles, varios); el tianguis de antigüedades solo se pone los domingos. Móvil guardado y mochila delante.", $:"💵", map:"https://www.google.com/maps/search/?api=1&query=Mercado+de+La+Lagunilla+Ciudad+de+M%C3%A9xico", pin:1, g:[
     ["Lo esencial",
@@ -1524,29 +1524,26 @@ var MARTES = {
       "Muy cerca tienes dos vecinos conocidos. Al sur, la plaza Garibaldi, la de los mariachis. Y al este, Tepito, el barrio bravo, famoso por su tianguis gigantesco y por su mala fama: no te metas por ahí."],
     ["Consejos",
       "Es una zona de mucho trajín: lleva el móvil guardado, la mochila delante y el dinero justo en el bolsillo. Quédate con el grupo y no te alejes hacia el este.",
-      "Cuando acabéis, baja andando hacia el sur por el Eje Central, la avenida grande. En unos quince minutos verás la cúpula naranja de Bellas Artes."] ] };
+      "Cuando acabéis, sal hacia el Paseo de la Reforma, que pasa por el borde del barrio, y coge allí el Metrobús de la Línea 7, el de dos pisos, hasta El Ángel."] ] };
   P = [
     { s:"8:45", e:"9:30", t:"🚇 Casa → La Lagunilla", d:"Zapata → Guerrero (L3 dirección Indios Verdes); cambio a la Línea B dirección Ciudad Azteca, 2 paradas, hasta Lagunilla. Confirma con los amigos de Sergio dónde quedáis.", l:["L3","LB"], $:"$5", map:RUTA("Mercado de La Lagunilla, Ciudad de México"), mov:1 },
     lag,
-    { s:"11:00", e:"11:20", t:"🚶‍♂️ La Lagunilla → Bellas Artes", d:"Andando hacia el sur por el Eje Central, unos 15 min, hasta la cúpula de Bellas Artes.", $:"$0", map:W + encodeURIComponent("Palacio de Bellas Artes, Ciudad de México"), mov:1 },
-    pon("Bellas Artes", "11:20", "12:15", 2, "Entrada unos $95. Sube directo a los pisos de los murales: Rivera, Orozco, Siqueiros y Tamayo."),
-    pon("Tolsa", "12:15", "12:45", 3),
-    { s:"12:45", e:"13:25", t:"🌮 Comida rápida en el Centro", d:"Tacos o comida corrida cerca de la Alameda o de la calle Tacuba. 40 min.", $:"$100–200 💵", map:"https://www.google.com/maps/search/taquer%C3%ADa/@19.4355,-99.1415,17z", mapTxt:"Taquerías" },
-    { s:"13:25", e:"13:45", t:"🚌 Hidalgo → El Ángel (Metrobús L7)", d:"El Metrobús de dos pisos que va por Reforma: súbete en Hidalgo, dirección Campo Marte, y bájate en El Ángel. Arriba y delante, si puedes. Tarjeta MI.", $:"$6", map:RUTA("Ángel de la Independencia, Ciudad de México"), mov:1 },
-    pon("Reforma", "13:45", "14:30", 4, "Al revés que en el audio: del Ángel hacia Chapultepec, pasando por la Diana y la Estela de Luz. Unos 30 min por el camellón y la rampa de subida al cerro."),
-    pon("Castillo", "14:30", "16:00", 5, "Cierra a las 17:00: no llegues después de las 15:15. Entrada unos $100. Primero el museo de abajo, luego el Alcázar y la terraza con las vistas de Reforma."),
-    { s:"16:00", e:"16:25", t:"🚶‍♂️ Castillo → Cablebús (Los Pinos)", d:"Bajas del cerro y cruzas la primera sección del bosque hacia el suroeste, unos 20–25 min, hasta la estación Los Pinos/Constituyentes.", $:"$0", map:W + encodeURIComponent("Cablebús Los Pinos Constituyentes, Ciudad de México"), mov:1 },
-    pon("Cablebus", "16:25", "17:30", 6, "Ida y vuelta desde Los Pinos/Constituyentes hasta Vasco de Quiroga (unos 25 min por trayecto), con la luz de la tarde. Si vas justo, baja en Cineteca y vuelve. Tarjeta MI."),
-    { s:"17:30", e:"17:55", t:"🚶‍♂️ Constituyentes → Condesa", d:"Andando unos 25 min hasta el Parque México, o metro L7 una parada hasta Tacubaya y L9 hasta Patriotismo.", $:"$0", map:W + encodeURIComponent("Parque México, Condesa, Ciudad de México"), mov:1 },
-    pon("Condesa", "17:55", "18:35", 7, "Parque México y el óvalo de la avenida Ámsterdam al anochecer. Si llegas cansado, sáltatelo y vete a casa."),
-    { s:"18:35", e:"19:10", t:"🚇 Vuelta a casa", d:"Chilpancingo (L9) → Centro Médico, cambio a L3 dirección Universidad → Zapata. Unos 30 min.", l:["L9","L3"], $:"$5", map:RUTA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
+    { s:"11:30", e:"12:00", t:"🚌 La Lagunilla → El Ángel (Metrobús L7)", d:"Anda hasta Reforma, a la parada Glorieta de Cuitláhuac. Metrobús L7 (el de dos pisos) dirección Campo Marte hasta El Ángel. Arriba y delante, si puedes. Tarjeta MI.", $:"$6", map:RUTA("Ángel de la Independencia, Ciudad de México"), mov:1 },
+    pon("Reforma", "12:00", "12:45", 2, "Al revés que en el audio: del Ángel hacia Chapultepec, pasando por la Diana y la Estela de Luz. Unos 30 min por el camellón y la rampa de subida al cerro."),
+    pon("Castillo", "12:45", "14:15", 3, "Cierra a las 17:00. Entrada unos $100. Primero el museo de abajo, luego el Alcázar y la terraza con las vistas de Reforma."),
+    { s:"14:15", e:"14:40", t:"🚶‍♂️ Castillo → Condesa", d:"Bajas del cerro, sales del bosque por el metro Chapultepec y sigues hacia el sureste, unos 25 min, hasta el Parque México.", $:"$0", map:W + encodeURIComponent("Parque México, Condesa, Ciudad de México"), mov:1 },
+    pon("Condesa", "14:40", "15:15", 4, "Da la vuelta al óvalo de la avenida Ámsterdam y cruza el Parque México."),
+    pon("Medellin", "15:15", "16:10", 5, "Comida en el mercado (fondas dentro y alrededor), a unos 10 min andando del Parque México."),
+    { s:"16:10", e:"16:40", t:"🚇 Roma → Constituyentes", d:"Chilpancingo → Tacubaya (L9, 2 paradas); cambio a L7 dirección El Rosario, 1 parada, hasta Constituyentes. El Cablebús está pegado a la salida.", l:["L9","L7"], $:"$5", map:RUTA("Cablebús Los Pinos Constituyentes, Ciudad de México"), mov:1 },
+    pon("Cablebus", "16:40", "17:45", 6, "Ida y vuelta desde Los Pinos/Constituyentes hasta Vasco de Quiroga (unos 25 min por trayecto), con la luz de la tarde. Si vas justo, baja en Cineteca y vuelve. Tarjeta MI."),
+    { s:"17:45", e:"18:25", t:"🚇 Vuelta a casa", d:"Constituyentes → Mixcoac (L7 dirección Barranca del Muerto); cambio a L12 → Zapata. Unos 35 min.", l:["L7","L12"], $:"$5", map:RUTA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
   ];
   EXTRA = EXTRA.concat(fuera);
-  XY = { 1:[520,18], 2:[555,80], 3:[565,45], 4:[330,90], 5:[200,130], 6:[75,150], 7:[295,182] };
-  TIT = "Miércoles 11 · Lagunilla, Centro y Chapultepec";
-  SUB = "La Lagunilla, Bellas Artes, Reforma, Castillo, Cablebús y Condesa";
+  XY = { 1:[520,18], 2:[330,90], 3:[200,130], 4:[295,182], 5:[400,177], 6:[75,150] };
+  TIT = "Miércoles 11 · Lagunilla y Chapultepec";
+  SUB = "La Lagunilla, Reforma, Castillo, Condesa, Roma y Cablebús";
   TXT = { mapa:TXT.mapa,
-    pie:"El Castillo cierra a las 17:00: entra antes de las 15:15. Bellas Artes abre a las 10:00. Lleva la tarjeta MI cargada y efectivo para el mercado y la comida.",
+    pie:"El Castillo cierra a las 17:00. Lleva la tarjeta MI cargada y efectivo para el mercado y la comida.",
     otro:"Plan del miércoles 11 de noviembre." };
 })();
 
