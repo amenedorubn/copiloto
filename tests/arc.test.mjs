@@ -361,3 +361,15 @@ test("dormir lee Huawei; estudio y dormir se apuntan desde el 28/09", () => {
   assert.equal(D.reglas[1].dato, "sueno");
   assert.equal(Arc.estadoDia(D, "2026-09-20", HOY, { acts: [], eventos: () => [] }).reglas[2].ok, null);  // antes del Foro: sin datos
 });
+
+test("v2.87 · de viaje, 10.000 pasos valen por el entreno; en casa manda el plan", () => {
+  const D = Arc.vacio(HOY), ses = [{ tipo: "fuera", plan: true, titulo: "Rodaje 8 km" }];
+  assert.equal(Arc.deViaje(D, "2026-11-02"), false);
+  for (const d of ["2026-11-03", "2026-11-10", "2026-11-17", "2026-11-18"]) assert.equal(Arc.deViaje(D, d), true, d);
+  assert.equal(Arc.deViaje(D, "2026-11-19"), false);          // el posible a Coruña no cuenta
+  assert.equal(Arc.deViaje(D, "2026-12-01"), false);
+  assert.deepEqual(Arc.planDelDia(ses, [], { pasos: 14200 }, true), { s: 1, h: 1, pasos: 14200 });
+  assert.deepEqual(Arc.planDelDia(ses, [], { pasos: 9000 }, true), { s: 1, h: 0 });
+  assert.deepEqual(Arc.planDelDia(ses, [], { pasos: 14200 }, false), { s: 1, h: 0 });
+  assert.deepEqual(Arc.planDelDia(ses, [], null, true), { s: 1, h: 0 });
+});

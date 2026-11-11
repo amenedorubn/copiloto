@@ -33,7 +33,7 @@ var VERSION_DATOS=3;
 var K_DATOS="copiloto.arc.datos", K_DISENO="copiloto.arc.diseno", K_SALUD="copiloto.arc.salud";
 var INICIO="2026-09-01", FIN="2026-12-31", EDITA_HASTA="2026-09-30";
 var MIN_REGLAS=3, MAX_REGLAS=5, MAX_NOMBRE=40, MAX_OBJETIVO=140, MAX_ETAPAS=6, MAX_ETAPA=22, MAX_SUB=60;
-var SUENO_MIN=420, PASOS_CAMINATA=8000;
+var SUENO_MIN=420, PASOS_CAMINATA=8000, PASOS_VIAJE=10000;
 var FUENTES={ plan:"Plan de Entreno", correr:"Correr (Strava)", gym:"Gimnasio (Hevy)", entreno:"Cualquier entreno" };
 var DISENOS={ A:"Anillos", B:"Línea del día", C:"Temporada", D:"Cuadrícula" }, DISENO_DEF="A";
 var MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -276,7 +276,9 @@ function compatible(e,a){
 // Una caminata sin registro (ni grabada ni pasos de Huawei ese dia) no se
 // exige: ni suma ni resta ("caminata sin registro"). Con los pasos de ese dia
 // por debajo de 8.000 y nada grabado, si cuenta como sin hacer.
-function planDelDia(E,A,sal){
+// v2.87 · De viaje no hay rutina posible: ese día, 10.000 pasos de Huawei
+// valen por las sesiones que queden sin hacer. En casa manda el plan.
+function planDelDia(E,A,sal,viaje){
   var ses=(E||[]).filter(function(e){ return esCaminata(e) || e.tipo==="fuera" || e.tipo==="cinta" || e.tipo==="gym"; });
   var usadas={}, hechas=0, pasosUsados=false, sinRegistro=0;
   ses.forEach(function(e){
@@ -286,11 +288,21 @@ function planDelDia(E,A,sal){
     if(!(sal && typeof sal.pasos==="number")) sinRegistro++;
   });
   var o={ s:ses.length-sinRegistro, h:hechas }; if(sinRegistro) o.sinRegistro=sinRegistro;
+  if(viaje && o.h<o.s && sal && (sal.pasos||0)>=PASOS_VIAJE){ o.h=o.s; o.pasos=sal.pasos; }
   return o;
 }
 function ctxDe(c){
   if(Array.isArray(c)) return { acts:c, eventos:null, salud:null };
   return { acts:(c && c.acts) || [], eventos:(c && c.eventos) || null, salud:(c && c.salud) || null };
+}
+// fuera de casa: desde que sale de Madrid hasta que vuelve (los dos días incluidos)
+function deViaje(D,iso){
+  var L=viajesDe(D).filter(function(v){ return v.fecha && !v.posible; }), ult=null, hoy=false;
+  L.forEach(function(v){
+    if(v.fecha===iso || (v.llega && v.fecha<iso && iso<=v.llega)) hoy=true;
+    if(v.fecha<=iso) ult=v;
+  });
+  return hoy || (!!ult && ult.a!=="Madrid");
 }
 function actsDel(acts,iso){ return acts.filter(function(a){ return a && a.fecha===iso; }); }
 function saludDe(c,iso){ return c.salud && c.salud[iso] || null; }
@@ -299,7 +311,7 @@ function saludDe(c,iso){ return c.salud && c.salud[iso] || null; }
 function planDe(D,iso,c){
   var g=D.plan[iso]||null, E=c.eventos ? c.eventos(iso) : null;
   if(!E) return g;
-  var p=planDelDia(E,actsDel(c.acts,iso),saludDe(c,iso));
+  var p=planDelDia(E,actsDel(c.acts,iso),saludDe(c,iso),deViaje(D,iso));
   if(g && g.s===p.s && g.h>p.h) p.h=g.h;
   return p;
 }
@@ -1082,6 +1094,7 @@ function estadoTxt(x,iso,h){
   if(x.como==="a mano") return "hecho sin registrar";
   if(r.tipo==="manual") return x.ok ? "hecho" : iso===h ? "sin marcar" : "sin hacer";
   if(x.plan && x.plan.s===0) return x.plan.sinRegistro ? "caminata sin registro: no cuenta" : "sin sesión: cuenta sola";
+  if(x.ok && x.plan && x.plan.pasos) return x.plan.pasos.toLocaleString("es-ES")+" pasos de viaje: cuenta";
   if(x.ok) return x.plan && x.plan.s>1 ? x.plan.h+" de "+x.plan.s+" sesiones" : "hecho";
   if(iso===h && estadoActs()==="cargando") return "mirando…";
   if(x.plan) return (iso===h ? "pendiente" : "sin hacer")+(x.plan.s>1 ? " · "+x.plan.h+" de "+x.plan.s : "")+(x.plan.sinRegistro ? " · caminata sin registro" : "");
@@ -1949,7 +1962,7 @@ return {
   enArc:enArc, diaArc:diaArc, semanaArc:semanaArc, editable:editable, mas:mas, preset:preset, presetEtapas:presetEtapas,
   vacio:vacio, migra:migra, carga:carga, guardaEn:guardaEn, leeDiseno:leeDiseno, guardaDiseno:guardaDiseno,
   leeSalud:leeSalud, mezclaSalud:mezclaSalud, cargaSalud:cargaSalud, guardaSalud:guardaSalud, suenoDe:suenoDe,
-  planDelDia:planDelDia, registraAuto:registraAuto, estadoDia:estadoDia, fallosSeguidos:fallosSeguidos, cuenta:cuenta,
+  planDelDia:planDelDia, deViaje:deViaje, registraAuto:registraAuto, estadoDia:estadoDia, fallosSeguidos:fallosSeguidos, cuenta:cuenta,
   resumen:resumen, revision:revision, fuerzas:fuerzas, totales:totales, planTotal:planTotal, statsEtapa:statsEtapa,
   etapaDe:etapaDe, ponEtapa:ponEtapa, anadeEtapa:anadeEtapa, borraEtapa:borraEtapa,
   anadeRegla:anadeRegla, editaRegla:editaRegla, borraRegla:borraRegla, marcaCheck:marcaCheck, ponNota:ponNota,
