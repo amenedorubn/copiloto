@@ -1,5 +1,5 @@
 /* ===========================================================================
-   VIAJE · guía del día (miércoles 11: Polanco, Cablebús, Chapultepec, Reforma, Roma-Condesa y Bellas Artes)
+   VIAJE · guía del día (miércoles 11: Lagunilla, Bellas Artes, Reforma, Castillo, Cablebús y Condesa)
    ---------------------------------------------------------------------------
    Viaje.pinta(c): el miércoles 4 de noviembre de 2026 en Ciudad de México.
    Arriba el mapa esquemático del Centro, debajo el horario. Cada parada lleva
@@ -1498,6 +1498,58 @@ var MARTES = {
 '{PINS}</svg>',
   XY:{ 1:[180,172], 2:[262,222], 3:[441,206], 4:[480,180], 5:[448,150], 6:[405,34] }
 };
+/* ---------------------------------------------------------------------------
+   v2.88 · Miércoles 11 rehecho: a las 9:30, mercado de La Lagunilla con los
+   amigos de Sergio. El día se da la vuelta: primero el Centro (Lagunilla,
+   Bellas Artes, Alameda), luego Reforma, el Castillo y el Cablebús al
+   atardecer, y Condesa al final. Soumaya/Jumex y el Mercado de Medellín salen
+   del plan (sus guías quedan en EXTRA por si vuelven al calendario).
+   --------------------------------------------------------------------------- */
+(function () {
+  var de = function (n) { return P.filter(function (x) { return x.n === n; })[0]; };
+  var pon = function (n, s, e, pin, d) { var x = de(n); x.s = s; x.e = e; x.pin = pin; if (d) x.d = d; return x; };
+  var fuera = [de("Soumaya"), de("Medellin")];
+  var W = "https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=";
+  var lag = { s:"9:30", e:"11:00", t:"🛍️ Mercado de La Lagunilla (con los amigos de Sergio)", n:"Lagunilla", q:["mexicas", "diaz"], d:"Con los amigos de Sergio. Entre semana son los mercados fijos (ropa y telas, muebles, varios); el tianguis de antigüedades solo se pone los domingos. Móvil guardado y mochila delante.", $:"💵", map:"https://www.google.com/maps/search/?api=1&query=Mercado+de+La+Lagunilla+Ciudad+de+M%C3%A9xico", pin:1, g:[
+    ["Lo esencial",
+      "Estás en La Lagunilla, uno de los barrios de comercio más antiguos y con más carácter de la ciudad, justo al norte del Centro Histórico.",
+      "El nombre viene de una pequeña laguna que había aquí, entre Tenochtitlan y Tlatelolco, las dos ciudades mexicas vecinas. Por esa laguna entraban las canoas cargadas de mercancía hacia el gran mercado de Tlatelolco. O sea, que aquí se vende desde antes de que llegaran los españoles.",
+      "Hoy La Lagunilla no es un mercado, sino varios edificios grandes, cada uno con su especialidad, y calles enteras de tiendas alrededor."],
+    ["Los mercados",
+      "El de ropa y telas es el más llamativo: pasillos y pasillos de vestidos de quinceañera, de novia y de fiesta, con colores imposibles, y trajes de charro y disfraces.",
+      "El de muebles es otro clásico: salas, comedores y recámaras, de lo más barato a lo más recargado. Y el de varios o de comestibles es el mercado de barrio, con fruta, carne y fondas para comer.",
+      "El primer mercado moderno de La Lagunilla se inauguró en 1905, en tiempos de Porfirio Díaz. Los edificios actuales son de mediados del siglo veinte, cuando la ciudad construyó decenas de mercados públicos para ordenar el comercio de la calle."],
+    ["Lo que no vas a ver hoy",
+      "La Lagunilla es famosa sobre todo por su tianguis de antigüedades, pero ese solo se pone los domingos: muebles viejos, discos, cámaras, juguetes, libros y todo tipo de chácharas, con micheladas enormes entre puesto y puesto. Hoy, miércoles, verás el barrio en su día normal de trabajo.",
+      "Muy cerca tienes dos vecinos conocidos. Al sur, la plaza Garibaldi, la de los mariachis. Y al este, Tepito, el barrio bravo, famoso por su tianguis gigantesco y por su mala fama: no te metas por ahí."],
+    ["Consejos",
+      "Es una zona de mucho trajín: lleva el móvil guardado, la mochila delante y el dinero justo en el bolsillo. Quédate con el grupo y no te alejes hacia el este.",
+      "Cuando acabéis, baja andando hacia el sur por el Eje Central, la avenida grande. En unos quince minutos verás la cúpula naranja de Bellas Artes."] ] };
+  P = [
+    { s:"8:45", e:"9:30", t:"🚇 Casa → La Lagunilla", d:"Zapata → Guerrero (L3 dirección Indios Verdes); cambio a la Línea B dirección Ciudad Azteca, 2 paradas, hasta Lagunilla. Confirma con los amigos de Sergio dónde quedáis.", l:["L3","LB"], $:"$5", map:RUTA("Mercado de La Lagunilla, Ciudad de México"), mov:1 },
+    lag,
+    { s:"11:00", e:"11:20", t:"🚶‍♂️ La Lagunilla → Bellas Artes", d:"Andando hacia el sur por el Eje Central, unos 15 min, hasta la cúpula de Bellas Artes.", $:"$0", map:W + encodeURIComponent("Palacio de Bellas Artes, Ciudad de México"), mov:1 },
+    pon("Bellas Artes", "11:20", "12:15", 2, "Entrada unos $95. Sube directo a los pisos de los murales: Rivera, Orozco, Siqueiros y Tamayo."),
+    pon("Tolsa", "12:15", "12:45", 3),
+    { s:"12:45", e:"13:25", t:"🌮 Comida rápida en el Centro", d:"Tacos o comida corrida cerca de la Alameda o de la calle Tacuba. 40 min.", $:"$100–200 💵", map:"https://www.google.com/maps/search/taquer%C3%ADa/@19.4355,-99.1415,17z", mapTxt:"Taquerías" },
+    { s:"13:25", e:"13:45", t:"🚌 Hidalgo → El Ángel (Metrobús L7)", d:"El Metrobús de dos pisos que va por Reforma: súbete en Hidalgo, dirección Campo Marte, y bájate en El Ángel. Arriba y delante, si puedes. Tarjeta MI.", $:"$6", map:RUTA("Ángel de la Independencia, Ciudad de México"), mov:1 },
+    pon("Reforma", "13:45", "14:30", 4, "Al revés que en el audio: del Ángel hacia Chapultepec, pasando por la Diana y la Estela de Luz. Unos 30 min por el camellón y la rampa de subida al cerro."),
+    pon("Castillo", "14:30", "16:00", 5, "Cierra a las 17:00: no llegues después de las 15:15. Entrada unos $100. Primero el museo de abajo, luego el Alcázar y la terraza con las vistas de Reforma."),
+    { s:"16:00", e:"16:25", t:"🚶‍♂️ Castillo → Cablebús (Los Pinos)", d:"Bajas del cerro y cruzas la primera sección del bosque hacia el suroeste, unos 20–25 min, hasta la estación Los Pinos/Constituyentes.", $:"$0", map:W + encodeURIComponent("Cablebús Los Pinos Constituyentes, Ciudad de México"), mov:1 },
+    pon("Cablebus", "16:25", "17:30", 6, "Ida y vuelta desde Los Pinos/Constituyentes hasta Vasco de Quiroga (unos 25 min por trayecto), con la luz de la tarde. Si vas justo, baja en Cineteca y vuelve. Tarjeta MI."),
+    { s:"17:30", e:"17:55", t:"🚶‍♂️ Constituyentes → Condesa", d:"Andando unos 25 min hasta el Parque México, o metro L7 una parada hasta Tacubaya y L9 hasta Patriotismo.", $:"$0", map:W + encodeURIComponent("Parque México, Condesa, Ciudad de México"), mov:1 },
+    pon("Condesa", "17:55", "18:35", 7, "Parque México y el óvalo de la avenida Ámsterdam al anochecer. Si llegas cansado, sáltatelo y vete a casa."),
+    { s:"18:35", e:"19:10", t:"🚇 Vuelta a casa", d:"Chilpancingo (L9) → Centro Médico, cambio a L3 dirección Universidad → Zapata. Unos 30 min.", l:["L9","L3"], $:"$5", map:RUTA("Av. Universidad 687, Del Valle Sur, Ciudad de México"), mapTxt:"Ruta a casa", mov:1 }
+  ];
+  EXTRA = EXTRA.concat(fuera);
+  XY = { 1:[520,18], 2:[555,80], 3:[565,45], 4:[330,90], 5:[200,130], 6:[75,150], 7:[295,182] };
+  TIT = "Miércoles 11 · Lagunilla, Centro y Chapultepec";
+  SUB = "La Lagunilla, Bellas Artes, Reforma, Castillo, Cablebús y Condesa";
+  TXT = { mapa:TXT.mapa,
+    pie:"El Castillo cierra a las 17:00: entra antes de las 15:15. Bellas Artes abre a las 10:00. Lleva la tarjeta MI cargada y efectivo para el mercado y la comida.",
+    otro:"Plan del miércoles 11 de noviembre." };
+})();
+
 var DIAS = {};
 DIAS[DIA] = { dia:DIA, tit:TIT, sub:SUB, txt:TXT, P:P, MAPA:MAPA, XY:XY };
 DIAS[MARTES.dia] = MARTES;
